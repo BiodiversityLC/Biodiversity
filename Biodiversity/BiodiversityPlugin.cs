@@ -3,40 +3,25 @@ using BepInEx.Logging;
 using HarmonyLib;
 using System;
 using System.Reflection;
+using UnityEngine;
 
 namespace Biodiversity;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
-public class Biodiversity : BaseUnityPlugin {
-    public static Biodiversity Instance { get; private set; } = null!;
-    internal new static ManualLogSource Logger { get; private set; } = null!;
-    internal static Harmony? Harmony { get; set; }
+public class BiodiversityPlugin : BaseUnityPlugin {
+    public static BiodiversityPlugin Instance { get; private set; }
+    internal new static ManualLogSource Logger { get; private set; }
 
     private void Awake() {
-        Logger = base.Logger;
+        Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
+        Logger.LogInfo("Running Harmony patches...");
+        Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
+
+        Logger.LogInfo("Patching NetCode");
         NetcodePatcher();
-        Patch();
 
-        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
-    }
-
-    internal static void Patch() {
-        Harmony ??= new Harmony(MyPluginInfo.PLUGIN_GUID);
-
-        Logger.LogDebug("Patching...");
-
-        Harmony.PatchAll();
-
-        Logger.LogDebug("Finished patching!");
-    }
-
-    internal static void Unpatch() {
-        Logger.LogDebug("Unpatching...");
-
-        Harmony?.UnpatchSelf();
-
-        Logger.LogDebug("Finished unpatching!");
+        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }
 
     private void NetcodePatcher() {

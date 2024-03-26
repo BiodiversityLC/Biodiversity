@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <!-- BepInEx Properties -->
     <PropertyGroup>
@@ -17,9 +17,7 @@
     </PropertyGroup>
 
     <!-- Enable Nullable for better IDE null-checking -->
-    <PropertyGroup>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+	<!-- no thank you -->
 
     <!-- Set NuGet Sources -->
     <PropertyGroup>
@@ -63,4 +61,9 @@
     <Target Name="NetcodePatch" AfterTargets="PostBuildEvent">
         <Exec Command="netcode-patch &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')"/>
     </Target>
+
+	<Target Name="MoveToDebugEnv" AfterTargets="NetcodePatch">
+		<Message Importance="high" Text="Copying to local lethal company install" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins" />
+	</Target>
 </Project>
