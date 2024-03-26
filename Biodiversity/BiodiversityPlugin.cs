@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
+using Biodiversity.Creatures.Murkydere;
 using HarmonyLib;
 using System;
 using System.Reflection;
@@ -18,7 +19,9 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         Logger.LogInfo("Running Harmony patches...");
         Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
 
-        Logger.LogInfo("Patching NetCode");
+        new MurkydereAI();
+
+        Logger.LogInfo("Patching netcode.");
         NetcodePatcher();
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
