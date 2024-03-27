@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
+using Biodiversity.Creatures.HoneyFeeder;
 using Biodiversity.Creatures.Murkydere;
 using Biodiversity.General;
 using HarmonyLib;
