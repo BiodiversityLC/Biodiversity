@@ -1,9 +1,11 @@
 ﻿using Biodiversity.General;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.HoneyFeeder;
@@ -11,7 +13,8 @@ public class HoneyFeederAI : BiodiverseAI {
     public enum AIStates {
         WANDERING, // wandering looking for hives
         FOUND_HIVE, // heading to hive
-        ATTACKING,
+        ATTACKING_BACKINGUP,
+        ATTACKING_CHARGING,
         RETURNING,
         DIGESTING
     }
@@ -67,34 +70,80 @@ public class HoneyFeederAI : BiodiverseAI {
                 if(!roamingRoutine.inProgress) StartSearch(transform.position, roamingRoutine);
 
                 if(targetHive != null) { // reset incase player successfully runs away with the hive.
-                    if(Vector3.Distance(targetHive.transform.position, transform.position) <= Config.HiveDetectionDistance) {
+                    if(Vector3.Distance(targetHive.transform.position, transform.position) <= Config.SightDistance) {
                         State = AIStates.FOUND_HIVE; break;
                     }
                     targetHive = null;
                 }
 
                 foreach(GrabbableObject hive in possibleHives) {
-                    Log($"distance to hive: {Vector3.Distance(hive.transform.position, transform.position)} <= {Config.HiveDetectionDistance}");
-                    if(Vector3.Distance(hive.transform.position, transform.position) <= Config.HiveDetectionDistance) {
+                    if(Vector3.Distance(hive.transform.position, transform.position) <= Config.SightDistance) {
                         if(hive.playerHeldBy == null) {
                             targetHive = hive;
                             State = AIStates.FOUND_HIVE;
                         } else {
                             targetPlayer = hive.playerHeldBy;
-                            State = AIStates.ATTACKING;
+                            State = AIStates.ATTACKING_BACKINGUP;
                         }
                         break;
                     }
                 }
                 break;
             case AIStates.FOUND_HIVE:
+                if(targetHive.playerHeldBy != null) {
+                    targetPlayer = targetHive.playerHeldBy;
+                    State = AIStates.ATTACKING_BACKINGUP;
+                    break;
+                }
+
                 destination = targetHive.transform.position;
                 moveTowardsDestination = true;
                 break;
-            case AIStates.ATTACKING:
-                movingTowardsTargetPlayer = true;
-
+            case AIStates.ATTACKING_BACKINGUP:
+                if(!moveTowardsDestination) {
+                    destination = GetRandomPositionNearPlayer(targetPlayer, minDistance: Config.MinBackupAmount, radius: Config.MaxBackupAmount - Config.MinBackupAmount);
+                    moveTowardsDestination = true;
+                }
+                if(HasFinishedAgentPath()) {
+                    float distance = Vector3.Distance(transform.position, targetPlayer.transform.position);
+                    if(distance > Config.SightDistance) {
+                        // too far
+                        State = AIStates.WANDERING; // wandering state will automatically fix if the targetHive is still in range.
+                    } else if(distance < Config.TooCloseAmount) { // too close
+                        destination = GetRandomPositionNearPlayer(targetPlayer, minDistance: Config.MinBackupAmount, radius: Config.MaxBackupAmount - Config.MinBackupAmount);
+                        moveTowardsDestination = true;
+                    } else { // perfect distance
+                        State = AIStates.ATTACKING_CHARGING;
+                    }
+                }
                 break;
+            case AIStates.ATTACKING_CHARGING:
+                agent.speed = Config.ChargeSpeed;
+                movingTowardsTargetPlayer = true;
+                
+                break;
+        }
+    }
+
+    public override void OnCollideWithPlayer(Collider other) {
+        base.OnCollideWithPlayer(other);
+        if(!IsHost) return;
+
+        if(State != AIStates.ATTACKING_CHARGING) return;
+        if(other.TryGetComponent(out PlayerControllerB player)) {
+            HitPlayerClientRpc((int)player.playerClientId);
+            updateDestinationInterval = Config.StunTimeAfterHit;
+
+            State = AIStates.ATTACKING_BACKINGUP;
+        }
+    }
+
+    [ClientRpc]
+    void HitPlayerClientRpc(int playerId) {
+        PlayerControllerB hitPlayer = PlayerUtil.GetPlayerFromClientId(playerId);
+
+        if(hitPlayer == GameNetworkManager.Instance.localPlayerController) {
+            hitPlayer.DamagePlayer(Config.ChargeDamage, causeOfDeath: CauseOfDeath.Mauling);
         }
     }
 

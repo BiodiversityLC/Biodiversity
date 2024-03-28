@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Biodiversity.General;
 public abstract class BiodiverseAI : EnemyAI {
@@ -27,6 +28,27 @@ public abstract class BiodiverseAI : EnemyAI {
         players = hitColliders.Select(collider => collider.GetComponent<PlayerControllerB>()).ToList();
         return true;
     }
+
+    // https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5
+    protected bool HasFinishedAgentPath() {
+        if(!agent.pathPending) {
+            if(agent.remainingDistance <= agent.stoppingDistance) {
+                if(!agent.hasPath || agent.velocity.sqrMagnitude == 0f) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    protected Vector3 GetRandomPositionOnNavMesh(Vector3 position, float radius = 10f) {
+        return RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(position, 10f, layerMask: -1, randomSeed: new System.Random());
+    }
+
+    protected Vector3 GetRandomPositionNearPlayer(PlayerControllerB player, float radius = 15f, float minDistance = 0f) {
+        return GetRandomPositionOnNavMesh(player.transform.position + (UnityEngine.Random.insideUnitSphere * radius) + (UnityEngine.Random.onUnitSphere * minDistance));
+    }
+
     protected PlayerControllerB GetClosestPlayer(List<PlayerControllerB> players) {
         return GetClosestPlayer(players, transform.position);
     }
