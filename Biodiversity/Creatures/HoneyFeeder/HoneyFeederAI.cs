@@ -25,6 +25,9 @@ public class HoneyFeederAI : BiodiverseAI {
 
     Transform nest;
 
+    [field: SerializeField]
+    public HoneyFeederConfig Config { get; private set; } = new HoneyFeederConfig();
+
     AIStates _state = AIStates.WANDERING;
     AIStates _prevState = AIStates.WANDERING;
     DigestionStates digestion = DigestionStates.NONE;
@@ -33,6 +36,11 @@ public class HoneyFeederAI : BiodiverseAI {
         get { return _state; } 
         private set {
             Log($"Updating state: {_state} -> {value}");
+            moveTowardsDestination = false;
+            movingTowardsTargetPlayer = false;
+            agent.speed = Config.NormalSpeed;
+            if(currentSearch.inProgress) StopSearch(currentSearch, true);
+
             _prevState = _state;
             _state = value; 
         }
@@ -43,6 +51,7 @@ public class HoneyFeederAI : BiodiverseAI {
     public override void Start() {
         base.Start();
         possibleHives = FindObjectsOfType<RedLocustBees>().Select(bees => bees.hive).ToList();
+        Log("Possible hives count: " + possibleHives.Count);
     }
 
     void Log(string message) {
@@ -50,15 +59,41 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     public override void DoAIInterval() { // biodiversity calculates everything host end, so this should always be run on the host.
-        //if(!ShouldProcessEnemy()) return;
+        //if(!ShouldProcessEnemy()) return; // <- disabled for testing
         base.DoAIInterval();
-        Log("DoAIInterval();");
 
         switch(State) {
             case AIStates.WANDERING:
-                if(!roamingRoutine.inProgress) {
-                    StartSearch(transform.position, roamingRoutine);
+                if(!roamingRoutine.inProgress) StartSearch(transform.position, roamingRoutine);
+
+                if(targetHive != null) { // reset incase player successfully runs away with the hive.
+                    if(Vector3.Distance(targetHive.transform.position, transform.position) <= Config.HiveDetectionDistance) {
+                        State = AIStates.FOUND_HIVE; break;
+                    }
+                    targetHive = null;
                 }
+
+                foreach(GrabbableObject hive in possibleHives) {
+                    Log($"distance to hive: {Vector3.Distance(hive.transform.position, transform.position)} <= {Config.HiveDetectionDistance}");
+                    if(Vector3.Distance(hive.transform.position, transform.position) <= Config.HiveDetectionDistance) {
+                        if(hive.playerHeldBy == null) {
+                            targetHive = hive;
+                            State = AIStates.FOUND_HIVE;
+                        } else {
+                            targetPlayer = hive.playerHeldBy;
+                            State = AIStates.ATTACKING;
+                        }
+                        break;
+                    }
+                }
+                break;
+            case AIStates.FOUND_HIVE:
+                destination = targetHive.transform.position;
+                moveTowardsDestination = true;
+                break;
+            case AIStates.ATTACKING:
+                movingTowardsTargetPlayer = true;
+
                 break;
         }
     }

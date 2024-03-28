@@ -7,6 +7,6 @@ using UnityEngine.Timeline;
 
 namespace Biodiversity.Util.Config;
 [Serializable]
-internal abstract class BiodiverseConfig<T> where T : BiodiverseConfig<T> {
+public abstract class BiodiverseConfig<T> where T : BiodiverseConfig<T> {
     
 }
