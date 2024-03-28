@@ -149,5 +149,8 @@ public class HoneyFeederAI : BiodiverseAI {
 
     public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false) {
         base.HitEnemy(force, playerWhoHit, playHitSFX);
+
+        targetPlayer = playerWhoHit;
+        State = AIStates.ATTACKING_BACKINGUP;
     }
 }
