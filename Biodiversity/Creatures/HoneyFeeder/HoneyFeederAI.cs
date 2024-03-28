@@ -34,7 +34,7 @@ public class HoneyFeederAI : BiodiverseAI {
         private set {
             Log($"Updating state: {_state} -> {value}");
             _prevState = _state;
-            _state = value;
+            _state = value; 
         }
     }
 
@@ -50,8 +50,9 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     public override void DoAIInterval() { // biodiversity calculates everything host end, so this should always be run on the host.
-        if(!ShouldProcessEnemy()) return;
+        //if(!ShouldProcessEnemy()) return;
         base.DoAIInterval();
+        Log("DoAIInterval();");
 
         switch(State) {
             case AIStates.WANDERING:

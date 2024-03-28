@@ -3,7 +3,9 @@ using BepInEx.Logging;
 using Biodiversity.Creatures.HoneyFeeder;
 using Biodiversity.Creatures.Murkydere;
 using Biodiversity.General;
+using Biodiversity.Util;
 using HarmonyLib;
+using LethalLib.Modules;
 using System;
 using System.Reflection;
 using UnityEngine;
@@ -11,6 +13,7 @@ using UnityEngine.SceneManagement;
 
 namespace Biodiversity;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+[BepInDependency(LethalLib.Plugin.ModGUID)]
 public class BiodiversityPlugin : BaseUnityPlugin {
     public static BiodiversityPlugin Instance { get; private set; }
     internal new static ManualLogSource Logger { get; private set; }
@@ -24,6 +27,13 @@ public class BiodiversityPlugin : BaseUnityPlugin {
 
         Logger.LogInfo("Patching netcode.");
         NetcodePatcher();
+
+        Logger.LogInfo("Getting assets.");
+        BiodiverseAssets.Init();
+
+        // TODO: Swap this to LLL once it gets enemy support.
+        Logger.LogInfo("Registering the silly little creatures.");
+        Enemies.RegisterEnemy(BiodiverseAssets.HoneyFeeder, Enemies.SpawnType.Outside);
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }
