@@ -22,6 +22,7 @@ public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfig<HoneyFe
 
     [Header("Charge Attack")]
     [Tooltip("Amount of damage to deal to player when hit by the Honey Feeder")]
+    [Range(0, 100)]
     public int ChargeDamage = 35;
     public float TooCloseAmount = 5f;
     public float StunTimeAfterHit = 3f;
