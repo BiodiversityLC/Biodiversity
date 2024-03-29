@@ -29,7 +29,7 @@ public class HoneyFeederAI : BiodiverseAI {
     Transform nest;
 
     [field: SerializeField]
-    public HoneyFeederConfig Config { get; private set; } = new HoneyFeederConfig();
+    public HoneyFeederConfig Config { get; private set; } = BiodiversityPlugin.config;
 
     AIStates _state = AIStates.WANDERING;
     AIStates _prevState = AIStates.WANDERING;
@@ -104,6 +104,10 @@ public class HoneyFeederAI : BiodiverseAI {
                     destination = GetRandomPositionNearPlayer(targetPlayer, minDistance: Config.MinBackupAmount, radius: Config.MaxBackupAmount - Config.MinBackupAmount);
                     moveTowardsDestination = true;
                 }
+                if(targetPlayer.isPlayerDead) {
+                    State = AIStates.WANDERING;
+                    break;
+                }
                 if(HasFinishedAgentPath()) {
                     float distance = Vector3.Distance(transform.position, targetPlayer.transform.position);
                     if(distance > Config.SightDistance) {
@@ -118,8 +122,9 @@ public class HoneyFeederAI : BiodiverseAI {
                 }
                 break;
             case AIStates.ATTACKING_CHARGING:
-                agent.speed = Config.ChargeSpeed;
+                //agent.speed = Config.ChargeSpeed;
                 movingTowardsTargetPlayer = true;
+                Log(targetPlayer + "");
                 
                 break;
         }

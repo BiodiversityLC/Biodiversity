@@ -8,7 +8,4 @@ namespace Biodiversity.Creatures.HoneyFeeder;
 internal class HoneyFeederAssets() : BiodiverseAssetBundle<HoneyFeederAssets>("biodiversity_honeyfeeder") {
     [LoadFromBundle("HoneyFeeder.asset")]
     public EnemyType enemyType;
-
-    [LoadFromBundle("WIPHoneyFeeder.prefab")]
-    public GameObject prefab;
 }

@@ -11,6 +11,13 @@ public static class HoneyFeederAIEditor {
     [DrawGizmo(GizmoType.NonSelected | GizmoType.Selected)]
     static void DrawGizmos(HoneyFeederAI ai, GizmoType gizmoType) {
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(ai.transform.position, ai.Config.HiveDetectionDistance);
+        Gizmos.DrawWireSphere(ai.transform.position, ai.Config.SightDistance);
+
+        if(ai.State == HoneyFeederAI.AIStates.ATTACKING_BACKINGUP) {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(ai.targetPlayer.transform.position, ai.Config.MinBackupAmount);
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(ai.targetPlayer.transform.position, ai.Config.MaxBackupAmount);
+        }
     }
 }

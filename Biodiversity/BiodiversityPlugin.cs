@@ -18,6 +18,8 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     public static BiodiversityPlugin Instance { get; private set; }
     internal new static ManualLogSource Logger { get; private set; }
 
+    internal static HoneyFeederConfig config;
+
     private void Awake() {
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
@@ -31,6 +33,8 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         Logger.LogInfo("Getting assets.");
         HoneyFeederAssets assets = new();
         Logger.LogInfo("test enemytype: " + assets.enemyType);
+
+        config = new HoneyFeederConfig(Config);
 
         // TODO: Swap this to LLL once it gets enemy support.
         Logger.LogInfo("Registering the silly little creatures.");

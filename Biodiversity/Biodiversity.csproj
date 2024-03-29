@@ -58,12 +58,15 @@
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Patches\" />
-    </ItemGroup>
-
-    <!-- Netcode Patcher Post-Build Event -->
+	<!-- Netcode Patcher Post-Build Event -->
     <Target Name="NetcodePatch" AfterTargets="PostBuildEvent">
         <Exec Command="netcode-patch &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
     </Target>
+
+	<Target Name="CleanAssetBundles" AfterTargets="NetcodePatch">
+		<ItemGroup>
+			<FilesToDelete Include="$(ProjectDir)AssetBundles/AssetBundles.*"/>
+		</ItemGroup>
+		<Delete Files="@(FilesToDelete)" />
+	</Target>
 </Project>

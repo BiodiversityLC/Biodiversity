@@ -22,18 +22,17 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
             field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
         }
 
+        foreach(GameObject gameObject in bundle.LoadAllAssets<GameObject>()) {
+            if(GameNetworkManagerPatch.networkPrefabsToRegister.Contains(gameObject)) continue;
+            GameNetworkManagerPatch.networkPrefabsToRegister.Add(gameObject);
+        }
+
         bundle.Unload(false);
     }
 
     UnityEngine.Object LoadAsset(AssetBundle bundle, string path) {
         UnityEngine.Object result = bundle.LoadAsset<UnityEngine.Object>(path);
         if(result == null) throw new ArgumentException(path + " is not valid in the assetbundle!");
-
-        if(result is GameObject) {
-            if((result as GameObject).GetComponent<NetworkObject>() != null) {
-                GameNetworkManagerPatch.networkPrefabsToRegister.Add(result as GameObject);
-            }
-        }
 
         return result;
     }
