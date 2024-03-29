@@ -29,11 +29,12 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         NetcodePatcher();
 
         Logger.LogInfo("Getting assets.");
-        BiodiverseAssets.Init();
+        HoneyFeederAssets assets = new();
+        Logger.LogInfo("test enemytype: " + assets.enemyType);
 
         // TODO: Swap this to LLL once it gets enemy support.
         Logger.LogInfo("Registering the silly little creatures.");
-        Enemies.RegisterEnemy(BiodiverseAssets.HoneyFeeder, Enemies.SpawnType.Outside);
+        Enemies.RegisterEnemy(assets.enemyType, Enemies.SpawnType.Outside);
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }
