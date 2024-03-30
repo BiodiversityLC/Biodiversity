@@ -55,6 +55,11 @@ public class WaxSoldierAI : BiodiverseAI
         }
     }
 
+    public override void Start()
+    {
+        base.Start();
+    }
+
     private void Log(string message)
     {
         BiodiversityPlugin.Logger.LogInfo($"[WaxSoldier] " + message);
@@ -80,7 +85,7 @@ public class WaxSoldierAI : BiodiverseAI
         {
             CauseOfDeath causeOfDeathValue;
             int damageValue;
-            switch (State)
+            switch (State) //Would if and else be better?
             {
                 case AIStates.ATTACKING_MUSKET:
                     causeOfDeathValue = CauseOfDeath.Gunshots;
