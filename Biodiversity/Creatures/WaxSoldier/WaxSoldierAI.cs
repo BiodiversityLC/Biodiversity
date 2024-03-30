@@ -7,6 +7,7 @@ using UnityEngine;
 using GameNetcodeStuff;
 using System.Linq;
 using Unity.Netcode;
+using Biodiversity.Creatures.HoneyFeeder;
 
 namespace Biodiversity.Creatures.WaxSoldier;
 
@@ -15,10 +16,12 @@ public class WaxSoldierAI : BiodiverseAI
     public enum AIStates
     {
         STATIONARY, // Remain stationary and wait for a player to pass by
-        PURSUING, // Shoot musket once (max cap of 1), then chase player in attempt to stab them (will only target this player throughout all phases until reset)
+        PURSUING, //Go after the player, changing into the appropriate attacking state and switching back to this state
+        ATTACKING_MUSKET, //Shoot musket, can only be used once because of the ammo capacity
+        ATTACKING_BAYONET, //Use bayonet
         SEARCHING, // Searching for player after being out of sight and range (Should this state exist or go straight to RETURNING ?)
         RETURNING, // Return to guardLocation after having lost the player for x amount of time
-        RELOADING  // Have another state after being returned for the soldier to reload etc?
+        RELOADING  // Have another state after being returned for the soldier to reload etc? then return to stationary
     }
 
     public enum MoltenStates
@@ -29,9 +32,12 @@ public class WaxSoldierAI : BiodiverseAI
 
     private Transform guardLocation;
 
+    [field: SerializeField]
+    public WaxSoldierConfig Config { get; private set; } = BiodiversityPlugin.configWaxSoldier;
+
     private AIStates _state = AIStates.STATIONARY;
     private AIStates _prevState = AIStates.STATIONARY;
-    private MoltenStates molten = MoltenStates.NORMAL;
+    private MoltenStates moltenState = MoltenStates.NORMAL;
 
     public AIStates State
     {
@@ -41,8 +47,7 @@ public class WaxSoldierAI : BiodiverseAI
             Log($"Updating state: {_state} -> {value}");
             moveTowardsDestination = false;
             movingTowardsTargetPlayer = false;
-            //agent.speed = Config.NormalSpeed; //commented out because i have to edit BiodiversityPlugin.cs but i'm not sure how to handle the config
-            // or should all creatures' configs work like this → internal static CreatureConfig.cs config; (Example)
+            agent.speed = Config.NormalSpeed;
             if (currentSearch.inProgress) StopSearch(currentSearch, true);
 
             _prevState = _state;
@@ -50,8 +55,52 @@ public class WaxSoldierAI : BiodiverseAI
         }
     }
 
-    void Log(string message)
+    private void Log(string message)
     {
         BiodiversityPlugin.Logger.LogInfo($"[WaxSoldier] " + message);
+    }
+
+    public override void OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        if (!IsHost) return;
+        if (State != AIStates.ATTACKING_BAYONET) return;
+        if (other.TryGetComponent(out PlayerControllerB player))
+        {
+            HitPlayerClientRpc((int)player.playerClientId);
+        }
+    }
+
+    [ClientRpc]
+    void HitPlayerClientRpc(int playerId)
+    {
+        PlayerControllerB hitPlayer = PlayerUtil.GetPlayerFromClientId(playerId);
+
+        if (hitPlayer == GameNetworkManager.Instance.localPlayerController)
+        {
+            CauseOfDeath causeOfDeathValue;
+            int damageValue;
+            switch (State)
+            {
+                case AIStates.ATTACKING_MUSKET:
+                    causeOfDeathValue = CauseOfDeath.Gunshots;
+                    damageValue = Config.MusketDamage;
+                    break;
+                default:
+                    causeOfDeathValue = CauseOfDeath.Bludgeoning;
+                    damageValue = Config.BayonetDamage;
+                    break;
+            }
+            hitPlayer.DamagePlayer(damageValue, causeOfDeath: causeOfDeathValue);
+
+        }
+    }
+
+    public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false)
+    {
+        base.HitEnemy(force, playerWhoHit, playHitSFX);
+
+        targetPlayer = playerWhoHit;
+        State = AIStates.ATTACKING_BAYONET;
     }
 }
