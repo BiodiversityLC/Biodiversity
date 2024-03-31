@@ -12,7 +12,8 @@ namespace Biodiversity.Util.Assetloading;
 internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle<T> {
 
     public BiodiverseAssetBundle(string filePath) {
-        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), filePath));
+        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "assets", filePath));
+        BiodiversityPlugin.Logger.LogDebug($"[AssetBundle Loading] {filePath} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
 
         Type type = typeof(T);
         foreach(FieldInfo field in type.GetFields()) {
@@ -23,6 +24,7 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
         }
 
         foreach(GameObject gameObject in bundle.LoadAllAssets<GameObject>()) {
+            if(gameObject.GetComponent<NetworkObject>() == null) continue;
             if(GameNetworkManagerPatch.networkPrefabsToRegister.Contains(gameObject)) continue;
             GameNetworkManagerPatch.networkPrefabsToRegister.Add(gameObject);
         }

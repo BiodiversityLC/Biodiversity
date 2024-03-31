@@ -14,6 +14,7 @@ internal static class GameNetworkManagerPatch {
     static void AddNetworkPrefabs() {
         foreach(GameObject prefab in networkPrefabsToRegister) {
             NetworkManager.Singleton.AddNetworkPrefab(prefab);
+            BiodiversityPlugin.Logger.LogDebug($"Registered {prefab.name} as a network prefab.");
         }
         BiodiversityPlugin.Logger.LogInfo($"Succesfully registered {networkPrefabsToRegister.Count} network prefabs.");
     }

@@ -399,3 +399,4 @@ FodyWeavers.xsd
 Biodiversity/Biodiversity.csproj.user
 Biodiversity/AssetBundles/AssetBundles
 Biodiversity/AssetBundles/AssetBundles.manifest
+*.manifest
