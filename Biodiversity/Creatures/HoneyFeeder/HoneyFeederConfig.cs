@@ -10,7 +10,10 @@ namespace Biodiversity.Creatures.HoneyFeeder;
 [Serializable]
 public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfig<HoneyFeederConfig>(configFile) {
     [field: Header("General Settings")]
-    public float SightDistance { get; private set; } = 15;
+    public float SightDistance { get; private set; } = 25;
+
+    [field: Tooltip("TEMPORARY SETTING, WILL BE REMOVED LATER.")]
+    public int Rarity { get; private set; } = 100;
 
     [field: Range(0f, 10f)]
     public float NormalSpeed { get; private set; } = 3.5f;
@@ -26,4 +29,7 @@ public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfig<HoneyFe
     public int ChargeDamage { get; private set; } = 35;
     public float TooCloseAmount { get; private set; } = 5f;
     public float StunTimeAfterHit { get; private set; } = 3f;
+
+    [field: Tooltip("After hitting player how much further should the HoneyFeeder go through?")]
+    public float FollowthroughAmount { get; private set; } = 5f;
 }

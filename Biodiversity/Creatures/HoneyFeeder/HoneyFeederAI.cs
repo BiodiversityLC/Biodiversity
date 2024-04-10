@@ -15,6 +15,7 @@ public class HoneyFeederAI : BiodiverseAI {
         FOUND_HIVE, // heading to hive
         ATTACKING_BACKINGUP,
         ATTACKING_CHARGING,
+        ATTACKING_SPITTING,
         RETURNING,
         DIGESTING
     }
@@ -34,6 +35,7 @@ public class HoneyFeederAI : BiodiverseAI {
     AIStates _state = AIStates.WANDERING;
     AIStates _prevState = AIStates.WANDERING;
     DigestionStates digestion = DigestionStates.NONE;
+
 
     public AIStates State { 
         get { return _state; } 
@@ -101,8 +103,7 @@ public class HoneyFeederAI : BiodiverseAI {
                 break;
             case AIStates.ATTACKING_BACKINGUP:
                 if(!moveTowardsDestination) {
-                    destination = GetRandomPositionNearPlayer(targetPlayer, minDistance: Config.MinBackupAmount, radius: Config.MaxBackupAmount - Config.MinBackupAmount);
-                    moveTowardsDestination = true;
+                    StartBackingUp();
                 }
                 if(targetPlayer.isPlayerDead) {
                     State = AIStates.WANDERING;
@@ -114,20 +115,32 @@ public class HoneyFeederAI : BiodiverseAI {
                         // too far
                         State = AIStates.WANDERING; // wandering state will automatically fix if the targetHive is still in range.
                     } else if(distance < Config.TooCloseAmount) { // too close
-                        destination = GetRandomPositionNearPlayer(targetPlayer, minDistance: Config.MinBackupAmount, radius: Config.MaxBackupAmount - Config.MinBackupAmount);
-                        moveTowardsDestination = true;
+                        StartBackingUp();
                     } else { // perfect distance
                         State = AIStates.ATTACKING_CHARGING;
+                        destination = targetPlayer.transform.position + (transform.position.Direction(targetPlayer.transform.position) * Config.FollowthroughAmount);
+                        moveTowardsDestination = true;
                     }
                 }
                 break;
             case AIStates.ATTACKING_CHARGING:
-                //agent.speed = Config.ChargeSpeed;
-                movingTowardsTargetPlayer = true;
-                Log(targetPlayer + "");
-                
+                agent.speed = Config.ChargeSpeed;
+                moveTowardsDestination = true;
+
+                if(HasFinishedAgentPath()) {
+                    State = AIStates.WANDERING;
+                }
+
                 break;
         }
+    }
+
+    void StartBackingUp() {
+        float radius = Config.MinBackupAmount + ((Config.MaxBackupAmount - Config.MinBackupAmount) * UnityEngine.Random.Range(0f, 1f));
+        Vector3 directionFromPlayer = targetPlayer.transform.position.Direction(transform.position);
+        Vector3 backupOrigin = targetPlayer.transform.position + (directionFromPlayer * radius);
+        destination = GetRandomPositionOnNavMesh(backupOrigin, 2) + transform.position;
+        moveTowardsDestination = true;
     }
 
     public override void OnCollideWithPlayer(Collider other) {

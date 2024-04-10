@@ -52,6 +52,9 @@ public abstract class BiodiverseConfig<T> where T : BiodiverseConfig<T> {
             if(field.PropertyType == typeof(string)) {
                 field.SetValue(this, configFile.Bind(CurrentHeader, field.Name, (string)field.GetValue(this), configDescription).Value);
             }
+            if(field.PropertyType == typeof(bool)) {
+                field.SetValue(this, configFile.Bind(CurrentHeader, field.Name, (bool)field.GetValue(this), configDescription).Value);
+            }
         }
 
     }

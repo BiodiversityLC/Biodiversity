@@ -7,6 +7,7 @@ using Biodiversity.Util;
 using HarmonyLib;
 using LethalLib.Modules;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -35,10 +36,11 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         Logger.LogInfo("test enemytype: " + assets.enemyType);
 
         config = new HoneyFeederConfig(Config);
+        Logger.LogInfo("test configoption: " + config.NormalSpeed);
 
         // TODO: Swap this to LLL once it gets enemy support.
         Logger.LogInfo("Registering the silly little creatures.");
-        Enemies.RegisterEnemy(assets.enemyType, Enemies.SpawnType.Outside);
+        Enemies.RegisterEnemy(assets.enemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, config.Rarity } }, []);
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }
