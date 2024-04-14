@@ -17,11 +17,11 @@ public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfig<HoneyFe
 
     [field: Range(0f, 10f)]
     public float NormalSpeed { get; private set; } = 3.5f;
-    public float ChargeSpeed { get; private set; } = 6f;
+    public float ChargeSpeed { get; private set; } = 12f;
 
     [field: Header("Backup Behaviour")]
-    public float MinBackupAmount { get; private set; } = 10f;
-    public float MaxBackupAmount { get; private set; } = 15f;
+    public float MinBackupAmount { get; private set; } = 5f;
+    public float MaxBackupAmount { get; private set; } = 7f;
 
     [field: Header("Charge Attack")]
     [field: Tooltip("Amount of damage to deal to player when hit by the Honey Feeder")]
@@ -32,4 +32,11 @@ public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfig<HoneyFe
 
     [field: Tooltip("After hitting player how much further should the HoneyFeeder go through?")]
     public float FollowthroughAmount { get; private set; } = 5f;
+
+    [field: Header("Digestion")]
+    [field: Tooltip("24 hour time on when the hive becomes partly digested.")]
+    public string TimeWhenPartlyDigested { get; private set; } = "20:00";
+
+    [field: Tooltip("Multiplier on the hive when it becomes partly digested.")]
+    public float PartlyDigestedScrapMultiplier { get; private set; } = 1.5f;
 }

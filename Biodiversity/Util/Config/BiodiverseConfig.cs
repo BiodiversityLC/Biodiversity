@@ -18,22 +18,24 @@ public abstract class BiodiverseConfig<T> where T : BiodiverseConfig<T> {
     public BiodiverseConfig(ConfigFile configFile) {
         string CurrentHeader = "Misc";
         Type type = typeof(T);
-        foreach(PropertyInfo field in type.GetProperties()) {
-            HeaderAttribute headerAttribute = (HeaderAttribute)field.GetCustomAttribute(typeof(HeaderAttribute));
+        foreach(PropertyInfo property in type.GetProperties()) {
+            FieldInfo backingField = property.DeclaringType.GetField($"<{property.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            HeaderAttribute headerAttribute = (HeaderAttribute)backingField.GetCustomAttribute(typeof(HeaderAttribute));
             if(headerAttribute != null) {
                 CurrentHeader = headerAttribute.header.Replace(" ","");
             }
             string description = "This config option hasn't used [Tooltip] to set a description, so this default one will be here instead.";
-            TooltipAttribute tooltipAttribute = (TooltipAttribute)field.GetCustomAttribute(typeof(TooltipAttribute));
+            TooltipAttribute tooltipAttribute = (TooltipAttribute)backingField.GetCustomAttribute(typeof(TooltipAttribute));
             if(tooltipAttribute != null) {
                 description = tooltipAttribute.tooltip;
             }
 
 
             ConfigDescription configDescription = new ConfigDescription(description);
-            RangeAttribute rangeAttribute = (RangeAttribute)field.GetCustomAttribute(typeof(RangeAttribute));
+            RangeAttribute rangeAttribute = (RangeAttribute)backingField.GetCustomAttribute(typeof(RangeAttribute));
             if(rangeAttribute != null) {
-                if(field.PropertyType == typeof(int)) {
+                if(property.PropertyType == typeof(int)) {
                     configDescription = new ConfigDescription(description, new AcceptableValueRange<int>((int)rangeAttribute.min, (int)rangeAttribute.max));
                 } else {
                     configDescription = new ConfigDescription(description, new AcceptableValueRange<float>(rangeAttribute.min, rangeAttribute.max));
@@ -43,17 +45,17 @@ public abstract class BiodiverseConfig<T> where T : BiodiverseConfig<T> {
             }
 
             // this is icky
-            if(field.PropertyType == typeof(float)) {
-                field.SetValue(this, configFile.Bind(CurrentHeader, field.Name, (float)field.GetValue(this), configDescription).Value);
+            if(property.PropertyType == typeof(float)) {
+                property.SetValue(this, configFile.Bind(CurrentHeader, property.Name, (float)property.GetValue(this), configDescription).Value);
             }
-            if(field.PropertyType == typeof(int)) {
-                field.SetValue(this, configFile.Bind(CurrentHeader, field.Name, (int)field.GetValue(this), configDescription).Value);
+            if(property.PropertyType == typeof(int)) {
+                property.SetValue(this, configFile.Bind(CurrentHeader, property.Name, (int)property.GetValue(this), configDescription).Value);
             }
-            if(field.PropertyType == typeof(string)) {
-                field.SetValue(this, configFile.Bind(CurrentHeader, field.Name, (string)field.GetValue(this), configDescription).Value);
+            if(property.PropertyType == typeof(string)) {
+                property.SetValue(this, configFile.Bind(CurrentHeader, property.Name, (string)property.GetValue(this), configDescription).Value);
             }
-            if(field.PropertyType == typeof(bool)) {
-                field.SetValue(this, configFile.Bind(CurrentHeader, field.Name, (bool)field.GetValue(this), configDescription).Value);
+            if(property.PropertyType == typeof(bool)) {
+                property.SetValue(this, configFile.Bind(CurrentHeader, property.Name, (bool)property.GetValue(this), configDescription).Value);
             }
         }
 

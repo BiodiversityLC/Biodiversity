@@ -27,7 +27,8 @@ public class HoneyFeederAI : BiodiverseAI {
     List<GrabbableObject> possibleHives;
     GrabbableObject targetHive;
 
-    Transform nest;
+    HoneyFeederNest nest;
+    static HoneyFeederAI Instance;
 
     [field: SerializeField]
     public HoneyFeederConfig Config { get; private set; } = BiodiversityPlugin.config;
@@ -55,8 +56,21 @@ public class HoneyFeederAI : BiodiverseAI {
 
     public override void Start() {
         base.Start();
-        possibleHives = FindObjectsOfType<RedLocustBees>().Select(bees => bees.hive).ToList();
+
+        if(Instance != null) {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
+        RefreshCollectableHives();
+        // FIXME: Replace with nest prefab when we have modle
+        nest = new GameObject("HoneyFeeder Nest").AddComponent<HoneyFeederNest>();
         Log("Possible hives count: " + possibleHives.Count);
+    }
+
+    void OnDisable() {
+        if(Instance == this) Instance = null;
     }
 
     void Log(string message) {
@@ -98,8 +112,21 @@ public class HoneyFeederAI : BiodiverseAI {
                     break;
                 }
 
-                destination = targetHive.transform.position;
-                moveTowardsDestination = true;
+                Log($"Distance to targetHive: {Vector3.Distance(transform.position, targetHive.transform.position)}");
+                if(Vector3.Distance(transform.position, targetHive.transform.position) < 3.5f) {
+                    // todo: have animation and wait for animation to finish.
+
+                    GrabItem(targetHive);
+                    GrabItemClientRPC(targetHive.NetworkObject);
+
+                    destination = nest.transform.position;
+                    moveTowardsDestination = true;
+                    State = AIStates.RETURNING;
+                } else {
+                    destination = targetHive.transform.position;
+                    moveTowardsDestination = true;
+                }
+                
                 break;
             case AIStates.ATTACKING_BACKINGUP:
                 if(!moveTowardsDestination) {
@@ -128,11 +155,82 @@ public class HoneyFeederAI : BiodiverseAI {
                 moveTowardsDestination = true;
 
                 if(HasFinishedAgentPath()) {
-                    State = AIStates.WANDERING;
+                    State = AIStates.ATTACKING_BACKINGUP;
                 }
 
                 break;
+            case AIStates.RETURNING:
+                destination = nest.transform.position;
+                moveTowardsDestination = true;
+
+                if(HasFinishedAgentPath()) {
+                    State = AIStates.DIGESTING;
+                }
+
+                break;
+            case AIStates.DIGESTING:
+                if(targetHive.isHeldByEnemy) {
+                    DropItem(targetHive);
+                    DropItemClientRPC(targetHive.NetworkObject);
+                }
+
+                Log($"Current time: {TimeOfDay.Instance.GetCurrentTime()}. Digested time: {TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)}");
+
+                if(TimeOfDay.Instance.HasPassedTime(TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)) && digestion != DigestionStates.PARTLY) {
+                    digestion = DigestionStates.PARTLY;
+                    Log("Set digestion status to Partly.");
+
+                    // play sound?
+                    targetHive.scrapValue = Mathf.RoundToInt(targetHive.scrapValue * Config.PartlyDigestedScrapMultiplier);
+                }
+
+                break;
+            default:
+                BiodiversityPlugin.Logger.LogError($"[HoneyFeeder] {State} isn't valid?!??!??!?! NOT GOOD!!");
+                break;
         }
+    }
+
+    // this is cooked :sob::sob:
+    void GrabItem(GrabbableObject item) {
+        item.parentObject = transform; // change to hold in hands i think??
+        item.hasHitGround = false;
+        item.isHeldByEnemy = true;
+        item.GrabItemFromEnemy(this);
+        item.EnablePhysics(false);
+    }
+
+    void DropItem(GrabbableObject item) {
+        item.parentObject = null;
+        item.transform.SetParent(StartOfRound.Instance.propsContainer, true);
+        item.EnablePhysics(true);
+        item.fallTime = 0f;
+        item.startFallingPosition = item.transform.parent.InverseTransformPoint(item.transform.position);
+        item.targetFloorPosition = item.transform.parent.InverseTransformPoint(RoundManager.Instance.RandomlyOffsetPosition(targetHive.GetItemFloorPosition(default), 1.2f, 0.4f));
+        item.floorYRot = -1;
+        item.isHeldByEnemy = false;
+        item.DiscardItemFromEnemy();
+    }
+
+    [ClientRpc]
+    void DropItemClientRPC(NetworkObjectReference itemRef) {
+        if(IsOwner) return;
+        if(itemRef.TryGet(out var networkObject)) {
+            DropItem(networkObject.GetComponent<GrabbableObject>());
+        }
+    }
+
+
+    [ClientRpc]
+    void GrabItemClientRPC(NetworkObjectReference itemRef) {
+        if(IsOwner) return;
+        if(itemRef.TryGet(out var networkObject)) {
+            GrabItem(networkObject.GetComponent<GrabbableObject>());
+        }
+    }
+
+    void RefreshCollectableHives() {
+        possibleHives = FindObjectsOfType<RedLocustBees>().Select(bees => bees.hive).ToList();
     }
 
     void StartBackingUp() {
@@ -165,7 +263,7 @@ public class HoneyFeederAI : BiodiverseAI {
         }
     }
 
-    public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false) {
+    public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitId = -1) {
         base.HitEnemy(force, playerWhoHit, playHitSFX);
 
         targetPlayer = playerWhoHit;
