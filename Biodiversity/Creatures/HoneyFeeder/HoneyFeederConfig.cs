@@ -41,4 +41,7 @@ public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfig<HoneyFe
 
     [field: Tooltip("Multiplier on the hive when it becomes partly digested.")]
     public float PartlyDigestedScrapMultiplier { get; private set; } = 1.5f;
+
+    [field: Tooltip("Seconds it takes for the bees to be digested.")]
+    public float BeeDigestionTime { get; private set; } = 15f;
 }

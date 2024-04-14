@@ -26,10 +26,11 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     List<GrabbableObject> possibleHives;
+    List<RedLocustBees> beesCache;
     GrabbableObject targetHive;
 
     HoneyFeederNest nest;
-    static HoneyFeederAI Instance;
+    internal static HoneyFeederAI Instance { get; private set; }
 
     [field: SerializeField]
     public HoneyFeederConfig Config { get; private set; } = HoneyFeederHandler.Instance.Config;
@@ -38,6 +39,8 @@ public class HoneyFeederAI : BiodiverseAI {
     AIStates _prevState = AIStates.WANDERING;
     DigestionStates digestion = DigestionStates.NONE;
 
+    float beeDigestionTimer = 0;
+    int originalDefenseDistance;
 
     public AIStates State { 
         get { return _state; } 
@@ -45,6 +48,7 @@ public class HoneyFeederAI : BiodiverseAI {
             Log($"Updating state: {_state} -> {value}");
             moveTowardsDestination = false;
             movingTowardsTargetPlayer = false;
+            agent.enabled = true;
             agent.speed = Config.NormalSpeed;
             if(currentSearch.inProgress) StopSearch(currentSearch, true);
 
@@ -66,7 +70,9 @@ public class HoneyFeederAI : BiodiverseAI {
 
         RefreshCollectableHives();
         // FIXME: Replace with nest prefab when we have modle
-        nest = new GameObject("HoneyFeeder Nest").AddComponent<HoneyFeederNest>();
+        nest = new GameObject("Honeyfeeder Nest").AddComponent<HoneyFeederNest>();
+        nest.transform.position = transform.position;
+
         Log("Possible hives count: " + possibleHives.Count);
     }
 
@@ -102,10 +108,11 @@ public class HoneyFeederAI : BiodiverseAI {
                 foreach(GrabbableObject hive in possibleHives) {
                     if(Vector3.Distance(hive.transform.position, transform.position) <= Config.SightDistance) {
                         targetHive = hive;
-                        if(hive.playerHeldBy == null) {
+                        originalDefenseDistance = GetBees().defenseDistance;
+                        if(targetHive.playerHeldBy == null) {
                             State = AIStates.FOUND_HIVE;
                         } else {
-                            targetPlayer = hive.playerHeldBy;
+                            targetPlayer = targetHive.playerHeldBy;
                             State = AIStates.ATTACKING_BACKINGUP;
                         }
                         break;
@@ -128,6 +135,8 @@ public class HoneyFeederAI : BiodiverseAI {
 
                     destination = nest.transform.position;
                     moveTowardsDestination = true;
+                    GetBees().defenseDistance = 0;
+
                     State = AIStates.RETURNING;
                 } else {
                     destination = targetHive.transform.position;
@@ -163,7 +172,6 @@ public class HoneyFeederAI : BiodiverseAI {
                 moveTowardsDestination = true;
 
                 if(HasFinishedAgentPath()) {
-                    moveTowardsDestination = false;
                     State = AIStates.ATTACKING_BACKINGUP;
                 }
 
@@ -172,6 +180,7 @@ public class HoneyFeederAI : BiodiverseAI {
                 destination = nest.transform.position;
                 moveTowardsDestination = true;
 
+                DigestBees();
                 if(HasFinishedAgentPath()) {
                     State = AIStates.DIGESTING;
                 }
@@ -182,12 +191,16 @@ public class HoneyFeederAI : BiodiverseAI {
                     DropItem(targetHive);
                     DropItemClientRPC(targetHive.NetworkObject);
                 }
+                agent.enabled = false;
 
                 Log($"Current time: {TimeOfDay.Instance.GetCurrentTime()}. Digested time: {TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)}");
 
+                DigestBees();
                 if(targetHive.playerHeldBy != null) {
                     targetPlayer = targetHive.playerHeldBy;
                     State = AIStates.ATTACKING_BACKINGUP;
+                    if(TryGetBees(out var bees))
+                        bees.defenseDistance = originalDefenseDistance;
                 }
 
                 if(TimeOfDay.Instance.HasPassedTime(TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)) && digestion != DigestionStates.PARTLY) {
@@ -202,6 +215,35 @@ public class HoneyFeederAI : BiodiverseAI {
             default:
                 BiodiversityPlugin.Logger.LogError($"[HoneyFeeder] {State} isn't valid?!??!??!?! NOT GOOD!!");
                 break;
+        }
+    }
+
+    public RedLocustBees GetBees() {
+        return beesCache.Where(bees => bees.hive == targetHive).First();
+    }
+
+    public bool TryGetBees(out RedLocustBees bees) {
+        bees = GetBees();
+        return bees != null;
+    }
+
+    public override void Update() {
+        base.Update();
+
+        if(!IsOwner) return;
+        if(State == AIStates.RETURNING || State == AIStates.DIGESTING) {
+            beeDigestionTimer += Time.deltaTime;
+        } else {
+            beeDigestionTimer = 0;
+        }
+    }
+
+    void DigestBees() {
+        if(!TryGetBees(out var bees)) return;
+
+        Log($"nom timer :3 {beeDigestionTimer}");
+        if(beeDigestionTimer >= Config.BeeDigestionTime) {
+            Destroy(bees.gameObject);
         }
     }
 
@@ -244,7 +286,8 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     void RefreshCollectableHives() {
-        possibleHives = FindObjectsOfType<RedLocustBees>().Select(bees => bees.hive).ToList();
+        beesCache = FindObjectsOfType<RedLocustBees>().ToList();
+        possibleHives = beesCache.Select(bees => bees.hive).ToList();
     }
 
     void StartBackingUp() {

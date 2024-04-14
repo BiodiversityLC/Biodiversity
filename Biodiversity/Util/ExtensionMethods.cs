@@ -26,7 +26,7 @@ internal static class ExtensionMethods {
         return timeOfDay.HasPassedTime(timeOfDay.GetCurrentTime(), target);
     }
     internal static bool HasPassedTime(this TimeOfDay timeOfDay, (int, int) current, (int, int) target) {
-        return target.Item1 >= current.Item1 && target.Item2 >= current.Item2;
+        return target.Item1 <= current.Item1 && target.Item2 <= current.Item2;
     }
 
     internal static IEnumerable<Type> GetLoadableTypes(this Assembly assembly) {
