@@ -42,6 +42,12 @@
         -->
         <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
+    <ItemGroup>
+      <None Remove="Util\Lang\defs.json" />
+    </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Include="Util\Lang\defs.json" />
+    </ItemGroup>
 
     <!-- Primary Package References -->
     <ItemGroup>
@@ -68,5 +74,18 @@
 			<FilesToDelete Include="$(ProjectDir)AssetBundles/AssetBundles.*" />
 		</ItemGroup>
 		<Delete Files="@(FilesToDelete)" />
+	</Target>
+
+	<Target Name="BuildLangFiles" AfterTargets="CleanAssetBundles">
+		<Message Importance="high" Text="Collecting lang files!" />
+		
+		<ItemGroup>
+			<LangFiles Include="$(ProjectDir)Util/Lang/*.json" Exclude="$(ProjectDir)Util/Lang/defs.json">
+				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			</LangFiles>
+		</ItemGroup>
+
+		<MakeDir Directories="$(TargetDir)lang" Condition="!Exists('$(TargetDir)lang')" />
+		<Copy SourceFiles="@(LangFiles)" DestinationFolder="$(TargetDir)lang\" />
 	</Target>
 </Project>

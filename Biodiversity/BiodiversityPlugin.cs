@@ -4,6 +4,7 @@ using Biodiversity.Creatures.HoneyFeeder;
 using Biodiversity.Creatures.Murkydere;
 using Biodiversity.General;
 using Biodiversity.Util;
+using Biodiversity.Util.Lang;
 using HarmonyLib;
 using LethalLib.Modules;
 using System;
@@ -33,10 +34,14 @@ public class BiodiversityPlugin : BaseUnityPlugin {
 
         Logger.LogInfo("Getting assets.");
         HoneyFeederAssets assets = new();
-        Logger.LogInfo("test enemytype: " + assets.enemyType);
 
         config = new HoneyFeederConfig(Config);
-        Logger.LogInfo("test configoption: " + config.NormalSpeed);
+
+        Logger.LogInfo("Doing language stuff");
+        LangParser.Init();
+        LangParser.SetLanguage("en");
+
+        Logger.LogInfo(LangParser.GetTranslation("lang.test"));
 
         // TODO: Swap this to LLL once it gets enemy support.
         Logger.LogInfo("Registering the silly little creatures.");
