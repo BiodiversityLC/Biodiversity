@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 
@@ -25,5 +27,17 @@ internal static class ExtensionMethods {
     }
     internal static bool HasPassedTime(this TimeOfDay timeOfDay, (int, int) current, (int, int) target) {
         return target.Item1 >= current.Item1 && target.Item2 >= current.Item2;
+    }
+
+    internal static IEnumerable<Type> GetLoadableTypes(this Assembly assembly) {
+        if(assembly == null) {
+            throw new ArgumentNullException(nameof(assembly));
+        }
+
+        try {
+            return assembly.GetTypes();
+        } catch(ReflectionTypeLoadException ex) {
+            return ex.Types.Where(t => t != null);
+        }
     }
 }

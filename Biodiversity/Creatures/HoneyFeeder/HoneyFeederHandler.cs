@@ -12,7 +12,7 @@ internal class HoneyFeederHandler : BiodiverseAIHandler<HoneyFeederHandler> {
 
     public HoneyFeederHandler() {
         Assets = new("honeyfeeder");
-        Config = new HoneyFeederConfig(BiodiversityPlugin.Instance.Config);
+        Config = new(BiodiversityPlugin.Instance.Config);
 
         Enemies.RegisterEnemy(Assets.enemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, Config.Rarity } }, []);
     }

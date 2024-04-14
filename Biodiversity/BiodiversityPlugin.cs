@@ -39,7 +39,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
 
         // TODO: Swap this to LLL once it gets enemy support.
         Logger.LogInfo("Registering the silly little creatures.");
-        List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetTypes().Where(x =>
+        List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType != null
             && x.BaseType.IsGenericType
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
@@ -55,7 +55,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     }
 
     private void NetcodePatcher() {
-        var types = Assembly.GetExecutingAssembly().GetTypes();
+        var types = Assembly.GetExecutingAssembly().GetLoadableTypes();
         foreach(var type in types) {
             var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             foreach(var method in methods) {
