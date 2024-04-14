@@ -11,6 +11,7 @@ using UnityEngine;
 namespace Biodiversity.Creatures.HoneyFeeder;
 public class HoneyFeederAI : BiodiverseAI {
     public enum AIStates {
+        ASLEEP, // starts asleep until 1pm
         WANDERING, // wandering looking for hives
         FOUND_HIVE, // heading to hive
         ATTACKING_BACKINGUP,
@@ -33,8 +34,8 @@ public class HoneyFeederAI : BiodiverseAI {
     [field: SerializeField]
     public HoneyFeederConfig Config { get; private set; } = BiodiversityPlugin.config;
 
-    AIStates _state = AIStates.WANDERING;
-    AIStates _prevState = AIStates.WANDERING;
+    AIStates _state = AIStates.ASLEEP;
+    AIStates _prevState = AIStates.ASLEEP;
     DigestionStates digestion = DigestionStates.NONE;
 
 
@@ -82,6 +83,12 @@ public class HoneyFeederAI : BiodiverseAI {
         base.DoAIInterval();
 
         switch(State) {
+            case AIStates.ASLEEP:
+                if(TimeOfDay.Instance.HasPassedTime(TimeOfDay.Instance.ParseTimeString(Config.WakeUpTime))) {
+                    Log("Honeyfeeder is waking up!");
+                    State = AIStates.WANDERING;
+                }
+                break;
             case AIStates.WANDERING:
                 if(!roamingRoutine.inProgress) StartSearch(transform.position, roamingRoutine);
 

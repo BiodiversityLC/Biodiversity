@@ -11,6 +11,8 @@ namespace Biodiversity.Creatures.HoneyFeeder;
 public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfig<HoneyFeederConfig>(configFile) {
     [field: Header("General Settings")]
     public float SightDistance { get; private set; } = 25;
+    [field: Tooltip("24 hour time on when the honey feeder will wake up and start moving.")]
+    public string WakeUpTime { get; private set; } = "13:00";
 
     [field: Tooltip("TEMPORARY SETTING, WILL BE REMOVED LATER.")]
     public int Rarity { get; private set; } = 100;
