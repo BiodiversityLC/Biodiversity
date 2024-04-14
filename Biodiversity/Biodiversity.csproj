@@ -80,7 +80,7 @@
 		<Message Importance="high" Text="Collecting lang files!" />
 		
 		<ItemGroup>
-			<LangFiles Include="$(ProjectDir)Util/Lang/*.json" Exclude="$(ProjectDir)Util/Lang/defs.json">
+			<LangFiles Include="$(ProjectDir)Util/Lang/languages/*.json" Exclude="$(ProjectDir)Util/Lang/languages/defs.json">
 				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			</LangFiles>
 		</ItemGroup>
