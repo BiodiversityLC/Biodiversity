@@ -34,8 +34,8 @@ public class HoneyFeederAI : BiodiverseAI {
     [field: SerializeField]
     public HoneyFeederConfig Config { get; private set; } = HoneyFeederHandler.Instance.Config;
 
-    AIStates _state = AIStates.ASLEEP;
-    AIStates _prevState = AIStates.ASLEEP;
+    AIStates _state = AIStates.WANDERING;
+    AIStates _prevState = AIStates.WANDERING;
     DigestionStates digestion = DigestionStates.NONE;
 
 
@@ -139,10 +139,11 @@ public class HoneyFeederAI : BiodiverseAI {
                 if(!moveTowardsDestination) {
                     StartBackingUp();
                 }
-                if(targetPlayer.isPlayerDead) {
+                if(targetPlayer.isPlayerDead || targetHive.playerHeldBy == null) {
                     State = AIStates.WANDERING;
                     break;
                 }
+                targetPlayer = targetHive.playerHeldBy;
                 if(HasFinishedAgentPath()) {
                     float distance = Vector3.Distance(transform.position, targetPlayer.transform.position);
                     if(distance > Config.SightDistance) {
@@ -162,6 +163,7 @@ public class HoneyFeederAI : BiodiverseAI {
                 moveTowardsDestination = true;
 
                 if(HasFinishedAgentPath()) {
+                    moveTowardsDestination = false;
                     State = AIStates.ATTACKING_BACKINGUP;
                 }
 
@@ -246,10 +248,10 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     void StartBackingUp() {
-        float radius = Config.MinBackupAmount + ((Config.MaxBackupAmount - Config.MinBackupAmount) * UnityEngine.Random.Range(0f, 1f));
+        float radius = UnityEngine.Random.Range(Config.MinBackupAmount, Config.MaxBackupAmount);
         Vector3 directionFromPlayer = targetPlayer.transform.position.Direction(transform.position);
         Vector3 backupOrigin = targetPlayer.transform.position + (directionFromPlayer * radius);
-        destination = GetRandomPositionOnNavMesh(backupOrigin, 2) + transform.position;
+        destination = GetRandomPositionOnNavMesh(backupOrigin, 2);
         moveTowardsDestination = true;
     }
 
