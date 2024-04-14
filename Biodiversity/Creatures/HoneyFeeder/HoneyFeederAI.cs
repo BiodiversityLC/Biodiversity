@@ -101,8 +101,8 @@ public class HoneyFeederAI : BiodiverseAI {
 
                 foreach(GrabbableObject hive in possibleHives) {
                     if(Vector3.Distance(hive.transform.position, transform.position) <= Config.SightDistance) {
+                        targetHive = hive;
                         if(hive.playerHeldBy == null) {
-                            targetHive = hive;
                             State = AIStates.FOUND_HIVE;
                         } else {
                             targetPlayer = hive.playerHeldBy;
@@ -182,6 +182,11 @@ public class HoneyFeederAI : BiodiverseAI {
                 }
 
                 Log($"Current time: {TimeOfDay.Instance.GetCurrentTime()}. Digested time: {TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)}");
+
+                if(targetHive.playerHeldBy != null) {
+                    targetPlayer = targetHive.playerHeldBy;
+                    State = AIStates.ATTACKING_BACKINGUP;
+                }
 
                 if(TimeOfDay.Instance.HasPassedTime(TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)) && digestion != DigestionStates.PARTLY) {
                     digestion = DigestionStates.PARTLY;
