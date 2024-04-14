@@ -9,6 +9,7 @@ using HarmonyLib;
 using LethalLib.Modules;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -20,8 +21,6 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     public static BiodiversityPlugin Instance { get; private set; }
     internal new static ManualLogSource Logger { get; private set; }
 
-    internal static HoneyFeederConfig config;
-
     private void Awake() {
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
@@ -32,11 +31,6 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         Logger.LogInfo("Patching netcode.");
         NetcodePatcher();
 
-        Logger.LogInfo("Getting assets.");
-        HoneyFeederAssets assets = new();
-
-        config = new HoneyFeederConfig(Config);
-
         Logger.LogInfo("Doing language stuff");
         LangParser.Init();
         LangParser.SetLanguage("en");
@@ -45,7 +39,17 @@ public class BiodiversityPlugin : BaseUnityPlugin {
 
         // TODO: Swap this to LLL once it gets enemy support.
         Logger.LogInfo("Registering the silly little creatures.");
-        Enemies.RegisterEnemy(assets.enemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, config.Rarity } }, []);
+        List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetTypes().Where(x =>
+            x.BaseType != null
+            && x.BaseType.IsGenericType
+            && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
+        ).ToList();
+
+        foreach(var type in creatureHandlers) {
+            Logger.LogDebug($"Creating {type.Name}");
+            type.GetConstructor([]).Invoke([]);
+        }
+        Logger.LogInfo($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }

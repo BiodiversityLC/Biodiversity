@@ -32,7 +32,7 @@ public class HoneyFeederAI : BiodiverseAI {
     static HoneyFeederAI Instance;
 
     [field: SerializeField]
-    public HoneyFeederConfig Config { get; private set; } = BiodiversityPlugin.config;
+    public HoneyFeederConfig Config { get; private set; } = HoneyFeederHandler.Instance.Config;
 
     AIStates _state = AIStates.ASLEEP;
     AIStates _prevState = AIStates.ASLEEP;
