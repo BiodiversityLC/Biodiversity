@@ -2,6 +2,7 @@
 using Biodiversity.Util;
 using GameNetcodeStuff;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,8 +26,8 @@ public class HoneyFeederAI : BiodiverseAI {
         PARTLY
     }
 
-    List<GrabbableObject> possibleHives;
-    List<RedLocustBees> beesCache;
+    List<GrabbableObject> possibleHives = new();
+    List<RedLocustBees> beesCache = new();
     GrabbableObject targetHive;
 
     HoneyFeederNest nest;
@@ -68,12 +69,15 @@ public class HoneyFeederAI : BiodiverseAI {
         }
         Instance = this;
 
-        RefreshCollectableHives();
+        StartCoroutine(RefreshCollectableHivesDelayed());
         // FIXME: Replace with nest prefab when we have modle
         nest = new GameObject("Honeyfeeder Nest").AddComponent<HoneyFeederNest>();
         nest.transform.position = transform.position;
+    }
 
-        Log("Possible hives count: " + possibleHives.Count);
+    IEnumerator RefreshCollectableHivesDelayed(float delay = 1) {
+        yield return new WaitForSeconds(delay);
+        RefreshCollectableHives();
     }
 
     void OnDisable() {
@@ -286,8 +290,10 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     void RefreshCollectableHives() {
+        Log("Refreshing possible hives.");
         beesCache = FindObjectsOfType<RedLocustBees>().ToList();
         possibleHives = beesCache.Select(bees => bees.hive).ToList();
+        Log("Possible hives count: " + possibleHives.Count);
     }
 
     void StartBackingUp() {
@@ -300,7 +306,7 @@ public class HoneyFeederAI : BiodiverseAI {
 
     public override void OnCollideWithPlayer(Collider other) {
         base.OnCollideWithPlayer(other);
-        if(!IsHost) return;
+        if(!IsOwner) return;
 
         if(State != AIStates.ATTACKING_CHARGING) return;
         if(other.TryGetComponent(out PlayerControllerB player)) {
@@ -313,10 +319,8 @@ public class HoneyFeederAI : BiodiverseAI {
 
     [ClientRpc]
     void HitPlayerClientRpc(int playerId) {
-        PlayerControllerB hitPlayer = PlayerUtil.GetPlayerFromClientId(playerId);
-
-        if(hitPlayer == GameNetworkManager.Instance.localPlayerController) {
-            hitPlayer.DamagePlayer(Config.ChargeDamage, causeOfDeath: CauseOfDeath.Mauling);
+        if(playerId == (int)GameNetworkManager.Instance.localPlayerController.playerClientId) {
+            GameNetworkManager.Instance.localPlayerController.DamagePlayer(Config.ChargeDamage, causeOfDeath: CauseOfDeath.Mauling);
         }
     }
 
