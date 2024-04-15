@@ -17,7 +17,6 @@ public class HoneyFeederAI : BiodiverseAI {
         FOUND_HIVE, // heading to hive
         ATTACKING_BACKINGUP,
         ATTACKING_CHARGING,
-        ATTACKING_SPITTING,
         RETURNING,
         DIGESTING
     }
@@ -26,8 +25,8 @@ public class HoneyFeederAI : BiodiverseAI {
         PARTLY
     }
 
-    List<GrabbableObject> possibleHives = new();
-    List<RedLocustBees> beesCache = new();
+    List<GrabbableObject> possibleHives = [];
+    List<RedLocustBees> beesCache = [];
     GrabbableObject targetHive;
 
     HoneyFeederNest nest;
@@ -37,7 +36,6 @@ public class HoneyFeederAI : BiodiverseAI {
     public HoneyFeederConfig Config { get; private set; } = HoneyFeederHandler.Instance.Config;
 
     AIStates _state = AIStates.WANDERING;
-    AIStates _prevState = AIStates.WANDERING;
     DigestionStates digestion = DigestionStates.NONE;
 
     float beeDigestionTimer = 0;
@@ -52,8 +50,6 @@ public class HoneyFeederAI : BiodiverseAI {
             agent.enabled = true;
             agent.speed = Config.NormalSpeed;
             if(currentSearch.inProgress) StopSearch(currentSearch, true);
-
-            _prevState = _state;
             _state = value; 
         }
     }

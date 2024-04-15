@@ -55,7 +55,6 @@ public abstract class BiodiverseAI : EnemyAI {
     }
     protected PlayerControllerB GetClosestPlayer(List<PlayerControllerB> players, Vector3 point) {
         players.OrderBy(player => Vector3.Distance(player.transform.position, point));
-        players.ForEach(player => { BiodiversityPlugin.Logger.LogInfo($"[BiodiverseAI] {player.playerUsername} at a distance of {Vector3.Distance(player.transform.position, point)}"); });
         return players.First();
     }
 }

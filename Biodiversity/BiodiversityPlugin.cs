@@ -9,8 +9,11 @@ using HarmonyLib;
 using LethalLib.Modules;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -21,11 +24,26 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     public static BiodiversityPlugin Instance { get; private set; }
     internal new static ManualLogSource Logger { get; private set; }
 
+    internal TextWriter LogFile { get; private set; }
+
     private void Awake() {
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
+        Logger.LogInfo("Setting up custom log file.");
+        if(Utility.TryOpenFileStream(Path.Combine(Paths.BepInExRootPath, "Biodiversity.log"), FileMode.Create, out FileStream stream)) {
+            LogFile = TextWriter.Synchronized(new StreamWriter(stream, Utility.UTF8NoBom));
+            Logger.LogEvent += (logger, logEvent) => {
+                LogFile.WriteLine(logEvent.ToString());
+            };
+            new Timer(o => { LogFile.Flush(); }, null, 2000, 2000);
+        } else {
+            Logger.LogError("Failed to open custom log.");
+        }
+
         Logger.LogInfo("Running Harmony patches...");
+        if(LogFile != null)
+            Logger.LogInfo("(Biodiversity logs will now be routed to Biodiversity.log)");
         Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
 
         Logger.LogInfo("Patching netcode.");
