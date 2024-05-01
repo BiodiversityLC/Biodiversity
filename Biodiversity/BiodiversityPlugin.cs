@@ -26,6 +26,12 @@ public class BiodiversityPlugin : BaseUnityPlugin {
 
     internal TextWriter LogFile { get; private set; }
 
+    static readonly (string,string)[] silly_quotes = [
+        ("don't get me wrong, I love women", "monty"), 
+        ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
+        ("thumpy wumpy", "monty")
+    ];
+
     private void Awake() {
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
@@ -69,6 +75,8 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         }
         Logger.LogInfo($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
 
+        (string, string) quote = silly_quotes[UnityEngine.Random.Range(0, silly_quotes.Length)];
+        Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }
 

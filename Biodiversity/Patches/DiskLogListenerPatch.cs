@@ -3,7 +3,7 @@ using HarmonyLib;
 
 namespace Biodiversity.Patches;
 [HarmonyPatch(typeof(DiskLogListener))]
-internal static class DiskLogListenerPatch {/*
+internal static class DiskLogListenerPatch {
     [HarmonyPatch(nameof(DiskLogListener.LogEvent)), HarmonyPrefix]
     static bool PreventBiodiversityLogsInMainLog(object sender, LogEventArgs eventArgs) {
         if(BiodiversityPlugin.Instance.LogFile == null) return true;
@@ -11,11 +11,10 @@ internal static class DiskLogListenerPatch {/*
             return false;
         }
 
-        if(eventArgs.Data.ToString().ToLower().Contains("biodiversity")) {
+        if(eventArgs.Data.ToString().ToLower().Contains("biodiversity")) { // error messages may contain biodiversity, but not in all cases
             BiodiversityPlugin.Instance.LogFile.WriteLine(eventArgs.ToString());
-            return true;
         }
 
         return true;
-    }*/
+    }
 }

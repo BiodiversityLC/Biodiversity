@@ -23,7 +23,7 @@ internal static class RoundManagerPatch {
         }
     }
 
-    [HarmonyPatch(nameof(RoundManager.SpawnRandomOutsideEnemy)), HarmonyPatch(nameof(RoundManager.SpawnRandomDaytimeEnemy)), HarmonyTranspiler, HarmonyDebug]
+    [HarmonyPatch(nameof(RoundManager.SpawnRandomOutsideEnemy)), HarmonyPatch(nameof(RoundManager.SpawnRandomDaytimeEnemy)), HarmonyTranspiler]
     static IEnumerable<CodeInstruction> ComplexSpawningRequirementsOutside(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         return new CodeMatcher(instructions, generator)
             .MatchForward(true, 
