@@ -54,7 +54,6 @@ public abstract class BiodiverseAI : EnemyAI {
         return GetClosestPlayer(players, transform.position);
     }
     protected PlayerControllerB GetClosestPlayer(List<PlayerControllerB> players, Vector3 point) {
-        players.OrderBy(player => Vector3.Distance(player.transform.position, point));
-        return players.First();
+        return players.OrderBy(player => Vector3.Distance(player.transform.position, point)).First();
     }
 }

@@ -42,7 +42,7 @@ public class HoneyFeederAI : BiodiverseAI {
     int originalDefenseDistance;
 
     public AIStates State { 
-        get { return _state; } 
+        get => _state;
         private set {
             Log($"Updating state: {_state} -> {value}");
             moveTowardsDestination = false;

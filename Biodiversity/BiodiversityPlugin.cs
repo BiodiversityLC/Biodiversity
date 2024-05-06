@@ -29,7 +29,8 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     static readonly (string,string)[] silly_quotes = [
         ("don't get me wrong, I love women", "monty"), 
         ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
-        ("thumpy wumpy", "monty")
+        ("thumpy wumpy", "monty"),
+        ("Your body should get split in two", "wesley")
     ];
 
     private void Awake() {
