@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
+using Biodiversity.Creatures.Enemy;
 using Biodiversity.Creatures.HoneyFeeder;
 using Biodiversity.Creatures.Murkydere;
 using Biodiversity.General;
@@ -7,9 +8,12 @@ using Biodiversity.Util;
 using HarmonyLib;
 using LethalLib.Modules;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using static LethalLib.Modules.Levels;
 
 namespace Biodiversity;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
@@ -34,6 +38,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         // TODO: Swap this to LLL once it gets enemy support.
         Logger.LogInfo("Registering the silly little creatures.");
         Enemies.RegisterEnemy(BiodiverseAssets.HoneyFeeder, Enemies.SpawnType.Outside);
+        Enemies.RegisterEnemy(BiodiverseAssets.Ogopogo, Enemies.SpawnType.Daytime, new Dictionary<LevelTypes, int> { { LevelTypes.All, 100 } }, null, BiodiverseAssets.OgopogoNode, BiodiverseAssets.OgopogoKeyword);
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }
