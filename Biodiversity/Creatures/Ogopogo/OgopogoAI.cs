@@ -37,6 +37,7 @@ namespace Biodiversity.Creatures.Enemy
         float attackDistance = 45f;
         float riseSpeed = 75f;
         float riseHeight = 50f;
+        [SerializeField] private Transform RaycastPos;
 
         // Wander vars
         float wanderTimer = 0f;
@@ -290,6 +291,11 @@ namespace Biodiversity.Creatures.Enemy
             this.creatureVoice.PlayOneShot(audio);
         }
 
+        bool checkForWall(Vector3 otherPos)
+        {
+            return Physics.Raycast(RaycastPos.position, otherPos - RaycastPos.position, 20, ~(1 << 8) /**Bitmasks are weird. This references layer 8 which is "Room"**/);
+        }
+
         // Reset enemy variables
         void resetEnemy()
         {
@@ -331,7 +337,15 @@ namespace Biodiversity.Creatures.Enemy
                     {
                         setWanderPos();
                     }
-                    transform.position = Vector3.MoveTowards(transform.position, wanderPos, step1);
+
+                    // I doubt this works with flooding.
+                    if (checkForWall(wanderPos))
+                    {
+                        setWanderPos();
+                    } else
+                    {
+                        transform.position = Vector3.MoveTowards(transform.position, wanderPos, step1);
+                    }
 
                     if (PlayerCheck(detectionRange))
                     {
@@ -351,7 +365,7 @@ namespace Biodiversity.Creatures.Enemy
                     BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
 
 
-                    if (Collision2d(newLocation, collider))
+                    if (Collision2d(newLocation, collider) && !checkForWall(new Vector3(player.gameObject.transform.position.x, water.transform.position.y, player.gameObject.transform.position.z)))
                     {
                         transform.position = newLocation;
                         TurnTowardsLocation(player.gameObject.transform.position);
