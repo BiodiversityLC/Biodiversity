@@ -293,7 +293,7 @@ namespace Biodiversity.Creatures.Enemy
 
         bool checkForWall(Vector3 otherPos)
         {
-            return Physics.Raycast(RaycastPos.position, otherPos - RaycastPos.position, 20, ~(1 << 8) /**Bitmasks are weird. This references layer 8 which is "Room"**/);
+            return Physics.Raycast(RaycastPos.position, otherPos - RaycastPos.position, 7.5f, ~(1 << 8) /**Bitmasks are weird. This references layer 8 which is "Room"**/);
         }
 
         // Reset enemy variables
