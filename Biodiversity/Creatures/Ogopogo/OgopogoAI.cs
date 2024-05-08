@@ -38,6 +38,7 @@ namespace Biodiversity.Creatures.Enemy
         float riseSpeed = 75f;
         float riseHeight = 50f;
         [SerializeField] private Transform RaycastPos;
+        bool wallInFront = false;
 
         // Wander vars
         float wanderTimer = 0f;
@@ -140,6 +141,12 @@ namespace Biodiversity.Creatures.Enemy
                 playerGrabbed.transform.position = splineObject.transform.position;
                 playerGrabbed.transform.rotation = splineObject.transform.rotation;
             }
+        }
+
+        // Use Physics.Raycast they said. It would be fun they said.
+        public void FixedUpdate()
+        {
+            wallInFront = checkForWall();
         }
 
         // Set wander position. (Only matters when run on server)
@@ -293,7 +300,7 @@ namespace Biodiversity.Creatures.Enemy
 
         bool checkForWall()
         {
-            return Physics.Raycast(RaycastPos.position, RaycastPos.forward, 7.5f, ~(1 << 8) /**Bitmasks are weird. This references layer 8 which is "Room"**/);
+            return Physics.Raycast(RaycastPos.position, RaycastPos.forward, 7.5f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/);
         }
 
         // Reset enemy variables
@@ -341,8 +348,9 @@ namespace Biodiversity.Creatures.Enemy
                     TurnTowardsLocation(wanderPos);
 
                     // I doubt this works with flooding.
-                    if (checkForWall())
+                    if (wallInFront)
                     {
+                        BiodiversityPlugin.Logger.LogInfo("Found wall while wandering");
                         setWanderPos();
                     } else
                     {
@@ -369,7 +377,7 @@ namespace Biodiversity.Creatures.Enemy
 
                     TurnTowardsLocation(player.gameObject.transform.position);
 
-                    if (Collision2d(newLocation, collider) && !checkForWall())
+                    if (Collision2d(newLocation, collider) && !wallInFront)
                     {
                         transform.position = newLocation;
                     }
