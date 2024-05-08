@@ -291,9 +291,9 @@ namespace Biodiversity.Creatures.Enemy
             this.creatureVoice.PlayOneShot(audio);
         }
 
-        bool checkForWall(Vector3 otherPos)
+        bool checkForWall()
         {
-            return Physics.Raycast(RaycastPos.position, otherPos - RaycastPos.position, 7.5f, ~(1 << 8) /**Bitmasks are weird. This references layer 8 which is "Room"**/);
+            return Physics.Raycast(RaycastPos.position, RaycastPos.forward, 7.5f, ~(1 << 8) /**Bitmasks are weird. This references layer 8 which is "Room"**/);
         }
 
         // Reset enemy variables
@@ -338,8 +338,10 @@ namespace Biodiversity.Creatures.Enemy
                         setWanderPos();
                     }
 
+                    TurnTowardsLocation(wanderPos);
+
                     // I doubt this works with flooding.
-                    if (checkForWall(wanderPos))
+                    if (checkForWall())
                     {
                         setWanderPos();
                     } else
@@ -365,10 +367,11 @@ namespace Biodiversity.Creatures.Enemy
                     BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
 
 
-                    if (Collision2d(newLocation, collider) && !checkForWall(new Vector3(player.gameObject.transform.position.x, water.transform.position.y, player.gameObject.transform.position.z)))
+                    TurnTowardsLocation(player.gameObject.transform.position);
+
+                    if (Collision2d(newLocation, collider) && !checkForWall())
                     {
                         transform.position = newLocation;
-                        TurnTowardsLocation(player.gameObject.transform.position);
                     }
                     if (Distance2d(this.gameObject, player.gameObject) <= attackDistance)
                     {
