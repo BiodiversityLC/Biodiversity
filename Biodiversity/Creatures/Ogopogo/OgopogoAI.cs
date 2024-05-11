@@ -167,7 +167,7 @@ namespace Biodiversity.Creatures.Enemy
             float smallestDistance = 0f;
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                if (player.transform.position.y >= this.transform.position.y)
+                if (player.transform.position.y >= this.transform.position.y || currentBehaviourStateIndex == (int)State.RISING)
                 {
                     if (smallestDistance == 0f)
                     {
