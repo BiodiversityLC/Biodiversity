@@ -167,19 +167,22 @@ namespace Biodiversity.Creatures.Enemy
             float smallestDistance = 0f;
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                if (smallestDistance == 0f)
+                if (player.transform.position.y >= this.transform.position.y)
                 {
-                    smallestDistance = Distance2d(player.gameObject, this.gameObject);
-                    ret = player;
-                }
-                else
-                {
-                    float Distance = Distance2d(player.gameObject, this.gameObject);
-
-                    if (Distance < smallestDistance)
+                    if (smallestDistance == 0f)
                     {
-                        smallestDistance = Distance;
+                        smallestDistance = Distance2d(player.gameObject, this.gameObject);
                         ret = player;
+                    }
+                    else
+                    {
+                        float Distance = Distance2d(player.gameObject, this.gameObject);
+
+                        if (Distance < smallestDistance)
+                        {
+                            smallestDistance = Distance;
+                            ret = player;
+                        }
                     }
                 }
             }
@@ -192,7 +195,7 @@ namespace Biodiversity.Creatures.Enemy
             bool ret = false;
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                if (Distance2d(player.gameObject, this.gameObject) < range)
+                if (Distance2d(player.gameObject, this.gameObject) < range && player.transform.position.y >= this.transform.position.y)
                 {
                     ret = true;
                 }
@@ -374,6 +377,11 @@ namespace Biodiversity.Creatures.Enemy
 
                     BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
 
+                    if (player == null)
+                    {
+                        SwitchToBehaviourClientRpc((int)State.WANDERING);
+                        return;
+                    }
 
                     TurnTowardsLocation(player.gameObject.transform.position);
 
