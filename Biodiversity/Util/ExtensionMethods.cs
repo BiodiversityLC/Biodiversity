@@ -11,13 +11,13 @@ internal static class ExtensionMethods {
         return (to - from).normalized;
     }
 
-    internal static (int, int) GetCurrentTime(this TimeOfDay timeOfDay) {
+    internal static (int hours, int minutes) GetCurrentTime(this TimeOfDay timeOfDay) {
         int totalMinutes = Mathf.FloorToInt((timeOfDay.normalizedTimeOfDay * 60f * timeOfDay.numberOfHours) + 360);
         int hour = Mathf.FloorToInt(totalMinutes / 60);
 
         return (hour, totalMinutes % 60);
     }
-
+    
     internal static (int, int) ParseTimeString(this TimeOfDay timeOfDay, string timeString) {
         return (int.Parse(timeString.Split(":")[0]), int.Parse(timeString.Split(":")[1]));
     }

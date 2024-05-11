@@ -12,6 +12,8 @@ internal static class GameNetworkManagerPatch {
 
     [HarmonyPatch(nameof(GameNetworkManager.Start)), HarmonyPrefix]
     static void AddNetworkPrefabs() {
+        BiodiversityPlugin.Instance.FinishLoading();
+        
         foreach(GameObject prefab in networkPrefabsToRegister) {
             NetworkManager.Singleton.AddNetworkPrefab(prefab);
             BiodiversityPlugin.Logger.LogDebug($"Registered {prefab.name} as a network prefab.");

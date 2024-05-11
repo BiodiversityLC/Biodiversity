@@ -9,11 +9,15 @@ using HarmonyLib;
 using LethalLib.Modules;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using Biodiversity.Creatures;
+using Dissonance;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -34,6 +38,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     ];
 
     private void Awake() {
+        Stopwatch timer = Stopwatch.StartNew();
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
@@ -47,12 +52,14 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         } else {
             Logger.LogError("Failed to open custom log.");
         }
-
+        
         Logger.LogInfo("Running Harmony patches...");
         if(LogFile != null)
             Logger.LogInfo("(Biodiversity logs will now be routed to Biodiversity.log)");
         Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
-
+        
+        
+        
         Logger.LogInfo("Patching netcode.");
         NetcodePatcher();
 
@@ -61,24 +68,33 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         LangParser.SetLanguage("en");
 
         Logger.LogInfo(LangParser.GetTranslation("lang.test"));
+        
+        timer.Stop();
+        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has setup. ({timer.ElapsedMilliseconds}ms)");
+    }
 
-        // TODO: Swap this to LLL once it gets enemy support.
+    internal void FinishLoading() {
+        Stopwatch timer = Stopwatch.StartNew();
+        VanillaEnemies.Init();
+        
         Logger.LogInfo("Registering the silly little creatures.");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType != null
             && x.BaseType.IsGenericType
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
         ).ToList();
-
+        
         foreach(var type in creatureHandlers) {
             Logger.LogDebug($"Creating {type.Name}");
             type.GetConstructor([]).Invoke([]);
         }
         Logger.LogInfo($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
 
+        timer.Stop();
+        
         (string, string) quote = silly_quotes[UnityEngine.Random.Range(0, silly_quotes.Length)];
         Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
-        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
+        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
     }
 
     private void NetcodePatcher() {
