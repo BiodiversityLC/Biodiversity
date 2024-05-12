@@ -94,6 +94,13 @@ namespace Biodiversity.Creatures.Enemy
                     }
                 }
 
+                if (waters.Count == 0)
+                {
+                    BiodiversityPlugin.Logger.LogInfo("Despawning because no water exists that is spawnable.");
+                    RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
+                    return;
+                }
+
                 // Set the water he will stay in and teleport to it
                 water = waters[UnityEngine.Random.Range(0, waters.Count)];
                 transform.position = water.transform.position;
