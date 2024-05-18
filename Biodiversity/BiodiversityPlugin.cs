@@ -34,7 +34,8 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         ("don't get me wrong, I love women", "monty"), 
         ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
         ("thumpy wumpy", "monty"),
-        ("Your body should get split in two", "wesley")
+        ("Your body should get split in two", "wesley"),
+        ("death for you and your bloodline", "monty")
     ];
 
     private void Awake() {
