@@ -15,6 +15,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using BepInEx.Configuration;
 using Biodiversity.Creatures;
 using Dissonance;
 using Unity.Netcode;
@@ -109,5 +110,9 @@ public class BiodiversityPlugin : BaseUnityPlugin {
                 }
             }
         }
+    }
+
+    internal ConfigFile CreateConfig(string name) {
+        return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + name + ".cfg"), saveOnInit: false, MetadataHelper.GetMetadata(this));
     }
 }
