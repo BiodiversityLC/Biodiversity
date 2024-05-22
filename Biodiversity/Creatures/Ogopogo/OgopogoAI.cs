@@ -32,13 +32,14 @@ namespace Biodiversity.Creatures.Enemy
         // Movement
         float wanderSpeed = 3.5f;
         float chaseSpeed = 4f;
-        float detectionRange = 60f;
+        float detectionRange = 45f;
         float loseRange = 70f;
-        float attackDistance = 45f;
+        float attackDistance = 30f;
         float riseSpeed = 75f;
-        float riseHeight = 50f;
+        float riseHeight = 100f;
         [SerializeField] private Transform RaycastPos;
         bool wallInFront = false;
+        float attackTimer = 0f;
 
         // Wander vars
         float wanderTimer = 0f;
@@ -54,7 +55,7 @@ namespace Biodiversity.Creatures.Enemy
         PlayerControllerB playerGrabbed = null;
         PlayerControllerB chasedPlayer;
 
-        //Audio
+        // Audio
         [SerializeField] private AudioClip warning;
         [SerializeField] private AudioClip emerge;
         [SerializeField] private AudioClip returnToWater;
@@ -126,6 +127,10 @@ namespace Biodiversity.Creatures.Enemy
             if (currentBehaviourStateIndex == (int)State.RESET)
             {
                 resetTimer += Time.deltaTime;
+            }
+            if (currentBehaviourStateIndex == (int)State.CHASING)
+            {
+                attackTimer -= Time.deltaTime;
             }
 
             // Set eye position to handle stun. (Calculated on both client and server)
@@ -370,6 +375,7 @@ namespace Biodiversity.Creatures.Enemy
                     if (PlayerCheck(detectionRange))
                     {
                         SwitchToBehaviourClientRpc((int)State.CHASING);
+                        attackTimer = 3f;
                         PlayVoiceClientRpc(0);
                     }
                     break;
@@ -396,7 +402,7 @@ namespace Biodiversity.Creatures.Enemy
                     {
                         transform.position = newLocation;
                     }
-                    if (Distance2d(this.gameObject, player.gameObject) <= attackDistance)
+                    if (Distance2d(this.gameObject, player.gameObject) <= attackDistance && attackTimer < 0)
                     {
                         SwitchToBehaviourClientRpc((int)State.RISING);
                         PlayVoiceClientRpc(1);
@@ -435,6 +441,13 @@ namespace Biodiversity.Creatures.Enemy
                     if (this.transform.position.y - water.gameObject.transform.position.y > 0f)
                     {
                         GoDown(riseSpeed);
+                    }
+
+                    if (playerGrabbed != null && Physics.Raycast(splineObject.transform.position, -splineObject.transform.up, 7.5f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/))
+                    {
+                        playerGrabbed.fallValue = 0f;
+                        playerGrabbed.fallValueUncapped = 0f;
+                        SetPlayerGrabbedClientRpc(0, true);
                     }
                     
                     if (!(this.transform.position.y - water.gameObject.transform.position.y > 0f) && splineDone)
