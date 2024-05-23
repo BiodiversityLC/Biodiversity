@@ -14,8 +14,8 @@ using UnityEngine.Timeline;
 
 namespace Biodiversity.Util.Config;
 [Serializable]
-public abstract class BiodiverseConfig<T> where T : BiodiverseConfig<T> {
-    public BiodiverseConfig(ConfigFile configFile) {
+public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader<T> {
+    public BiodiverseConfigLoader(ConfigFile configFile) {
         string CurrentHeader = "Misc";
         Type type = typeof(T);
         foreach(PropertyInfo property in type.GetProperties()) {

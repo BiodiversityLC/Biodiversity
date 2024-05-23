@@ -8,7 +8,7 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace Biodiversity.Creatures.HoneyFeeder;
 [Serializable]
-public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfig<HoneyFeederConfig>(configFile) {
+public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfigLoader<HoneyFeederConfig>(configFile) {
     [field: Header("General Settings")]
     public float SightDistance { get; private set; } = 25;
     [field: Tooltip("24 hour time on when the honey feeder will wake up and start moving.")]

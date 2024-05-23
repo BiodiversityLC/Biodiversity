@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters;
 
-public class CritterConfig(ConfigFile configFile) : BiodiverseConfig<CritterConfig>(configFile) {
+public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<CritterConfig>(configFile) {
 	[field: Header("Fungi")]
 	[field: Tooltip("Normal speed of fungi.")]
 	[field: Range(3, 20)]

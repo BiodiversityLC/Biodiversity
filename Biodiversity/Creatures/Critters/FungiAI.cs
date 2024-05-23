@@ -21,7 +21,7 @@ public class FungiAI : BiodiverseAI {
 		agent.speed = speedBoostTime > 0 ? Config.FungiBoostedSpeed : Config.FungiNormalSpeed;
         
 		if(!isStunned && wanderRoutine == null || !wanderRoutine.inProgress) {
-			BiodiversityPlugin.Logger.LogDebug("[Fungi] Starting new search.");
+			LogVerbose("[Fungi] Starting new search.");
 			StartSearch(transform.position, wanderRoutine);
 		}
 	}
@@ -39,11 +39,11 @@ public class FungiAI : BiodiverseAI {
 		moveTowardsDestination = false;
 		agent.isStopped = true;
 		StopSearch(wanderRoutine, true);
-		BiodiversityPlugin.Logger.LogDebug("[Fungi] Stunning.");
+		LogVerbose("[Fungi] Stunning.");
 
 		yield return new WaitForSeconds(Config.FungiStunTime);
 
-		BiodiversityPlugin.Logger.LogDebug("[Fungi] Stopping stun.");
+		LogVerbose("[Fungi] Stopping stun.");
 
 		isStunned = false;
 		agent.isStopped = false;

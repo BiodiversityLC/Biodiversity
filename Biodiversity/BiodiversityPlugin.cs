@@ -31,6 +31,8 @@ public class BiodiversityPlugin : BaseUnityPlugin {
 
     internal TextWriter LogFile { get; private set; }
 
+    internal new static BiodiversityConfig Config { get; private set; }
+    
     static readonly (string,string)[] silly_quotes = [
         ("don't get me wrong, I love women", "monty"), 
         ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
@@ -43,6 +45,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         Stopwatch timer = Stopwatch.StartNew();
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
+        
 
         Logger.LogInfo("Setting up custom log file.");
         if(Utility.TryOpenFileStream(Path.Combine(Paths.BepInExRootPath, "Biodiversity.log"), FileMode.Create, out FileStream stream)) {
@@ -60,7 +63,8 @@ public class BiodiversityPlugin : BaseUnityPlugin {
             Logger.LogInfo("(Biodiversity logs will now be routed to Biodiversity.log)");
         Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
         
-        
+        Logger.LogInfo("Creating base biodiversity config.");
+        Config = new BiodiversityConfig(base.Config);
         
         Logger.LogInfo("Patching netcode.");
         NetcodePatcher();
@@ -86,7 +90,12 @@ public class BiodiversityPlugin : BaseUnityPlugin {
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
         ).ToList();
         
-        foreach(var type in creatureHandlers) {
+        foreach(Type type in creatureHandlers) {
+            bool creatureEnabled = base.Config.Bind("Creatures", type.Name, true).Value;
+            if (!creatureEnabled) {
+                Logger.LogWarning($"{type.Name} was skipped because it's disabled.");
+                continue;
+            }
             Logger.LogDebug($"Creating {type.Name}");
             type.GetConstructor([]).Invoke([]);
         }

@@ -44,7 +44,7 @@ public class HoneyFeederAI : BiodiverseAI {
     public AIStates State { 
         get => _state;
         private set {
-            Log($"Updating state: {_state} -> {value}");
+            LogVerbose($"Updating state: {_state} -> {value}");
             moveTowardsDestination = false;
             movingTowardsTargetPlayer = false;
             agent.enabled = true;
@@ -80,10 +80,6 @@ public class HoneyFeederAI : BiodiverseAI {
         if(Instance == this) Instance = null;
     }
 
-    void Log(string message) {
-        BiodiversityPlugin.Logger.LogInfo($"[HoneyFeeder] " + message);
-    }
-
     public override void DoAIInterval() { // biodiversity calculates everything host end, so this should always be run on the host.
         //if(!ShouldProcessEnemy()) return; // <- disabled for testing
         base.DoAIInterval();
@@ -91,7 +87,7 @@ public class HoneyFeederAI : BiodiverseAI {
         switch(State) {
             case AIStates.ASLEEP:
                 if(TimeOfDay.Instance.HasPassedTime(TimeOfDay.Instance.ParseTimeString(Config.WakeUpTime))) {
-                    Log("Honeyfeeder is waking up!");
+                    LogVerbose("Honeyfeeder is waking up!");
                     State = AIStates.WANDERING;
                 }
                 break;
@@ -126,7 +122,7 @@ public class HoneyFeederAI : BiodiverseAI {
                     break;
                 }
 
-                Log($"Distance to targetHive: {Vector3.Distance(transform.position, targetHive.transform.position)}");
+                LogVerbose($"Distance to targetHive: {Vector3.Distance(transform.position, targetHive.transform.position)}");
                 if(Vector3.Distance(transform.position, targetHive.transform.position) < 3.5f) {
                     // todo: have animation and wait for animation to finish.
 
@@ -193,7 +189,7 @@ public class HoneyFeederAI : BiodiverseAI {
                 }
                 agent.enabled = false;
 
-                Log($"Current time: {TimeOfDay.Instance.GetCurrentTime()}. Digested time: {TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)}");
+                LogVerbose($"Current time: {TimeOfDay.Instance.GetCurrentTime()}. Digested time: {TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)}");
 
                 DigestBees();
                 if(targetHive.playerHeldBy != null) {
@@ -205,7 +201,7 @@ public class HoneyFeederAI : BiodiverseAI {
 
                 if(TimeOfDay.Instance.HasPassedTime(TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)) && digestion != DigestionStates.PARTLY) {
                     digestion = DigestionStates.PARTLY;
-                    Log("Set digestion status to Partly.");
+                    LogVerbose("Set digestion status to Partly.");
 
                     // play sound?
                     targetHive.scrapValue = Mathf.RoundToInt(targetHive.scrapValue * Config.PartlyDigestedScrapMultiplier);
@@ -241,7 +237,7 @@ public class HoneyFeederAI : BiodiverseAI {
     void DigestBees() {
         if(!TryGetBees(out var bees)) return;
 
-        Log($"nom timer :3 {beeDigestionTimer}");
+        LogVerbose($"nom timer :3 {beeDigestionTimer}");
         if(beeDigestionTimer >= Config.BeeDigestionTime) {
             Destroy(bees.gameObject);
         }
@@ -286,10 +282,10 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     void RefreshCollectableHives() {
-        Log("Refreshing possible hives.");
+        LogVerbose("Refreshing possible hives.");
         beesCache = FindObjectsOfType<RedLocustBees>().ToList();
         possibleHives = beesCache.Select(bees => bees.hive).ToList();
-        Log("Possible hives count: " + possibleHives.Count);
+        LogVerbose("Possible hives count: " + possibleHives.Count);
     }
 
     void StartBackingUp() {
