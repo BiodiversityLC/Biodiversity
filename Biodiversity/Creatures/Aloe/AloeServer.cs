@@ -15,7 +15,7 @@ public class AloeServer : BiodiverseAI
 {
     private ManualLogSource _mls;
     private string _aloeId;
-    // [SerializeField] public AloeConfig Config { get; private set; } = BiodiversityPlugin.config;
+    [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
 
     [Header("AI and Pathfinding")] [Space(5f)]
     public AISearchRoutine roamMap;
@@ -1208,6 +1208,14 @@ public class AloeServer : BiodiverseAI
     private void InitializeConfigValues()
     {
         if (!IsServer) return;
+
+        maxRoamingRadius = Config.MaxRoamingRadius;
+        viewWidth = Config.ViewWidth;
+        viewRange = Config.ViewRange;
+        playerHealthThresholdForStalking = Config.PlayerHealthThresholdForStalking;
+        playerHealthThresholdForHealing = Config.PlayerHealthThresholdForHealing;
+        timeItTakesToFullyHealPlayer = Config.TimeItTakesToFullyHealPlayer;
+        passiveStalkStaredownDistance = Config.PassiveStalkStaredownDistance;
         
         roamMap.searchWidth = maxRoamingRadius;
         

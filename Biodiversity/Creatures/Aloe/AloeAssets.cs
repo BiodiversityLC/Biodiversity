@@ -2,7 +2,7 @@
 
 namespace Biodiversity.Creatures.Aloe;
 
-internal class AloeAssets() : BiodiverseAssetBundle<AloeAssets>("aloebracken")
-{
-    [LoadFromBundle("AloeEnemyType")] public EnemyType enemyType;
+internal class AloeAssets(string bundle) : BiodiverseAssetBundle<AloeAssets>(bundle) {
+    [LoadFromBundle("AloeEnemyType")]
+    public EnemyType enemyType;
 }

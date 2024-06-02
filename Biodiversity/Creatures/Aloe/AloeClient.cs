@@ -27,6 +27,8 @@ public class AloeClient : MonoBehaviour
         Steps,
     }
     
+    [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
+    
 #pragma warning disable 0649
     [Header("Audio")] [Space(5f)] 
     public AudioClip[] stunSfx;
@@ -497,6 +499,11 @@ public class AloeClient : MonoBehaviour
     private void HandleInitializeConfigValues(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
+
+        escapeChargePerPress = Config.EscapeChargePerPress;
+        escapeChargeDecayRate = Config.EscapeChargeDecayRate;
+        escapeChargeThreshold = Config.EscapeChargeThreshold;
+        skinMetallicTransitionTime = Config.DarkSkinTransitionTime;
     }
 
     private void HandleChangeBehaviourStateIndex(string receivedAloeId, int newBehaviourStateIndex)
