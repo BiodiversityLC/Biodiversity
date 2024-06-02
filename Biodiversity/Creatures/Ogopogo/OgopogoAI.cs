@@ -11,7 +11,7 @@ using Unity.Netcode;
 using UnityEngine;
 using Biodiversity.General;
 
-namespace Biodiversity.Creatures.Enemy
+namespace Biodiversity.Creatures.Ogopogo
 {
     internal class OgopogoAI : BiodiverseAI
     {
