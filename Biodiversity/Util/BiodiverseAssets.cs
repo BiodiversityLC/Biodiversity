@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LethalLib.Modules;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -29,6 +30,8 @@ internal static class BiodiverseAssets {
 
         OgopogoNode = LoadAsset<TerminalNode>("OgopogoTN", OgopogoBundle);
         OgopogoKeyword = LoadAsset<TerminalKeyword>("OgopogoKW", OgopogoBundle);
+
+        NetworkPrefabs.RegisterNetworkPrefab(Ogopogo.enemyPrefab);
     }
 
     static T LoadAsset<T>(string path, AssetBundle bundle) where T : UnityEngine.Object {
