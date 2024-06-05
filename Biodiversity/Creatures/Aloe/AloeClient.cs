@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using BepInEx.Logging;
+using Dissonance;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -187,7 +188,10 @@ public class AloeClient : MonoBehaviour
         if (_aloeId != receivedAloeId) return;
         
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
-        player.inSpecialInteractAnimation = true;
+        if (player == null) return;
+        LogDebug($"Killing player: {player.name}");
+        //player.inSpecialInteractAnimation = true;
+        
         player.KillPlayer(Vector3.zero, true, CauseOfDeath.Strangulation);
     }
     
@@ -466,7 +470,6 @@ public class AloeClient : MonoBehaviour
         
         Destroy(collider.gameObject);
         Destroy(scanNode.gameObject);
-        
     }
 
     /// <summary>
@@ -506,6 +509,11 @@ public class AloeClient : MonoBehaviour
         skinMetallicTransitionTime = Config.DarkSkinTransitionTime;
     }
 
+    /// <summary>
+    /// Changes the behaviour state to the given state
+    /// </summary>
+    /// <param name="receivedAloeId">The aloe Id</param>
+    /// <param name="newBehaviourStateIndex">The behaviour state to change to</param>
     private void HandleChangeBehaviourStateIndex(string receivedAloeId, int newBehaviourStateIndex)
     {
         if (_aloeId != receivedAloeId) return;

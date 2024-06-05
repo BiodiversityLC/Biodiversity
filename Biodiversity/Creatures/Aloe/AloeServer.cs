@@ -103,6 +103,7 @@ public class AloeServer : BiodiverseAI
         
         UnityEngine.Random.InitState(StartOfRound.Instance.randomMapSeed + _aloeId.GetHashCode());
         netcodeController.SyncAloeIdClientRpc(_aloeId);
+        InitializeConfigValues();
 
         _mainEntrancePosition = RoundManager.FindMainEntrancePosition();
         favoriteSpot = AloeSharedData.Instance.BrackenRoomPosition != null ? AloeSharedData.Instance.BrackenRoomPosition : ChooseFarthestNodeFromPosition(_mainEntrancePosition);
@@ -253,6 +254,7 @@ public class AloeServer : BiodiverseAI
                 {
                     LogDebug("Player is close to aloe! Snapping his neck");
                     
+                    netcodeController.SnapPlayerNeckClientRpc(_aloeId, targetPlayer.actualClientId);
                     netcodeController.ChangeTargetPlayerClientRpc(_aloeId, _backupTargetPlayer.actualClientId);
                     targetPlayer = _backupTargetPlayer;
                     SwitchBehaviourStateLocally(States.ChasingEscapedPlayer); // Maybe make the aloe have to find the player first?
@@ -445,7 +447,7 @@ public class AloeServer : BiodiverseAI
             case (int)States.AttackingPlayer:
             {
                 if (PlayerIsTargetable(targetPlayer)) SetMovingTowardsTargetPlayer(targetPlayer);
-                else SwitchBehaviourStateLocally(States.PassiveRoaming);
+                else SwitchBehaviourStateLocally(States.ChasingEscapedPlayer);
                 
                 break;
             }
@@ -1097,6 +1099,12 @@ public class AloeServer : BiodiverseAI
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
                 _avoidPlayerCoroutine = null;
+                
+                if (!_currentlyHasDarkSkin)
+                {
+                    netcodeController.ChangeAloeSkinColourClientRpc(_aloeId, true);
+                    _currentlyHasDarkSkin = true;
+                }
                 
                 break;
             }
