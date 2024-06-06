@@ -36,7 +36,7 @@ namespace Biodiversity.Creatures.Ogopogo
         float loseRange = 70f;
         float attackDistance = 30f;
         float riseSpeed = 75f;
-        float riseHeight = 100f;
+        float riseHeight = 120f;
         [SerializeField] private Transform RaycastPos;
         bool wallInFront = false;
         float attackTimer = 0f;
@@ -54,6 +54,7 @@ namespace Biodiversity.Creatures.Ogopogo
         // Player references
         PlayerControllerB playerGrabbed = null;
         PlayerControllerB chasedPlayer;
+        float[] PlayerDistances = null;
 
         // Audio
         [SerializeField] private AudioClip warning;
@@ -81,6 +82,7 @@ namespace Biodiversity.Creatures.Ogopogo
                 }
             }
             **/
+            PlayerDistances = new float[StartOfRound.Instance.allPlayerScripts.Count()];
 
             // Loop through all triggers and get all the water
             try
@@ -153,6 +155,11 @@ namespace Biodiversity.Creatures.Ogopogo
                 playerGrabbed.transform.position = splineObject.transform.position;
                 playerGrabbed.transform.rotation = splineObject.transform.rotation;
             }
+            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            {
+                PlayerDistances[player.playerClientId] = Distance2d(StartOfRound.Instance.shipBounds.gameObject, player.gameObject);
+            }
+
         }
 
         // Use Physics.Raycast they said. It would be fun they said.
@@ -207,7 +214,8 @@ namespace Biodiversity.Creatures.Ogopogo
             bool ret = false;
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                if (Distance2d(player.gameObject, this.gameObject) < range && player.transform.position.y >= this.transform.position.y)
+                //BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
+                if (Distance2d(player.gameObject, this.gameObject) < range && player.transform.position.y >= this.transform.position.y && PlayerDistances[player.playerClientId] > 15)
                 {
                     ret = true;
                 }
