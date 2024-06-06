@@ -337,6 +337,7 @@ namespace Biodiversity.Creatures.Ogopogo
             resetTimer = 0f;
             SwitchToBehaviourClientRpc((int)State.WANDERING);
             SetPlayerGrabbedClientRpc(0, true);
+            this.creatureAnimator.SetInteger("AnimID", 1);
         }
 
         // Handle grabbing
@@ -345,6 +346,7 @@ namespace Biodiversity.Creatures.Ogopogo
             if (currentBehaviourStateIndex != (int)State.RESET)
             {
                 SetPlayerGrabbedClientRpc((int)other.gameObject.GetComponent<PlayerControllerB>().playerClientId);
+                this.creatureAnimator.SetInteger("AnimID", 3);
             }
         }
 
@@ -414,6 +416,7 @@ namespace Biodiversity.Creatures.Ogopogo
                     {
                         SwitchToBehaviourClientRpc((int)State.RISING);
                         PlayVoiceClientRpc(1);
+                        this.creatureAnimator.SetInteger("AnimID", 2);
                     }
                     if (!PlayerCheck(loseRange))
                     {
@@ -451,7 +454,7 @@ namespace Biodiversity.Creatures.Ogopogo
                         GoDown(riseSpeed);
                     }
 
-                    if (playerGrabbed != null && Physics.Raycast(splineObject.transform.position, -splineObject.transform.up, 7.5f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/))
+                    if (playerGrabbed != null && Physics.Raycast(splineObject.transform.position, -splineObject.transform.up, 20f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/))
                     {
                         playerGrabbed.fallValue = 0f;
                         playerGrabbed.fallValueUncapped = 0f;
