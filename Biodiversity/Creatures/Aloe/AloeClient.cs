@@ -183,6 +183,11 @@ public class AloeClient : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Handles what should happen to make the Aloe snap a player's neck
+    /// </summary>
+    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="playerClientId">The player's client id whose neck will be snapped</param>
     private void HandleSnapPlayerNeck(string receivedAloeId, ulong playerClientId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -195,6 +200,13 @@ public class AloeClient : MonoBehaviour
         player.KillPlayer(Vector3.zero, true, CauseOfDeath.Strangulation);
     }
     
+    /// <summary>
+    /// Plays an audio clip with the given type and index
+    /// </summary>
+    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="audioClipType">The audio clip type to play</param>
+    /// <param name="clipIndex">The index of the clip in their respective AudioClip array to play</param>
+    /// <param name="interrupt">Whether to interrupt any previously playing sound before playing the new audio</param>
     private void HandlePlayAudioClipType(string receivedAloeId, AudioClipTypes audioClipType, int clipIndex, bool interrupt = false)
     {
         if (_aloeId != receivedAloeId) return;
@@ -223,6 +235,11 @@ public class AloeClient : MonoBehaviour
         WalkieTalkie.TransmitOneShotAudio(aloeVoiceSource, audioClipToPlay, aloeVoiceSource.volume);
     }
 
+    /// <summary>
+    /// Handles what should happen to make the aloe change her skin colour
+    /// </summary>
+    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="toDark">Whether the skin colour is going to a dark colour or not</param>
     private void HandleChangeAloeSkinColour(string receivedAloeId, bool toDark)
     {
         if (_aloeId != receivedAloeId) return;
@@ -245,6 +262,11 @@ public class AloeClient : MonoBehaviour
         StartCoroutine(ChangeAloeSkinColour(toDark));
     }
 
+    /// <summary>
+    /// Plays the steps sound effect in a random interval if the aloe is moving
+    /// Replace in the future with animation events
+    /// </summary>
+    /// <returns></returns>
     private IEnumerator PlayStepsSfx()
     {
         // Would not work if the aloe was revived at a later date
@@ -261,8 +283,14 @@ public class AloeClient : MonoBehaviour
         yield return new WaitForSeconds(Random.Range(1.9f, 2.5f));
     }
 
+    /// <summary>
+    /// A coroutine for smoothly transitioning the aloe's skin colour
+    /// </summary>
+    /// <param name="toDark">Whether her skin colour is going to a dark colour or not</param>
+    /// <returns></returns>
     private IEnumerator ChangeAloeSkinColour(bool toDark)
     {
+        LogDebug($"Changing aloe skin to {(toDark ? "dark" : "light")} colour");
         float timeElapsed = 0f;
         float startMetallicValue = toDark ? 0 : skinMetallicPropertyValue;
         float endMetallicValue = toDark ? skinMetallicPropertyValue : 0;
@@ -282,7 +310,7 @@ public class AloeClient : MonoBehaviour
             
             bodyRenderer.SetPropertyBlock(_propertyBlock);
             leavesRenderer.SetPropertyBlock(_propertyBlock);
-            LogDebug($"current metallic value: {currentMetallicValue}, current v value: {currentV}");
+            //LogDebug($"current metallic value: {currentMetallicValue}, current v value: {currentV}");
             
             timeElapsed += Time.deltaTime;
             yield return null;
@@ -295,12 +323,27 @@ public class AloeClient : MonoBehaviour
         leavesRenderer.SetPropertyBlock(_propertyBlock);
     }
 
+    /// <summary>
+    /// Converts an RGB color to HSV and returns the original RGB color.
+    /// </summary>
+    /// <param name="rgb">The RGB color to convert.</param>
+    /// <param name="h">The hue component of the HSV color.</param>
+    /// <param name="s">The saturation component of the HSV color.</param>
+    /// <param name="v">The value component of the HSV color.</param>
+    /// <returns>The original RGB color.</returns>
     private static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
     {
         Color.RGBToHSV(rgb, out h, out s, out v);
         return rgb;
     }
 
+    /// <summary>
+    /// Converts HSV color components to an RGB color.
+    /// </summary>
+    /// <param name="h">The hue component of the HSV color.</param>
+    /// <param name="s">The saturation component of the HSV color.</param>
+    /// <param name="v">The value component of the HSV color.</param>
+    /// <returns>The RGB color corresponding to the given HSV components.</returns>
     private static Color HSVToRGB(float h, float s, float v)
     {
         return Color.HSVToRGB(h, s, v);
@@ -388,6 +431,7 @@ public class AloeClient : MonoBehaviour
         if (_targetPlayer.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.currentVoiceChatAudioSource == null) return;
         
+        LogDebug($"Muffling {_targetPlayer.name}");
         _targetPlayer.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 5f;
         OccludeAudio component = _targetPlayer.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
         component.overridingLowPass = true;
@@ -406,6 +450,7 @@ public class AloeClient : MonoBehaviour
         if (_targetPlayer.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.currentVoiceChatAudioSource == null) return;
         
+        LogDebug($"UnMuffling {_targetPlayer.name}");
         _targetPlayer.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 1f;
         OccludeAudio component = _targetPlayer.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
         component.overridingLowPass = false;
@@ -427,9 +472,10 @@ public class AloeClient : MonoBehaviour
         healingOrbEffect.SetFloat("Duration", totalHealingTime);
         
         // Make the vfx go to the target player
-        healingOrbEffect.gameObject.transform.position = _targetPlayer.gameplayCamera.transform.position;
+        healingOrbEffect.gameObject.transform.position = _targetPlayer.lowerSpine.transform.position;
         
         // Play the vfx and audio
+        LogDebug("Playing HealingOrbVfx");
         healingOrbEffect.SendEvent("OnShowHealingOrb");
         HandlePlayAudioClipType(receivedAloeId, AudioClipTypes.Healing, 0, true);
     }

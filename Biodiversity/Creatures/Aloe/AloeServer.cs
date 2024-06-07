@@ -37,6 +37,7 @@ public class AloeServer : BiodiverseAI
     private float _takeDamageCooldown;
     private float _avoidPlayerTimer;
     private float _waitTimer;
+    private float _avoidPlayerAudioTimer;
 
     private int _timesFoundSneaking;
     private int _healingPerInterval;
@@ -145,6 +146,8 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.AvoidingPlayer:
             {
+                _avoidPlayerAudioTimer -= Time.deltaTime;
+                
                 if (!IsPlayerLookingAtAloe())
                 {
                     _avoidPlayerTimer += Time.deltaTime;
@@ -153,7 +156,13 @@ public class AloeServer : BiodiverseAI
                 {
                     PlayerControllerB tempPlayer = WhoIsLookingAtAloe();
                     if (tempPlayer != null) _avoidingPlayer = tempPlayer;
-                    netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.InterruptedHealing);
+
+                    if (_avoidPlayerAudioTimer <= 0)
+                    {
+                        _avoidPlayerAudioTimer = 4.1f;
+                        netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.InterruptedHealing);
+                    }
+                    
                     _avoidPlayerTimer = 0f;
                 }
                 
@@ -488,6 +497,7 @@ public class AloeServer : BiodiverseAI
     public void SetTargetPlayerEscapedByTeleportation()
     {
         if (!IsServer) return;
+        LogDebug("Target player escaped by teleportation");
         HandleTargetPlayerEscaped(_aloeId);
         netcodeController.ChangeTargetPlayerClientRpc(_aloeId, 69420);
         SwitchBehaviourStateLocally(States.PassiveRoaming);
@@ -611,9 +621,15 @@ public class AloeServer : BiodiverseAI
         Transform position = ChooseClosestNodeToPosition(targetPlayer.transform.position, true);
         if (position != null) targetNode = position;
         float distanceToPlayer = Vector3.Distance(targetPlayer.transform.position, transform.position);
-
+        
+        // If aloe is close enough to player, head towards them to attempt a kidnap
+        if (distanceToPlayer <= 5)
+        {
+            SetMovingTowardsTargetPlayer(targetPlayer);
+            return;
+        }
+        
         // The mostOptimalDistance variable is calculated in the ChooseClosestNodeToPosition() method in the EnemyAI class
-        LogDebug($"most optimal distance chooseclosestnodetotargetplayer: {mostOptimalDistance}");
         if (distanceToPlayer - mostOptimalDistance < 0.10000000149011612 &&
             (!PathIsIntersectedByLineOfSight(targetPlayer.transform.position, true) || distanceToPlayer < 3))
         {
@@ -924,6 +940,7 @@ public class AloeServer : BiodiverseAI
                 _avoidPlayerTimer = 0f;
                 _isStaringAtTargetPlayer = false;
                 openDoorSpeedMultiplier = 10f;
+                _avoidPlayerAudioTimer = 0f;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
                 
