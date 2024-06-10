@@ -36,10 +36,11 @@ namespace Biodiversity.Creatures.Ogopogo
         float loseRange = 70f;
         float attackDistance = 30f;
         float riseSpeed = 75f;
-        float riseHeight = 120f;
+        float riseHeight = 100f;
         [SerializeField] private Transform RaycastPos;
         bool wallInFront = false;
         float attackTimer = 0f;
+        bool dropRaycast = false;
 
         // Wander vars
         float wanderTimer = 0f;
@@ -50,6 +51,8 @@ namespace Biodiversity.Creatures.Ogopogo
         [SerializeField] private SplineObject splineObject;
         [NonSerialized] private bool splineDone = false;
         float splineSpeed = 0.7f;
+        bool playerHasBeenGrabbed = false;
+        [SerializeField] private Transform GrabPos;
 
         // Player references
         PlayerControllerB playerGrabbed = null;
@@ -152,8 +155,8 @@ namespace Biodiversity.Creatures.Ogopogo
             // Move the grabbed player
             if (playerGrabbed != null)
             {
-                playerGrabbed.transform.position = splineObject.transform.position;
-                playerGrabbed.transform.rotation = splineObject.transform.rotation;
+                playerGrabbed.transform.position = GrabPos.position;
+                playerGrabbed.transform.rotation = GrabPos.rotation;
             }
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
@@ -166,6 +169,7 @@ namespace Biodiversity.Creatures.Ogopogo
         public void FixedUpdate()
         {
             wallInFront = checkForWall();
+            dropRaycast = Physics.Raycast(GrabPos.position, Vector3.down, 20f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/);
         }
 
         // Set wander position. (Only matters when run on server)
@@ -288,10 +292,12 @@ namespace Biodiversity.Creatures.Ogopogo
             if (!setNull)
             {
                 playerGrabbed = StartOfRound.Instance.allPlayerScripts[playerID];
+                playerHasBeenGrabbed = true;
             }
             else
             {
                 playerGrabbed = null;
+                playerHasBeenGrabbed = false;
             }
         }
 
@@ -334,6 +340,7 @@ namespace Biodiversity.Creatures.Ogopogo
             splineDone = false;
             wanderTimer = 0f;
             wanderPos = Vector3.zero;
+            playerHasBeenGrabbed = false;
             resetTimer = 0f;
             SwitchToBehaviourClientRpc((int)State.WANDERING);
             SetPlayerGrabbedClientRpc(0, true);
@@ -343,7 +350,7 @@ namespace Biodiversity.Creatures.Ogopogo
         // Handle grabbing
         public override void OnCollideWithPlayer(UnityEngine.Collider other)
         {
-            if (currentBehaviourStateIndex != (int)State.RESET)
+            if (currentBehaviourStateIndex != (int)State.RESET && currentBehaviourStateIndex != (int)State.GOINGDOWN)
             {
                 SetPlayerGrabbedClientRpc((int)other.gameObject.GetComponent<PlayerControllerB>().playerClientId);
                 this.creatureAnimator.SetInteger("AnimID", 3);
@@ -430,7 +437,12 @@ namespace Biodiversity.Creatures.Ogopogo
                         TurnTowardsLocation(getClosestPlayer().gameObject.transform.position);
                     }
 
-                    if (!splineDone)
+                    if (playerHasBeenGrabbed)
+                    {
+                        splineDone = true;
+                    }
+
+                    if (!splineDone && this.transform.position.y - water.gameObject.transform.position.y > 0.75f * riseHeight)
                     {
                         UpdateForwardClientRpc(Time.deltaTime);
                     }
@@ -449,13 +461,14 @@ namespace Biodiversity.Creatures.Ogopogo
                         UpdateBackwardClientRpc(Time.deltaTime);
                     }
 
-                    if (this.transform.position.y - water.gameObject.transform.position.y > 0f)
+                    if (this.transform.position.y - water.gameObject.transform.position.y > 0f && splineDone)
                     {
                         GoDown(riseSpeed);
                     }
-
-                    if (playerGrabbed != null && Physics.Raycast(splineObject.transform.position, -splineObject.transform.up, 20f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/))
+                    
+                    if (playerGrabbed != null && dropRaycast && splineDone)
                     {
+                        BiodiversityPlugin.Logger.LogInfo("dropping player");
                         playerGrabbed.fallValue = 0f;
                         playerGrabbed.fallValueUncapped = 0f;
                         SetPlayerGrabbedClientRpc(0, true);
