@@ -51,9 +51,9 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                 }
 
-                if (waters.Count == 0)
+                if (waters.Count == 0 || enemyType.numberSpawned >= 20)
                 {
-                    BiodiversityPlugin.Logger.LogInfo("Despawning because no water exists that is spawnable. (vermin)");
+                    BiodiversityPlugin.Logger.LogInfo("Despawning because no water exists that is spawnable or there are too many of this enemy. (vermin)");
                     RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
                     return;
                 }
@@ -62,6 +62,8 @@ namespace Biodiversity.Creatures.Ogopogo
                 water = waters[UnityEngine.Random.Range(0, waters.Count)];
                 transform.position = water.transform.position;
                 setWanderPos();
+
+                enemyType.numberSpawned += 1;
             }
             catch (Exception ex)
             {
