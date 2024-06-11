@@ -219,7 +219,7 @@ namespace Biodiversity.Creatures.Ogopogo
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
                 //BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
-                if (Distance2d(player.gameObject, this.gameObject) < range && player.transform.position.y >= this.transform.position.y && PlayerDistances[player.playerClientId] > 15)
+                if (Distance2d(player.gameObject, this.gameObject) < range && (player.transform.position.y >= this.transform.position.y || currentBehaviourStateIndex == (int)State.RISING) && PlayerDistances[player.playerClientId] > 15)
                 {
                     ret = true;
                 }
@@ -445,6 +445,13 @@ namespace Biodiversity.Creatures.Ogopogo
                     if (!splineDone && this.transform.position.y - water.gameObject.transform.position.y > 0.75f * riseHeight)
                     {
                         UpdateForwardClientRpc(Time.deltaTime);
+                    }
+
+                    if(!PlayerCheck(loseRange))
+                    {
+                        SwitchToBehaviourClientRpc((int)State.GOINGDOWN);
+                        PlayVoiceClientRpc(2);
+                        splineDone = false;
                     }
 
                     if ((!(this.transform.position.y - water.gameObject.transform.position.y < riseHeight)) && splineDone)
