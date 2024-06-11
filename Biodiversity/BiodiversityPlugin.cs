@@ -39,6 +39,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         Logger.LogInfo("Registering the silly little creatures.");
         //Enemies.RegisterEnemy(BiodiverseAssets.HoneyFeeder, Enemies.SpawnType.Outside);
         Enemies.RegisterEnemy(BiodiverseAssets.Ogopogo, Enemies.SpawnType.Daytime, new Dictionary<LevelTypes, int> { { LevelTypes.MarchLevel, 100 }, { LevelTypes.AdamanceLevel, 100} }, null, BiodiverseAssets.OgopogoNode, BiodiverseAssets.OgopogoKeyword);
+        Enemies.RegisterEnemy(BiodiverseAssets.Vermin, Enemies.SpawnType.Daytime, null, null, BiodiverseAssets.VerminNode, BiodiverseAssets.VerminKeyword);
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }

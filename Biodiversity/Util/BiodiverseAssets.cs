@@ -13,14 +13,18 @@ internal static class BiodiverseAssets {
 
     internal static EnemyType HoneyFeeder;
     internal static EnemyType Ogopogo;
+    internal static EnemyType Vermin;
 
     internal static TerminalNode OgopogoNode;
     internal static TerminalKeyword OgopogoKeyword;
 
-    internal static void Init() {
-        MainAssetBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "biodiversity_honeyfeeder"));
+    internal static TerminalNode VerminNode;
+    internal static TerminalKeyword VerminKeyword;
 
-        HoneyFeeder = LoadAsset<EnemyType>("HoneyFeeder.asset", MainAssetBundle);
+    internal static void Init() {
+        // MainAssetBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "biodiversity_honeyfeeder"));
+
+        // HoneyFeeder = LoadAsset<EnemyType>("HoneyFeeder.asset", MainAssetBundle);
 
 
 
@@ -32,6 +36,13 @@ internal static class BiodiverseAssets {
         OgopogoKeyword = LoadAsset<TerminalKeyword>("OgopogoKW", OgopogoBundle);
 
         NetworkPrefabs.RegisterNetworkPrefab(Ogopogo.enemyPrefab);
+
+        Vermin = LoadAsset<EnemyType>("Vermin", OgopogoBundle);
+
+        VerminNode = LoadAsset<TerminalNode>("VerminTN", OgopogoBundle);
+        VerminKeyword = LoadAsset<TerminalKeyword>("VerminKW", OgopogoBundle);
+
+        NetworkPrefabs.RegisterNetworkPrefab(Vermin.enemyPrefab);
     }
 
     static T LoadAsset<T>(string path, AssetBundle bundle) where T : UnityEngine.Object {
