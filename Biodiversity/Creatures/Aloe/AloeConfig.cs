@@ -12,7 +12,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     
     [field: Tooltip("The maximum radius in meters the Aloe will roam from her favourite spot")]
     [field: Range(0f, 500f)]
-    public float MaxRoamingRadius { get; private set; } = 50f;
+    public float MaxRoamingRadius { get; private set; } = 25f;
     
     [field: Tooltip("The view width in degrees of the Aloe")]
     [field: Range(1f, 360f)]

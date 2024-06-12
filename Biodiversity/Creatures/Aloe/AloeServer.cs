@@ -189,8 +189,11 @@ public class AloeServer : BiodiverseAI
                 {
                     LogDebug("While PASSIVELY stalking, player was looking at aloe, avoiding the player now");
                     netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.InterruptedHealing);
-                    
                     _timesFoundSneaking++;
+                    
+                    if (_isStaringAtTargetPlayer && targetPlayer == _avoidingPlayer)
+                        netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.8f, _avoidingPlayer.playerClientId);
+                    
                     SwitchBehaviourStateLocally(States.AvoidingPlayer);
                     break;
                 }
@@ -266,7 +269,7 @@ public class AloeServer : BiodiverseAI
                     netcodeController.SnapPlayerNeckClientRpc(_aloeId, targetPlayer.actualClientId);
                     netcodeController.ChangeTargetPlayerClientRpc(_aloeId, _backupTargetPlayer.actualClientId);
                     targetPlayer = _backupTargetPlayer;
-                    SwitchBehaviourStateLocally(States.ChasingEscapedPlayer); // Maybe make the aloe have to find the player first?
+                    SwitchBehaviourStateLocally(States.ChasingEscapedPlayer);
                     break;
                 }
                 
@@ -301,6 +304,9 @@ public class AloeServer : BiodiverseAI
                 {
                     if (!PlayerIsStalkable(player)) continue;
                     
+                    if (player.HasLineOfSightToPosition(eye.transform.position))
+                        netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.2f, player.playerClientId);
+                    
                     targetPlayer = player;
                     netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.actualClientId);
                     SwitchBehaviourStateLocally(States.PassivelyStalkingPlayer);
@@ -311,6 +317,7 @@ public class AloeServer : BiodiverseAI
                 {
                     LogDebug("Heading towards favourite position before roaming");
                     SetDestinationToPosition(favoriteSpot.position);
+                    if (roamMap.inProgress) StopSearch(roamMap);
                 }
                 
                 // If not already roaming, then start the roam search routine
@@ -326,6 +333,12 @@ public class AloeServer : BiodiverseAI
             case (int)States.AvoidingPlayer:
             {
                 _avoidPlayerCoroutine ??= StartCoroutine(AvoidClosestPlayer(true));
+                
+                List<PlayerControllerB> playersLookingAtAloe = WhoAreLookingAtAloe();
+                foreach (PlayerControllerB player in playersLookingAtAloe)
+                {
+                    netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.2f, player.actualClientId);
+                }
 
                 break;
             }
@@ -339,9 +352,19 @@ public class AloeServer : BiodiverseAI
                 {
                     if (!PlayerIsStalkable(player)) continue;
                     
+                    if (player.HasLineOfSightToPosition(eye.transform.position))
+                        netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.2f, player.playerClientId);
+                    
                     targetPlayer = player;
                     netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.actualClientId);
                     SwitchBehaviourStateLocally(States.StalkingPlayerToKidnap);
+                    break;
+                }
+                
+                // Check if her chosen player is still alive
+                if (IsPlayerDead(targetPlayer))
+                {
+                    SwitchBehaviourStateLocally(States.PassiveRoaming);
                     break;
                 }
                 
@@ -377,6 +400,13 @@ public class AloeServer : BiodiverseAI
             case (int)States.StalkingPlayerToKidnap:
             {
                 if (roamMap.inProgress) StopSearch(roamMap);
+                
+                // Check if her chosen player is still alive
+                if (IsPlayerDead(targetPlayer))
+                {
+                    SwitchBehaviourStateLocally(States.PassiveRoaming);
+                    break;
+                }
 
                 if (IsTargetPlayerReachable())
                 {
@@ -387,6 +417,12 @@ public class AloeServer : BiodiverseAI
                     Transform farAwayTransform = ChooseFarthestNodeFromPosition(_mainEntrancePosition);
                     targetNode = farAwayTransform;
                     SetDestinationToPosition(farAwayTransform.position, true);
+                }
+                
+                List<PlayerControllerB> playersLookingAtAloe = WhoAreLookingAtAloe();
+                foreach (PlayerControllerB player in playersLookingAtAloe)
+                {
+                    netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.4f, player.actualClientId);
                 }
                 
                 break;
@@ -827,11 +863,21 @@ public class AloeServer : BiodiverseAI
     private bool IsPlayerTargetable(PlayerControllerB player)
     {
         if (player == null) return false;
-        return !player.isPlayerDead &&
+        return !IsPlayerDead(player) &&
                player.isInsideFactory &&
-               player.isPlayerControlled &&
                !(player.sinkingValue >= 0.7300000190734863) &&
                !AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(this);
+    }
+    
+    /// <summary>
+    /// Returns whether the given player is dead
+    /// </summary>
+    /// <param name="player">The player to check if they are dead</param>
+    /// <returns>Whether the player is dead</returns>
+    private static bool IsPlayerDead(PlayerControllerB player)
+    {
+        if (player == null) return true;
+        return player.isPlayerDead || !player.isPlayerControlled;
     }
 
     /// <summary>
