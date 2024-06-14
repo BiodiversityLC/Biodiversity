@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 using Biodiversity.General;
+using Biodiversity.Util;
 
 namespace Biodiversity.Creatures.Ogopogo
 {
@@ -347,6 +348,18 @@ namespace Biodiversity.Creatures.Ogopogo
             this.creatureAnimator.SetInteger("AnimID", 1);
         }
 
+        void spawnVermin()
+        {
+            foreach (var i in Enumerable.Range(0, 4))
+            {
+                GameObject vermin = UnityEngine.Object.Instantiate<GameObject>(BiodiverseAssets.Vermin.enemyPrefab, this.transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
+                vermin.GetComponentInChildren<NetworkObject>().Spawn(true);
+                VerminAI AIscript = vermin.gameObject.GetComponent<VerminAI>();
+                AIscript.setWater = water;
+                AIscript.spawnedByOgo = true;
+            }
+        }
+
         // Handle grabbing
         public override void OnCollideWithPlayer(UnityEngine.Collider other)
         {
@@ -424,6 +437,7 @@ namespace Biodiversity.Creatures.Ogopogo
                         SwitchToBehaviourClientRpc((int)State.RISING);
                         PlayVoiceClientRpc(1);
                         this.creatureAnimator.SetInteger("AnimID", 2);
+                        spawnVermin();
                     }
                     if (!PlayerCheck(loseRange))
                     {
@@ -489,7 +503,7 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                     break;
                 case (int)State.RESET:
-                    if (resetTimer >= 10)
+                    if (resetTimer >= 12)
                     {
                         resetEnemy();
                     }

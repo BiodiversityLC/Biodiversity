@@ -35,6 +35,9 @@ namespace Biodiversity.Creatures.Ogopogo
         float loseRange = 15f;
         float detectionRange = 10f;
 
+        [NonSerialized] public QuicksandTrigger setWater = null;
+        [NonSerialized] public bool spawnedByOgo = false;
+
         public override void Start()
         {
             base.Start();
@@ -51,16 +54,24 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                 }
 
-                if (waters.Count == 0 || enemyType.numberSpawned >= 20)
+                if (waters.Count == 0 || enemyType.numberSpawned >= 8)
                 {
-                    BiodiversityPlugin.Logger.LogInfo("Despawning because no water exists that is spawnable or there are too many of this enemy. (vermin)");
+                    BiodiversityPlugin.Logger.LogInfo("Despawning because there are too many of this enemy or there is no water. (vermin)");
                     RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
                     return;
                 }
 
                 // Set the water he will stay in and teleport to it
                 water = waters[UnityEngine.Random.Range(0, waters.Count)];
-                transform.position = water.transform.position;
+                if (setWater != null)
+                {
+                    water = setWater;
+                }
+                if (spawnedByOgo)
+                {
+                    RoundManager.Instance.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
+                }
+                transform.position = water.transform.position; 
                 setWanderPos();
 
                 enemyType.numberSpawned += 1;
