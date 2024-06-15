@@ -125,6 +125,15 @@ namespace Biodiversity.Creatures.Ogopogo
         public override void Update()
         {
             base.Update();
+
+            if (GameNetworkManager.Instance.localPlayerController.isInsideFactory)
+            {
+                skinnedMeshRenderers[0].enabled = false;
+            }
+            else
+            {
+                skinnedMeshRenderers[0].enabled = true;
+            }
             // Step timers
             if (currentBehaviourStateIndex == (int)State.WANDERING)
             {
