@@ -101,9 +101,9 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                 }
 
-                if (waters.Count == 0)
+                if (waters.Count == 0 || TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Flooded)
                 {
-                    BiodiversityPlugin.Logger.LogInfo("Despawning because no water exists that is spawnable.");
+                    BiodiversityPlugin.Logger.LogInfo("Despawning because no water exists that is spawnable or there is a flood.");
                     RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
                     return;
                 }
