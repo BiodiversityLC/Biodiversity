@@ -54,9 +54,22 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                 }
 
-                if (waters.Count == 0 || enemyType.numberSpawned >= 8)
+                if (waters.Count == 0 || enemyType.numberSpawned >= enemyType.MaxCount)
                 {
                     BiodiversityPlugin.Logger.LogInfo("Despawning because there are too many of this enemy or there is no water. (vermin)");
+                    RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
+                    return;
+                }
+
+                if (spawnedByOgo)
+                {
+                    RoundManager.Instance.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
+                    enemyType.numberSpawned++;
+                }
+                else if (TimeOfDay.Instance.currentLevelWeather != LevelWeatherType.Flooded)
+                {
+                    BiodiversityPlugin.Logger.LogInfo("Despawning because Ogopogo did not spawn this and it is not flooded. (vermin)");
+                    SubtractFromPowerLevel();
                     RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
                     return;
                 }
@@ -67,14 +80,9 @@ namespace Biodiversity.Creatures.Ogopogo
                 {
                     water = setWater;
                 }
-                if (spawnedByOgo)
-                {
-                    RoundManager.Instance.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
-                }
+
                 transform.position = water.transform.position; 
                 setWanderPos();
-
-                enemyType.numberSpawned += 1;
             }
             catch (Exception ex)
             {
