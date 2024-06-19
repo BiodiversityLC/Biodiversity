@@ -23,8 +23,13 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     public static BiodiversityPlugin Instance { get; private set; }
     internal new static ManualLogSource Logger { get; private set; }
 
+    static ConfigEntry<bool> OgoEnabled;
+    static ConfigEntry<bool> VerminEnabled;
     static ConfigEntry<string> levelsOgo;
     static ConfigEntry<string> levelsVermin;
+    public static ConfigEntry<float> OgoDetectionRange;
+    public static ConfigEntry<float> OgoLoseRange;
+    public static ConfigEntry<float> OgoAttackDistance;
 
     private void Awake() {
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
@@ -43,11 +48,17 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         Logger.LogInfo("Registering the silly little creatures.");
         //Enemies.RegisterEnemy(BiodiverseAssets.HoneyFeeder, Enemies.SpawnType.Outside);
 
+        OgoEnabled = Config.Bind("General", "Enable Ogopogo", true, "Turn to false to disable Ogopogo spawning");
+        VerminEnabled = Config.Bind("General", "Enable Vermin", true, "Turn to false to disable Vermin spawning");
         levelsOgo = Config.Bind("General", "Ogopogo Levels", "MarchLevel:100,AdamanceLevel:100", "The moons that Ogopogo will spawn on");
         levelsVermin = Config.Bind("General", "Vermin Levels", "All:100", "The moons that Vermin will spawn on");
+        OgoDetectionRange = Config.Bind("General", "Ogopogo detection range", 45f, "The range that Ogopogo will detect you at");
+        OgoLoseRange = Config.Bind("General", "Ogopogo lose range", 70f, "The range that Ogopogo will lose you at");
+        OgoAttackDistance = Config.Bind("General", "Ogopogo attack distance", 30f, "The distance that Ogopogo will attack you at");
 
-        (Dictionary<LevelTypes, int> OgoLevelType, Dictionary<string, int> OgoCustomLevelType) = SolveLevels(levelsOgo.Value);
-        (Dictionary<LevelTypes, int> VerminLevelType, Dictionary<string, int> VerminCustomLevelType) = SolveLevels(levelsVermin.Value);
+
+        (Dictionary<LevelTypes, int> OgoLevelType, Dictionary<string, int> OgoCustomLevelType) = SolveLevels(levelsOgo.Value, OgoEnabled.Value);
+        (Dictionary<LevelTypes, int> VerminLevelType, Dictionary<string, int> VerminCustomLevelType) = SolveLevels(levelsVermin.Value, VerminEnabled.Value);
 
 
         Enemies.RegisterEnemy(BiodiverseAssets.Ogopogo, Enemies.SpawnType.Daytime, OgoLevelType, OgoCustomLevelType, BiodiverseAssets.OgopogoNode, BiodiverseAssets.OgopogoKeyword);
@@ -57,7 +68,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     }
 
     //Totally didn't copy this from sirenhead because I didn't want to write it again
-    (Dictionary<LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) SolveLevels(string config)
+    (Dictionary<LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) SolveLevels(string config, bool enabled)
     {
         Dictionary<LevelTypes, int> spawnRateByLevelType = new Dictionary<LevelTypes, int>();
         Dictionary<string, int> spawnRateByCustomLevelType = new Dictionary<string, int>();
@@ -92,8 +103,14 @@ public class BiodiversityPlugin : BaseUnityPlugin {
             }
         }
 
-
-        return (spawnRateByLevelType, spawnRateByCustomLevelType);
+        if (enabled)
+        {
+            return (spawnRateByLevelType, spawnRateByCustomLevelType);
+        }
+        else
+        {
+            return (null, null);
+        }
     }
 
     private void NetcodePatcher() {

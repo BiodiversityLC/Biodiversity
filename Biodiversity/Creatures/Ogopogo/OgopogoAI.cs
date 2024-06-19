@@ -33,9 +33,9 @@ namespace Biodiversity.Creatures.Ogopogo
         // Movement
         float wanderSpeed = 3.5f;
         float chaseSpeed = 4f;
-        float detectionRange = 45f;
-        float loseRange = 70f;
-        float attackDistance = 30f;
+        float detectionRange;
+        float loseRange;
+        float attackDistance;
         float riseSpeed = 75f;
         float riseHeight = 100f;
         [SerializeField] private Transform RaycastPos;
@@ -75,6 +75,10 @@ namespace Biodiversity.Creatures.Ogopogo
         public override void Start()
         {
             base.Start();
+
+            detectionRange = BiodiversityPlugin.OgoDetectionRange.Value;
+            loseRange = BiodiversityPlugin.OgoLoseRange.Value;
+            attackDistance = BiodiversityPlugin.OgoAttackDistance.Value;
 
             /**
             foreach (SelectableLevel level in StartOfRound.Instance.levels)
