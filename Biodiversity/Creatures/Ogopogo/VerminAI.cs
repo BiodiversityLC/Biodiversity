@@ -190,10 +190,23 @@ namespace Biodiversity.Creatures.Ogopogo
             }
         }
 
+        float WaterTop(BoxCollider coll)
+        {
+            return coll.transform.localScale.y * coll.size.y / 2 + coll.transform.position.y;
+        }
+
 
         public override void DoAIInterval()
         {
             base.DoAIInterval();
+
+            BoxCollider coll = water.gameObject.GetComponent<BoxCollider>();
+
+            if (WaterTop(coll) < transform.position.y)
+            {
+                transform.position = new Vector3(transform.position.x, WaterTop(coll), transform.position.z);
+            }
+            
 
             switch (currentBehaviourStateIndex)
             {
@@ -203,7 +216,6 @@ namespace Biodiversity.Creatures.Ogopogo
                     {
                         setWanderPos();
                     }
-                    BoxCollider coll = water.gameObject.GetComponent<BoxCollider>();
 
                     Vector3 WanderLocation = Vector3.MoveTowards(transform.position, wanderPos, step1);
 

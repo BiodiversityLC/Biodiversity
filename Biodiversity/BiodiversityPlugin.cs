@@ -23,6 +23,8 @@ public class BiodiversityPlugin : BaseUnityPlugin {
     public static BiodiversityPlugin Instance { get; private set; }
     internal new static ManualLogSource Logger { get; private set; }
 
+    bool OgoEnabledValue;
+
     static ConfigEntry<bool> OgoEnabled;
     static ConfigEntry<bool> VerminEnabled;
     static ConfigEntry<string> levelsOgo;
@@ -56,8 +58,23 @@ public class BiodiversityPlugin : BaseUnityPlugin {
         OgoLoseRange = Config.Bind("General", "Ogopogo lose range", 70f, "The range that Ogopogo will lose you at");
         OgoAttackDistance = Config.Bind("General", "Ogopogo attack distance", 30f, "The distance that Ogopogo will attack you at");
 
+        OgoEnabledValue = false;
 
-        (Dictionary<LevelTypes, int> OgoLevelType, Dictionary<string, int> OgoCustomLevelType) = SolveLevels(levelsOgo.Value, OgoEnabled.Value);
+        if (OgoDetectionRange.Value >= OgoLoseRange.Value)
+        {
+            Logger.LogInfo("Ogopogo detection range lower than lose range. Disabling Ogopogo spawning until this is fixed.");
+        }
+        else if (OgoAttackDistance.Value > OgoDetectionRange.Value)
+        {
+            Logger.LogInfo("Ogopogo attack distance is not in the detection distance. Disabling Ogopogo spawning until this is fixed.");
+        }
+        else
+        {
+            OgoEnabledValue = OgoEnabled.Value;
+        }
+
+
+        (Dictionary<LevelTypes, int> OgoLevelType, Dictionary<string, int> OgoCustomLevelType) = SolveLevels(levelsOgo.Value, OgoEnabledValue);
         (Dictionary<LevelTypes, int> VerminLevelType, Dictionary<string, int> VerminCustomLevelType) = SolveLevels(levelsVermin.Value, VerminEnabled.Value);
 
 
