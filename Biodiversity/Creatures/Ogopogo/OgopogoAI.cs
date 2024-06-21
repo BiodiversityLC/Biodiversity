@@ -99,7 +99,8 @@ namespace Biodiversity.Creatures.Ogopogo
                 {
                     BiodiversityPlugin.Logger.LogInfo(maybeWater);
                     BiodiversityPlugin.Logger.LogInfo(maybeWater.isWater);
-                    if (maybeWater.isWater)
+                    BiodiversityPlugin.Logger.LogInfo(maybeWater.gameObject.CompareTag("SpawnDenialPoint"));
+                    if (maybeWater.isWater && !maybeWater.gameObject.CompareTag("SpawnDenialPoint"))
                     {
                         waters.Add(maybeWater);
                     }
