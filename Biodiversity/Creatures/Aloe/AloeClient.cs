@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using BepInEx.Logging;
-using Dissonance;
+using Unity.Netcode;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -17,6 +17,15 @@ public class AloeClient : MonoBehaviour
     private static readonly int Metallic = Shader.PropertyToID("_Metallic");
     private static readonly int BaseColour = Shader.PropertyToID("BaseColour");
 
+    private static readonly int Speed = Animator.StringToHash("Speed");
+    private static readonly int Dead = Animator.StringToHash("Dead");
+    public static readonly int Crawling = Animator.StringToHash("Crawling");
+    public static readonly int Stunned = Animator.StringToHash("Stunned");
+    public static readonly int Spotted = Animator.StringToHash("Spotted");
+    public static readonly int Healing = Animator.StringToHash("Healing");
+    public static readonly int Grab = Animator.StringToHash("Grab");
+    public static readonly int Stand = Animator.StringToHash("Stand");
+
     public enum AudioClipTypes
     {
         Stun,
@@ -31,7 +40,9 @@ public class AloeClient : MonoBehaviour
     [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
     
 #pragma warning disable 0649
-    [Header("Audio")] [Space(5f)] 
+    [Header("Audio")] [Space(5f)]
+    [SerializeField] private AudioSource aloeVoiceSource;
+    [SerializeField] private AudioSource aloeFootstepsSource;
     public AudioClip[] stunSfx;
     public AudioClip[] chaseSfx;
     public AudioClip[] crackNeckSfx;
@@ -39,12 +50,9 @@ public class AloeClient : MonoBehaviour
     public AudioClip[] interruptedHealingSfx;
     public AudioClip[] snatchAndDragSfx;
     public AudioClip[] stepsSfx;
-    [SerializeField] private AudioSource aloeVoiceSource;
-    [SerializeField] private AudioSource aloeFootstepsSource;
     
     [Header("Renderers and Materials")] [Space(5f)]
     [SerializeField] private Renderer bodyRenderer;
-    [SerializeField] private Renderer leavesRenderer;
     [SerializeField] private Renderer petalsRenderer;
     [SerializeField] private MaterialPropertyBlock _propertyBlock;
     [SerializeField] private float skinMetallicTransitionTime = 7.5f;
@@ -58,6 +66,7 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private Collider collider;
     [SerializeField] private GameObject scanNode;
+    [SerializeField] private Transform lookTarget;
     [SerializeField] private AloeNetcodeController netcodeController;
 #pragma warning restore 0649
     
@@ -132,15 +141,8 @@ public class AloeClient : MonoBehaviour
     
     private void Start()
     {
-        _mls = Logger.CreateLogSource($"Biodiversity | Aloe Client {_aloeId}");
+        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client {_aloeId}");
         _propertyBlock = new MaterialPropertyBlock();
-    }
-    
-    private void FixedUpdate()
-    {
-        Vector3 position = transform.position;
-        _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
-        _agentLastPosition = position;
     }
 
     /// <summary>
@@ -148,6 +150,11 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        Vector3 position = transform.position;
+        _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
+        _agentLastPosition = position;
+        animator.SetFloat(Speed, _agentCurrentSpeed);
+        
         if (!_targetPlayerCanEscape)
         {
             _currentEscapeChargeValue = 0;
@@ -175,6 +182,7 @@ public class AloeClient : MonoBehaviour
                     LogDebug("Triggering aloe escape");
                     _currentEscapeChargeValue = 0;
                     _targetPlayerCanEscape = false;
+                    healingOrbEffect.Stop();
                     netcodeController.TargetPlayerEscapedServerRpc(_aloeId);
                 }
                 
@@ -258,7 +266,6 @@ public class AloeClient : MonoBehaviour
         }
         
         bodyRenderer.GetPropertyBlock(_propertyBlock);
-        leavesRenderer.GetPropertyBlock(_propertyBlock);
         StartCoroutine(ChangeAloeSkinColour(toDark));
     }
 
@@ -309,7 +316,6 @@ public class AloeClient : MonoBehaviour
             _propertyBlock.SetColor(BaseColour, newColour);
             
             bodyRenderer.SetPropertyBlock(_propertyBlock);
-            leavesRenderer.SetPropertyBlock(_propertyBlock);
             //LogDebug($"current metallic value: {currentMetallicValue}, current v value: {currentV}");
             
             timeElapsed += Time.deltaTime;
@@ -320,7 +326,6 @@ public class AloeClient : MonoBehaviour
         _propertyBlock.SetFloat(Metallic, endMetallicValue);
         _propertyBlock.SetColor(BaseColour, HSVToRGB(h, s, endV));
         bodyRenderer.SetPropertyBlock(_propertyBlock);
-        leavesRenderer.SetPropertyBlock(_propertyBlock);
     }
 
     /// <summary>
@@ -373,7 +378,7 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         if (_targetPlayer == null) return;
-
+        
         if (setToInCaptivity)
         {
             _targetPlayer.inSpecialInteractAnimation = true;
@@ -479,6 +484,21 @@ public class AloeClient : MonoBehaviour
         healingOrbEffect.SendEvent("OnShowHealingOrb");
         HandlePlayAudioClipType(receivedAloeId, AudioClipTypes.Healing, 0, true);
     }
+
+    /// <summary>
+    /// Grabs the target player at the end of the grab player animation
+    /// </summary>
+    private void OnAnimationEventGrabPlayer()
+    {
+        if (!NetworkManager.Singleton.IsServer || !netcodeController.IsOwner) return;
+        netcodeController.GrabTargetPlayerServerRpc(_aloeId);
+    }
+
+    private void OnAnimationEventPlayFootstepSfx()
+    {
+        AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
+        aloeFootstepsSource.PlayOneShot(audioClipToPlay);
+    }
     
     /// <summary>
     /// Changes the target player to the player with the given playerObjectId.
@@ -505,10 +525,18 @@ public class AloeClient : MonoBehaviour
     private void HandleEnterDeathState(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
-        
+        SetBool(_aloeId, Dead, true);
+    }
+
+    /// <summary>
+    /// An animation event that gets triggered near the end of the death animation.
+    /// The function plays the poof particle effect and makes the Aloe invisible
+    /// </summary>
+    public void OnAnimationEventPlayPoofParticleEffect()
+    {
         poofParticleSystem.Play();
+        
         bodyRenderer.enabled = false;
-        leavesRenderer.enabled = false;
         petalsRenderer.enabled = false;
         
         aloeVoiceSource.Stop(true);
@@ -516,6 +544,17 @@ public class AloeClient : MonoBehaviour
         
         Destroy(collider.gameObject);
         Destroy(scanNode.gameObject);
+        StartCoroutine(DestroyAloeObjectAfterDuration(poofParticleSystem.main.duration));
+    }
+    
+    /// <summary>
+    /// Destroys the entire Aloe object after a duration
+    /// </summary>
+    private IEnumerator DestroyAloeObjectAfterDuration(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        LogDebug("Destroying gameobject");
+        Destroy(gameObject);
     }
 
     /// <summary>
@@ -574,7 +613,7 @@ public class AloeClient : MonoBehaviour
     {
         _aloeId = id;
         _mls?.Dispose();
-        _mls = Logger.CreateLogSource($"Biodiversity | Aloe Client {_aloeId}");
+        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client {_aloeId}");
         
         LogDebug("Successfully synced aloe id");
     }

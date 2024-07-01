@@ -9,6 +9,7 @@ namespace Biodiversity.Creatures.Aloe;
 public class AloeNetcodeController : NetworkBehaviour
 {
     private ManualLogSource _mls;
+    private string _aloeId;
 
     public event Action<string> OnSyncAloeId;
     public event Action<string> OnInitializeConfigValues;
@@ -28,10 +29,17 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, AloeClient.AudioClipTypes, int, bool> OnPlayAudioClipType;
     public event Action<string, int> OnChangeBehaviourState;
     public event Action<string, ulong> OnSnapPlayerNeck;
+    public event Action<string> OnGrabTargetPlayer;
 
     private void Start()
     {
-        _mls = Logger.CreateLogSource($"Biodiversity | Aloe Netcode Controller");
+        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
+    }
+
+    [ServerRpc]
+    public void GrabTargetPlayerServerRpc(string receivedAloeId)
+    {
+        OnGrabTargetPlayer?.Invoke(receivedAloeId);
     }
 
     [ClientRpc]
@@ -191,6 +199,10 @@ public class AloeNetcodeController : NetworkBehaviour
     [ClientRpc]
     public void SyncAloeIdClientRpc(string receivedAloeId)
     {
+        _aloeId = receivedAloeId;
+        _mls?.Dispose();
+        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller {_aloeId}");
+        
         OnSyncAloeId?.Invoke(receivedAloeId);
     }
     
