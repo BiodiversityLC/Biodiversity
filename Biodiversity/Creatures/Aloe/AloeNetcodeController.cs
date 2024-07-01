@@ -14,7 +14,8 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string> OnSyncAloeId;
     public event Action<string> OnInitializeConfigValues;
     public event Action<string, int, bool> OnChangeAnimationParameterBool;
-    public event Action<string, int> OnDoAnimation;
+    public event Action<string, int> OnSetTrigger;
+    public event Action<string, int> OnResetTrigger;
     public event Action<string, float, ulong> OnIncreasePlayerFearLevel;
     public event Action<string> OnMuffleTargetPlayerVoice;
     public event Action<string> OnUnMuffleTargetPlayerVoice;
@@ -30,10 +31,17 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, int> OnChangeBehaviourState;
     public event Action<string, ulong> OnSnapPlayerNeck;
     public event Action<string> OnGrabTargetPlayer;
+    public event Action<string, float, float> OnChangeLookAimConstraintWeight;
 
     private void Start()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
+    }
+
+    [ClientRpc]
+    public void ChangeLookAimConstraintWeightClientRpc(string receivedAloeId, float endWeight, float duration = -1f)
+    {
+        OnChangeLookAimConstraintWeight?.Invoke(receivedAloeId, endWeight, duration);
     }
 
     [ServerRpc]
@@ -157,23 +165,35 @@ public class AloeNetcodeController : NetworkBehaviour
     {
         OnIncreasePlayerFearLevel?.Invoke(receivedAloeId, targetInsanity, playerClientId);
     }
-
+    
     /// <summary>
-    /// Invokes the do animation event
+    /// Invokes the reset animator trigger event
     /// This uses the trigger function on an animator object
     /// </summary>
-    /// <param name="receivedAloeId"></param>
+    /// <param name="receivedAloeId">The Aloe Id</param>
     /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
     [ClientRpc]
-    public void DoAnimationClientRpc(string receivedAloeId, int animationId)
+    public void ResetTriggerClientRpc(string receivedAloeId, int animationId)
     {
-        OnDoAnimation?.Invoke(receivedAloeId, animationId);
+        OnResetTrigger?.Invoke(receivedAloeId, animationId);
+    }
+
+    /// <summary>
+    /// Invokes the set animator trigger event
+    /// This uses the trigger function on an animator object
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
+    [ClientRpc]
+    public void SetTriggerClientRpc(string receivedAloeId, int animationId)
+    {
+        OnSetTrigger?.Invoke(receivedAloeId, animationId);
     }
 
     /// <summary>
     /// Invokes the change animation parameter event
     /// </summary>
-    /// <param name="receivedAloeId"></param>
+    /// <param name="receivedAloeId">The Aloe Id</param>
     /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
     /// <param name="value">The bool value to change to</param>
     [ClientRpc]
@@ -185,7 +205,7 @@ public class AloeNetcodeController : NetworkBehaviour
     /// <summary>
     /// Invokes the initialize config values event
     /// </summary>
-    /// <param name="receivedAloeId"></param>
+    /// <param name="receivedAloeId">The Aloe Id</param>
     [ClientRpc]
     public void InitializeConfigValuesClientRpc(string receivedAloeId)
     {
@@ -195,7 +215,7 @@ public class AloeNetcodeController : NetworkBehaviour
     /// <summary>
     /// Invokes the update aloe id event
     /// </summary>
-    /// <param name="receivedAloeId"></param>
+    /// <param name="receivedAloeId">The Aloe Id</param>
     [ClientRpc]
     public void SyncAloeIdClientRpc(string receivedAloeId)
     {

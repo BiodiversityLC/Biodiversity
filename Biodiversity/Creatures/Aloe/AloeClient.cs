@@ -1,11 +1,14 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using BepInEx.Logging;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using UnityEngine;
+using UnityEngine.Animations.Rigging;
 using UnityEngine.InputSystem;
 using UnityEngine.VFX;
 using Logger = BepInEx.Logging.Logger;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -62,11 +65,15 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private VisualEffect healingOrbEffect;
     [SerializeField] private ParticleSystem poofParticleSystem;
     
-    [Header("Controllers")] [Space(5f)] 
+    [Header("Animation")][Space(5f)]
     [SerializeField] private Animator animator;
+    [SerializeField] private MultiAimConstraint lookAimConstraint;
+    [SerializeField] private Transform lookTarget;
+    [SerializeField] private float lookBlendDuration = 0.5f;
+    
+    [Header("Controllers")] [Space(5f)] 
     [SerializeField] private Collider collider;
     [SerializeField] private GameObject scanNode;
-    [SerializeField] private Transform lookTarget;
     [SerializeField] private AloeNetcodeController netcodeController;
 #pragma warning restore 0649
     
@@ -76,12 +83,16 @@ public class AloeClient : MonoBehaviour
     
     private PlayerControllerB _targetPlayer;
     
+    private Vector3 _agentLastPosition;
+
+    private Transform _cachedTargetPlayerHeadTransform;
+
+    private Coroutine _blendLookAimConstraintWeightCoroutine;
+    
     private bool _targetPlayerCanEscape;
 
     private float _currentEscapeChargeValue;
     private float _agentCurrentSpeed;
-    
-    private Vector3 _agentLastPosition;
     
     private int _currentBehaviourStateIndex;
 
@@ -93,8 +104,9 @@ public class AloeClient : MonoBehaviour
         if (netcodeController == null) return;
         netcodeController.OnSyncAloeId += HandleSyncAloeId;
         netcodeController.OnInitializeConfigValues += HandleInitializeConfigValues;
-        netcodeController.OnDoAnimation += SetTrigger;
-        netcodeController.OnChangeAnimationParameterBool += SetBool;
+        netcodeController.OnSetTrigger += HandleSetTrigger;
+        netcodeController.OnResetTrigger += HandleResetTrigger;
+        netcodeController.OnChangeAnimationParameterBool += HandleSetBool;
         netcodeController.OnChangeTargetPlayer += HandleChangeTargetPlayer;
         netcodeController.OnMuffleTargetPlayerVoice += HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice += HandleUnMuffleTargetPlayerVoice;
@@ -108,8 +120,7 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnPlayAudioClipType += HandlePlayAudioClipType;
         netcodeController.OnChangeBehaviourState += HandleChangeBehaviourStateIndex;
         netcodeController.OnSnapPlayerNeck += HandleSnapPlayerNeck;
-
-        StartCoroutine(PlayStepsSfx());
+        netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
     }
 
     /// <summary>
@@ -120,8 +131,9 @@ public class AloeClient : MonoBehaviour
         if (netcodeController == null) return;
         netcodeController.OnSyncAloeId -= HandleSyncAloeId;
         netcodeController.OnInitializeConfigValues -= HandleInitializeConfigValues;
-        netcodeController.OnDoAnimation -= SetTrigger;
-        netcodeController.OnChangeAnimationParameterBool -= SetBool;
+        netcodeController.OnSetTrigger -= HandleSetTrigger;
+        netcodeController.OnResetTrigger -= HandleResetTrigger;
+        netcodeController.OnChangeAnimationParameterBool -= HandleSetBool;
         netcodeController.OnChangeTargetPlayer -= HandleChangeTargetPlayer;
         netcodeController.OnMuffleTargetPlayerVoice -= HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice -= HandleUnMuffleTargetPlayerVoice;
@@ -135,14 +147,14 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnPlayAudioClipType -= HandlePlayAudioClipType;
         netcodeController.OnChangeBehaviourState -= HandleChangeBehaviourStateIndex;
         netcodeController.OnSnapPlayerNeck -= HandleSnapPlayerNeck;
-        
-        StopCoroutine(PlayStepsSfx());
+        netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
     }
     
     private void Start()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client {_aloeId}");
         _propertyBlock = new MaterialPropertyBlock();
+        lookAimConstraint.weight = 0f;
     }
 
     /// <summary>
@@ -153,7 +165,7 @@ public class AloeClient : MonoBehaviour
         Vector3 position = transform.position;
         _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
         _agentLastPosition = position;
-        animator.SetFloat(Speed, _agentCurrentSpeed);
+        animator.SetFloat(Speed, _agentCurrentSpeed / 2f);
         
         if (!_targetPlayerCanEscape)
         {
@@ -191,6 +203,14 @@ public class AloeClient : MonoBehaviour
         }
     }
 
+    private void LateUpdate()
+    {
+        if (_cachedTargetPlayerHeadTransform != null)
+        {
+            lookTarget.position = _cachedTargetPlayerHeadTransform.position;
+        }
+    }
+
     /// <summary>
     /// Handles what should happen to make the Aloe snap a player's neck
     /// </summary>
@@ -206,6 +226,28 @@ public class AloeClient : MonoBehaviour
         //player.inSpecialInteractAnimation = true;
         
         player.KillPlayer(Vector3.zero, true, CauseOfDeath.Strangulation);
+    }
+
+    /// <summary>
+    /// Blends the look multi-aim constraint weight parameter over a specific duration
+    /// </summary>
+    /// <param name="startWeight">The start weight of the blend</param>
+    /// <param name="endWeight">The end weight of the blend</param>
+    /// <param name="duration">The duration of the blend</param>
+    /// <returns></returns>
+    private IEnumerator BlendLookAimConstraintWeight(float startWeight, float endWeight, float duration)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            lookAimConstraint.weight = Mathf.Lerp(startWeight, endWeight, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        lookAimConstraint.weight = endWeight;
+        _blendLookAimConstraintWeightCoroutine = null;
     }
     
     /// <summary>
@@ -267,27 +309,6 @@ public class AloeClient : MonoBehaviour
         
         bodyRenderer.GetPropertyBlock(_propertyBlock);
         StartCoroutine(ChangeAloeSkinColour(toDark));
-    }
-
-    /// <summary>
-    /// Plays the steps sound effect in a random interval if the aloe is moving
-    /// Replace in the future with animation events
-    /// </summary>
-    /// <returns></returns>
-    private IEnumerator PlayStepsSfx()
-    {
-        // Would not work if the aloe was revived at a later date
-        if (_currentBehaviourStateIndex == (int)AloeServer.States.Dead) yield break;
-
-        if (_agentCurrentSpeed >= 2)
-        {
-            AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
-            LogDebug($"Playing audio clip: {audioClipToPlay.name}");
-            aloeFootstepsSource.PlayOneShot(audioClipToPlay);
-            WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
-        }
-
-        yield return new WaitForSeconds(Random.Range(1.9f, 2.5f));
     }
 
     /// <summary>
@@ -494,10 +515,24 @@ public class AloeClient : MonoBehaviour
         netcodeController.GrabTargetPlayerServerRpc(_aloeId);
     }
 
+    /// <summary>
+    /// Plays a random footstep sound effect when the Aloe's foot touches the ground in an animation
+    /// </summary>
     private void OnAnimationEventPlayFootstepSfx()
     {
         AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
         aloeFootstepsSource.PlayOneShot(audioClipToPlay);
+        WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
+    }
+    
+    private void HandleChangeLookAimConstraintWeight(string receivedAloeId, float endWeight, float duration = -1f)
+    {
+        if (_aloeId != receivedAloeId) return;
+        if (duration < 0f) duration = lookBlendDuration;
+        
+        if (_blendLookAimConstraintWeightCoroutine != null) StopCoroutine(_blendLookAimConstraintWeightCoroutine);
+        _blendLookAimConstraintWeightCoroutine = 
+            StartCoroutine(BlendLookAimConstraintWeight(lookAimConstraint.weight, endWeight, duration));
     }
     
     /// <summary>
@@ -511,11 +546,13 @@ public class AloeClient : MonoBehaviour
         if (targetPlayerObjectId == 69420)
         {
             _targetPlayer = null;
+            _cachedTargetPlayerHeadTransform = null;
             return;
         }
         
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[targetPlayerObjectId];
         _targetPlayer = player;
+        _cachedTargetPlayerHeadTransform = _targetPlayer.gameplayCamera.transform;
     }
 
     /// <summary>
@@ -525,7 +562,7 @@ public class AloeClient : MonoBehaviour
     private void HandleEnterDeathState(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
-        SetBool(_aloeId, Dead, true);
+        animator.SetBool(Dead, true);
     }
 
     /// <summary>
@@ -563,7 +600,7 @@ public class AloeClient : MonoBehaviour
     /// <param name="receivedAloeId"></param>
     /// <param name="parameter">The name of the parameter in the animator</param>
     /// <param name="value">The bool value to set it to</param>
-    private void SetBool(string receivedAloeId, int parameter, bool value)
+    private void HandleSetBool(string receivedAloeId, int parameter, bool value)
     {
         if (_aloeId != receivedAloeId) return;
         animator.SetBool(parameter, value);
@@ -572,12 +609,23 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets a trigger in the animator
     /// </summary>
-    /// <param name="receivedAloeId"></param>
+    /// <param name="receivedAloeId">The Aloe Id</param>
     /// <param name="parameter">The name of the trigger in the animator</param>
-    private void SetTrigger(string receivedAloeId, int parameter)
+    private void HandleSetTrigger(string receivedAloeId, int parameter)
     {
         if (_aloeId != receivedAloeId) return;
         animator.SetTrigger(parameter);
+    }
+
+    /// <summary>
+    /// Resets a trigger in the animator
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="parameter">The name of the trigger in the animator</param>
+    private void HandleResetTrigger(string receivedAloeId, int parameter)
+    {
+        if (_aloeId != receivedAloeId) return;
+        animator.ResetTrigger(parameter);
     }
 
     /// <summary>
