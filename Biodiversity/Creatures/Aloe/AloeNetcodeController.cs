@@ -1,8 +1,6 @@
 ﻿using System;
 using BepInEx.Logging;
-using Unity.Collections;
 using Unity.Netcode;
-using UnityEngine.UIElements;
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -81,17 +79,27 @@ public class AloeNetcodeController : NetworkBehaviour
             AloeClient.AudioClipTypes.InterruptedHealing => aloeClient.interruptedHealingSfx.Length,
             AloeClient.AudioClipTypes.SnatchAndDrag => aloeClient.snatchAndDragSfx.Length,
             AloeClient.AudioClipTypes.Steps => aloeClient.stepsSfx.Length,
+            AloeClient.AudioClipTypes.Hit => aloeClient.hitSfx.Length,
             _ => -1
         };
 
-        if (numberOfAudioClips <= 0)
+        switch (numberOfAudioClips)
         {
-            _mls.LogError($"Audio Clip Type was not listed, cannot play audio clip. Number of audio clips: {numberOfAudioClips}");
-            return;
+            case 0:
+                _mls.LogError($"There are no audio clips for audio clip type {audioClipType}.");
+                return;
+            
+            case -1:
+                _mls.LogError($"Audio Clip Type was not listed, cannot play audio clip. Number of audio clips: {numberOfAudioClips}.");
+                return;
+            
+            default:
+            {
+                int clipIndex = UnityEngine.Random.Range(0, numberOfAudioClips);
+                PlayAudioClipTypeClientRpc(receivedAloeId, audioClipType, clipIndex, interrupt);
+                break;
+            }
         }
-
-        int clipIndex = UnityEngine.Random.Range(0, numberOfAudioClips);
-        PlayAudioClipTypeClientRpc(receivedAloeId, audioClipType, clipIndex, interrupt);
     }
 
     [ClientRpc]

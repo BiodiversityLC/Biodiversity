@@ -8,6 +8,7 @@ using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.AI;
 using Logger = BepInEx.Logging.Logger;
+using Object = UnityEngine.Object;
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -15,7 +16,7 @@ public class AloeServer : BiodiverseAI
 {
     private ManualLogSource _mls;
     private string _aloeId;
-    [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
+    [field: HideInInspector] [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
 
     [Header("AI and Pathfinding")] [Space(5f)]
     public AISearchRoutine roamMap;
@@ -48,17 +49,19 @@ public class AloeServer : BiodiverseAI
     private float _avoidPlayerTimer;
     private float _waitTimer;
     private float _avoidPlayerAudioTimer;
+    private float _dragPlayerTimer;
 
     private int _timesFoundSneaking;
     private int _healingPerInterval;
     
-    private bool _carryingPlayer;
+    //private bool _carryingPlayer;
     private bool _isStaringAtTargetPlayer;
     private bool _currentlyHasDarkSkin;
     private bool _reachedFavouriteSpotForRoaming;
     private bool _inGrabAnimation;
     private bool _inStunAnimation;
     private bool _finishedSpottedAnimation;
+    private bool _hasTransitionedToRunningForwardsAndCarryingPlayer;
     
     private readonly List<Transform> _ignoredNodes = [];
 
@@ -108,7 +111,12 @@ public class AloeServer : BiodiverseAI
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Server {_aloeId}");
 
         netcodeController = GetComponent<AloeNetcodeController>();
-        if (netcodeController == null) _mls.LogError("Netcode Controller is null");
+        if (netcodeController == null)
+        {
+            _mls.LogError("Netcode Controller is null, aborting spawn");
+            Destroy(gameObject);
+            return;
+        }
         
         UnityEngine.Random.InitState(StartOfRound.Instance.randomMapSeed + _aloeId.GetHashCode());
         netcodeController.SyncAloeIdClientRpc(_aloeId);
@@ -255,12 +263,25 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.KidnappingPlayer:
             {
-                if (_carryingPlayer)
+                _dragPlayerTimer -= Time.deltaTime;
+                if (_dragPlayerTimer <= 0 && !_hasTransitionedToRunningForwardsAndCarryingPlayer)
                 {
-                    const float distanceInFront = -0.8f;
-                    Vector3 newPosition = transform.position + transform.forward * distanceInFront;
-                    targetPlayer.transform.position = newPosition;
+                    _dragPlayerTimer = float.MaxValue; // Better than adding ANOTHER bool value to this if statement
+                    netcodeController.SetTriggerClientRpc(_aloeId, AloeClient.KidnapRun);
+                    StartCoroutine(TransitionToRunningForwardsAndCarryingPlayer(0.3f));
                 }
+                
+                const float distanceInFront = -0.8f;
+                Vector3 newPosition = transform.position + transform.forward * distanceInFront;
+                targetPlayer.transform.position = newPosition;
+                
+                
+                // if (_carryingPlayer)
+                // {
+                //     const float distanceInFront = -0.8f;
+                //     Vector3 newPosition = transform.position + transform.forward * distanceInFront;
+                //     targetPlayer.transform.position = newPosition;
+                // }
                 
                 break;
             }
@@ -449,7 +470,7 @@ public class AloeServer : BiodiverseAI
                 }
                 else
                 {
-                    if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 1.5f && !_inGrabAnimation)
+                    if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 2f && !_inGrabAnimation)
                     {
                         // See if the aloe can kidnap the player
                         LogDebug("Player is close to aloe! Kidnapping him now");
@@ -478,7 +499,7 @@ public class AloeServer : BiodiverseAI
                     LogDebug("reached favourite spot while kidnapping");
                     netcodeController.UnMuffleTargetPlayerVoiceClientRpc(_aloeId);
 
-                    _carryingPlayer = false;
+                    //_carryingPlayer = false;
                     SwitchBehaviourStateLocally(States.HealingPlayer);
                 }
 
@@ -553,32 +574,56 @@ public class AloeServer : BiodiverseAI
     /// </summary>
     private void CalculateRotation()
     {
-        if (currentBehaviourStateIndex is (int)States.Dead or (int)States.HealingPlayer or (int)States.CuddlingPlayer)
-            return;
-        
         const float turnSpeed = 5f;
-        if (currentBehaviourStateIndex == (int)States.KidnappingPlayer)
+
+        switch (currentBehaviourStateIndex)
         {
-            const float backwardSpeedThreshold = 3;
+            case (int)States.Dead or (int)States.HealingPlayer:
+                break;
             
-            Vector3 velocity = agent.velocity;
-            transform.position = agent.transform.position;
+            case (int)States.CuddlingPlayer:
+            {
+                // Todo: Add a dictionary that stores all player's distances from the Aloe per specified interval
+                PlayerControllerB whoIsLookingAtAloe = WhoIsLookingAtAloe(targetPlayer);
+                if (whoIsLookingAtAloe != null)
+                {
+                    LookAtPlayer(whoIsLookingAtAloe);
+                }
 
-            Vector3 targetDirection = _agentCurrentSpeed < backwardSpeedThreshold ? -velocity.normalized : velocity.normalized;
-            Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
-            rotationTarget.rotation = Quaternion.Slerp(rotationTarget.rotation, targetRotation,
-                Time.deltaTime * turnSpeed);
-
-            transform.rotation = Quaternion.Slerp(transform.rotation, rotationTarget.rotation,
-                Time.deltaTime * turnSpeed);
-        }
+                break;
+            }
+            
+            default:
+            {
+                if (!(agent.velocity.sqrMagnitude > 0.01f)) break;
+                Vector3 targetDirection = !_hasTransitionedToRunningForwardsAndCarryingPlayer &&
+                                          currentBehaviourStateIndex == (int)States.KidnappingPlayer
+                    ? -agent.velocity.normalized
+                    : agent.velocity.normalized;
         
-        else if (agent.velocity.sqrMagnitude > 0.01f)
-        {
-            Vector3 direction = agent.velocity.normalized;
-            Quaternion lookRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * turnSpeed);
+                Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * turnSpeed);
+                break;
+            }
         }
+    }
+
+    private IEnumerator TransitionToRunningForwardsAndCarryingPlayer(float transitionDuration)
+    {
+        Vector3 forwardDirection = agent.velocity.normalized;
+        Quaternion initialRotation = transform.rotation;
+        Quaternion targetRotation = Quaternion.LookRotation(forwardDirection);
+        float elapsedTime = 0f;
+
+        while (elapsedTime < transitionDuration)
+        {
+            transform.rotation = Quaternion.Slerp(initialRotation, targetRotation, elapsedTime / transitionDuration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.rotation = targetRotation;
+        _hasTransitionedToRunningForwardsAndCarryingPlayer = true;
     }
 
     /// <summary>
@@ -599,7 +644,7 @@ public class AloeServer : BiodiverseAI
                 AloeSharedData.Instance.AloeBoundKidnaps.Remove(this);
         }
 
-        _carryingPlayer = setToInCaptivity;
+        //_carryingPlayer = setToInCaptivity;
         netcodeController.SetTargetPlayerInCaptivityClientRpc(_aloeId, setToInCaptivity);
     }
 
@@ -610,8 +655,8 @@ public class AloeServer : BiodiverseAI
     {
         if (!IsServer) return;
         
-        LogDebug("Target player escaped by teleportation");
-        HandleTargetPlayerEscaped(_aloeId);
+        LogDebug("Target player escaped by teleportation!");
+        SetTargetPlayerInCaptivity(false);
         netcodeController.ChangeTargetPlayerClientRpc(_aloeId, 69420);
         SwitchBehaviourStateLocally(States.PassiveRoaming);
     }
@@ -619,11 +664,12 @@ public class AloeServer : BiodiverseAI
     /// <summary>
     /// Is called on a network event when player manages to escape by mashing keys on their keyboard.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     private void HandleTargetPlayerEscaped(string receivedAloeId)
     {
         if (!IsServer) return;
         
+        LogDebug("Target player escaped by force!");
         SetTargetPlayerInCaptivity(false);
         SwitchBehaviourStateLocally(States.ChasingEscapedPlayer);
     }
@@ -764,9 +810,9 @@ public class AloeServer : BiodiverseAI
     /// This function is from the base EnemyAI class.
     /// </summary>
     /// <param name="force">The amount of damage that was done by the hit</param>
-    /// <param name="playerWhoHit">The player object that hit the aloe, if it was hit by a player</param>
+    /// <param name="playerWhoHit">The player object that hit the Aloe, if it was hit by a player</param>
     /// <param name="playHitSFX">Don't use this</param>
-    /// <param name="hitId"></param>
+    /// <param name="hitId">The ID of hit which dealt the damage</param>
     public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitId = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitId);
@@ -775,11 +821,11 @@ public class AloeServer : BiodiverseAI
         if (currentBehaviourStateIndex is (int)States.Dead) return;
         if (_takeDamageCooldown > 0) return;
 
+        netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.Hit);
         enemyHP -= force;
         _takeDamageCooldown = 0.03f;
         if (enemyHP > 0)
         {
-            // Play hit sfx
             switch (currentBehaviourStateIndex)
             {
                 case (int)States.PassiveRoaming:
@@ -791,7 +837,7 @@ public class AloeServer : BiodiverseAI
                 // If stalking, then check if player is near, and hit them.
                 case (int)States.PassivelyStalkingPlayer or (int)States.StalkingPlayerToKidnap:
                 {
-                    // Replace this with the hit animation
+                    // Todo: Replace this with the hit animation
                     if (playerWhoHit != null)
                     {
                         playerWhoHit.DamagePlayer(20);
@@ -817,7 +863,7 @@ public class AloeServer : BiodiverseAI
                 case (int)States.HealingPlayer or (int)States.CuddlingPlayer:
                 {
                     if (playerWhoHit == null) break;
-                    // healing animation
+                    // Todo: cancel healing animation
                     _backupTargetPlayer = targetPlayer;
                     targetPlayer = playerWhoHit;
                     netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.actualClientId);
@@ -852,7 +898,7 @@ public class AloeServer : BiodiverseAI
     /// </summary>
     /// <param name="setToStunned">Not really sure what this is for</param>
     /// <param name="setToStunTime">The time that the aloe is going to be stunned for</param>
-    /// <param name="setStunnedByPlayer">The player that the aloe was stunned by</param>
+    /// <param name="setStunnedByPlayer">The player that the Aloe was stunned by</param>
     public override void SetEnemyStunned(
         bool setToStunned,
         float setToStunTime = 1f,
@@ -864,6 +910,7 @@ public class AloeServer : BiodiverseAI
         _inStunAnimation = true;
         netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.Stun, true);
         netcodeController.ChangeAnimationParameterBoolClientRpc(_aloeId, AloeClient.Stunned, true);
+        netcodeController.ChangeAnimationParameterBoolClientRpc(_aloeId, AloeClient.Healing, false);
         
         switch (currentBehaviourStateIndex)
         { 
@@ -998,17 +1045,23 @@ public class AloeServer : BiodiverseAI
     /// <summary>
     /// Determines whether a player is looking at the Aloe, and returns the player object.
     /// </summary>
+    /// <param name="ignorePlayer">A player that you can exclude from the process</param>
     /// <returns>the player object looking at the Aloe</returns>
-    private PlayerControllerB WhoIsLookingAtAloe()
+    private PlayerControllerB WhoIsLookingAtAloe(Object ignorePlayer = null)
     {
         PlayerControllerB closestPlayer = null;
-        float closestDistance = float.MaxValue; 
+        float closestDistance = float.MaxValue;
+        bool isThereAPlayerToIgnore = ignorePlayer != null;
 
         foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
         {
             if (player.isPlayerDead || !player.isInsideFactory) continue;
+            if (isThereAPlayerToIgnore)
+            {
+                if (ignorePlayer == player) continue;
+            }
+            
             if (!player.HasLineOfSightToPosition(transform.position, 50f)) continue;
-
             float distance = Vector3.Distance(transform.position, player.transform.position);
             if (!(distance < closestDistance)) continue;
             
@@ -1035,7 +1088,7 @@ public class AloeServer : BiodiverseAI
     /// Switches to the kidnapping state.
     /// Is called by a network event which is called by an animation event.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     private void HandleGrabTargetPlayer(string receivedAloeId)
     {
         if (!IsServer) return;
@@ -1150,7 +1203,9 @@ public class AloeServer : BiodiverseAI
                 _agentMaxAcceleration = 20f;
                 _isStaringAtTargetPlayer = false;
                 movingTowardsTargetPlayer = false;
+                _hasTransitionedToRunningForwardsAndCarryingPlayer = false;
                 _avoidPlayerTimer = 0f;
+                _dragPlayerTimer = AloeClient.SnatchAndGrabAudioLength;
                 openDoorSpeedMultiplier = 10f;
                 _avoidPlayerCoroutine = null;
                 

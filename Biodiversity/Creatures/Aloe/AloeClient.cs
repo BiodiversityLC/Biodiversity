@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using BepInEx.Logging;
 using Unity.Netcode;
 using GameNetcodeStuff;
@@ -18,7 +17,7 @@ public class AloeClient : MonoBehaviour
     private string _aloeId;
     
     private static readonly int Metallic = Shader.PropertyToID("_Metallic");
-    private static readonly int BaseColour = Shader.PropertyToID("BaseColour");
+    private static readonly int BaseColour = Shader.PropertyToID("_BaseColour");
 
     private static readonly int Speed = Animator.StringToHash("Speed");
     private static readonly int Dead = Animator.StringToHash("Dead");
@@ -27,7 +26,9 @@ public class AloeClient : MonoBehaviour
     public static readonly int Spotted = Animator.StringToHash("Spotted");
     public static readonly int Healing = Animator.StringToHash("Healing");
     public static readonly int Grab = Animator.StringToHash("Grab");
-    public static readonly int Stand = Animator.StringToHash("Stand");
+    public static readonly int KidnapRun = Animator.StringToHash("KidnapRun");
+
+    public const float SnatchAndGrabAudioLength = 2.019f;
 
     public enum AudioClipTypes
     {
@@ -38,9 +39,10 @@ public class AloeClient : MonoBehaviour
         InterruptedHealing,
         SnatchAndDrag,
         Steps,
+        Hit,
     }
     
-    [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
+    [field: HideInInspector] [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
     
 #pragma warning disable 0649
     [Header("Audio")] [Space(5f)]
@@ -53,6 +55,7 @@ public class AloeClient : MonoBehaviour
     public AudioClip[] interruptedHealingSfx;
     public AudioClip[] snatchAndDragSfx;
     public AudioClip[] stepsSfx;
+    public AudioClip[] hitSfx;
     
     [Header("Renderers and Materials")] [Space(5f)]
     [SerializeField] private Renderer bodyRenderer;
@@ -65,18 +68,23 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private VisualEffect healingOrbEffect;
     [SerializeField] private ParticleSystem poofParticleSystem;
     
-    [Header("Animation")][Space(5f)]
+    [Header("Animation")] [Space(5f)]
     [SerializeField] private Animator animator;
-    [SerializeField] private MultiAimConstraint lookAimConstraint;
+    [SerializeField] private Rig lookAimRig;
     [SerializeField] private Transform lookTarget;
     [SerializeField] private float lookBlendDuration = 0.5f;
     
+    [Header("Colliders")] [Space(5f)]
+    [SerializeField] private Collider mainCollider;
+    
     [Header("Controllers")] [Space(5f)] 
-    [SerializeField] private Collider collider;
-    [SerializeField] private GameObject scanNode;
     [SerializeField] private AloeNetcodeController netcodeController;
+    
+    [Header("Other")] [Space(5f)]
+    [SerializeField] private GameObject scanNode;
 #pragma warning restore 0649
     
+    [Header("Settings")] [Space(5f)]
     [SerializeField] private float escapeChargePerPress = 15f;
     [SerializeField] private float escapeChargeDecayRate = 15f;
     [SerializeField] private float escapeChargeThreshold = 100f;
@@ -85,9 +93,8 @@ public class AloeClient : MonoBehaviour
     
     private Vector3 _agentLastPosition;
 
-    private Transform _cachedTargetPlayerHeadTransform;
-
     private Coroutine _blendLookAimConstraintWeightCoroutine;
+    private Coroutine _changeSkinColourCoroutine;
     
     private bool _targetPlayerCanEscape;
 
@@ -154,7 +161,7 @@ public class AloeClient : MonoBehaviour
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client {_aloeId}");
         _propertyBlock = new MaterialPropertyBlock();
-        lookAimConstraint.weight = 0f;
+        lookAimRig.weight = 0f;
     }
 
     /// <summary>
@@ -165,7 +172,7 @@ public class AloeClient : MonoBehaviour
         Vector3 position = transform.position;
         _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
         _agentLastPosition = position;
-        animator.SetFloat(Speed, _agentCurrentSpeed / 2f);
+        animator.SetFloat(Speed, _agentCurrentSpeed);
         
         if (!_targetPlayerCanEscape)
         {
@@ -205,16 +212,17 @@ public class AloeClient : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (_cachedTargetPlayerHeadTransform != null)
+        // Todo: Limit the amount of times the look target is repositioned
+        if (_targetPlayer != null)
         {
-            lookTarget.position = _cachedTargetPlayerHeadTransform.position;
+            lookTarget.position = _targetPlayer.gameplayCamera.transform.position;
         }
     }
 
     /// <summary>
     /// Handles what should happen to make the Aloe snap a player's neck
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="playerClientId">The player's client id whose neck will be snapped</param>
     private void HandleSnapPlayerNeck(string receivedAloeId, ulong playerClientId)
     {
@@ -241,19 +249,19 @@ public class AloeClient : MonoBehaviour
 
         while (elapsed < duration)
         {
-            lookAimConstraint.weight = Mathf.Lerp(startWeight, endWeight, elapsed / duration);
+            lookAimRig.weight = Mathf.Lerp(startWeight, endWeight, elapsed / duration);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        lookAimConstraint.weight = endWeight;
+        lookAimRig.weight = endWeight;
         _blendLookAimConstraintWeightCoroutine = null;
     }
     
     /// <summary>
     /// Plays an audio clip with the given type and index
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="audioClipType">The audio clip type to play</param>
     /// <param name="clipIndex">The index of the clip in their respective AudioClip array to play</param>
     /// <param name="interrupt">Whether to interrupt any previously playing sound before playing the new audio</param>
@@ -270,6 +278,7 @@ public class AloeClient : MonoBehaviour
             AudioClipTypes.InterruptedHealing => interruptedHealingSfx[clipIndex],
             AudioClipTypes.SnatchAndDrag => snatchAndDragSfx[clipIndex],
             AudioClipTypes.Steps => stepsSfx[clipIndex],
+            AudioClipTypes.Hit => hitSfx[clipIndex],
             _ => null
         };
 
@@ -288,37 +297,31 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Handles what should happen to make the aloe change her skin colour
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="toDark">Whether the skin colour is going to a dark colour or not</param>
     private void HandleChangeAloeSkinColour(string receivedAloeId, bool toDark)
     {
         if (_aloeId != receivedAloeId) return;
-
-        _propertyBlock ??= new MaterialPropertyBlock();
         if (bodyRenderer == null)
         {
-            LogDebug("body renderer is null");
-            return;
-        }
-
-        if (_propertyBlock == null)
-        {
-            LogDebug("Property block is null");
+            LogDebug("Body renderer is null, cannot change aloe skin colour");
             return;
         }
         
+        if (_changeSkinColourCoroutine != null) StopCoroutine(ChangeAloeSkinColour(toDark));
+        _propertyBlock ??= new MaterialPropertyBlock();
         bodyRenderer.GetPropertyBlock(_propertyBlock);
-        StartCoroutine(ChangeAloeSkinColour(toDark));
+        _changeSkinColourCoroutine = StartCoroutine(ChangeAloeSkinColour(toDark));
     }
 
     /// <summary>
-    /// A coroutine for smoothly transitioning the aloe's skin colour
+    /// A coroutine for smoothly transitioning the Aloe's skin colour
     /// </summary>
     /// <param name="toDark">Whether her skin colour is going to a dark colour or not</param>
     /// <returns></returns>
     private IEnumerator ChangeAloeSkinColour(bool toDark)
     {
-        LogDebug($"Changing aloe skin to {(toDark ? "dark" : "light")} colour");
+        LogDebug($"Changing Aloe's skin to a {(toDark ? "dark" : "light")} colour");
         float timeElapsed = 0f;
         float startMetallicValue = toDark ? 0 : skinMetallicPropertyValue;
         float endMetallicValue = toDark ? skinMetallicPropertyValue : 0;
@@ -335,9 +338,7 @@ public class AloeClient : MonoBehaviour
             
             _propertyBlock.SetFloat(Metallic, currentMetallicValue);
             _propertyBlock.SetColor(BaseColour, newColour);
-            
             bodyRenderer.SetPropertyBlock(_propertyBlock);
-            //LogDebug($"current metallic value: {currentMetallicValue}, current v value: {currentV}");
             
             timeElapsed += Time.deltaTime;
             yield return null;
@@ -347,6 +348,7 @@ public class AloeClient : MonoBehaviour
         _propertyBlock.SetFloat(Metallic, endMetallicValue);
         _propertyBlock.SetColor(BaseColour, HSVToRGB(h, s, endV));
         bodyRenderer.SetPropertyBlock(_propertyBlock);
+        _changeSkinColourCoroutine = null;
     }
 
     /// <summary>
@@ -379,7 +381,7 @@ public class AloeClient : MonoBehaviour
     /// Heals the target player by the given amount.
     /// It also updates their health bar.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="healAmount">The amount to heal the target player by</param>
     private void HandleHealTargetPlayerByAmount(string receivedAloeId, int healAmount)
     {
@@ -393,7 +395,7 @@ public class AloeClient : MonoBehaviour
     /// Sets the target player up to be in captivity.
     /// It will muffle the player, drop all their items and freeze them.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="setToInCaptivity">Whether to make them captive or not</param>
     private void HandleSetTargetPlayerInCaptivity(string receivedAloeId, bool setToInCaptivity)
     {
@@ -412,28 +414,29 @@ public class AloeClient : MonoBehaviour
             HandleUnMuffleTargetPlayerVoice(_aloeId);
         }
         
-        LogDebug($"Set target player in captivity: {setToInCaptivity}");
+        LogDebug($"Set {_targetPlayer.playerUsername} in captivity: {setToInCaptivity}");
     }
 
     /// <summary>
     /// Handles when the target player is able to escape by mashing their space bar.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="canEscape">Whether to make the target player able to escape or not</param>
     private void HandleSetTargetPlayerAbleToEscape(string receivedAloeId, bool canEscape)
     {
         if (_aloeId != receivedAloeId) return;
+        if (_targetPlayer == null) return;
         _targetPlayerCanEscape = canEscape;
         _targetPlayer.inSpecialInteractAnimation = true;
         
-        if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer) HUDManager.Instance.DisplayTip("You can escape!", "Mash the spacebar to escape from the aloe!");
-        LogDebug("Set target player able to escape");
+        if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer) HUDManager.Instance.DisplayTip("You can escape!", "Mash the spacebar to escape from The Aloe!");
+        LogDebug($"Set {_targetPlayer.playerUsername} able to escape");
     }
 
     /// <summary>
     /// Increases the given player's fear level
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="targetInsanity"></param>
     /// <param name="playerClientId"></param>
     private void HandleIncreasePlayerFearLevel(string receivedAloeId, float targetInsanity, ulong playerClientId)
@@ -449,7 +452,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Muffles the target player's voice.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     private void HandleMuffleTargetPlayerVoice(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -457,7 +460,7 @@ public class AloeClient : MonoBehaviour
         if (_targetPlayer.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.currentVoiceChatAudioSource == null) return;
         
-        LogDebug($"Muffling {_targetPlayer.name}");
+        LogDebug($"Muffling {_targetPlayer.playerUsername}");
         _targetPlayer.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 5f;
         OccludeAudio component = _targetPlayer.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
         component.overridingLowPass = true;
@@ -468,7 +471,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Un-muffles the target player's voice.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     private void HandleUnMuffleTargetPlayerVoice(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -476,7 +479,7 @@ public class AloeClient : MonoBehaviour
         if (_targetPlayer.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.currentVoiceChatAudioSource == null) return;
         
-        LogDebug($"UnMuffling {_targetPlayer.name}");
+        LogDebug($"UnMuffling {_targetPlayer.playerUsername}");
         _targetPlayer.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 1f;
         OccludeAudio component = _targetPlayer.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
         component.overridingLowPass = false;
@@ -487,7 +490,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Plays the healing effect on the target player.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="totalHealingTime">The total time the healing vfx should play for</param>
     private void HandlePlayHealingVfx(string receivedAloeId, float totalHealingTime)
     {
@@ -529,16 +532,16 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         if (duration < 0f) duration = lookBlendDuration;
-        
+        LogDebug($"Changing look aim constraint weight from {lookAimRig.weight} to {endWeight} in {duration} seconds blend time.");
         if (_blendLookAimConstraintWeightCoroutine != null) StopCoroutine(_blendLookAimConstraintWeightCoroutine);
         _blendLookAimConstraintWeightCoroutine = 
-            StartCoroutine(BlendLookAimConstraintWeight(lookAimConstraint.weight, endWeight, duration));
+            StartCoroutine(BlendLookAimConstraintWeight(lookAimRig.weight, endWeight, duration));
     }
     
     /// <summary>
     /// Changes the target player to the player with the given playerObjectId.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="targetPlayerObjectId">The target player's object ID</param>
     private void HandleChangeTargetPlayer(string receivedAloeId, ulong targetPlayerObjectId)
     {
@@ -546,22 +549,22 @@ public class AloeClient : MonoBehaviour
         if (targetPlayerObjectId == 69420)
         {
             _targetPlayer = null;
-            _cachedTargetPlayerHeadTransform = null;
             return;
         }
         
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[targetPlayerObjectId];
         _targetPlayer = player;
-        _cachedTargetPlayerHeadTransform = _targetPlayer.gameplayCamera.transform;
+        LogDebug($"Changed target player to {_targetPlayer.playerUsername}");
     }
 
     /// <summary>
     /// Handles what happens when the aloe is dead.
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     private void HandleEnterDeathState(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
+        LogDebug("Entering death state");
         animator.SetBool(Dead, true);
     }
 
@@ -579,7 +582,7 @@ public class AloeClient : MonoBehaviour
         aloeVoiceSource.Stop(true);
         aloeFootstepsSource.Stop(true);
         
-        Destroy(collider.gameObject);
+        Destroy(mainCollider.gameObject);
         Destroy(scanNode.gameObject);
         StartCoroutine(DestroyAloeObjectAfterDuration(poofParticleSystem.main.duration));
     }
@@ -609,7 +612,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets a trigger in the animator
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="parameter">The name of the trigger in the animator</param>
     private void HandleSetTrigger(string receivedAloeId, int parameter)
     {
@@ -620,7 +623,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Resets a trigger in the animator
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="parameter">The name of the trigger in the animator</param>
     private void HandleResetTrigger(string receivedAloeId, int parameter)
     {
@@ -631,7 +634,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets the configurable variables to their value in the player's config
     /// </summary>
-    /// <param name="receivedAloeId">The aloe id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     private void HandleInitializeConfigValues(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -645,7 +648,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Changes the behaviour state to the given state
     /// </summary>
-    /// <param name="receivedAloeId">The aloe Id</param>
+    /// <param name="receivedAloeId">The Aloe ID</param>
     /// <param name="newBehaviourStateIndex">The behaviour state to change to</param>
     private void HandleChangeBehaviourStateIndex(string receivedAloeId, int newBehaviourStateIndex)
     {
@@ -654,9 +657,9 @@ public class AloeClient : MonoBehaviour
     }
 
     /// <summary>
-    /// Syncs the Aloe id with the server
+    /// Syncs The Aloe ID with the server
     /// </summary>
-    /// <param name="id">The aloe id</param>
+    /// <param name="id">The Aloe ID</param>
     private void HandleSyncAloeId(string id)
     {
         _aloeId = id;
