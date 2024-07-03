@@ -16,6 +16,7 @@ public class AloeServer : BiodiverseAI
 {
     private ManualLogSource _mls;
     private string _aloeId;
+    
     [field: HideInInspector] [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
 
     [Header("AI and Pathfinding")] [Space(5f)]
@@ -32,9 +33,6 @@ public class AloeServer : BiodiverseAI
     [SerializeField] private float timeItTakesToFullyHealPlayer = 15f;
     
 #pragma warning disable 0649
-    [Header("Transforms")] [Space(5f)] 
-    [SerializeField] private Transform rotationTarget;
-    
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private AloeNetcodeController netcodeController;
 #pragma warning restore 0649
@@ -54,7 +52,6 @@ public class AloeServer : BiodiverseAI
     private int _timesFoundSneaking;
     private int _healingPerInterval;
     
-    //private bool _carryingPlayer;
     private bool _isStaringAtTargetPlayer;
     private bool _currentlyHasDarkSkin;
     private bool _reachedFavouriteSpotForRoaming;
@@ -271,7 +268,7 @@ public class AloeServer : BiodiverseAI
                     StartCoroutine(TransitionToRunningForwardsAndCarryingPlayer(0.3f));
                 }
                 
-                const float distanceInFront = -0.8f;
+                const float distanceInFront = -1.5f;
                 Vector3 newPosition = transform.position + transform.forward * distanceInFront;
                 targetPlayer.transform.position = newPosition;
                 
@@ -643,8 +640,7 @@ public class AloeServer : BiodiverseAI
             if (AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(this))
                 AloeSharedData.Instance.AloeBoundKidnaps.Remove(this);
         }
-
-        //_carryingPlayer = setToInCaptivity;
+        
         netcodeController.SetTargetPlayerInCaptivityClientRpc(_aloeId, setToInCaptivity);
     }
 
@@ -699,7 +695,7 @@ public class AloeServer : BiodiverseAI
             {
                 // Still setting a far away node, but a player might see the aloe
                 farAwayTransform = _avoidingPlayer != null
-                    ? ChooseFarthestNodeFromPosition(_avoidingPlayer.transform.position, avoidLineOfSight)
+                    ? ChooseFarthestNodeFromPosition(_avoidingPlayer.transform.position)
                     : null;
                 
                 if (farAwayTransform != null)
@@ -1214,7 +1210,7 @@ public class AloeServer : BiodiverseAI
                 
                 // Set target player and pickup player
                 netcodeController.ChangeAnimationParameterBoolClientRpc(_aloeId, AloeClient.Healing, false);
-                netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.playerClientId);
+                netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.playerClientId); // Todo: Make function that only does the rpc if needed
                 SetTargetPlayerInCaptivity(true);
                 netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 2.5f, targetPlayer.actualClientId);
                 netcodeController.SetTargetPlayerAbleToEscapeClientRpc(_aloeId, false);

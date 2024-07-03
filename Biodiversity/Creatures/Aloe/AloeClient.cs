@@ -71,11 +71,10 @@ public class AloeClient : MonoBehaviour
     [Header("Animation")] [Space(5f)]
     [SerializeField] private Animator animator;
     [SerializeField] private Rig lookAimRig;
+
+    [Header("Transforms")] [Space(5f)] 
     [SerializeField] private Transform lookTarget;
-    [SerializeField] private float lookBlendDuration = 0.5f;
-    
-    [Header("Colliders")] [Space(5f)]
-    [SerializeField] private Collider mainCollider;
+    [SerializeField] private Transform fakePlayerBodyRagdollGrabTarget;
     
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private AloeNetcodeController netcodeController;
@@ -88,8 +87,11 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float escapeChargePerPress = 15f;
     [SerializeField] private float escapeChargeDecayRate = 15f;
     [SerializeField] private float escapeChargeThreshold = 100f;
+    [SerializeField] private float lookBlendDuration = 0.5f;
     
     private PlayerControllerB _targetPlayer;
+
+    private GameObject _currentFakePlayerBodyRagdoll;
     
     private Vector3 _agentLastPosition;
 
@@ -407,11 +409,33 @@ public class AloeClient : MonoBehaviour
             _targetPlayer.inSpecialInteractAnimation = true;
             _targetPlayer.DropAllHeldItemsAndSync();
             HandleMuffleTargetPlayerVoice(_aloeId);
+
+            if (_currentFakePlayerBodyRagdoll != null) Destroy(_currentFakePlayerBodyRagdoll);
+            _currentFakePlayerBodyRagdoll = Instantiate(
+                AloeHandler.Instance.Assets.fakePlayerBodyRagdollPrefab,
+                _targetPlayer.thisPlayerBody.position + Vector3.up * 1.25f,
+                _targetPlayer.thisPlayerBody.rotation,
+                null);
+
+            FakePlayerBodyRagdoll ragdollScript = _currentFakePlayerBodyRagdoll.GetComponent<FakePlayerBodyRagdoll>();
+            if (ragdollScript == null)
+            {
+                _mls.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
+                return;
+            }
+
+            ragdollScript.bodyParts[(int)FakePlayerBodyRagdoll.DeadPlayerBodyParts.Neck].attachedTo =
+                fakePlayerBodyRagdollGrabTarget;
         }
         else
         {
             _targetPlayer.inSpecialInteractAnimation = false;
             HandleUnMuffleTargetPlayerVoice(_aloeId);
+            if (_currentFakePlayerBodyRagdoll != null)
+            {
+                Destroy(_currentFakePlayerBodyRagdoll);
+                _currentFakePlayerBodyRagdoll = null;
+            }
         }
         
         LogDebug($"Set {_targetPlayer.playerUsername} in captivity: {setToInCaptivity}");
@@ -582,7 +606,6 @@ public class AloeClient : MonoBehaviour
         aloeVoiceSource.Stop(true);
         aloeFootstepsSource.Stop(true);
         
-        Destroy(mainCollider.gameObject);
         Destroy(scanNode.gameObject);
         StartCoroutine(DestroyAloeObjectAfterDuration(poofParticleSystem.main.duration));
     }
