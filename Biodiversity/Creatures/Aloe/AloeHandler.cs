@@ -13,8 +13,8 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler> {
         Assets = new AloeAssets("aloebracken");
         Config = new AloeConfig(BiodiversityPlugin.Instance.CreateConfig("aloe"));
 
-        Enemies.RegisterEnemy(Assets.enemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, Config.Rarity } }, []);
+        Enemies.RegisterEnemy(Assets.EnemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, Config.Rarity } }, []);
 
-        AddSpawnRequirement(Assets.enemyType, () => false);
+        AddSpawnRequirement(Assets.EnemyType, () => false);
     }
 }

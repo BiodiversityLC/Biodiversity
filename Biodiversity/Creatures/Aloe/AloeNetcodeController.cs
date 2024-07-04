@@ -30,10 +30,17 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, ulong> OnSnapPlayerNeck;
     public event Action<string> OnGrabTargetPlayer;
     public event Action<string, float, float> OnChangeLookAimConstraintWeight;
+    public event Action<string> OnSpottedAnimationComplete;
 
     private void Start()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
+    }
+
+    [ServerRpc]
+    public void SpottedAnimationCompleteServerRpc(string receivedAloeId)
+    {
+        OnSpottedAnimationComplete?.Invoke(receivedAloeId);
     }
 
     [ClientRpc]

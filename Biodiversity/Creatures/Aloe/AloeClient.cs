@@ -42,7 +42,9 @@ public class AloeClient : MonoBehaviour
         Hit,
     }
     
+#if !UNITY_EDITOR
     [field: HideInInspector] [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
+#endif
     
 #pragma warning disable 0649
     [Header("Audio")] [Space(5f)]
@@ -224,8 +226,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Handles what should happen to make the Aloe snap a player's neck
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="playerClientId">The player's client id whose neck will be snapped</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="playerClientId">The player's client id whose neck will be snapped.</param>
     private void HandleSnapPlayerNeck(string receivedAloeId, ulong playerClientId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -241,9 +243,9 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Blends the look multi-aim constraint weight parameter over a specific duration
     /// </summary>
-    /// <param name="startWeight">The start weight of the blend</param>
-    /// <param name="endWeight">The end weight of the blend</param>
-    /// <param name="duration">The duration of the blend</param>
+    /// <param name="startWeight">The start weight of the blend.</param>
+    /// <param name="endWeight">The end weight of the blend.</param>
+    /// <param name="duration">The duration of the blend.</param>
     /// <returns></returns>
     private IEnumerator BlendLookAimConstraintWeight(float startWeight, float endWeight, float duration)
     {
@@ -263,10 +265,10 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Plays an audio clip with the given type and index
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="audioClipType">The audio clip type to play</param>
-    /// <param name="clipIndex">The index of the clip in their respective AudioClip array to play</param>
-    /// <param name="interrupt">Whether to interrupt any previously playing sound before playing the new audio</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="audioClipType">The audio clip type to play.</param>
+    /// <param name="clipIndex">The index of the clip in their respective AudioClip array to play.</param>
+    /// <param name="interrupt">Whether to interrupt any previously playing sound before playing the new audio.</param>
     private void HandlePlayAudioClipType(string receivedAloeId, AudioClipTypes audioClipType, int clipIndex, bool interrupt = false)
     {
         if (_aloeId != receivedAloeId) return;
@@ -297,10 +299,10 @@ public class AloeClient : MonoBehaviour
     }
 
     /// <summary>
-    /// Handles what should happen to make the aloe change her skin colour
+    /// Handles what should happen to make the Aloe change her skin colour
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="toDark">Whether the skin colour is going to a dark colour or not</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="toDark">Whether the skin colour is going to a dark colour or not.</param>
     private void HandleChangeAloeSkinColour(string receivedAloeId, bool toDark)
     {
         if (_aloeId != receivedAloeId) return;
@@ -319,7 +321,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// A coroutine for smoothly transitioning the Aloe's skin colour
     /// </summary>
-    /// <param name="toDark">Whether her skin colour is going to a dark colour or not</param>
+    /// <param name="toDark">Whether her skin colour is going to a dark colour or not.</param>
     /// <returns></returns>
     private IEnumerator ChangeAloeSkinColour(bool toDark)
     {
@@ -383,8 +385,8 @@ public class AloeClient : MonoBehaviour
     /// Heals the target player by the given amount.
     /// It also updates their health bar.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="healAmount">The amount to heal the target player by</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="healAmount">The amount to heal the target player by.</param>
     private void HandleHealTargetPlayerByAmount(string receivedAloeId, int healAmount)
     {
         if (_aloeId != receivedAloeId) return;
@@ -397,8 +399,8 @@ public class AloeClient : MonoBehaviour
     /// Sets the target player up to be in captivity.
     /// It will muffle the player, drop all their items and freeze them.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="setToInCaptivity">Whether to make them captive or not</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="setToInCaptivity">Whether to make them captive or not.</param>
     private void HandleSetTargetPlayerInCaptivity(string receivedAloeId, bool setToInCaptivity)
     {
         if (_aloeId != receivedAloeId) return;
@@ -412,7 +414,7 @@ public class AloeClient : MonoBehaviour
 
             if (_currentFakePlayerBodyRagdoll != null) Destroy(_currentFakePlayerBodyRagdoll);
             _currentFakePlayerBodyRagdoll = Instantiate(
-                AloeHandler.Instance.Assets.fakePlayerBodyRagdollPrefab,
+                AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab,
                 _targetPlayer.thisPlayerBody.position + Vector3.up * 1.25f,
                 _targetPlayer.thisPlayerBody.rotation,
                 null);
@@ -424,8 +426,9 @@ public class AloeClient : MonoBehaviour
                 return;
             }
 
-            ragdollScript.bodyParts[(int)FakePlayerBodyRagdoll.DeadPlayerBodyParts.Neck].attachedTo =
-                fakePlayerBodyRagdollGrabTarget;
+            BodyPart ragdollNeck = ragdollScript.bodyParts[(int)FakePlayerBodyRagdoll.DeadPlayerBodyParts.Neck];
+            ragdollNeck.attachedTo = fakePlayerBodyRagdollGrabTarget;
+            ragdollNeck.active = true;
         }
         else
         {
@@ -444,8 +447,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Handles when the target player is able to escape by mashing their space bar.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="canEscape">Whether to make the target player able to escape or not</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="canEscape">Whether to make the target player able to escape or not.</param>
     private void HandleSetTargetPlayerAbleToEscape(string receivedAloeId, bool canEscape)
     {
         if (_aloeId != receivedAloeId) return;
@@ -460,9 +463,9 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Increases the given player's fear level
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="targetInsanity"></param>
-    /// <param name="playerClientId"></param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="targetInsanity">.</param>
+    /// <param name="playerClientId">.</param>
     private void HandleIncreasePlayerFearLevel(string receivedAloeId, float targetInsanity, ulong playerClientId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -476,7 +479,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Muffles the target player's voice.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     private void HandleMuffleTargetPlayerVoice(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -495,7 +498,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Un-muffles the target player's voice.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     private void HandleUnMuffleTargetPlayerVoice(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -514,8 +517,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Plays the healing effect on the target player.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="totalHealingTime">The total time the healing vfx should play for</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="totalHealingTime">The total time the healing vfx should play for.</param>
     private void HandlePlayHealingVfx(string receivedAloeId, float totalHealingTime)
     {
         if (_aloeId != receivedAloeId) return;
@@ -536,22 +539,38 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Grabs the target player at the end of the grab player animation
     /// </summary>
-    private void OnAnimationEventGrabPlayer()
+    public void OnAnimationEventGrabPlayer()
     {
         if (!NetworkManager.Singleton.IsServer || !netcodeController.IsOwner) return;
         netcodeController.GrabTargetPlayerServerRpc(_aloeId);
     }
 
     /// <summary>
-    /// Plays a random footstep sound effect when the Aloe's foot touches the ground in an animation
+    /// Tells the server that the spotted animation is complete
     /// </summary>
-    private void OnAnimationEventPlayFootstepSfx()
+    public void OnAnimationEventSpottedAnimationComplete()
+    {
+        if (!NetworkManager.Singleton.IsServer || !netcodeController.IsOwner) return;
+        netcodeController.SpottedAnimationCompleteServerRpc(_aloeId);
+    }
+
+    /// <summary>
+    /// Plays a random footstep sound effect when the Aloe's foot touches the ground in an animation.
+    /// </summary>
+    public void OnAnimationEventPlayFootstepSfx()
     {
         AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
         aloeFootstepsSource.PlayOneShot(audioClipToPlay);
         WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
     }
     
+    /// <summary>
+    /// Changes the look aim constraint weight to the specified value.
+    /// The look aim constraint is used for making the Aloe look at something with her head bone.
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="endWeight">The weight to blend to.</param>
+    /// <param name="duration">The duration of the blend.</param>
     private void HandleChangeLookAimConstraintWeight(string receivedAloeId, float endWeight, float duration = -1f)
     {
         if (_aloeId != receivedAloeId) return;
@@ -565,8 +584,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Changes the target player to the player with the given playerObjectId.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="targetPlayerObjectId">The target player's object ID</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="targetPlayerObjectId">The target player's object ID.</param>
     private void HandleChangeTargetPlayer(string receivedAloeId, ulong targetPlayerObjectId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -584,7 +603,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Handles what happens when the aloe is dead.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     private void HandleEnterDeathState(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -623,9 +642,9 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets a bool animation parameter to the given value
     /// </summary>
-    /// <param name="receivedAloeId"></param>
-    /// <param name="parameter">The name of the parameter in the animator</param>
-    /// <param name="value">The bool value to set it to</param>
+    /// <param name="receivedAloeId">.</param>
+    /// <param name="parameter">The name of the parameter in the animator.</param>
+    /// <param name="value">The bool value to set it to.</param>
     private void HandleSetBool(string receivedAloeId, int parameter, bool value)
     {
         if (_aloeId != receivedAloeId) return;
@@ -635,8 +654,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets a trigger in the animator
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="parameter">The name of the trigger in the animator</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="parameter">The name of the trigger in the animator.</param>
     private void HandleSetTrigger(string receivedAloeId, int parameter)
     {
         if (_aloeId != receivedAloeId) return;
@@ -646,8 +665,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Resets a trigger in the animator
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="parameter">The name of the trigger in the animator</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="parameter">The name of the trigger in the animator.</param>
     private void HandleResetTrigger(string receivedAloeId, int parameter)
     {
         if (_aloeId != receivedAloeId) return;
@@ -657,7 +676,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets the configurable variables to their value in the player's config
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     private void HandleInitializeConfigValues(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
@@ -671,8 +690,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Changes the behaviour state to the given state
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID</param>
-    /// <param name="newBehaviourStateIndex">The behaviour state to change to</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="newBehaviourStateIndex">The behaviour state to change to.</param>
     private void HandleChangeBehaviourStateIndex(string receivedAloeId, int newBehaviourStateIndex)
     {
         if (_aloeId != receivedAloeId) return;
@@ -682,7 +701,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Syncs The Aloe ID with the server
     /// </summary>
-    /// <param name="id">The Aloe ID</param>
+    /// <param name="id">The Aloe ID.</param>
     private void HandleSyncAloeId(string id)
     {
         _aloeId = id;
@@ -695,7 +714,7 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Only logs the given message if the assembly version is in debug, not release
     /// </summary>
-    /// <param name="msg">The debug message to log</param>
+    /// <param name="msg">The debug message to log.</param>
     private void LogDebug(string msg)
     {
         #if DEBUG
