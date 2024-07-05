@@ -31,10 +31,17 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string> OnGrabTargetPlayer;
     public event Action<string, float, float> OnChangeLookAimConstraintWeight;
     public event Action<string> OnSpottedAnimationComplete;
+    public event Action<string> OnTransitionToRunningForwardsAndCarryingPlayer;
 
     private void Start()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
+    }
+
+    [ClientRpc]
+    public void TransitionToRunningForwardsAndCarryingPlayerClientRpc(string receivedAloeId)
+    {
+        OnTransitionToRunningForwardsAndCarryingPlayer?.Invoke(receivedAloeId);
     }
 
     [ServerRpc]

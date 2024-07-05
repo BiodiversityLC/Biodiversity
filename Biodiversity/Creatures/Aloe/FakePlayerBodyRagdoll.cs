@@ -85,7 +85,6 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
     {
         _moveToExactPositionTimer = 0.0f;
         if (!_wasMatchingPosition) return;
-        Debug.Log($"Handling detached limb {bodyPart.name}");
         _wasMatchingPosition = false;
 
         bodyPart.limbRigidbody.velocity = Vector3.zero;
@@ -100,7 +99,6 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
 
     private void HandleAttachedLimb(BodyPart bodyPart)
     {
-        Debug.Log($"Handling attached limb {bodyPart.name}");
         if (matchPositionExactly)
         {
             if (lerpBeforeMatchingPosition && _moveToExactPositionTimer < lerpDuration)
@@ -110,43 +108,15 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
             }
             else
             {
-                if (!_wasMatchingPosition)
-                {
-                    MatchPositionExactly(bodyPart);
-                    return;
-                }
-
-                bodyPart.limbRigidbody.velocity = Vector3.zero;
-                bodyPart.limbRigidbody.angularVelocity = Vector3.zero;
-                bodyPart.limbRigidbody.position = bodyPart.attachedTo.position;
-                bodyPart.limbRigidbody.rotation = bodyPart.attachedTo.rotation;
-                bodyPart.limbRigidbody.centerOfMass = Vector3.zero;
-                bodyPart.limbRigidbody.inertiaTensorRotation = Quaternion.identity;
+                bodyPart.limbRigidbody.freezeRotation = true;
+                bodyPart.limbRigidbody.isKinematic = true;
+                bodyPart.limbRigidbody.transform.position = bodyPart.attachedTo.position;
+                bodyPart.limbRigidbody.transform.rotation = bodyPart.attachedTo.rotation;
                 return;
             }
         }
 
         ApplyForcesToLimb(bodyPart.limbRigidbody, bodyPart.attachedTo);
-    }
-
-    private void MatchPositionExactly(BodyPart bodyPart)
-    {
-        Debug.Log($"Matching position exactly for {bodyPart.name}");
-        _wasMatchingPosition = true;
-        bodyPart.limbRigidbody.freezeRotation = true;
-        bodyPart.limbRigidbody.isKinematic = true;
-        bodyPart.limbRigidbody.transform.position = bodyPart.attachedTo.position;
-        bodyPart.limbRigidbody.transform.rotation = bodyPart.attachedTo.rotation;
-
-        foreach (BodyPart otherBodyPart in bodyParts)
-        {
-            otherBodyPart.limbRigidbody.angularDrag = 1f;
-            otherBodyPart.limbRigidbody.maxAngularVelocity = 2f;
-            otherBodyPart.limbRigidbody.maxDepenetrationVelocity = 0.3f;
-            otherBodyPart.limbRigidbody.velocity = Vector3.zero;
-            otherBodyPart.limbRigidbody.angularVelocity = Vector3.zero;
-            otherBodyPart.limbRigidbody.WakeUp();
-        }
     }
 
     private void ApplyForcesToLimb(Rigidbody limb, Transform target)
@@ -179,7 +149,6 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
                                      activeBodyPart.attachedTo.position) >
                                  maxDistanceToReset))
         {
-            Debug.Log($"Resetting body position for limb {bodyPart.name}");
             _restBodyPartsTimer = 0f;
             bodyPart.limbCollider.enabled = false;
         }
@@ -187,7 +156,6 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
 
     private void EnableCollisionOnBodyParts()
     {
-        Debug.Log("Enabling collision on all body parts");
         foreach (BodyPart bodyPart in bodyParts)
         {
             bodyPart.limbCollider.enabled = true;
@@ -204,6 +172,46 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
         bodyMeshRenderer.renderingLayerMask = (uint)(513 | 1 << playerObjectId + 12);
     }
 
+    public void AttachLimbToTransform(string bodyPartName, Transform transformToAttachTo, bool retainVelocity = false)
+    {
+        BodyPart bodyPart = bodyParts.Find(bp => bp.name == bodyPartName);
+        if (bodyPart == null) return;
+        
+        // If the given transform is null, detach the limb instead as a failsafe
+        if (transformToAttachTo == null)
+        {
+            DetachLimbFromTransform(bodyPartName);
+            return;
+        }
+        
+        bodyPart.limbRigidbody.isKinematic = true;
+        if (!retainVelocity)
+        {
+            bodyPart.limbRigidbody.velocity = Vector3.zero;
+            bodyPart.limbRigidbody.angularVelocity = Vector3.zero;
+        }
+        
+        bodyPart.attachedTo = transformToAttachTo;
+        bodyPart.active = true;
+    }
+
+    public void DetachLimbFromTransform(string bodyPartName, bool retainVelocity = false)
+    {
+        BodyPart bodyPart = bodyParts.Find(bp => bp.name == bodyPartName);
+        if (bodyPart == null) return;
+
+        bodyPart.active = false;
+        bodyPart.attachedTo = null;
+
+        if (!retainVelocity)
+        {
+            bodyPart.limbRigidbody.velocity = Vector3.zero;
+            bodyPart.limbRigidbody.angularVelocity = Vector3.zero;
+        }
+
+        bodyPart.limbRigidbody.isKinematic = false;
+    }
+
     // public void SetRagdollPositionSafely(Vector3 newPosition, bool disableSpecialEffects = false)
     // {
     //     transform.position = newPosition + Vector3.up * 2.5f;
@@ -212,5 +220,4 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
     //         bodyPart.velocity = Vector3.zero;
     //     }
     // }
-    //
 }

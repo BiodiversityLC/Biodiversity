@@ -76,7 +76,7 @@ public class AloeClient : MonoBehaviour
 
     [Header("Transforms")] [Space(5f)] 
     [SerializeField] private Transform lookTarget;
-    [SerializeField] private Transform fakePlayerBodyRagdollGrabTarget;
+    [SerializeField] private Transform grabTarget;
     
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private AloeNetcodeController netcodeController;
@@ -93,7 +93,7 @@ public class AloeClient : MonoBehaviour
     
     private PlayerControllerB _targetPlayer;
 
-    private GameObject _currentFakePlayerBodyRagdoll;
+    private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
     
     private Vector3 _agentLastPosition;
 
@@ -132,6 +132,8 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnChangeBehaviourState += HandleChangeBehaviourStateIndex;
         netcodeController.OnSnapPlayerNeck += HandleSnapPlayerNeck;
         netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
+        netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer +=
+            HandleTransitionToRunningForwardsAndCarryingPlayer;
     }
 
     /// <summary>
@@ -159,6 +161,8 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnChangeBehaviourState -= HandleChangeBehaviourStateIndex;
         netcodeController.OnSnapPlayerNeck -= HandleSnapPlayerNeck;
         netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
+        netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer -=
+            HandleTransitionToRunningForwardsAndCarryingPlayer;
     }
     
     private void Start()
@@ -395,6 +399,13 @@ public class AloeClient : MonoBehaviour
         LogDebug($"Target player health after last heal: {_targetPlayer.health}");
     }
 
+    private void HandleTransitionToRunningForwardsAndCarryingPlayer(string receivedAloeId)
+    {
+        if (_aloeId != receivedAloeId) return;
+        _currentFakePlayerBodyRagdoll.DetachLimbFromTransform("Neck");
+        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Root", grabTarget);
+    }
+
     /// <summary>
     /// Sets the target player up to be in captivity.
     /// It will muffle the player, drop all their items and freeze them.
@@ -412,23 +423,22 @@ public class AloeClient : MonoBehaviour
             _targetPlayer.DropAllHeldItemsAndSync();
             HandleMuffleTargetPlayerVoice(_aloeId);
 
-            if (_currentFakePlayerBodyRagdoll != null) Destroy(_currentFakePlayerBodyRagdoll);
-            _currentFakePlayerBodyRagdoll = Instantiate(
-                AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab,
-                _targetPlayer.thisPlayerBody.position + Vector3.up * 1.25f,
-                _targetPlayer.thisPlayerBody.rotation,
-                null);
+            if (_currentFakePlayerBodyRagdoll != null) Destroy(_currentFakePlayerBodyRagdoll.gameObject);
+            GameObject fakePlayerBodyRagdollGameObject = 
+                Instantiate(
+                    AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab, 
+                    _targetPlayer.thisPlayerBody.position + Vector3.up * 1.25f, 
+                    _targetPlayer.thisPlayerBody.rotation, 
+                    null);
 
-            FakePlayerBodyRagdoll ragdollScript = _currentFakePlayerBodyRagdoll.GetComponent<FakePlayerBodyRagdoll>();
-            if (ragdollScript == null)
+            _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollGameObject.GetComponent<FakePlayerBodyRagdoll>();
+            if (_currentFakePlayerBodyRagdoll == null)
             {
                 _mls.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
                 return;
             }
 
-            BodyPart ragdollNeck = ragdollScript.bodyParts[(int)FakePlayerBodyRagdoll.DeadPlayerBodyParts.Neck];
-            ragdollNeck.attachedTo = fakePlayerBodyRagdollGrabTarget;
-            ragdollNeck.active = true;
+            _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", grabTarget);
         }
         else
         {
@@ -436,7 +446,7 @@ public class AloeClient : MonoBehaviour
             HandleUnMuffleTargetPlayerVoice(_aloeId);
             if (_currentFakePlayerBodyRagdoll != null)
             {
-                Destroy(_currentFakePlayerBodyRagdoll);
+                Destroy(_currentFakePlayerBodyRagdoll.gameObject);
                 _currentFakePlayerBodyRagdoll = null;
             }
         }
