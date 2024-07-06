@@ -503,6 +503,10 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.HealingPlayer:
             {
+                // Todo: BTW this will not work for the event that all the aloe nodes are taken, and this current aloe doesnt have one
+                if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
+                    LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
+                
                 int targetPlayerMaxHealth = GetPlayerMaxHealth(targetPlayer);
                 if (targetPlayer.health < targetPlayerMaxHealth)
                 {
@@ -516,7 +520,6 @@ public class AloeServer : BiodiverseAI
                     netcodeController.HealTargetPlayerByAmountClientRpc(_aloeId, healthIncrease);
                     LogDebug($"Healed player by amount: {healthIncrease}");
                 }
-                
                 // If the player cannot be healed anymore, then switch to cuddling
                 else
                 {
@@ -528,6 +531,10 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.CuddlingPlayer:
             {
+                // Todo: BTW this will not work for the event that all the aloe nodes are taken, and this current aloe doesnt have one
+                if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
+                    LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
+                
                 break;
             }
 

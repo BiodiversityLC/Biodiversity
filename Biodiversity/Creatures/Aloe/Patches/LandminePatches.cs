@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using System.Diagnostics.CodeAnalysis;
+using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
 
@@ -6,8 +7,9 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 
 /// <summary>
 /// This class is for Landmine Patches.
-/// It makes sure the aloe and the player don't get blown up if the aloe goes over a landmine while kidnapping
+/// It makes sure the Aloe and the player don't get blown up if the Aloe goes over a landmine while kidnapping
 /// </summary>
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 [HarmonyPatch(typeof(Landmine))]
 internal class LandminePatch
 {
@@ -35,8 +37,10 @@ internal class LandminePatch
 
     [HarmonyPatch(nameof(Landmine.OnTriggerExit))]
     [HarmonyPrefix]
-    private static bool PostfixTriggerExit(Landmine __instance, Collider other)
+    private static bool PrefixTriggerExit(Landmine __instance, Collider other)
     {
+        if (!__instance.IsHost && !__instance.IsServer) return true;
+        
         AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI))
         {

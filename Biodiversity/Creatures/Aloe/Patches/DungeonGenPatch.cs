@@ -33,6 +33,7 @@ internal class DungeonGenPatch
         
         CreateBrackenRoomAINodes(tile.transform);
         AloeSharedData.Instance.PopulateBrackenRoomAloeNodes(tile.transform);
+        AloeSharedData.Instance.BrackenRoomDoorPosition = tile.transform.Find("Door1 (18)").position;
     }
 
     private static void CreateBrackenRoomAINodes(Transform brackenRoomTransform)

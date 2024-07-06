@@ -17,6 +17,8 @@ internal class AloeSharedData
     public Dictionary<PlayerControllerB, int> PlayersMaxHealth { get; } = new();
 
     private List<BrackenRoomAloeNode> BrackenRoomAloeNodes { get; } = [];
+
+    public Vector3 BrackenRoomDoorPosition { get; set; } = Vector3.zero;
     
     public void PopulateBrackenRoomAloeNodes(Transform brackenRoomTransform)
     {
