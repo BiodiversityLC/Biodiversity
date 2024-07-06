@@ -1,12 +1,15 @@
-﻿using GameNetcodeStuff;
+﻿using System.Diagnostics.CodeAnalysis;
+using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
 
 [HarmonyPatch(typeof(PlayerControllerB))]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class PlayerPatch
 {
+    // Todo: Add debug logs for all the functions
     [HarmonyPrefix]
     [HarmonyPatch("IHittable.Hit")]
     private static bool HitOverride(PlayerControllerB __instance, int force, Vector3 hitDirection, PlayerControllerB playerWhoHit, bool playHitSFX = false)

@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using Logger = BepInEx.Logging.Logger;
 using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -41,6 +42,7 @@ public class AloeServer : BiodiverseAI
 
     private Vector3 _mainEntrancePosition;
     private Vector3 _agentLastPosition;
+    private Vector3 _favouriteSpot;
     
     private float _agentMaxAcceleration;
     private float _agentMaxSpeed;
@@ -100,6 +102,9 @@ public class AloeServer : BiodiverseAI
     public void OnDisable()
     {
         // Todo: add something that takes the player out of special animation if the aloe is destroyed
+        
+        AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(_favouriteSpot);
+        
         if (netcodeController == null) return;
         netcodeController.OnTargetPlayerEscaped -= HandleTargetPlayerEscaped;
         netcodeController.OnGrabTargetPlayer -= HandleGrabTargetPlayer;
@@ -122,15 +127,11 @@ public class AloeServer : BiodiverseAI
             return;
         }
         
-        UnityEngine.Random.InitState(StartOfRound.Instance.randomMapSeed + _aloeId.GetHashCode());
+        Random.InitState(StartOfRound.Instance.randomMapSeed + _aloeId.GetHashCode());
         netcodeController.SyncAloeIdClientRpc(_aloeId);
         InitializeConfigValues();
-
-        _mainEntrancePosition = RoundManager.FindMainEntrancePosition();
-        favoriteSpot = AloeSharedData.Instance.BrackenRoomPosition != null ? AloeSharedData.Instance.BrackenRoomPosition : ChooseFarthestNodeFromPosition(_mainEntrancePosition);
         agent.updateRotation = false;
-        LogDebug($"Found a favourite spot: {favoriteSpot.position}");
-        
+        PickFavouriteSpot();
         LogDebug("Aloe Spawned!");
     }
 
@@ -186,7 +187,6 @@ public class AloeServer : BiodiverseAI
                     }
                     
                     SwitchBehaviourStateLocally(previousBehaviourStateIndex);
-                    break;
                 }
                 
                 break;
@@ -237,7 +237,6 @@ public class AloeServer : BiodiverseAI
                 {
                     LogDebug("Player is close to aloe! Kidnapping him now");
                     SwitchBehaviourStateLocally(States.KidnappingPlayer);
-                    break;
                 }
                 
                 break;
@@ -253,7 +252,6 @@ public class AloeServer : BiodiverseAI
                     netcodeController.ChangeTargetPlayerClientRpc(_aloeId, _backupTargetPlayer.actualClientId);
                     targetPlayer = _backupTargetPlayer;
                     SwitchBehaviourStateLocally(States.ChasingEscapedPlayer);
-                    break;
                 }
                 
                 break;
@@ -286,15 +284,16 @@ public class AloeServer : BiodiverseAI
                 {
                     _avoidingPlayer = tempPlayer;
                     SwitchBehaviourStateLocally(States.AvoidingPlayer);
+                    break;
                 }
                 
                 // Check if a player has below "playerHealthThresholdForStalking" % of health
                 foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
                 {
-                    if (!PlayerIsStalkable(player)) continue;
-                    
                     if (player.HasLineOfSightToPosition(eye.transform.position))
-                        netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.2f, player.playerClientId);
+                        netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.25f, player.playerClientId);
+                    
+                    if (!PlayerIsStalkable(player)) continue;
                     
                     targetPlayer = player;
                     netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.actualClientId);
@@ -303,24 +302,23 @@ public class AloeServer : BiodiverseAI
                 }
                 
                 // Check if the aloe has reached her favourite spot, so she can start roaming from that position
-                if (!_reachedFavouriteSpotForRoaming && Vector3.Distance(favoriteSpot.position, transform.position) <= 4)
+                if (!_reachedFavouriteSpotForRoaming && Vector3.Distance(_favouriteSpot, transform.position) <= 4)
                 {
-                    if (HasLineOfSightToPosition(favoriteSpot.position, viewWidth, viewRange, proximityAwareness))
+                    if (HasLineOfSightToPosition(_favouriteSpot, viewWidth, viewRange, proximityAwareness))
                         _reachedFavouriteSpotForRoaming = true;
                 }
 
                 if (!_reachedFavouriteSpotForRoaming)
                 {
                     LogDebug("Heading towards favourite position before roaming");
-                    SetDestinationToPosition(favoriteSpot.position);
+                    SetDestinationToPosition(_favouriteSpot);
                     if (roamMap.inProgress) StopSearch(roamMap);
                 }
-                
                 // If not already roaming, then start the roam search routine
                 else if (!roamMap.inProgress)
                 {
                     LogDebug("Starting to roam map");
-                    StartSearch(favoriteSpot.position, roamMap);
+                    StartSearch(_favouriteSpot, roamMap);
                 }
                 
                 break;
@@ -377,10 +375,10 @@ public class AloeServer : BiodiverseAI
                 // Check if a player has below "playerHealthThresholdForHealing" % of health
                 foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
                 {
-                    if (!PlayerIsStalkable(player)) continue;
-                    
                     if (player.HasLineOfSightToPosition(eye.transform.position))
-                        netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.2f, player.playerClientId);
+                        netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.5f, player.playerClientId);
+                    
+                    if (!PlayerIsStalkable(player)) continue;
                     
                     targetPlayer = player;
                     netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.actualClientId);
@@ -409,6 +407,8 @@ public class AloeServer : BiodiverseAI
                 }
                 else
                 {
+                    if (_isStaringAtTargetPlayer) netcodeController.ChangeLookAimConstraintWeightClientRpc(_aloeId, 0, 0.1f);
+                    
                     _isStaringAtTargetPlayer = false;
                     if (IsTargetPlayerReachable())
                     {
@@ -460,11 +460,11 @@ public class AloeServer : BiodiverseAI
                 }
                 else
                 {
-                    if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 2f && !_inGrabAnimation)
+                    if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 4f && !_inGrabAnimation)
                     {
                         // See if the aloe can kidnap the player
                         LogDebug("Player is close to aloe! Kidnapping him now");
-                        agent.speed = 1f;
+                        agent.speed = 0f;
                         netcodeController.SetTriggerClientRpc(_aloeId, AloeClient.Grab);
                         _inGrabAnimation = true;
                     }
@@ -485,7 +485,7 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.KidnappingPlayer:
             {
-                if (Vector3.Distance(transform.position, favoriteSpot.position) < 1)
+                if (Vector3.Distance(transform.position, _favouriteSpot) <= 1)
                 {
                     LogDebug("reached favourite spot while kidnapping");
                     netcodeController.UnMuffleTargetPlayerVoiceClientRpc(_aloeId);
@@ -557,6 +557,78 @@ public class AloeServer : BiodiverseAI
             }
         }
     }
+
+    private void PickFavouriteSpot()
+    {
+        _mainEntrancePosition = RoundManager.FindMainEntrancePosition();
+        Vector3 brackenRoomAloeNode = AloeSharedData.Instance.OccupyBrackenRoomAloeNode();
+
+        // Check if the Aloe is outside, and if she is then teleport her back inside
+        {
+            Vector3 enemyPos = transform.position;
+            Vector3 closestOutsideNode = Vector3.positiveInfinity;
+            Vector3 closestInsideNode = Vector3.positiveInfinity;
+
+            IEnumerable<Vector3> insideNodePositions = FindInsideAINodePositions();
+            IEnumerable<Vector3> outsideNodePositions = FindOutsideAINodePositions();
+
+            foreach (Vector3 pos in outsideNodePositions)
+            {
+                if ((pos - enemyPos).sqrMagnitude < (closestOutsideNode - enemyPos).sqrMagnitude)
+                {
+                    closestOutsideNode = pos;
+                }
+            }
+        
+            foreach (Vector3 pos in insideNodePositions)
+            {
+                if ((pos - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
+                {
+                    closestInsideNode = pos;
+                }
+            }
+
+            if ((closestOutsideNode - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
+            {
+                agent.Warp(RoundManager.Instance.GetRandomNavMeshPositionInRadius(_mainEntrancePosition, 30f));
+            }
+        }
+        
+        _favouriteSpot = brackenRoomAloeNode == Vector3.zero ? allAINodes[Random.Range(0, allAINodes.Length)].transform.position : brackenRoomAloeNode;
+        if (!IsPathReachable(_favouriteSpot))
+        {
+            LogDebug($"Favourite spot {_favouriteSpot} is not reachable");
+        }
+        
+        LogDebug($"Found a favourite spot: {_favouriteSpot}");
+    }
+    
+    private static IEnumerable<Vector3> FindOutsideAINodePositions()
+    {
+        GameObject[] outsideAINodes = GameObject.FindGameObjectsWithTag("OutsideAINode");
+        Vector3[] outsideNodePositions = new Vector3[outsideAINodes.Length];
+                
+        for (int i = 0; i < outsideAINodes.Length; i++)
+        {
+            outsideNodePositions[i] = outsideAINodes[i].transform.position;
+        }
+        
+        return outsideNodePositions;
+    }
+
+    private static IEnumerable<Vector3> FindInsideAINodePositions()
+    {
+        GameObject[] insideAINodes = GameObject.FindGameObjectsWithTag("AINode");
+        Vector3[] insideNodePositions = new Vector3[insideAINodes.Length];
+                
+        for (int i = 0; i < insideAINodes.Length; i++)
+        {
+            insideNodePositions[i] = insideAINodes[i].transform.position;
+        }
+        
+        return insideNodePositions;
+    }
+
 
     /// <summary>
     /// Calculates the rotation for the Aloe manually, which is needed because of the kidnapping animation
@@ -698,12 +770,12 @@ public class AloeServer : BiodiverseAI
                     targetNode = farAwayTransform;
                     if (!SetDestinationToPosition(targetNode.position))
                     {
-                        SetDestinationToPosition(favoriteSpot.position, true);
+                        SetDestinationToPosition(_favouriteSpot, true);
                     }
                 }
                 else
                 {
-                    SetDestinationToPosition(favoriteSpot.position, true);
+                    SetDestinationToPosition(_favouriteSpot, true);
                 }
             }
 
@@ -1233,10 +1305,9 @@ public class AloeServer : BiodiverseAI
                 SetTargetPlayerInCaptivity(true);
                 netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 2.5f, targetPlayer.actualClientId);
                 netcodeController.SetTargetPlayerAbleToEscapeClientRpc(_aloeId, false);
-                netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.SnatchAndDrag, false);
+                netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.SnatchAndDrag);
                 
-                targetNode = favoriteSpot;
-                SetDestinationToPosition(targetNode.position);
+                SetDestinationToPosition(_favouriteSpot);
                 
                 if (!_currentlyHasDarkSkin)
                 {
@@ -1335,7 +1406,7 @@ public class AloeServer : BiodiverseAI
                 if (roamMap.inProgress) StopSearch(roamMap);
                 _avoidPlayerCoroutine = null;
                 
-                netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.Chase, false);
+                netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.Chase);
                 if (!_currentlyHasDarkSkin)
                 {
                     netcodeController.ChangeAloeSkinColourClientRpc(_aloeId, true);

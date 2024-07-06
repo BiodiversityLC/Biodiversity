@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using System.Diagnostics.CodeAnalysis;
+using GameNetcodeStuff;
 using HarmonyLib;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
@@ -7,6 +8,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// A class of patches for the StartOfRound class.
 /// </summary>
 [HarmonyPatch(typeof(StartOfRound))]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal class StartOfRoundPatch
 {
     /// <summary>
@@ -17,8 +19,7 @@ internal class StartOfRoundPatch
     [HarmonyPostfix]
     private static void ResetData(StartOfRound __instance)
     {
-        AloeSharedData.Instance.BrackenRoomPosition = null;
-        AloeSharedData.FlushDictionaries();
+        AloeSharedData.Instance.FlushDictionaries();
     }
 
     /// <summary>

@@ -1,8 +1,10 @@
-﻿using HarmonyLib;
+﻿using System.Diagnostics.CodeAnalysis;
+using HarmonyLib;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
 
 [HarmonyPatch(typeof(KnifeItem))]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class DevKnifePatch
 {
     [HarmonyPatch(nameof(KnifeItem.ItemActivate))]

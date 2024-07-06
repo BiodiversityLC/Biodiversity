@@ -1,7 +1,10 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using BepInEx.Logging;
 using DunGen;
 using HarmonyLib;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
@@ -11,6 +14,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// It finds the bracken room in the dungeon if there is one
 /// </summary>
 [HarmonyPatch(typeof(DungeonGenerator))]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal class DungeonGenPatch
 {
     private static readonly ManualLogSource Mls = new("AloeDunGenPatches");
@@ -19,30 +23,34 @@ internal class DungeonGenPatch
     [HarmonyPostfix]
     public static void OnChangeStatus(DungeonGenerator __instance)
     {
-        if (__instance.CurrentDungeon == null)
-        {
-            LogDebug("CurrentDungeon is null");
-        }
+        if (!NetworkManager.Singleton.IsServer) return;
         
-        else if (__instance.CurrentDungeon.AllTiles == null)
-        {
-            LogDebug("AllTiles is null");
-        }
+        if (__instance.CurrentDungeon == null) LogDebug("CurrentDungeon is null");
+        else if (__instance.CurrentDungeon.AllTiles == null) LogDebug("AllTiles is null");
         
         Tile tile = FindTileWithName(__instance.CurrentDungeon, "SmallRoom2");
         if (tile == null) return;
         
-        AloeSharedData.Instance.BrackenRoomPosition = tile.transform;
-        GameObject brackenRoomAiNode = new()
-        {
-            name = "BrackenRoomAINode",
-            tag = "AINode"
-        };
-        
-        brackenRoomAiNode.transform.SetParent(tile.transform);
-        RoundManager.Instance.insideAINodes.AddItem(brackenRoomAiNode);
+        CreateBrackenRoomAINodes(tile.transform);
+        AloeSharedData.Instance.PopulateBrackenRoomAloeNodes(tile.transform);
+    }
 
-        LogDebug("We found the Bracken room tile at: " + tile.name);
+    private static void CreateBrackenRoomAINodes(Transform brackenRoomTransform)
+    {
+        GameObject node1 = new() { name = "AINode", tag = "AINode" };
+        GameObject node2 = new() { name = "AINode1", tag = "AINode" };
+        GameObject node3 = new() { name = "AINode2", tag = "AINode" };
+        
+        node1.transform.position = brackenRoomTransform.position + new Vector3(-4.97f, 0f, -13.83f);
+        node2.transform.position = brackenRoomTransform.position + new Vector3(1.27f, 0f, -10.89f);
+        node3.transform.position = brackenRoomTransform.position + new Vector3(-3.76f, 0f, 1.92f);
+
+        List<GameObject> nodes = [node1, node2, node3];
+        nodes.ForEach(node =>
+        {
+            node.transform.SetParent(brackenRoomTransform, true);
+            RoundManager.Instance.insideAINodes.AddItem(node);
+        });
     }
 
     private static Tile FindTileWithName(Dungeon dungeon, string nameContains)

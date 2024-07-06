@@ -424,6 +424,7 @@ public class AloeClient : MonoBehaviour
             HandleMuffleTargetPlayerVoice(_aloeId);
 
             if (_currentFakePlayerBodyRagdoll != null) Destroy(_currentFakePlayerBodyRagdoll.gameObject);
+            // Todo: use networking for this instead
             GameObject fakePlayerBodyRagdollGameObject = 
                 Instantiate(
                     AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab, 

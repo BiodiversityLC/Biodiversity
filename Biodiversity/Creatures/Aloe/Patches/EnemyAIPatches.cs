@@ -1,8 +1,10 @@
-﻿using GameNetcodeStuff;
+﻿using System.Diagnostics.CodeAnalysis;
+using GameNetcodeStuff;
 using HarmonyLib;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
 
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class EnemyAIPatches
 {
     [HarmonyPatch("PlayerIsTargetable")]

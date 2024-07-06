@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using System.Diagnostics.CodeAnalysis;
+using GameNetcodeStuff;
 using HarmonyLib;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
@@ -8,6 +9,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// It makes sure the player doesn't get shot by a turret when they are being kidnapped.
 /// </summary>
 [HarmonyPatch(typeof(Turret))]
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal class TurretPatch
 {
     

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Biodiversity.Creatures.Aloe;
+namespace Biodiversity.Creatures.Aloe.SerializableTypes;
 
 [System.Serializable]
 public class BodyPart
