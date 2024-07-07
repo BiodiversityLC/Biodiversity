@@ -74,10 +74,12 @@ public class AloeServer : BiodiverseAI
 
     public enum States
     {
+        Spawning,
         PassiveRoaming,
         AvoidingPlayer,
         PassivelyStalkingPlayer,
         StalkingPlayerToKidnap,
+        GrabbingPlayer,
         KidnappingPlayer,
         HealingPlayer,
         CuddlingPlayer,
@@ -96,6 +98,7 @@ public class AloeServer : BiodiverseAI
         netcodeController.OnTargetPlayerEscaped += HandleTargetPlayerEscaped;
         netcodeController.OnGrabTargetPlayer += HandleGrabTargetPlayer;
         netcodeController.OnSpottedAnimationComplete += HandleSpottedAnimationComplete;
+        netcodeController.OnSpawnAnimationComplete += HandleSpawnAnimationComplete;
     }
 
     /// <summary>
@@ -114,6 +117,7 @@ public class AloeServer : BiodiverseAI
         netcodeController.OnTargetPlayerEscaped -= HandleTargetPlayerEscaped;
         netcodeController.OnGrabTargetPlayer -= HandleGrabTargetPlayer;
         netcodeController.OnSpottedAnimationComplete -= HandleSpottedAnimationComplete;
+        netcodeController.OnSpawnAnimationComplete -= HandleSpawnAnimationComplete;
     }
 
     public override void Start()
@@ -159,7 +163,10 @@ public class AloeServer : BiodiverseAI
             netcodeController.ChangeAnimationParameterBoolClientRpc(_aloeId, AloeClient.Stunned, false);
             _inStunAnimation = false;
         }
-        else if (_inStunAnimation) return;
+        else if (_inStunAnimation)
+        {
+            return;
+        }
 
         switch (currentBehaviourStateIndex)
         {
@@ -238,11 +245,18 @@ public class AloeServer : BiodiverseAI
             case (int)States.ChasingEscapedPlayer:
             {
                 _waitTimer -= Time.deltaTime;
-                if (_waitTimer > 0) return;
+                if (_waitTimer > 0)
+                {
+                    if (HasLineOfSightToPosition(targetPlayer.transform.position, viewWidth, viewRange))
+                    {
+                        LookAtPosition(targetPlayer.transform.position);
+                    }
+                }
                 if (Vector3.Distance(targetPlayer.transform.position, transform.position) <= 1.5f)
                 {
                     LogDebug("Player is close to aloe! Kidnapping him now");
                     SwitchBehaviourStateLocally(States.KidnappingPlayer);
+                    // Todo: Make grabbing player state
                 }
                 
                 break;
@@ -306,24 +320,23 @@ public class AloeServer : BiodiverseAI
                     SwitchBehaviourStateLocally(States.PassivelyStalkingPlayer);
                     break;
                 }
-                
-                // Check if the aloe has reached her favourite spot, so she can start roaming from that position
-                if (!_reachedFavouriteSpotForRoaming && Vector3.Distance(_favouriteSpot, transform.position) <= 4)
-                {
-                    _reachedFavouriteSpotForRoaming = true;
-                }
 
-                if (!_reachedFavouriteSpotForRoaming)
+                // Check if the aloe has reached her favourite spot, so she can start roaming from that position
+                if (_reachedFavouriteSpotForRoaming)
                 {
                     LogDebug("Heading towards favourite position before roaming");
                     SetDestinationToPosition(_favouriteSpot);
                     if (roamMap.inProgress) StopSearch(roamMap);
+                    if (Vector3.Distance(_favouriteSpot, transform.position) <= 4)
+                        _reachedFavouriteSpotForRoaming = true;
                 }
-                // If not already roaming, then start the roam search routine
-                else if (!roamMap.inProgress)
+                else
                 {
-                    LogDebug("Starting to roam map");
-                    StartSearch(_favouriteSpot, roamMap);
+                    if (!roamMap.inProgress)
+                    {
+                        StartSearch(transform.position, roamMap);
+                        LogDebug("Starting to roam map");
+                    }
                 }
                 
                 break;
@@ -1195,7 +1208,15 @@ public class AloeServer : BiodiverseAI
         if (!IsServer) return;
         switch (state)
         {
-            case (int)States.PassiveRoaming: // 0
+            case (int)States.Spawning: // 0
+            {
+                _agentMaxSpeed = 0f;
+                _agentMaxAcceleration = 50f;
+                
+                break;
+            }
+            
+            case (int)States.PassiveRoaming: // 1
             {
                 _agentMaxSpeed = 2f;
                 _agentMaxAcceleration = 2f;
@@ -1221,7 +1242,7 @@ public class AloeServer : BiodiverseAI
                 break;
             }
 
-            case (int)States.AvoidingPlayer: // 1
+            case (int)States.AvoidingPlayer: // 2
             {
                 _agentMaxSpeed = 9f;
                 _agentMaxAcceleration = 100f;
@@ -1242,7 +1263,7 @@ public class AloeServer : BiodiverseAI
                 break;
             }
 
-            case (int)States.PassivelyStalkingPlayer: // 2
+            case (int)States.PassivelyStalkingPlayer: // 3
             {
                 _agentMaxSpeed = 5f;
                 _agentMaxAcceleration = 70f;
@@ -1266,7 +1287,7 @@ public class AloeServer : BiodiverseAI
                 break; 
             }
 
-            case (int)States.StalkingPlayerToKidnap: // 3
+            case (int)States.StalkingPlayerToKidnap: // 4
             {
                 _agentMaxSpeed = 5f;
                 _agentMaxAcceleration = 50f;
@@ -1291,7 +1312,7 @@ public class AloeServer : BiodiverseAI
                 break;
             }
 
-            case (int)States.KidnappingPlayer: // 4
+            case (int)States.KidnappingPlayer: // 6
             {
                 _agentMaxSpeed = 8f;
                 _agentMaxAcceleration = 20f;
@@ -1338,7 +1359,7 @@ public class AloeServer : BiodiverseAI
                 break;
             }
 
-            case (int)States.HealingPlayer: // 5
+            case (int)States.HealingPlayer: // 7
             {
                 agent.speed = 0;
                 _agentMaxSpeed = 0f;
@@ -1385,7 +1406,7 @@ public class AloeServer : BiodiverseAI
                 break;
             }
 
-            case (int)States.CuddlingPlayer: // 6
+            case (int)States.CuddlingPlayer: // 8
             {
                 agent.speed = 0;
                 _agentMaxSpeed = 0f;
@@ -1411,7 +1432,7 @@ public class AloeServer : BiodiverseAI
                 break;
             }
 
-            case (int)States.ChasingEscapedPlayer: // 7
+            case (int)States.ChasingEscapedPlayer: // 9
             {
                 _agentMaxSpeed = 6f;
                 _agentMaxAcceleration = 50f;
@@ -1439,7 +1460,7 @@ public class AloeServer : BiodiverseAI
                 break;
             }
 
-            case (int)States.AttackingPlayer: // 8
+            case (int)States.AttackingPlayer: // 10
             {
                 _agentMaxSpeed = 5f;
                 _agentMaxAcceleration = 50f;
@@ -1463,7 +1484,7 @@ public class AloeServer : BiodiverseAI
                 break;
             }
             
-            case (int)States.Dead: // 9
+            case (int)States.Dead: // 11
             {
                 if (roamMap.inProgress) StopSearch(roamMap);
                 _avoidPlayerCoroutine = null;
@@ -1565,6 +1586,14 @@ public class AloeServer : BiodiverseAI
         
         float accelerationAdjustment = Time.deltaTime;
         agent.acceleration = Mathf.Lerp(agent.acceleration, _agentMaxAcceleration, accelerationAdjustment);
+    }
+
+    private void HandleSpawnAnimationComplete(string receivedAloeId)
+    {
+        if (_aloeId != receivedAloeId) return;
+        if (!IsServer) return;
+        LogDebug($"In {nameof(HandleSpawnAnimationComplete)}");
+        SwitchBehaviourStateLocally(States.PassiveRoaming);
     }
 
     /// <summary>

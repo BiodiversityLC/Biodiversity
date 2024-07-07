@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using BepInEx.Logging;
+using Biodiversity.Creatures.Aloe.CustomStateMachineBehaviours;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -172,6 +173,8 @@ public class AloeClient : MonoBehaviour
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client {_aloeId}");
         _propertyBlock = new MaterialPropertyBlock();
         lookAimRig.weight = 0f;
+        
+        AddStateMachineBehaviours(animator);
     }
 
     /// <summary>
@@ -661,6 +664,18 @@ public class AloeClient : MonoBehaviour
         yield return new WaitForSeconds(duration);
         LogDebug("Destroying gameobject");
         Destroy(gameObject);
+    }
+    
+    private void AddStateMachineBehaviours(Animator receivedAnimator)
+    {
+        StateMachineBehaviour[] behaviours = receivedAnimator.GetBehaviours<StateMachineBehaviour>();
+        foreach (StateMachineBehaviour behaviour in behaviours)
+        {
+            if (behaviour is BaseStateMachineBehaviour baseStateMachineBehaviour)
+            {
+                baseStateMachineBehaviour.Initialize(netcodeController);
+            }
+        }
     }
 
     /// <summary>

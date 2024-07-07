@@ -33,6 +33,7 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string> OnSpottedAnimationComplete;
     public event Action<string> OnTransitionToRunningForwardsAndCarryingPlayer;
     public event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
+    public event Action<string> OnSpawnAnimationComplete;
 
     private void Start()
     {
@@ -40,10 +41,16 @@ public class AloeNetcodeController : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void SpawnFakePlayerBodyRagdollClientRpc(string receivedShishaId,
+    public void SpawnAnimationCompleteClientRpc(string receivedAloeId)
+    {
+        OnSpawnAnimationComplete?.Invoke(receivedAloeId);
+    }
+
+    [ClientRpc]
+    public void SpawnFakePlayerBodyRagdollClientRpc(string receivedAloeId,
         NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
     {
-        OnSpawnFakePlayerBodyRagdoll?.Invoke(receivedShishaId, fakePlayerBodyRagdollNetworkObjectReference);
+        OnSpawnFakePlayerBodyRagdoll?.Invoke(receivedAloeId, fakePlayerBodyRagdollNetworkObjectReference);
     }
 
     [ClientRpc]
