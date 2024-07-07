@@ -2,11 +2,12 @@
 using System.Linq;
 using Biodiversity.Creatures.Aloe.SerializableTypes;
 using GameNetcodeStuff;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe;
 
-public class FakePlayerBodyRagdoll : MonoBehaviour
+public class FakePlayerBodyRagdoll : NetworkBehaviour
 {
     /// <summary>
     /// This enum is for the vanilla DeadPlayerInfo body parts variable
@@ -50,6 +51,9 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
 
     private float _moveToExactPositionTimer;
     private float _restBodyPartsTimer;
+    
+    private readonly NetworkVariable<Vector3> _networkPosition = new();
+    private readonly NetworkVariable<Quaternion> _networkRotation = new();
 
     private void Update()
     {
@@ -79,6 +83,17 @@ public class FakePlayerBodyRagdoll : MonoBehaviour
             {
                 HandleAttachedLimb(bodyPart);
             }
+        }
+
+        if (IsOwner)
+        {
+            _networkPosition.Value = transform.position;
+            _networkRotation.Value = transform.rotation;
+        }
+        else
+        {
+            transform.position = _networkPosition.Value;
+            transform.rotation = _networkRotation.Value;
         }
     }
 

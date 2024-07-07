@@ -32,10 +32,18 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, float, float> OnChangeLookAimConstraintWeight;
     public event Action<string> OnSpottedAnimationComplete;
     public event Action<string> OnTransitionToRunningForwardsAndCarryingPlayer;
+    public event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
 
     private void Start()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
+    }
+
+    [ClientRpc]
+    public void SpawnFakePlayerBodyRagdollClientRpc(string receivedShishaId,
+        NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
+    {
+        OnSpawnFakePlayerBodyRagdoll?.Invoke(receivedShishaId, fakePlayerBodyRagdollNetworkObjectReference);
     }
 
     [ClientRpc]

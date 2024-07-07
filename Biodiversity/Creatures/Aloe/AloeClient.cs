@@ -132,6 +132,7 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnChangeBehaviourState += HandleChangeBehaviourStateIndex;
         netcodeController.OnSnapPlayerNeck += HandleSnapPlayerNeck;
         netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
+        netcodeController.OnSpawnFakePlayerBodyRagdoll += HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer +=
             HandleTransitionToRunningForwardsAndCarryingPlayer;
     }
@@ -161,6 +162,7 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnChangeBehaviourState -= HandleChangeBehaviourStateIndex;
         netcodeController.OnSnapPlayerNeck -= HandleSnapPlayerNeck;
         netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
+        netcodeController.OnSpawnFakePlayerBodyRagdoll -= HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer -=
             HandleTransitionToRunningForwardsAndCarryingPlayer;
     }
@@ -254,6 +256,9 @@ public class AloeClient : MonoBehaviour
     private IEnumerator BlendLookAimConstraintWeight(float startWeight, float endWeight, float duration)
     {
         float elapsed = 0f;
+        
+        // Exit early if the start and end weights are the same
+        if (Mathf.Approximately(startWeight, endWeight)) yield break;
 
         while (elapsed < duration)
         {
@@ -402,8 +407,34 @@ public class AloeClient : MonoBehaviour
     private void HandleTransitionToRunningForwardsAndCarryingPlayer(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
+        LogDebug($"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
+
+        if (_currentFakePlayerBodyRagdoll == null)
+        {
+            _mls.LogError("The player body ragdoll is null, this should never happen.");
+            return;
+        }
+        
         _currentFakePlayerBodyRagdoll.DetachLimbFromTransform("Neck");
         _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Root", grabTarget);
+    }
+
+    private void HandleSpawnFakePlayerBodyRagdoll(string receivedAloeId,
+        NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
+    {
+        if (_aloeId != receivedAloeId) return;
+        if (_currentFakePlayerBodyRagdoll != null) Destroy(_currentFakePlayerBodyRagdoll.gameObject);
+        if (!fakePlayerBodyRagdollNetworkObjectReference.TryGet(out NetworkObject fakePlayerBodyRagdollNetworkObject))
+            return;
+
+        _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollNetworkObject.GetComponent<FakePlayerBodyRagdoll>();
+        if (_currentFakePlayerBodyRagdoll == null)
+        {
+            _mls.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
+            return;
+        }
+
+        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", grabTarget);
     }
 
     /// <summary>
@@ -422,24 +453,6 @@ public class AloeClient : MonoBehaviour
             _targetPlayer.inSpecialInteractAnimation = true;
             _targetPlayer.DropAllHeldItemsAndSync();
             HandleMuffleTargetPlayerVoice(_aloeId);
-
-            if (_currentFakePlayerBodyRagdoll != null) Destroy(_currentFakePlayerBodyRagdoll.gameObject);
-            // Todo: use networking for this instead
-            GameObject fakePlayerBodyRagdollGameObject = 
-                Instantiate(
-                    AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab, 
-                    _targetPlayer.thisPlayerBody.position + Vector3.up * 1.25f, 
-                    _targetPlayer.thisPlayerBody.rotation, 
-                    null);
-
-            _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollGameObject.GetComponent<FakePlayerBodyRagdoll>();
-            if (_currentFakePlayerBodyRagdoll == null)
-            {
-                _mls.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
-                return;
-            }
-
-            _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", grabTarget);
         }
         else
         {
@@ -480,11 +493,9 @@ public class AloeClient : MonoBehaviour
     private void HandleIncreasePlayerFearLevel(string receivedAloeId, float targetInsanity, ulong playerClientId)
     {
         if (_aloeId != receivedAloeId) return;
-        if (GameNetworkManager.Instance.localPlayerController != StartOfRound.Instance.allPlayerScripts[playerClientId])
-            return;
-        
-        GameNetworkManager.Instance.localPlayerController.JumpToFearLevel(targetInsanity);
-        GameNetworkManager.Instance.localPlayerController.IncreaseFearLevelOverTime(0.8f);
+        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
+        player.JumpToFearLevel(targetInsanity);
+        player.IncreaseFearLevelOverTime(0.8f);
     }
 
     /// <summary>
@@ -562,6 +573,7 @@ public class AloeClient : MonoBehaviour
     public void OnAnimationEventSpottedAnimationComplete()
     {
         if (!NetworkManager.Singleton.IsServer || !netcodeController.IsOwner) return;
+        LogDebug($"In {nameof(OnAnimationEventSpottedAnimationComplete)}");
         netcodeController.SpottedAnimationCompleteServerRpc(_aloeId);
     }
 
@@ -628,6 +640,7 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     public void OnAnimationEventPlayPoofParticleEffect()
     {
+        LogDebug($"In {nameof(OnAnimationEventPlayPoofParticleEffect)}");
         poofParticleSystem.Play();
         
         bodyRenderer.enabled = false;

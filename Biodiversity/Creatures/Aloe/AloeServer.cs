@@ -5,6 +5,7 @@ using System.Linq;
 using BepInEx.Logging;
 using Biodiversity.General;
 using GameNetcodeStuff;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 using Logger = BepInEx.Logging.Logger;
@@ -90,6 +91,7 @@ public class AloeServer : BiodiverseAI
     /// </summary>
     public void OnEnable()
     {
+        if (!IsServer) return;
         if (netcodeController == null) return;
         netcodeController.OnTargetPlayerEscaped += HandleTargetPlayerEscaped;
         netcodeController.OnGrabTargetPlayer += HandleGrabTargetPlayer;
@@ -101,8 +103,11 @@ public class AloeServer : BiodiverseAI
     /// </summary>
     public void OnDisable()
     {
-        // Todo: add something that takes the player out of special animation if the aloe is destroyed
+#if DEBUG
+        if (targetPlayer != null) targetPlayer.inSpecialInteractAnimation = false;
+#endif
         
+        if (!IsServer) return;
         AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(_favouriteSpot);
         
         if (netcodeController == null) return;
@@ -176,6 +181,7 @@ public class AloeServer : BiodiverseAI
                     return;
                 }
                 
+                _avoidPlayerTimer += Time.deltaTime;
                 float avoidTimerCompareValue = _timesFoundSneaking % 3 != 0 ? 11f : 21f;
                 if (_avoidPlayerTimer > avoidTimerCompareValue)
                 {
@@ -304,8 +310,7 @@ public class AloeServer : BiodiverseAI
                 // Check if the aloe has reached her favourite spot, so she can start roaming from that position
                 if (!_reachedFavouriteSpotForRoaming && Vector3.Distance(_favouriteSpot, transform.position) <= 4)
                 {
-                    if (HasLineOfSightToPosition(_favouriteSpot, viewWidth, viewRange, proximityAwareness))
-                        _reachedFavouriteSpotForRoaming = true;
+                    _reachedFavouriteSpotForRoaming = true;
                 }
 
                 if (!_reachedFavouriteSpotForRoaming)
@@ -347,7 +352,6 @@ public class AloeServer : BiodiverseAI
                     
                     _avoidPlayerTimer = 0f;
                 }
-                else _avoidPlayerTimer += Time.deltaTime;
 
                 break;
             }
@@ -601,10 +605,11 @@ public class AloeServer : BiodiverseAI
             }
         }
         
-        _favouriteSpot = brackenRoomAloeNode == Vector3.zero ? allAINodes[Random.Range(0, allAINodes.Length)].transform.position : brackenRoomAloeNode;
+        _favouriteSpot = brackenRoomAloeNode == Vector3.zero ? ChooseFarthestNodeFromPosition(_mainEntrancePosition, offset:Random.Range(0, 5)).position : brackenRoomAloeNode;
         if (!IsPathReachable(_favouriteSpot))
         {
-            LogDebug($"Favourite spot {_favouriteSpot} is not reachable");
+            LogDebug($"Favourite spot {_favouriteSpot} is not reachable, trying a new spot.");
+            _favouriteSpot = allAINodes[Random.Range(0, allAINodes.Length)].transform.position;
         }
         
         LogDebug($"Found a favourite spot: {_favouriteSpot}");
@@ -751,7 +756,11 @@ public class AloeServer : BiodiverseAI
     {
         while (true)
         {
-            if (!_finishedSpottedAnimation) yield return null;
+            if (!_finishedSpottedAnimation)
+            {
+                yield return null;
+                continue;
+            }
             
             Transform farAwayTransform = _avoidingPlayer != null
                 ? ChooseFarthestNodeFromPosition(_avoidingPlayer.transform.position, avoidLineOfSight)
@@ -791,15 +800,6 @@ public class AloeServer : BiodiverseAI
     }
 
     /// <summary>
-    /// Returns whether 1 or more players are inside the facility/factory.
-    /// </summary>
-    /// <returns>Whether 1 or more players are inside the facility/factory</returns>
-    private bool IsAnyPlayerInsideTheFacility()
-    {
-        return StartOfRound.Instance.allPlayerScripts.Any(PlayerIsTargetable);
-    }
-
-    /// <summary>
     /// Detects whether the target player is reachable by a path.
     /// </summary>
     /// <param name="bufferDistance">.</param>
@@ -835,8 +835,7 @@ public class AloeServer : BiodiverseAI
         position = RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 1.75f);
         path1 = new NavMeshPath();
         
-        // ReSharper disable once UseIndexFromEndExpression
-        return agent.CalculatePath(position, path1) && !(Vector3.Distance(path1.corners[path1.corners.Length - 1], RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 2.7f)) > 1.5499999523162842);
+        return agent.CalculatePath(position, path1) && !(Vector3.Distance(path1.corners[^1], RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 2.7f)) > 1.5499999523162842);
     }
 
     /// <summary>
@@ -1206,6 +1205,7 @@ public class AloeServer : BiodiverseAI
                 openDoorSpeedMultiplier = 2f;
                 _avoidPlayerCoroutine = null;
                 _avoidingPlayer = null;
+                moveTowardsDestination = true;
                 _reachedFavouriteSpotForRoaming = false;
 
                 if (_currentlyHasDarkSkin)
@@ -1216,6 +1216,7 @@ public class AloeServer : BiodiverseAI
                 
                 netcodeController.ChangeAnimationParameterBoolClientRpc(_aloeId, AloeClient.Crawling, false);
                 netcodeController.ChangeAnimationParameterBoolClientRpc(_aloeId, AloeClient.Healing, false);
+                netcodeController.ChangeLookAimConstraintWeightClientRpc(_aloeId, 0, 0.5f);
                 
                 break;
             }
@@ -1306,12 +1307,24 @@ public class AloeServer : BiodiverseAI
                 if (roamMap.inProgress) StopSearch(roamMap);
                 _ignoredNodes.Clear();
                 
-                // Set target player and pickup player
+                // Spawn fake player body ragdoll
+                GameObject fakePlayerBodyRagdollGameObject = 
+                    Instantiate(
+                        AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab, 
+                        targetPlayer.thisPlayerBody.position + Vector3.up * 1.25f, 
+                        targetPlayer.thisPlayerBody.rotation, 
+                        null);
+
+                NetworkObject fakePlayerBodyRagdollNetworkObject =
+                    fakePlayerBodyRagdollGameObject.GetComponent<NetworkObject>();
+                fakePlayerBodyRagdollNetworkObject.Spawn();
+                
                 netcodeController.ChangeAnimationParameterBoolClientRpc(_aloeId, AloeClient.Healing, false);
                 netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.playerClientId); // Todo: Make function that only does the rpc if needed
                 SetTargetPlayerInCaptivity(true);
-                netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 2.5f, targetPlayer.actualClientId);
+                netcodeController.SpawnFakePlayerBodyRagdollClientRpc(_aloeId, fakePlayerBodyRagdollNetworkObject);
                 netcodeController.SetTargetPlayerAbleToEscapeClientRpc(_aloeId, false);
+                netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 2.5f, targetPlayer.actualClientId);
                 netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.SnatchAndDrag);
                 
                 SetDestinationToPosition(_favouriteSpot);
@@ -1524,13 +1537,17 @@ public class AloeServer : BiodiverseAI
         _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
         _agentLastPosition = position;
         
-        if (stunNormalizedTimer > 0 || _isStaringAtTargetPlayer)
+        if (stunNormalizedTimer > 0 || _isStaringAtTargetPlayer || currentBehaviourStateIndex == (int)States.Dead)
         {
             agent.speed = 0;
             agent.acceleration = _agentMaxAcceleration;
         }
-
-        else if (currentBehaviourStateIndex != (int)States.Dead)
+        else if (_inGrabAnimation)
+        {
+            agent.speed = 1;
+            agent.acceleration = _agentMaxAcceleration;
+        }
+        else
         {
             MoveWithAcceleration();
         }

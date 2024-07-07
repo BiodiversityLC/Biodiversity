@@ -51,9 +51,10 @@ internal class DungeonGenPatch
         {
             node.transform.SetParent(brackenRoomTransform, true);
             RoundManager.Instance.insideAINodes.AddItem(node);
+            AloeSharedData.DrawDebugCircleAtPosition(node.transform.position);
         });
     }
-
+    
     private static Tile FindTileWithName(Dungeon dungeon, string nameContains)
     {
         if (dungeon != null) return dungeon.AllTiles.FirstOrDefault(tile => tile.name.Contains(nameContains));
