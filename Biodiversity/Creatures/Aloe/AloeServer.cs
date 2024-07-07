@@ -56,7 +56,8 @@ public class AloeServer : BiodiverseAI
 
     private int _timesFoundSneaking;
     private int _healingPerInterval;
-    
+
+    private bool _networkEventsSubscribed;
     private bool _isStaringAtTargetPlayer;
     private bool _currentlyHasDarkSkin;
     private bool _reachedFavouriteSpotForRoaming;
@@ -87,60 +88,50 @@ public class AloeServer : BiodiverseAI
         AttackingPlayer,
         Dead
     }
-
-    /// <summary>
-    /// Subscribe to the needed network events.
-    /// </summary>
-    public void OnEnable()
+    
+    private void Awake()
     {
-        if (!IsServer) return;
-        if (netcodeController == null) return;
-        netcodeController.OnTargetPlayerEscaped += HandleTargetPlayerEscaped;
-        netcodeController.OnGrabTargetPlayer += HandleGrabTargetPlayer;
-        netcodeController.OnSpottedAnimationComplete += HandleSpottedAnimationComplete;
-        netcodeController.OnSpawnAnimationComplete += HandleSpawnAnimationComplete;
+        _aloeId = Guid.NewGuid().ToString();
+        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Server {_aloeId}");
+        
+        if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
+        if (netcodeController == null)
+        {
+            _mls.LogError("Netcode Controller is null, aborting spawn");
+            Destroy(gameObject);
+        }
     }
-
-    /// <summary>
-    /// Unsubscribe to the network events when the creature is dead.
-    /// </summary>
-    public void OnDisable()
+    
+    private void OnEnable()
     {
-#if DEBUG
+        SubscribeToNetworkEvents();
+    }
+    
+    private void OnDisable()
+    {
+        #if DEBUG
         if (targetPlayer != null) targetPlayer.inSpecialInteractAnimation = false;
-#endif
+        #endif
         
-        if (!IsServer) return;
-        AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(_favouriteSpot);
-        
-        if (netcodeController == null) return;
-        netcodeController.OnTargetPlayerEscaped -= HandleTargetPlayerEscaped;
-        netcodeController.OnGrabTargetPlayer -= HandleGrabTargetPlayer;
-        netcodeController.OnSpottedAnimationComplete -= HandleSpottedAnimationComplete;
-        netcodeController.OnSpawnAnimationComplete -= HandleSpawnAnimationComplete;
+        if (!IsServer) AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(_favouriteSpot);
+        UnsubscribeFromNetworkEvents();
     }
 
     public override void Start()
     {
         base.Start();
         if (!IsServer) return;
-
-        _aloeId = Guid.NewGuid().ToString();
-        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Server {_aloeId}");
-
-        netcodeController = GetComponent<AloeNetcodeController>();
-        if (netcodeController == null)
-        {
-            _mls.LogError("Netcode Controller is null, aborting spawn");
-            Destroy(gameObject);
-            return;
-        }
+        
+        // Ensure SubscribeToNetworkEvents is called again in Start to handle network initialization timing
+        SubscribeToNetworkEvents();
         
         Random.InitState(StartOfRound.Instance.randomMapSeed + _aloeId.GetHashCode());
         netcodeController.SyncAloeIdClientRpc(_aloeId);
-        InitializeConfigValues();
         agent.updateRotation = false;
+        
+        InitializeConfigValues();
         PickFavouriteSpot();
+        
         LogDebug("Aloe Spawned!");
     }
 
@@ -618,12 +609,14 @@ public class AloeServer : BiodiverseAI
             }
         }
         
-        _favouriteSpot = brackenRoomAloeNode == Vector3.zero ? ChooseFarthestNodeFromPosition(_mainEntrancePosition, offset:Random.Range(0, 5)).position : brackenRoomAloeNode;
-        if (!IsPathReachable(_favouriteSpot))
-        {
-            LogDebug($"Favourite spot {_favouriteSpot} is not reachable, trying a new spot.");
-            _favouriteSpot = allAINodes[Random.Range(0, allAINodes.Length)].transform.position;
-        }
+        // _favouriteSpot = brackenRoomAloeNode == Vector3.zero ? ChooseFarthestNodeFromPosition(_mainEntrancePosition, offset:Random.Range(0, 5)).position : brackenRoomAloeNode;
+        // if (!IsPathReachable(_favouriteSpot))
+        // {
+        //     LogDebug($"Favourite spot {_favouriteSpot} is not reachable, trying a new spot.");
+        //     _favouriteSpot = allAINodes[Random.Range(0, allAINodes.Length)].transform.position;
+        // }
+        
+        _favouriteSpot = allAINodes[Random.Range(0, allAINodes.Length)].transform.position;
         
         LogDebug($"Found a favourite spot: {_favouriteSpot}");
     }
@@ -784,8 +777,8 @@ public class AloeServer : BiodiverseAI
                     QueryTriggerInteraction.Ignore))
             {
                 LogDebug($"Setting target node to {farAwayTransform.position}");
-                targetNode = farAwayTransform;
-                SetDestinationToPosition(targetNode.position);
+                LogDebug("1");
+                SetDestinationToPosition(farAwayTransform.position);
             }
             else
             {
@@ -796,14 +789,16 @@ public class AloeServer : BiodiverseAI
                 
                 if (farAwayTransform != null)
                 {
-                    targetNode = farAwayTransform;
-                    if (!SetDestinationToPosition(targetNode.position))
+                    LogDebug("2");
+                    if (!SetDestinationToPosition(farAwayTransform.position))
                     {
+                        LogDebug("3");
                         SetDestinationToPosition(_favouriteSpot, true);
                     }
                 }
                 else
                 {
+                    LogDebug("4");
                     SetDestinationToPosition(_favouriteSpot, true);
                 }
             }
@@ -1558,7 +1553,10 @@ public class AloeServer : BiodiverseAI
         _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
         _agentLastPosition = position;
         
-        if (stunNormalizedTimer > 0 || _isStaringAtTargetPlayer || currentBehaviourStateIndex == (int)States.Dead)
+        if (stunNormalizedTimer > 0 || 
+            _isStaringAtTargetPlayer || 
+            currentBehaviourStateIndex == (int)States.Dead ||
+            currentBehaviourStateIndex == (int)States.Spawning)
         {
             agent.speed = 0;
             agent.acceleration = _agentMaxAcceleration;
@@ -1592,8 +1590,39 @@ public class AloeServer : BiodiverseAI
     {
         if (_aloeId != receivedAloeId) return;
         if (!IsServer) return;
+        
         LogDebug($"In {nameof(HandleSpawnAnimationComplete)}");
         SwitchBehaviourStateLocally(States.PassiveRoaming);
+    }
+
+    /// <summary>
+    /// Subscribe to the needed network events.
+    /// </summary>
+    private void SubscribeToNetworkEvents()
+    {
+        if (!IsServer || _networkEventsSubscribed) return;
+        
+        netcodeController.OnTargetPlayerEscaped += HandleTargetPlayerEscaped;
+        netcodeController.OnGrabTargetPlayer += HandleGrabTargetPlayer;
+        netcodeController.OnSpottedAnimationComplete += HandleSpottedAnimationComplete;
+        netcodeController.OnSpawnAnimationComplete += HandleSpawnAnimationComplete;
+
+        _networkEventsSubscribed = true;
+    }
+
+    /// <summary>
+    /// Unsubscribe to the network events.
+    /// </summary>
+    private void UnsubscribeFromNetworkEvents()
+    {
+        if (!IsServer || !_networkEventsSubscribed) return;
+        
+        netcodeController.OnTargetPlayerEscaped -= HandleTargetPlayerEscaped;
+        netcodeController.OnGrabTargetPlayer -= HandleGrabTargetPlayer;
+        netcodeController.OnSpottedAnimationComplete -= HandleSpottedAnimationComplete;
+        netcodeController.OnSpawnAnimationComplete -= HandleSpawnAnimationComplete;
+
+        _networkEventsSubscribed = false;
     }
 
     /// <summary>

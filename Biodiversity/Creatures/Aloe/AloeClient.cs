@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.CustomStateMachineBehaviours;
 using Unity.Netcode;
@@ -167,10 +168,16 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer -=
             HandleTransitionToRunningForwardsAndCarryingPlayer;
     }
-    
+
+    private void Awake()
+    {
+        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client");
+        
+        if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
+    }
+
     private void Start()
     {
-        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client {_aloeId}");
         _propertyBlock = new MaterialPropertyBlock();
         lookAimRig.weight = 0f;
         

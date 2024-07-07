@@ -35,7 +35,7 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
     public event Action<string> OnSpawnAnimationComplete;
 
-    private void Start()
+    private void Awake()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
     }
@@ -43,6 +43,7 @@ public class AloeNetcodeController : NetworkBehaviour
     [ClientRpc]
     public void SpawnAnimationCompleteClientRpc(string receivedAloeId)
     {
+        LogDebug($"In {nameof(SpawnAnimationCompleteClientRpc)}");
         OnSpawnAnimationComplete?.Invoke(receivedAloeId);
     }
 
