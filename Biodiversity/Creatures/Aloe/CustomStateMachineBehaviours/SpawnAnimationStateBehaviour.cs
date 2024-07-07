@@ -19,6 +19,6 @@ public class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
         
         if (!NetworkManager.Singleton.IsServer || !NetcodeController.IsOwner) return;
         LogDebug("Spawn animation complete, switching to passive roaming.");
-        NetcodeController.SpawnAnimationCompleteClientRpc(AloeId);
+        NetcodeController.SpawnAnimationCompleteServerRpc(AloeId);
     }
 }

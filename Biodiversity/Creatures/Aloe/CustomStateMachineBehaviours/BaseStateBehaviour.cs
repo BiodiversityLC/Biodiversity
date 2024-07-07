@@ -11,27 +11,42 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
     
     protected AloeNetcodeController NetcodeController;
 
-    protected void OnEnable()
+    private bool _networkEventsSubscribed;
+
+    private void OnEnable()
     {
-        if (NetcodeController == null) return;
-        NetcodeController.OnSyncAloeId += HandleSyncAloeId;
+        SubscribeToNetworkEvents();
     }
 
-    protected void OnDisable()
+    private void OnDisable()
     {
-        if (NetcodeController == null) return;
-        NetcodeController.OnSyncAloeId -= HandleSyncAloeId;
+        UnsubscribeToNetworkEvents();
     }
 
     public void Initialize(AloeNetcodeController receivedNetcodeController)
     {
         NetcodeController = receivedNetcodeController;
-        OnEnable();
+        SubscribeToNetworkEvents();
     }
 
-    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    private void SubscribeToNetworkEvents()
     {
+        if (_networkEventsSubscribed) return;
+        if (NetcodeController == null) return;
         
+        NetcodeController.OnSyncAloeId += HandleSyncAloeId;
+
+        _networkEventsSubscribed = true;
+    }
+
+    private void UnsubscribeToNetworkEvents()
+    {
+        if (!_networkEventsSubscribed) return;
+        if (NetcodeController == null) return;
+        
+        NetcodeController.OnSyncAloeId -= HandleSyncAloeId;
+        
+        _networkEventsSubscribed = false;
     }
 
     private void HandleSyncAloeId(string receivedAloeId)
@@ -39,7 +54,7 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
         AloeId = receivedAloeId;
         Mls?.Dispose();
         Mls = Logger.CreateLogSource(
-            $"Aloe Base State Behaviour {AloeId}");
+            $"Aloe Animation State Machine Behaviour {AloeId}");
         
         LogDebug("Successfully synced aloe identifier");
     }

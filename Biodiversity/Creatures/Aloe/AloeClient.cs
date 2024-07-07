@@ -188,6 +188,7 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        // Todo: Do raycasts on the client side to see if the aloe is looking at someone, and aim the look target to them
         Vector3 position = transform.position;
         _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
         _agentLastPosition = position;
@@ -543,25 +544,6 @@ public class AloeClient : MonoBehaviour
     }
 
     /// <summary>
-    /// Grabs the target player at the end of the grab player animation
-    /// </summary>
-    public void OnAnimationEventGrabPlayer()
-    {
-        if (!NetworkManager.Singleton.IsServer || !netcodeController.IsOwner) return;
-        netcodeController.GrabTargetPlayerServerRpc(_aloeId);
-    }
-
-    /// <summary>
-    /// Tells the server that the spotted animation is complete
-    /// </summary>
-    public void OnAnimationEventSpottedAnimationComplete()
-    {
-        if (!NetworkManager.Singleton.IsServer || !netcodeController.IsOwner) return;
-        LogDebug($"In {nameof(OnAnimationEventSpottedAnimationComplete)}");
-        netcodeController.SpottedAnimationCompleteServerRpc(_aloeId);
-    }
-
-    /// <summary>
     /// Plays a random footstep sound effect when the Aloe's foot touches the ground in an animation.
     /// </summary>
     public void OnAnimationEventPlayFootstepSfx()
@@ -592,17 +574,17 @@ public class AloeClient : MonoBehaviour
     /// Changes the target player to the player with the given playerObjectId.
     /// </summary>
     /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="targetPlayerObjectId">The target player's object ID.</param>
-    private void HandleChangeTargetPlayer(string receivedAloeId, ulong targetPlayerObjectId)
+    /// <param name="targetPlayerClientId">The target player's object ID.</param>
+    private void HandleChangeTargetPlayer(string receivedAloeId, ulong targetPlayerClientId)
     {
         if (_aloeId != receivedAloeId) return;
-        if (targetPlayerObjectId == 69420)
+        if (targetPlayerClientId == 69420)
         {
             _targetPlayer = null;
             return;
         }
         
-        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[targetPlayerObjectId];
+        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[targetPlayerClientId];
         _targetPlayer = player;
         LogDebug($"Changed target player to {_targetPlayer.playerUsername}");
     }

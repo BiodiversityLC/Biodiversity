@@ -40,10 +40,9 @@ public class AloeNetcodeController : NetworkBehaviour
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
     }
 
-    [ClientRpc]
-    public void SpawnAnimationCompleteClientRpc(string receivedAloeId)
+    [ServerRpc]
+    public void SpawnAnimationCompleteServerRpc(string receivedAloeId)
     {
-        LogDebug($"In {nameof(SpawnAnimationCompleteClientRpc)}");
         OnSpawnAnimationComplete?.Invoke(receivedAloeId);
     }
 
