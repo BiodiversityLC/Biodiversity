@@ -1,14 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.SerializableTypes;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
+using Logger = BepInEx.Logging.Logger;
 
 namespace Biodiversity.Creatures.Aloe;
 
 public class FakePlayerBodyRagdoll : NetworkBehaviour
 {
+    private string _ragdollId;
+    private ManualLogSource _mls;
+    
     /// <summary>
     /// This enum is for the vanilla DeadPlayerInfo body parts variable
     /// </summary>
@@ -55,6 +61,17 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     private readonly NetworkVariable<Vector3> _networkPosition = new();
     private readonly NetworkVariable<Quaternion> _networkRotation = new();
 
+    private void Awake()
+    {
+        _ragdollId = Guid.NewGuid().ToString();
+        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Player Ragdoll {_ragdollId}");
+    }
+
+    private void Start()
+    {
+        LogDebug("Fake player body ragdoll spawned");
+    }
+    
     private void Update()
     {
         foreach (BodyPart bodyPart in bodyParts.Where(bodyPart => bodyPart.active))
@@ -190,12 +207,18 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     public void AttachLimbToTransform(string bodyPartName, Transform transformToAttachTo, bool retainVelocity = false)
     {
+        LogDebug($"In {nameof(AttachLimbToTransform)}");
         BodyPart bodyPart = bodyParts.Find(bp => bp.name == bodyPartName);
-        if (bodyPart == null) return;
+        if (bodyPart == null)
+        {
+            LogDebug($"Body part name {bodyPartName} does not exist, cannot attach limb.");
+            return;
+        }
         
         // If the given transform is null, detach the limb instead as a failsafe
         if (transformToAttachTo == null)
         {
+            LogDebug($"The given transform is null, cannot attach transform to body part {bodyPartName}");
             DetachLimbFromTransform(bodyPartName);
             return;
         }
@@ -213,6 +236,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     public void DetachLimbFromTransform(string bodyPartName, bool retainVelocity = false)
     {
+        LogDebug($"In {nameof(DetachLimbFromTransform)}");
         BodyPart bodyPart = bodyParts.Find(bp => bp.name == bodyPartName);
         if (bodyPart == null) return;
 
@@ -236,4 +260,15 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     //         bodyPart.velocity = Vector3.zero;
     //     }
     // }
+    
+    /// <summary>
+    /// Only logs the given message if the assembly version is in debug, not release
+    /// </summary>
+    /// <param name="msg">The debug message to log.</param>
+    private void LogDebug(string msg)
+    {
+        #if DEBUG
+        _mls?.LogInfo($"{msg}");
+        #endif
+    }
 }

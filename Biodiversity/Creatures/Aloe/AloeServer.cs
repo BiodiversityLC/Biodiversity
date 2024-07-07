@@ -575,7 +575,7 @@ public class AloeServer : BiodiverseAI
 
     private void PickFavouriteSpot()
     {
-        _mainEntrancePosition = RoundManager.FindMainEntrancePosition();
+        _mainEntrancePosition = RoundManager.FindMainEntrancePosition(true);
         Vector3 brackenRoomAloeNode = AloeSharedData.Instance.OccupyBrackenRoomAloeNode();
 
         // Check if the Aloe is outside, and if she is then teleport her back inside
@@ -608,15 +608,16 @@ public class AloeServer : BiodiverseAI
                 agent.Warp(RoundManager.Instance.GetRandomNavMeshPositionInRadius(_mainEntrancePosition, 30f));
             }
         }
-        
-        // _favouriteSpot = brackenRoomAloeNode == Vector3.zero ? ChooseFarthestNodeFromPosition(_mainEntrancePosition, offset:Random.Range(0, 5)).position : brackenRoomAloeNode;
-        // if (!IsPathReachable(_favouriteSpot))
-        // {
-        //     LogDebug($"Favourite spot {_favouriteSpot} is not reachable, trying a new spot.");
-        //     _favouriteSpot = allAINodes[Random.Range(0, allAINodes.Length)].transform.position;
-        // }
-        
-        _favouriteSpot = allAINodes[Random.Range(0, allAINodes.Length)].transform.position;
+
+        //_favouriteSpot = brackenRoomAloeNode;
+        _favouriteSpot = Vector3.zero;
+        if (_favouriteSpot == Vector3.zero)
+        {
+            _favouriteSpot =
+                GetFarthestValidNodeFromPosition(
+                        _mainEntrancePosition != Vector3.zero ? _mainEntrancePosition : transform.position, false)
+                    .position;
+        }
         
         LogDebug($"Found a favourite spot: {_favouriteSpot}");
     }
@@ -752,7 +753,7 @@ public class AloeServer : BiodiverseAI
         SetTargetPlayerInCaptivity(false);
         SwitchBehaviourStateLocally(States.ChasingEscapedPlayer);
     }
-
+    
     /// <summary>
     /// A coroutine that continuously avoids the closest player efficiently, without lagging the game.
     /// </summary>
@@ -807,13 +808,62 @@ public class AloeServer : BiodiverseAI
         }
     }
 
+    private Transform GetFarthestValidNodeFromPosition(Vector3 position, bool checkLineOfSight)
+    {
+        List<GameObject> aiNodes = allAINodes.ToList();
+        aiNodes.Sort((a, b) => 
+            Vector3.Distance(position, b.transform.position)
+                .CompareTo(Vector3.Distance(position, a.transform.position))
+            );
+
+        return (from node in aiNodes where 
+            IsPathValid(node.transform.position, checkLineOfSight) select node.transform).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Checks if the AI can construct a path to the given position.
+    /// </summary>
+    /// <param name="position">The position to path to.</param>
+    /// <param name="checkLineOfSight">Whether to check if a player is looking at the path.</param>
+    /// <returns>Whether it can path to the position or not</returns>
+    private bool IsPathValid(Vector3 position, bool checkLineOfSight)
+    {
+        NavMeshPath path = new();
+
+        // Calculate path to the target position
+        if (!agent.CalculatePath(position, path) || path.corners.Length == 0)
+        {
+            return false;
+        }
+
+        // Check if the path is complete
+        if (path.status != NavMeshPathStatus.PathComplete)
+        {
+            return false;
+        }
+
+        // Check if any segment of the path is intersected by line of sight
+        if (checkLineOfSight)
+        {
+            for (int i = 1; i < path.corners.Length; ++i)
+            {
+                if (Physics.Linecast(path.corners[i - 1], path.corners[i], 262144))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// Detects whether the target player is reachable by a path.
     /// </summary>
     /// <param name="bufferDistance">.</param>
     /// <param name="requireLineOfSight">.</param>
     /// <param name="viewWidth">.</param>
-    /// <returns>Whether the target player is reachable</returns>
+    /// <returns>Whether the target player is reachable.</returns>
     private bool IsTargetPlayerReachable(float bufferDistance = 1.5f, bool requireLineOfSight = false, float viewWidth = 0f)
     {
         mostOptimalDistance = 2000f;
@@ -833,19 +883,6 @@ public class AloeServer : BiodiverseAI
                (double)bufferDistance;
     }
     
-    /// <summary>
-    /// Checks if the AI can construct a path to the given position.
-    /// </summary>
-    /// <param name="position">The position to path to.</param>
-    /// <returns>Whether it can path to the position or not</returns>
-    private bool IsPathReachable(Vector3 position)
-    {
-        position = RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 1.75f);
-        path1 = new NavMeshPath();
-        
-        return agent.CalculatePath(position, path1) && !(Vector3.Distance(path1.corners[^1], RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 2.7f)) > 1.5499999523162842);
-    }
-
     /// <summary>
     /// Chooses the closest node next to the target player.
     /// If the Aloe is close to the player, it will just approach the player normally instead of using a node.

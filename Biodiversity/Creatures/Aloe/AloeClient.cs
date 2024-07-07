@@ -172,7 +172,6 @@ public class AloeClient : MonoBehaviour
     private void Awake()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client");
-        
         if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
     }
 
@@ -375,32 +374,6 @@ public class AloeClient : MonoBehaviour
     }
 
     /// <summary>
-    /// Converts an RGB color to HSV and returns the original RGB color.
-    /// </summary>
-    /// <param name="rgb">The RGB color to convert.</param>
-    /// <param name="h">The hue component of the HSV color.</param>
-    /// <param name="s">The saturation component of the HSV color.</param>
-    /// <param name="v">The value component of the HSV color.</param>
-    /// <returns>The original RGB color.</returns>
-    private static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
-    {
-        Color.RGBToHSV(rgb, out h, out s, out v);
-        return rgb;
-    }
-
-    /// <summary>
-    /// Converts HSV color components to an RGB color.
-    /// </summary>
-    /// <param name="h">The hue component of the HSV color.</param>
-    /// <param name="s">The saturation component of the HSV color.</param>
-    /// <param name="v">The value component of the HSV color.</param>
-    /// <returns>The RGB color corresponding to the given HSV components.</returns>
-    private static Color HSVToRGB(float h, float s, float v)
-    {
-        return Color.HSVToRGB(h, s, v);
-    }
-
-    /// <summary>
     /// Heals the target player by the given amount.
     /// It also updates their health bar.
     /// </summary>
@@ -437,6 +410,7 @@ public class AloeClient : MonoBehaviour
         if (!fakePlayerBodyRagdollNetworkObjectReference.TryGet(out NetworkObject fakePlayerBodyRagdollNetworkObject))
             return;
 
+        LogDebug($"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
         _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollNetworkObject.GetComponent<FakePlayerBodyRagdoll>();
         if (_currentFakePlayerBodyRagdoll == null)
         {
@@ -683,6 +657,32 @@ public class AloeClient : MonoBehaviour
                 baseStateMachineBehaviour.Initialize(netcodeController);
             }
         }
+    }
+    
+    /// <summary>
+    /// Converts an RGB color to HSV and returns the original RGB color.
+    /// </summary>
+    /// <param name="rgb">The RGB color to convert.</param>
+    /// <param name="h">The hue component of the HSV color.</param>
+    /// <param name="s">The saturation component of the HSV color.</param>
+    /// <param name="v">The value component of the HSV color.</param>
+    /// <returns>The original RGB color.</returns>
+    private static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
+    {
+        Color.RGBToHSV(rgb, out h, out s, out v);
+        return rgb;
+    }
+
+    /// <summary>
+    /// Converts HSV color components to an RGB color.
+    /// </summary>
+    /// <param name="h">The hue component of the HSV color.</param>
+    /// <param name="s">The saturation component of the HSV color.</param>
+    /// <param name="v">The value component of the HSV color.</param>
+    /// <returns>The RGB color corresponding to the given HSV components.</returns>
+    private static Color HSVToRGB(float h, float s, float v)
+    {
+        return Color.HSVToRGB(h, s, v);
     }
 
     /// <summary>
