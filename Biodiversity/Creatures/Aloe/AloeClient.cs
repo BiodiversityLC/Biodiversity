@@ -1,5 +1,6 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.CustomStateMachineBehaviours;
 using Unity.Netcode;
@@ -77,10 +78,11 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private Rig lookAimRig;
 
     [Header("Transforms")] [Space(5f)] 
+    [SerializeField] private Transform eye;
     [SerializeField] private Transform lookTarget;
     [SerializeField] private Transform grabTarget;
     
-    [Header("Controllers")] [Space(5f)] 
+    [Header("Controllers")] [Space(5f)]
     [SerializeField] private AloeNetcodeController netcodeController;
     
     [Header("Other")] [Space(5f)]
@@ -92,12 +94,15 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float escapeChargeDecayRate = 15f;
     [SerializeField] private float escapeChargeThreshold = 100f;
     [SerializeField] private float lookBlendDuration = 0.5f;
+    [SerializeField] private float smoothLookTargetPositionTime = 0.3f;
     
     private PlayerControllerB _targetPlayer;
+    private PlayerControllerB _visiblePlayer = null;
 
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
     
     private Vector3 _agentLastPosition;
+    private Vector3 _lookTargetVelocity;
 
     private Coroutine _blendLookAimConstraintWeightCoroutine;
     private Coroutine _changeSkinColourCoroutine;
@@ -106,8 +111,10 @@ public class AloeClient : MonoBehaviour
 
     private float _currentEscapeChargeValue;
     private float _agentCurrentSpeed;
+    private float _viewWidth;
     
     private int _currentBehaviourStateIndex;
+    private int _viewRange;
 
     /// <summary>
     /// Subscribe to the needed network events.
@@ -117,9 +124,8 @@ public class AloeClient : MonoBehaviour
         if (netcodeController == null) return;
         netcodeController.OnSyncAloeId += HandleSyncAloeId;
         netcodeController.OnInitializeConfigValues += HandleInitializeConfigValues;
-        netcodeController.OnSetTrigger += HandleSetTrigger;
-        netcodeController.OnResetTrigger += HandleResetTrigger;
-        netcodeController.OnChangeAnimationParameterBool += HandleSetBool;
+        netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
+        netcodeController.OnSetAnimationBool += HandleSetAnimationBool;
         netcodeController.OnChangeTargetPlayer += HandleChangeTargetPlayer;
         netcodeController.OnMuffleTargetPlayerVoice += HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice += HandleUnMuffleTargetPlayerVoice;
@@ -131,7 +137,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnPlayHealingVfx += HandlePlayHealingVfx;
         netcodeController.OnChangeAloeSkinColour += HandleChangeAloeSkinColour;
         netcodeController.OnPlayAudioClipType += HandlePlayAudioClipType;
-        netcodeController.OnChangeBehaviourState += HandleChangeBehaviourStateIndex;
         netcodeController.OnSnapPlayerNeck += HandleSnapPlayerNeck;
         netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll += HandleSpawnFakePlayerBodyRagdoll;
@@ -147,9 +152,8 @@ public class AloeClient : MonoBehaviour
         if (netcodeController == null) return;
         netcodeController.OnSyncAloeId -= HandleSyncAloeId;
         netcodeController.OnInitializeConfigValues -= HandleInitializeConfigValues;
-        netcodeController.OnSetTrigger -= HandleSetTrigger;
-        netcodeController.OnResetTrigger -= HandleResetTrigger;
-        netcodeController.OnChangeAnimationParameterBool -= HandleSetBool;
+        netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
+        netcodeController.OnSetAnimationBool -= HandleSetAnimationBool;
         netcodeController.OnChangeTargetPlayer -= HandleChangeTargetPlayer;
         netcodeController.OnMuffleTargetPlayerVoice -= HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice -= HandleUnMuffleTargetPlayerVoice;
@@ -161,7 +165,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnPlayHealingVfx -= HandlePlayHealingVfx;
         netcodeController.OnChangeAloeSkinColour -= HandleChangeAloeSkinColour;
         netcodeController.OnPlayAudioClipType -= HandlePlayAudioClipType;
-        netcodeController.OnChangeBehaviourState -= HandleChangeBehaviourStateIndex;
         netcodeController.OnSnapPlayerNeck -= HandleSnapPlayerNeck;
         netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll -= HandleSpawnFakePlayerBodyRagdoll;
@@ -188,7 +191,8 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        // Todo: Do raycasts on the client side to see if the aloe is looking at someone, and aim the look target to them
+        _currentBehaviourStateIndex = netcodeController.CurrentBehaviourStateIndex.Value;
+        
         Vector3 position = transform.position;
         _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
         _agentLastPosition = position;
@@ -229,14 +233,28 @@ public class AloeClient : MonoBehaviour
             }
         }
     }
-
+    
     private void LateUpdate()
     {
-        // Todo: Limit the amount of times the look target is repositioned
-        if (_targetPlayer != null)
+        List<PlayerControllerB> playersInFov =
+            AloeUtils.GetAllVisiblePlayersFromEye(eye, _viewWidth, _viewRange, logSource: _mls);
+
+        Vector3 lookTargetPosition;
+        if (playersInFov.Count == 0)
         {
-            lookTarget.position = _targetPlayer.gameplayCamera.transform.position;
+            lookTargetPosition = eye.position + eye.forward * 2.0f;
         }
+        else if (_targetPlayer != null && playersInFov.Any(player => player == _targetPlayer))
+        {
+            lookTargetPosition = _targetPlayer.gameplayCamera.transform.position;
+        }
+        else
+        {
+            _visiblePlayer = AloeUtils.GetClosestPlayerFromList(playersInFov, eye, _visiblePlayer, logSource: _mls);
+            lookTargetPosition = _visiblePlayer.gameplayCamera.transform.position;
+        }
+        
+        AloeUtils.SmoothMoveTransformTo(lookTarget, lookTargetPosition, smoothLookTargetPositionTime, ref _lookTargetVelocity);
     }
 
     /// <summary>
@@ -670,10 +688,10 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets a bool animation parameter to the given value
     /// </summary>
-    /// <param name="receivedAloeId">.</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="parameter">The name of the parameter in the animator.</param>
     /// <param name="value">The bool value to set it to.</param>
-    private void HandleSetBool(string receivedAloeId, int parameter, bool value)
+    private void HandleSetAnimationBool(string receivedAloeId, int parameter, bool value)
     {
         if (_aloeId != receivedAloeId) return;
         animator.SetBool(parameter, value);
@@ -684,21 +702,10 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="parameter">The name of the trigger in the animator.</param>
-    private void HandleSetTrigger(string receivedAloeId, int parameter)
+    private void HandleSetAnimationTrigger(string receivedAloeId, int parameter)
     {
         if (_aloeId != receivedAloeId) return;
         animator.SetTrigger(parameter);
-    }
-
-    /// <summary>
-    /// Resets a trigger in the animator
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="parameter">The name of the trigger in the animator.</param>
-    private void HandleResetTrigger(string receivedAloeId, int parameter)
-    {
-        if (_aloeId != receivedAloeId) return;
-        animator.ResetTrigger(parameter);
     }
 
     /// <summary>
@@ -709,21 +716,12 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
 
+        _viewRange = Config.ViewRange;
+        _viewWidth = Config.ViewWidth;
         escapeChargePerPress = Config.EscapeChargePerPress;
         escapeChargeDecayRate = Config.EscapeChargeDecayRate;
         escapeChargeThreshold = Config.EscapeChargeThreshold;
         skinMetallicTransitionTime = Config.DarkSkinTransitionTime;
-    }
-
-    /// <summary>
-    /// Changes the behaviour state to the given state
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="newBehaviourStateIndex">The behaviour state to change to.</param>
-    private void HandleChangeBehaviourStateIndex(string receivedAloeId, int newBehaviourStateIndex)
-    {
-        if (_aloeId != receivedAloeId) return;
-        _currentBehaviourStateIndex = newBehaviourStateIndex;
     }
 
     /// <summary>

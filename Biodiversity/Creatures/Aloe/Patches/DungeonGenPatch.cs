@@ -51,7 +51,6 @@ internal class DungeonGenPatch
         {
             node.transform.SetParent(brackenRoomTransform, true);
             RoundManager.Instance.insideAINodes.AddItem(node);
-            AloeSharedData.DrawDebugCircleAtPosition(node.transform.position);
         });
     }
     

@@ -9,11 +9,12 @@ public class AloeNetcodeController : NetworkBehaviour
     private ManualLogSource _mls;
     private string _aloeId;
 
+    public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
+
     public event Action<string> OnSyncAloeId;
     public event Action<string> OnInitializeConfigValues;
-    public event Action<string, int, bool> OnChangeAnimationParameterBool;
-    public event Action<string, int> OnSetTrigger;
-    public event Action<string, int> OnResetTrigger;
+    public event Action<string, int, bool> OnSetAnimationBool;
+    public event Action<string, int> OnSetAnimationTrigger;
     public event Action<string, float, ulong> OnIncreasePlayerFearLevel;
     public event Action<string> OnMuffleTargetPlayerVoice;
     public event Action<string> OnUnMuffleTargetPlayerVoice;
@@ -26,7 +27,6 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, float> OnPlayHealingVfx;
     public event Action<string, bool> OnChangeAloeSkinColour;
     public event Action<string, AloeClient.AudioClipTypes, int, bool> OnPlayAudioClipType;
-    public event Action<string, int> OnChangeBehaviourState;
     public event Action<string, ulong> OnSnapPlayerNeck;
     public event Action<string> OnGrabTargetPlayer;
     public event Action<string, float, float> OnChangeLookAimConstraintWeight;
@@ -81,12 +81,6 @@ public class AloeNetcodeController : NetworkBehaviour
     public void SnapPlayerNeckClientRpc(string receivedAloeId, ulong playerClientId)
     {
         OnSnapPlayerNeck?.Invoke(receivedAloeId, playerClientId);
-    }
-
-    [ClientRpc]
-    public void ChangeBehaviourStateClientRpc(string receivedAloeId, int newBehaviourStateIndex)
-    {
-        OnChangeBehaviourState?.Invoke(receivedAloeId, newBehaviourStateIndex);
     }
     
     [ServerRpc]
@@ -202,47 +196,35 @@ public class AloeNetcodeController : NetworkBehaviour
     {
         OnIncreasePlayerFearLevel?.Invoke(receivedAloeId, targetInsanity, playerClientId);
     }
-    
-    /// <summary>
-    /// Invokes the reset animator trigger event
-    /// This uses the trigger function on an animator object
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe Id</param>
-    /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
-    [ClientRpc]
-    public void ResetTriggerClientRpc(string receivedAloeId, int animationId)
-    {
-        OnResetTrigger?.Invoke(receivedAloeId, animationId);
-    }
 
     /// <summary>
     /// Invokes the set animator trigger event
     /// This uses the trigger function on an animator object
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
     [ClientRpc]
-    public void SetTriggerClientRpc(string receivedAloeId, int animationId)
+    public void SetAnimationTriggerClientRpc(string receivedAloeId, int animationId)
     {
-        OnSetTrigger?.Invoke(receivedAloeId, animationId);
+        OnSetAnimationTrigger?.Invoke(receivedAloeId, animationId);
     }
 
     /// <summary>
     /// Invokes the change animation parameter event
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
     /// <param name="value">The bool value to change to</param>
     [ClientRpc]
-    public void ChangeAnimationParameterBoolClientRpc(string receivedAloeId, int animationId, bool value)
+    public void SetAnimationBoolClientRpc(string receivedAloeId, int animationId, bool value)
     {
-        OnChangeAnimationParameterBool?.Invoke(receivedAloeId, animationId, value);
+        OnSetAnimationBool?.Invoke(receivedAloeId, animationId, value);
     }
 
     /// <summary>
     /// Invokes the initialize config values event
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     [ClientRpc]
     public void InitializeConfigValuesClientRpc(string receivedAloeId)
     {
@@ -252,7 +234,7 @@ public class AloeNetcodeController : NetworkBehaviour
     /// <summary>
     /// Invokes the update aloe id event
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe Id</param>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
     [ClientRpc]
     public void SyncAloeIdClientRpc(string receivedAloeId)
     {

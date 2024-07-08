@@ -33,7 +33,6 @@ internal class AloeSharedData
         nodes.ForEach(node =>
         {
             Instance.BrackenRoomAloeNodes.Add(new BrackenRoomAloeNode(node));
-            DrawDebugCircleAtPosition(node);
         });
     }
 
@@ -65,37 +64,5 @@ internal class AloeSharedData
         Instance.BrackenRoomAloeNodes.Clear();
         Instance.AloeBoundKidnaps.Clear();
         Instance.PlayersMaxHealth.Clear();
-    }
-    
-    public static void DrawDebugCircleAtPosition(Vector3 position, Color color = default)
-    {
-        float angle = 20f;
-        const float circleRadius = 2f;
-        GameObject circleObj = new("Circle")
-        {
-            transform =
-            {
-                position = position
-            }
-        };
-
-        LineRenderer lineRenderer = circleObj.AddComponent<LineRenderer>();
-        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        lineRenderer.widthMultiplier = 0.1f;
-        lineRenderer.positionCount = 51;
-        lineRenderer.useWorldSpace = true;
-        lineRenderer.startColor = color;
-        lineRenderer.endColor = color;
-        
-        
-        for (int i = 0; i <= 50; i++)
-        {
-            float x = position.x + Mathf.Sin(Mathf.Deg2Rad * angle) * circleRadius;
-            float z = position.z + Mathf.Cos(Mathf.Deg2Rad * angle) * circleRadius;
-            float y = position.y;
-            
-            lineRenderer.SetPosition(i, new Vector3(x, y, z));
-            angle += 360f / 50;
-        }
     }
 }

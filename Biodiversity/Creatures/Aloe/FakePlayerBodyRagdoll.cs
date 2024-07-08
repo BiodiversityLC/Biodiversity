@@ -102,6 +102,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
             }
         }
 
+        // Todo: use interpolation/extrapolation to reduce network load
         if (IsOwner)
         {
             _networkPosition.Value = transform.position;
