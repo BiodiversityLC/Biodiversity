@@ -62,6 +62,25 @@ public static class AloeUtils
     }
     
     /// <summary>
+    /// Gets the closest valid AI node from the specified position that the NavMeshAgent can path to.
+    /// </summary>
+    /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
+    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
+    /// <param name="position">The reference position to measure distance from.</param>
+    /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
+    /// <param name="logSource">The logger to use for debug logs, can be null.</param>
+    /// <returns>The transform of the closest valid AI node that the agent can path to, or null if no valid node is found.</returns>
+    public static Transform GetClosestValidNodeToPosition(
+        NavMeshAgent agent, 
+        IEnumerable<GameObject> allAINodes, 
+        Vector3 position, 
+        bool checkLineOfSight = false, 
+        ManualLogSource logSource = null)
+    {
+        return GetValidNodeFromPosition(agent, allAINodes, position, checkLineOfSight, logSource, true);
+    }
+
+    /// <summary>
     /// Gets the farthest valid AI node from the specified position that the NavMeshAgent can path to.
     /// </summary>
     /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
@@ -77,14 +96,38 @@ public static class AloeUtils
         bool checkLineOfSight = false, 
         ManualLogSource logSource = null)
     {
+        return GetValidNodeFromPosition(agent, allAINodes, position, checkLineOfSight, logSource, false);
+    }
+    
+    /// <summary>
+    /// Gets a valid AI node from the specified position that the NavMeshAgent can path to.
+    /// </summary>
+    /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
+    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
+    /// <param name="position">The reference position to measure distance from.</param>
+    /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
+    /// <param name="logSource">The logger to use for debug logs, can be null.</param>
+    /// <param name="findClosest">Whether to find the closest valid node (true) or the farthest valid node (false).</param>
+    /// <returns>The transform of the valid AI node that the agent can path to, or null if no valid node is found.</returns>
+    private static Transform GetValidNodeFromPosition(
+        NavMeshAgent agent,
+        IEnumerable<GameObject> allAINodes,
+        Vector3 position,
+        bool checkLineOfSight,
+        ManualLogSource logSource,
+        bool findClosest)
+    {
         List<GameObject> aiNodes = allAINodes.ToList();
-        aiNodes.Sort((a, b) => 
-            Vector3.Distance(position, b.transform.position)
-                .CompareTo(Vector3.Distance(position, a.transform.position))
-        );
+        aiNodes.Sort((a, b) =>
+        {
+            float distanceA = Vector3.Distance(position, a.transform.position);
+            float distanceB = Vector3.Distance(position, b.transform.position);
+            return findClosest ? distanceA.CompareTo(distanceB) : distanceB.CompareTo(distanceA);
+        });
 
-        return (from node in aiNodes where 
-            IsPathValid(agent, node.transform.position, checkLineOfSight, logSource: logSource) select node.transform).FirstOrDefault();
+        return (from node in aiNodes
+            where IsPathValid(agent, node.transform.position, checkLineOfSight, logSource: logSource)
+            select node.transform).FirstOrDefault();
     }
 
     /// <summary>
@@ -235,17 +278,24 @@ public static class AloeUtils
         bool requireLineOfSight = false,
         ManualLogSource logSource = null)
     {
-        float optimalDistance = 2000f;
-        if (IsPlayerTargetable(player) && !IsPathValid(agent, player.transform.position, logSource: logSource) && 
+        if (player == null)
+        {
+            LogDebug(logSource, "Player is not reachable because the player object is null.");
+            return false;
+        }
+        
+        float currentDistance = Vector3.Distance(transform.position, player.transform.position);
+        float optimalDistance = currentDistance;
+        
+        if (IsPlayerTargetable(player) && 
+            IsPathValid(agent, player.transform.position, logSource: logSource) && 
             (!requireLineOfSight || DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eye, viewWidth, viewRange, logSource: logSource)))
         {
-            float currentDistance = Vector3.Distance(transform.position, player.transform.position);
-            if (currentDistance < (double)optimalDistance)
+            if (currentDistance < optimalDistance)
                 optimalDistance = currentDistance;
         }
         
-        bool isReachable = player != null && bufferDistance > 0.0f &&
-                           Mathf.Abs(optimalDistance - Vector3.Distance(transform.position, player.transform.position)) < bufferDistance;
+        bool isReachable = Mathf.Abs(optimalDistance - currentDistance) < bufferDistance;
 
         LogDebug(logSource, $"Is player reachable: {isReachable}");
         return isReachable;
@@ -258,7 +308,7 @@ public static class AloeUtils
     /// <param name="ignorePlayer">An optional player to exclude from the check.</param>
     /// <param name="logSource">The logger to use for debug logs, can be null.</param>
     /// <returns>Returns the player object that is looking at the specified position, or null if no player is found.</returns>
-    public static PlayerControllerB GetPlayerLookingAtPosition(Transform transform, Object ignorePlayer = null, ManualLogSource logSource = null)
+    public static PlayerControllerB GetClosestPlayerLookingAtPosition(Transform transform, Object ignorePlayer = null, ManualLogSource logSource = null)
     {
         PlayerControllerB closestPlayer = null;
         float closestDistance = float.MaxValue;
@@ -387,7 +437,6 @@ public static class AloeUtils
     private static void LogDebug(ManualLogSource logSource, string msg)
     {
         #if DEBUG
-        if (logSource == null) return;
         logSource?.LogInfo(msg);
         #endif
     }

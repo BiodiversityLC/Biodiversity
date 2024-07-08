@@ -63,8 +63,7 @@ public class AloeServer : BiodiverseAI
     private bool _inStunAnimation;
     private bool _finishedSpottedAnimation;
     private bool _hasTransitionedToRunningForwardsAndCarryingPlayer;
-    
-    private readonly List<Transform> _ignoredNodes = [];
+    private bool _overridePlaySpottedAnimation;
 
     private PlayerControllerB _avoidingPlayer;
     private PlayerControllerB _backupTargetPlayer;
@@ -78,7 +77,6 @@ public class AloeServer : BiodiverseAI
         AvoidingPlayer,
         PassivelyStalkingPlayer,
         StalkingPlayerToKidnap,
-        GrabbingPlayer,
         KidnappingPlayer,
         HealingPlayer,
         CuddlingPlayer,
@@ -230,7 +228,7 @@ public class AloeServer : BiodiverseAI
             case (int)States.PassiveRoaming:
             {
                 // Check if a player sees the aloe
-                PlayerControllerB tempPlayer = AloeUtils.GetPlayerLookingAtPosition(eye.transform, logSource: _mls);
+                PlayerControllerB tempPlayer = AloeUtils.GetClosestPlayerLookingAtPosition(eye.transform, logSource: _mls);
                 if (tempPlayer != null)
                 {
                     _avoidingPlayer = tempPlayer;
@@ -246,14 +244,13 @@ public class AloeServer : BiodiverseAI
                     
                     if (!PlayerIsStalkable(player)) continue;
                     
-                    targetPlayer = player;
-                    netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.actualClientId);
+                    ChangeTargetPlayer(player.actualClientId);
                     SwitchBehaviourStateLocally(States.PassivelyStalkingPlayer);
                     break;
                 }
 
                 // Check if the aloe has reached her favourite spot, so she can start roaming from that position
-                if (_reachedFavouriteSpotForRoaming)
+                if (!_reachedFavouriteSpotForRoaming)
                 {
                     LogDebug("Heading towards favourite position before roaming");
                     SetDestinationToPosition(_favouriteSpot);
@@ -284,7 +281,7 @@ public class AloeServer : BiodiverseAI
                 //     netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 0.4f, player.actualClientId);
                 // }
                 
-                PlayerControllerB tempPlayer = AloeUtils.GetPlayerLookingAtPosition(eye.transform, logSource: _mls);
+                PlayerControllerB tempPlayer = AloeUtils.GetClosestPlayerLookingAtPosition(eye.transform, logSource: _mls);
                 if (tempPlayer != null)
                 {
                     _avoidingPlayer = tempPlayer;
@@ -303,7 +300,7 @@ public class AloeServer : BiodiverseAI
             case (int)States.PassivelyStalkingPlayer:
             {
                 // Check if a player sees the aloe
-                PlayerControllerB tempPlayer = AloeUtils.GetPlayerLookingAtPosition(eye.transform, logSource: _mls);
+                PlayerControllerB tempPlayer = AloeUtils.GetClosestPlayerLookingAtPosition(eye.transform, logSource: _mls);
                 if (tempPlayer != null)
                 {
                     LogDebug("While PASSIVELY stalking, player was looking at Aloe, avoiding the player now");
@@ -328,8 +325,7 @@ public class AloeServer : BiodiverseAI
                     
                     if (!PlayerIsStalkable(player)) continue;
                     
-                    targetPlayer = player;
-                    netcodeController.ChangeTargetPlayerClientRpc(_aloeId, targetPlayer.actualClientId);
+                    ChangeTargetPlayer(player.actualClientId);
                     SwitchBehaviourStateLocally(States.StalkingPlayerToKidnap);
                     break;
                 }
@@ -356,17 +352,22 @@ public class AloeServer : BiodiverseAI
                 else
                 {
                     if (_isStaringAtTargetPlayer) netcodeController.ChangeLookAimConstraintWeightClientRpc(_aloeId, 0, 0.1f);
-                    
                     _isStaringAtTargetPlayer = false;
+                    
                     if (AloeUtils.IsPlayerReachable(agent, targetPlayer, transform, eye, viewWidth, viewRange, logSource: _mls))
                     {
-                        ChooseClosestNodeToTargetPlayer();
+                        Transform closestNodeToPlayer = AloeUtils.GetClosestValidNodeToPosition(
+                            agent,
+                            allAINodes,
+                            targetPlayer.transform.position,
+                            true,
+                            _mls);
+                        
+                        SetDestinationToPosition(closestNodeToPlayer.position);
                     }
                     else
                     {
-                        Transform farAwayTransform = ChooseFarthestNodeFromPosition(_mainEntrancePosition);
-                        targetNode = farAwayTransform;
-                        SetDestinationToPosition(farAwayTransform.position, true);
+                        SwitchBehaviourStateLocally(States.PassiveRoaming);
                     } 
                 }
                 
@@ -376,7 +377,7 @@ public class AloeServer : BiodiverseAI
             case (int)States.StalkingPlayerToKidnap:
             {
                 // Check if a player sees the aloe
-                PlayerControllerB tempPlayer = AloeUtils.GetPlayerLookingAtPosition(eye.transform, logSource: _mls);
+                PlayerControllerB tempPlayer = AloeUtils.GetClosestPlayerLookingAtPosition(eye.transform, logSource: _mls);
                 if (tempPlayer != null)
                 {
                     LogDebug("While stalking for kidnapping, player was looking at aloe, avoiding the player now");
@@ -408,7 +409,7 @@ public class AloeServer : BiodiverseAI
                 }
                 else
                 {
-                    if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 4f && !_inGrabAnimation)
+                    if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 2.5f && !_inGrabAnimation)
                     {
                         // See if the aloe can kidnap the player
                         LogDebug("Player is close to aloe! Kidnapping him now");
@@ -418,13 +419,21 @@ public class AloeServer : BiodiverseAI
                     }
                     else if (AloeUtils.IsPlayerReachable(agent, targetPlayer, transform, eye, viewWidth, viewRange, logSource: _mls))
                     {
-                        ChooseClosestNodeToTargetPlayer();
+                        Transform closestNodeToPlayer = AloeUtils.GetClosestValidNodeToPosition(
+                            agent,
+                            allAINodes,
+                            targetPlayer.transform.position,
+                            true,
+                            _mls);
+
+                        if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 5) 
+                            movingTowardsTargetPlayer = true;
+                        else 
+                            SetDestinationToPosition(closestNodeToPlayer.position);
                     }
                     else
                     {
-                        Transform farAwayTransform = ChooseFarthestNodeFromPosition(_mainEntrancePosition);
-                        targetNode = farAwayTransform;
-                        SetDestinationToPosition(farAwayTransform.position, true);
+                        SwitchBehaviourStateLocally(States.PassiveRoaming);
                     }
                 }
                 
@@ -433,12 +442,13 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.KidnappingPlayer:
             {
-                if (Vector3.Distance(transform.position, _favouriteSpot) <= 1)
+                if (Vector3.Distance(transform.position, _favouriteSpot) <= 2)
                 {
-                    LogDebug("reached favourite spot while kidnapping");
+                    LogDebug("Reached favourite spot while kidnapping.");
                     SwitchBehaviourStateLocally(States.HealingPlayer);
                 }
 
+                // Todo: move this to clientside
                 List<PlayerControllerB> playersLookingAtAloe = AloeUtils.GetAllPlayersLookingAtPosition(eye.transform);
                 foreach (PlayerControllerB player in playersLookingAtAloe)
                 {
@@ -450,7 +460,6 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.HealingPlayer:
             {
-                // Todo: BTW this will not work for the event that all the aloe nodes are taken, and this current aloe doesnt have one
                 if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
                     LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
                 
@@ -464,6 +473,7 @@ public class AloeServer : BiodiverseAI
                         healthIncrease = targetPlayerMaxHealth - targetPlayer.health;
                     }
                     
+                    // Todo: move this to clientside
                     netcodeController.HealTargetPlayerByAmountClientRpc(_aloeId, healthIncrease);
                     LogDebug($"Healed player by amount: {healthIncrease}");
                 }
@@ -478,7 +488,7 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.CuddlingPlayer:
             {
-                PlayerControllerB tempPlayer = AloeUtils.GetPlayerLookingAtPosition(eye.transform, targetPlayer, logSource: _mls);
+                PlayerControllerB tempPlayer = AloeUtils.GetClosestPlayerLookingAtPosition(eye.transform, targetPlayer, logSource: _mls);
                 if (tempPlayer != null)
                 {
                     LookAtPosition(tempPlayer.transform.position);
@@ -502,8 +512,8 @@ public class AloeServer : BiodiverseAI
                         SwitchBehaviourStateLocally(States.KidnappingPlayer);
                         break;
                     }
-                    
-                    if (PlayerIsTargetable(targetPlayer)) SetMovingTowardsTargetPlayer(targetPlayer);
+
+                    if (AloeUtils.IsPlayerTargetable(targetPlayer)) movingTowardsTargetPlayer = true;
                     else SwitchBehaviourStateLocally(States.PassiveRoaming);
                 }
                 else if (AloeUtils.DoesEyeHaveLineOfSightToPosition(targetPlayer.transform.position, eye, viewWidth, viewRange, logSource: _mls))
@@ -516,10 +526,10 @@ public class AloeServer : BiodiverseAI
 
             case (int)States.AttackingPlayer:
             {
-                if (PlayerIsTargetable(targetPlayer)) SetMovingTowardsTargetPlayer(targetPlayer);
+                if (AloeUtils.IsPlayerTargetable(targetPlayer)) movingTowardsTargetPlayer = true;
                 else SwitchBehaviourStateLocally(States.ChasingEscapedPlayer);
                 
-                if (Vector3.Distance(targetPlayer.transform.position, transform.position) <= 1f)
+                if (Vector3.Distance(targetPlayer.transform.position, transform.position) <= 1.5f)
                 {
                     LogDebug("Player is close to aloe! Snapping his neck");
                     
@@ -605,8 +615,7 @@ public class AloeServer : BiodiverseAI
             
             case (int)States.CuddlingPlayer:
             {
-                // Todo: Add a dictionary that stores all player's distances from the Aloe per specified interval
-                PlayerControllerB whoIsLookingAtAloe = AloeUtils.GetPlayerLookingAtPosition(eye.transform, targetPlayer, logSource: _mls);
+                PlayerControllerB whoIsLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition(eye.transform, targetPlayer, logSource: _mls);
                 if (whoIsLookingAtAloe != null)
                 {
                     LookAtPosition(whoIsLookingAtAloe.transform.position);
@@ -733,42 +742,6 @@ public class AloeServer : BiodiverseAI
             yield return new WaitForSeconds(5f);
         }
     }
-    
-    /// <summary>
-    /// Chooses the closest node next to the target player.
-    /// If the Aloe is close to the player, it will just approach the player normally instead of using a node.
-    /// </summary>
-    private void ChooseClosestNodeToTargetPlayer()
-    {
-        if (targetNode == null) targetNode = allAINodes[0].transform;
-
-        Transform position = ChooseClosestNodeToPosition(targetPlayer.transform.position, true);
-        if (position != null) targetNode = position;
-        float distanceToPlayer = Vector3.Distance(targetPlayer.transform.position, transform.position);
-        
-        // If aloe is close enough to player, head towards them to attempt a kidnap
-        if (distanceToPlayer <= 5)
-        {
-            SetMovingTowardsTargetPlayer(targetPlayer);
-            return;
-        }
-        
-        // The mostOptimalDistance variable is calculated in the ChooseClosestNodeToPosition() method in the EnemyAI class
-        if (distanceToPlayer - mostOptimalDistance < 0.10000000149011612 &&
-            (!PathIsIntersectedByLineOfSight(targetPlayer.transform.position, true) || distanceToPlayer < 3))
-        {
-            // The pathDistance variable is calculated in the PathIsIntersectedByLineOfSight() method in the EnemyAI class
-            if (pathDistance > 10.0 && !_ignoredNodes.Contains(targetNode) && _ignoredNodes.Count < 4)
-                _ignoredNodes.Add(targetNode);
-            
-            LogDebug("close to player while choosing closest node");
-            movingTowardsTargetPlayer = true;
-        }
-        else
-        {
-            SetDestinationToPosition(targetNode.position);
-        }
-    }
 
     /// <summary>
     /// The function for handling when the Aloe gets hit.
@@ -793,60 +766,41 @@ public class AloeServer : BiodiverseAI
         {
             switch (currentBehaviourStateIndex)
             {
-                case (int)States.PassiveRoaming:
+                case (int)States.Spawning or (int)States.PassiveRoaming or (int)States.PassivelyStalkingPlayer or (int)States.StalkingPlayerToKidnap:
                 {
-                    if (playerWhoHit == null) return;
-                    
-                    _avoidingPlayer = playerWhoHit;
-                    SwitchBehaviourStateLocally(States.AvoidingPlayer);
-                    break;
-                }
-                
-                // If stalking, then check if player is near, and hit them.
-                case (int)States.PassivelyStalkingPlayer or (int)States.StalkingPlayerToKidnap:
-                {
-                    // Todo: Replace this with the hit animation
-                    if (playerWhoHit == null) return;
-                    
-                    _backupTargetPlayer = targetPlayer;
-                    ChangeTargetPlayer(playerWhoHit.actualClientId);
-                    SwitchBehaviourStateLocally(States.AttackingPlayer);
-                    break;
-                }
-                
-                case (int)States.KidnappingPlayer:
-                {
-                    if (playerWhoHit == null) break;
-                    
-                    SetTargetPlayerInCaptivity(false);
-                    _backupTargetPlayer = targetPlayer;
-                    ChangeTargetPlayer(playerWhoHit.actualClientId);
-                    SwitchBehaviourStateLocally(States.AttackingPlayer);
-                    
-                    break;
-                }
+                    if (playerWhoHit != null) _avoidingPlayer = playerWhoHit;
 
-                case (int)States.HealingPlayer or (int)States.CuddlingPlayer:
+                    _overridePlaySpottedAnimation = true;
+                    SwitchBehaviourStateLocally(States.AvoidingPlayer);
+                    break; 
+                }
+                
+                case (int)States.KidnappingPlayer or (int)States.HealingPlayer or (int)States.CuddlingPlayer:
                 {
-                    if (playerWhoHit == null) break;
-                    
                     SetTargetPlayerInCaptivity(false);
-                    _backupTargetPlayer = targetPlayer;
-                    ChangeTargetPlayer(playerWhoHit.actualClientId);
-                    netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.InterruptedHealing, true);
-                    SwitchBehaviourStateLocally(States.AttackingPlayer);
-                    
+                    if (playerWhoHit != null)
+                    {
+                        _backupTargetPlayer = targetPlayer;
+                        ChangeTargetPlayer(playerWhoHit.actualClientId);
+                        SwitchBehaviourStateLocally(States.AttackingPlayer);
+                    }
+                    else
+                    {
+                        _overridePlaySpottedAnimation = true;
+                        SwitchBehaviourStateLocally(States.AvoidingPlayer);
+                    }
+                
                     break;
                 }
                 
                 case (int)States.AttackingPlayer:
                 {
-                    if (playerWhoHit != targetPlayer && playerWhoHit != null)
-                    {
+                    if (playerWhoHit == null) break;
+                
+                    if (targetPlayer != playerWhoHit)
                         ChangeTargetPlayer(playerWhoHit.actualClientId);
-                    }
-                    
-                    break; 
+                
+                    break;
                 }
             }
         }
@@ -881,49 +835,39 @@ public class AloeServer : BiodiverseAI
         
         switch (currentBehaviourStateIndex)
         { 
-            case (int)States.PassiveRoaming:
+            case (int)States.Spawning or (int)States.PassiveRoaming or (int)States.PassivelyStalkingPlayer or (int)States.StalkingPlayerToKidnap:
             {
-                if (setStunnedByPlayer == null) break;
-                
-                _avoidingPlayer = setStunnedByPlayer;
+                if (setStunnedByPlayer != null) _avoidingPlayer = setStunnedByPlayer;
+
+                _overridePlaySpottedAnimation = true;
                 SwitchBehaviourStateLocally(States.AvoidingPlayer);
                 break; 
             }
             
-            case (int)States.PassivelyStalkingPlayer or (int)States.StalkingPlayerToKidnap:
-            {
-                if (setStunnedByPlayer == null) break;
-                
-                _avoidingPlayer = setStunnedByPlayer;
-                SwitchBehaviourStateLocally(States.AvoidingPlayer);
-                break;
-            }
-            
-            case (int)States.KidnappingPlayer:
+            case (int)States.KidnappingPlayer or (int)States.HealingPlayer or (int)States.CuddlingPlayer:
             {
                 SetTargetPlayerInCaptivity(false);
-                _avoidingPlayer = setStunnedByPlayer;
-                SwitchBehaviourStateLocally(States.AvoidingPlayer);
+                if (setStunnedByPlayer != null)
+                {
+                    _backupTargetPlayer = targetPlayer;
+                    ChangeTargetPlayer(setStunnedByPlayer.actualClientId);
+                    SwitchBehaviourStateLocally(States.AttackingPlayer);
+                }
+                else
+                {
+                    _overridePlaySpottedAnimation = true;
+                    SwitchBehaviourStateLocally(States.AvoidingPlayer);
+                }
                 
-                break;
-            }
-
-            case (int)States.HealingPlayer or (int)States.CuddlingPlayer:
-            {
-                if (setStunnedByPlayer == null) break;
-                _backupTargetPlayer = targetPlayer;
-                ChangeTargetPlayer(setStunnedByPlayer.actualClientId);
-                SwitchBehaviourStateLocally(States.AttackingPlayer);
                 break;
             }
             
             case (int)States.AttackingPlayer:
             {
-                if (setStunnedByPlayer != targetPlayer && setStunnedByPlayer != null)
-                {
-                    targetPlayer = setStunnedByPlayer;
-                    netcodeController.ChangeTargetPlayerClientRpc(_aloeId, setStunnedByPlayer.actualClientId);
-                }
+                if (setStunnedByPlayer == null) break;
+                
+                if (targetPlayer != setStunnedByPlayer)
+                    ChangeTargetPlayer(setStunnedByPlayer.actualClientId);
                 
                 break;
             }
@@ -964,8 +908,6 @@ public class AloeServer : BiodiverseAI
     {
         return StartOfRound.Instance.allPlayerScripts.Where(player => !player.isPlayerDead && player.isInsideFactory).Any(player => player.HasLineOfSightToPosition(transform.position + Vector3.up * 0.5f, 30f));
     }
-    
-    
 
     /// <summary>
     /// Switches to the kidnapping state.
@@ -1024,10 +966,16 @@ public class AloeServer : BiodiverseAI
                 movingTowardsTargetPlayer = false;
                 _avoidPlayerTimer = 0f;
                 openDoorSpeedMultiplier = 2f;
-                _avoidPlayerCoroutine = null;
                 _avoidingPlayer = null;
                 moveTowardsDestination = true;
                 _reachedFavouriteSpotForRoaming = false;
+                
+                if (roamMap.inProgress) StopSearch(roamMap);
+                if (_avoidPlayerCoroutine != null)
+                {
+                    StopCoroutine(_avoidPlayerCoroutine);
+                    _avoidPlayerCoroutine = null;
+                }
 
                 if (_currentlyHasDarkSkin)
                 {
@@ -1054,8 +1002,9 @@ public class AloeServer : BiodiverseAI
                 _avoidPlayerAudioTimer = 4.1f;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
+                if (_overridePlaySpottedAnimation) _overridePlaySpottedAnimation = false;
+                else netcodeController.SetAnimationTriggerClientRpc(_aloeId, AloeClient.Spotted);
                 
-                netcodeController.SetAnimationTriggerClientRpc(_aloeId, AloeClient.Spotted);
                 netcodeController.ChangeLookAimConstraintWeightClientRpc(_aloeId, 0.8f, 0.5f);
                 netcodeController.SetAnimationBoolClientRpc(_aloeId, AloeClient.Crawling, false);
                 netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.InterruptedHealing);
@@ -1074,7 +1023,11 @@ public class AloeServer : BiodiverseAI
                 openDoorSpeedMultiplier = 4f;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
-                _avoidPlayerCoroutine = null;
+                if (_avoidPlayerCoroutine != null)
+                {
+                    StopCoroutine(_avoidPlayerCoroutine);
+                    _avoidPlayerCoroutine = null;
+                }
 
                 if (!_currentlyHasDarkSkin)
                 {
@@ -1099,7 +1052,11 @@ public class AloeServer : BiodiverseAI
                 openDoorSpeedMultiplier = 4f;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
-                _avoidPlayerCoroutine = null;
+                if (_avoidPlayerCoroutine != null)
+                {
+                    StopCoroutine(_avoidPlayerCoroutine);
+                    _avoidPlayerCoroutine = null;
+                }
                 
                 if (!_currentlyHasDarkSkin)
                 {
@@ -1123,10 +1080,13 @@ public class AloeServer : BiodiverseAI
                 _avoidPlayerTimer = 0f;
                 _dragPlayerTimer = AloeClient.SnatchAndGrabAudioLength;
                 openDoorSpeedMultiplier = 10f;
-                _avoidPlayerCoroutine = null;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
-                _ignoredNodes.Clear();
+                if (_avoidPlayerCoroutine != null)
+                {
+                    StopCoroutine(_avoidPlayerCoroutine);
+                    _avoidPlayerCoroutine = null;
+                }
                 
                 // Spawn fake player body ragdoll
                 GameObject fakePlayerBodyRagdollGameObject = 
@@ -1178,7 +1138,11 @@ public class AloeServer : BiodiverseAI
                 openDoorSpeedMultiplier = 4f;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
-                _avoidPlayerCoroutine = null;
+                if (_avoidPlayerCoroutine != null)
+                {
+                    StopCoroutine(_avoidPlayerCoroutine);
+                    _avoidPlayerCoroutine = null;
+                }
 
                 netcodeController.SetTargetPlayerAbleToEscapeClientRpc(_aloeId, true);
                 netcodeController.UnMuffleTargetPlayerVoiceClientRpc(_aloeId);
@@ -1226,7 +1190,11 @@ public class AloeServer : BiodiverseAI
                 openDoorSpeedMultiplier = 4f;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
-                _avoidPlayerCoroutine = null;
+                if (_avoidPlayerCoroutine != null)
+                {
+                    StopCoroutine(_avoidPlayerCoroutine);
+                    _avoidPlayerCoroutine = null;
+                }
                 
                 if (_currentlyHasDarkSkin)
                 {
@@ -1254,7 +1222,11 @@ public class AloeServer : BiodiverseAI
                 _waitTimer = 2f;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
-                _avoidPlayerCoroutine = null;
+                if (_avoidPlayerCoroutine != null)
+                {
+                    StopCoroutine(_avoidPlayerCoroutine);
+                    _avoidPlayerCoroutine = null;
+                }
                 
                 netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.Chase);
                 if (!_currentlyHasDarkSkin)
@@ -1280,7 +1252,11 @@ public class AloeServer : BiodiverseAI
                 openDoorSpeedMultiplier = 2f;
                 
                 if (roamMap.inProgress) StopSearch(roamMap);
-                _avoidPlayerCoroutine = null;
+                if (_avoidPlayerCoroutine != null)
+                {
+                    StopCoroutine(_avoidPlayerCoroutine);
+                    _avoidPlayerCoroutine = null;
+                }
                 
                 if (!_currentlyHasDarkSkin)
                 {
@@ -1370,6 +1346,7 @@ public class AloeServer : BiodiverseAI
         
         if (stunNormalizedTimer > 0 || 
             _isStaringAtTargetPlayer ||
+            !_finishedSpottedAnimation ||
             currentBehaviourStateIndex == (int)States.Dead ||
             currentBehaviourStateIndex == (int)States.Spawning)
         {
