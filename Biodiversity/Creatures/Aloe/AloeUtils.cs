@@ -9,6 +9,14 @@ namespace Biodiversity.Creatures.Aloe;
 
 public static class AloeUtils
 {
+    public enum PathStatus
+    {
+        Invalid, // Path is invalid or incomplete
+        ValidButInLos, // Path is valid but obstructed by line of sight
+        Valid, // Path is valid and unobstructed
+        Unknown,
+    }
+    
     /// <summary>
     /// Checks if the AI can construct a valid path to the given position.
     /// </summary>
@@ -18,7 +26,7 @@ public static class AloeUtils
     /// <param name="bufferDistance">The buffer distance within which the path is considered valid without further checks.</param>
     /// <param name="logSource">The logger to use for debug logs, can be null.</param>
     /// <returns>Returns true if the agent can path to the position within the buffer distance or if a valid path exists; otherwise, false.</returns>
-    public static bool IsPathValid(
+    public static PathStatus IsPathValid(
         NavMeshAgent agent, 
         Vector3 position, 
         bool checkLineOfSight = false, 
@@ -29,7 +37,7 @@ public static class AloeUtils
         if (Vector3.Distance(agent.transform.position, position) <= bufferDistance)
         {
             //LogDebug(logSource, $"Target position {position} is within buffer distance {bufferDistance}.");
-            return true;
+            return PathStatus.Valid;
         }
         
         NavMeshPath path = new();
@@ -37,13 +45,13 @@ public static class AloeUtils
         // Calculate path to the target position
         if (!agent.CalculatePath(position, path) || path.corners.Length == 0)
         {
-            return false;
+            return PathStatus.Invalid;
         }
 
         // Check if the path is complete
         if (path.status != NavMeshPathStatus.PathComplete)
         {
-            return false;
+            return PathStatus.Invalid;
         }
 
         // Check if any segment of the path is intersected by line of sight
@@ -53,71 +61,121 @@ public static class AloeUtils
             {
                 if (Physics.Linecast(path.corners[i - 1], path.corners[i], 262144))
                 {
-                    return false;
+                    return PathStatus.ValidButInLos;
                 }
             }
         }
 
-        return true;
+        return PathStatus.Valid;
     }
-    
+
     /// <summary>
     /// Gets the closest valid AI node from the specified position that the NavMeshAgent can path to.
     /// </summary>
+    /// <param name="pathStatus">The PathStatus enum indicating the validity of the path.</param>
     /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
-    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
     /// <param name="position">The reference position to measure distance from.</param>
+    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
+    /// <param name="ignoredAINodes">A collection of AI node game objects to ignore.</param>
     /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
+    /// <param name="allowFallbackIfBlocked">If true, allows finding another node if the first is blocked by line of sight.</param>
+    /// <param name="bufferDistance">The minimum distance a node must be from the position to be considered.</param>
     /// <param name="logSource">The logger to use for debug logs, can be null.</param>
     /// <returns>The transform of the closest valid AI node that the agent can path to, or null if no valid node is found.</returns>
     public static Transform GetClosestValidNodeToPosition(
-        NavMeshAgent agent, 
-        IEnumerable<GameObject> allAINodes, 
+        out PathStatus pathStatus,
+        NavMeshAgent agent,
         Vector3 position, 
-        bool checkLineOfSight = false, 
+        IEnumerable<GameObject> allAINodes,
+        IEnumerable<GameObject> ignoredAINodes = null,
+        bool checkLineOfSight = false,
+        bool allowFallbackIfBlocked = false,
+        float bufferDistance = 1f,
         ManualLogSource logSource = null)
     {
-        return GetValidNodeFromPosition(agent, allAINodes, position, checkLineOfSight, logSource, true);
+        return GetValidNodeFromPosition(
+            findClosest: true, 
+            pathStatus:out pathStatus, 
+            agent: agent, 
+            position: position, 
+            allAINodes: allAINodes, 
+            ignoredAINodes: ignoredAINodes, 
+            checkLineOfSight: checkLineOfSight, 
+            allowFallbackIfBlocked: allowFallbackIfBlocked, 
+            bufferDistance: bufferDistance, 
+            logSource: logSource);
     }
 
     /// <summary>
     /// Gets the farthest valid AI node from the specified position that the NavMeshAgent can path to.
     /// </summary>
+    /// <param name="pathStatus">The PathStatus enum indicating the validity of the path.</param>
     /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
-    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
     /// <param name="position">The reference position to measure distance from.</param>
+    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
+    /// <param name="ignoredAINodes">A collection of AI node game objects to ignore.</param>
     /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
+    /// <param name="allowFallbackIfBlocked">If true, allows finding another node if the first is blocked by line of sight.</param>
+    /// <param name="bufferDistance">The minimum distance a node must be from the position to be considered.</param>
     /// <param name="logSource">The logger to use for debug logs, can be null.</param>
     /// <returns>The transform of the farthest valid AI node that the agent can path to, or null if no valid node is found.</returns>
     public static Transform GetFarthestValidNodeFromPosition(
-        NavMeshAgent agent, 
-        IEnumerable<GameObject> allAINodes, 
-        Vector3 position, 
-        bool checkLineOfSight = false, 
+        out PathStatus pathStatus,
+        NavMeshAgent agent,
+        Vector3 position,
+        IEnumerable<GameObject> allAINodes,
+        IEnumerable<GameObject> ignoredAINodes = null,
+        bool checkLineOfSight = false,
+        bool allowFallbackIfBlocked = false,
+        float bufferDistance = 1f,
         ManualLogSource logSource = null)
     {
-        return GetValidNodeFromPosition(agent, allAINodes, position, checkLineOfSight, logSource, false);
+        return GetValidNodeFromPosition(
+            findClosest: false, 
+            pathStatus:out pathStatus, 
+            agent: agent, 
+            position: position, 
+            allAINodes: allAINodes, 
+            ignoredAINodes: ignoredAINodes, 
+            checkLineOfSight: checkLineOfSight, 
+            allowFallbackIfBlocked: allowFallbackIfBlocked, 
+            bufferDistance: bufferDistance, 
+            logSource: logSource);
     }
     
     /// <summary>
     /// Gets a valid AI node from the specified position that the NavMeshAgent can path to.
     /// </summary>
-    /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
-    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
-    /// <param name="position">The reference position to measure distance from.</param>
-    /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
-    /// <param name="logSource">The logger to use for debug logs, can be null.</param>
     /// <param name="findClosest">Whether to find the closest valid node (true) or the farthest valid node (false).</param>
+    /// <param name="pathStatus">The PathStatus enum indicating the validity of the path.</param>
+    /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
+    /// <param name="position">The reference position to measure distance from.</param>
+    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
+    /// <param name="ignoredAINodes">A collection of AI node game objects to ignore.</param>
+    /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
+    /// <param name="allowFallbackIfBlocked">If true, allows finding another node if the first is blocked by line of sight.</param>
+    /// <param name="bufferDistance">The minimum distance a node must be from the position to be considered.</param>
+    /// <param name="logSource">The logger to use for debug logs, can be null.</param>
     /// <returns>The transform of the valid AI node that the agent can path to, or null if no valid node is found.</returns>
     private static Transform GetValidNodeFromPosition(
+        bool findClosest,
+        out PathStatus pathStatus,
         NavMeshAgent agent,
-        IEnumerable<GameObject> allAINodes,
         Vector3 position,
+        IEnumerable<GameObject> allAINodes,
+        IEnumerable<GameObject> ignoredAINodes,
         bool checkLineOfSight,
-        ManualLogSource logSource,
-        bool findClosest)
+        bool allowFallbackIfBlocked,
+        float bufferDistance,
+        ManualLogSource logSource
+        )
     {
-        List<GameObject> aiNodes = allAINodes.ToList();
+        HashSet<GameObject> ignoredNodesSet = ignoredAINodes == null ? [] : [..ignoredAINodes];
+        
+        List<GameObject> aiNodes = allAINodes
+            .Where(node => !ignoredNodesSet.Contains(node) && Vector3.Distance(position, node.transform.position) > bufferDistance)
+            .ToList();
+        
         aiNodes.Sort((a, b) =>
         {
             float distanceA = Vector3.Distance(position, a.transform.position);
@@ -125,9 +183,36 @@ public static class AloeUtils
             return findClosest ? distanceA.CompareTo(distanceB) : distanceB.CompareTo(distanceA);
         });
 
-        return (from node in aiNodes
-            where IsPathValid(agent, node.transform.position, checkLineOfSight, logSource: logSource)
-            select node.transform).FirstOrDefault();
+        foreach (GameObject node in aiNodes)
+        {
+            pathStatus = IsPathValid(agent, node.transform.position, checkLineOfSight, logSource: logSource);
+            if (pathStatus == PathStatus.Valid)
+            {
+                return node.transform;
+            }
+
+            if (pathStatus == PathStatus.ValidButInLos && allowFallbackIfBlocked)
+            {
+                // Try to find another valid node without checking line of sight
+                foreach (GameObject fallbackNode in aiNodes)
+                {
+                    if (fallbackNode == node) continue;
+                    PathStatus fallbackStatus = IsPathValid(
+                        agent, 
+                        fallbackNode.transform.position,
+                        logSource: logSource);
+
+                    if (fallbackStatus == PathStatus.Valid)
+                    {
+                        pathStatus = PathStatus.ValidButInLos;
+                        return fallbackNode.transform;
+                    }
+                }
+            }
+        }
+
+        pathStatus = PathStatus.Invalid;
+        return null;
     }
 
     /// <summary>
@@ -288,7 +373,7 @@ public static class AloeUtils
         float optimalDistance = currentDistance;
         
         if (IsPlayerTargetable(player) && 
-            IsPathValid(agent, player.transform.position, logSource: logSource) && 
+            IsPathValid(agent, player.transform.position, logSource: logSource) == PathStatus.Valid && 
             (!requireLineOfSight || DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eye, viewWidth, viewRange, logSource: logSource)))
         {
             if (currentDistance < optimalDistance)

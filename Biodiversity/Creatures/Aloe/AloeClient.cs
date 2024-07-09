@@ -247,6 +247,7 @@ public class AloeClient : MonoBehaviour
             Vector3 lookTargetPosition;
             if (playersInFov.Count == 0)
             {
+                // Todo: replace this
                 lookTargetPosition = eye.position + eye.forward * 2.0f;
             }
             else if (_targetPlayer != null && playersInFov.Any(player => player == _targetPlayer))

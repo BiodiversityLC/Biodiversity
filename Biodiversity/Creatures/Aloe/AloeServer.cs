@@ -33,6 +33,7 @@ public class AloeServer : BiodiverseAI
     [SerializeField] private int playerHealthThresholdForHealing = 45;
     [SerializeField] private float passiveStalkStaredownDistance = 10f;
     [SerializeField] private float timeItTakesToFullyHealPlayer = 15f;
+    [SerializeField] private Vector2 amountRangeOfNodesToPathToInSearchRoutine = new(3, 8);
     
 #pragma warning disable 0649
     [Header("Controllers")] [Space(5f)] 
@@ -42,6 +43,8 @@ public class AloeServer : BiodiverseAI
     private Vector3 _mainEntrancePosition;
     private Vector3 _agentLastPosition;
     private Vector3 _favouriteSpot;
+
+    private List<GameObject> _ignoredAINodes = [];
     
     private float _agentMaxAcceleration;
     private float _agentMaxSpeed;
@@ -54,6 +57,7 @@ public class AloeServer : BiodiverseAI
 
     private int _timesFoundSneaking;
     private int _healingPerInterval;
+    private int _nodesLeftInRoute;
 
     private bool _networkEventsSubscribed;
     private bool _isStaringAtTargetPlayer;
@@ -250,6 +254,35 @@ public class AloeServer : BiodiverseAI
                     SwitchBehaviourStateLocally(States.PassivelyStalkingPlayer);
                     break;
                 }
+                
+                // if (Vector3.Distance(transform.position, destination) <= 2f)
+                // {
+                //     _ignoredAINodes.Clear();
+                //     _nodesLeftInRoute = Random.Range(
+                //         (int)amountRangeOfNodesToPathToInSearchRoutine.x,
+                //         (int)amountRangeOfNodesToPathToInSearchRoutine.y);
+                // }
+                //
+                // if (_nodesLeftInRoute <= 0)
+                // {
+                //     if (AloeUtils.IsPathValid(agent, _favouriteSpot, bufferDistance: 1.5f) == AloeUtils.PathStatus.Invalid)
+                //     {
+                //         LogDebug($"Favourite spot {favoriteSpot} is no longer valid. Picking a new spot.");
+                //
+                //         _favouriteSpot = AloeUtils.GetClosestValidNodeToPosition(
+                //             pathStatus: out AloeUtils.PathStatus pathStatus,
+                //             agent: agent,
+                //             position: transform.position,
+                //             allAINodes: allAINodes,
+                //             logSource: _mls).position;
+                //
+                //         if (pathStatus == AloeUtils.PathStatus.Invalid)
+                //         {
+                //             LogDebug("Tried to make the favourite spot at the nearest node, but failed. Placing the favourite spot exactly where I am.");
+                //             _favouriteSpot = transform.position;
+                //         }
+                //     }
+                // }
 
                 // Check if the aloe has reached her favourite spot, so she can start roaming from that position
                 if (!_reachedFavouriteSpotForRoaming)
@@ -359,13 +392,18 @@ public class AloeServer : BiodiverseAI
                     if (AloeUtils.IsPlayerReachable(agent, targetPlayer, transform, eye, viewWidth, viewRange, logSource: _mls))
                     {
                         Transform closestNodeToPlayer = AloeUtils.GetClosestValidNodeToPosition(
+                            out AloeUtils.PathStatus pathStatus,
                             agent,
-                            allAINodes,
                             targetPlayer.transform.position,
+                            allAINodes,
+                            null,
                             true,
+                            false,
+                            0f,
                             _mls);
-                        
-                        SetDestinationToPosition(closestNodeToPlayer.position);
+
+                        if (pathStatus == AloeUtils.PathStatus.Invalid) moveTowardsDestination = false;
+                        else SetDestinationToPosition(closestNodeToPlayer.position);
                     }
                     else
                     {
@@ -421,17 +459,27 @@ public class AloeServer : BiodiverseAI
                     }
                     else if (AloeUtils.IsPlayerReachable(agent, targetPlayer, transform, eye, viewWidth, viewRange, logSource: _mls))
                     {
-                        Transform closestNodeToPlayer = AloeUtils.GetClosestValidNodeToPosition(
-                            agent,
-                            allAINodes,
-                            targetPlayer.transform.position,
-                            true,
-                            _mls);
-
-                        if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 5) 
+                        if (Vector3.Distance(transform.position, targetPlayer.transform.position) <= 5)
+                        {
                             movingTowardsTargetPlayer = true;
-                        else 
-                            SetDestinationToPosition(closestNodeToPlayer.position);
+                        }
+                        else
+                        {
+                            Transform closestNodeToPlayer = AloeUtils.GetClosestValidNodeToPosition(
+                                out AloeUtils.PathStatus pathStatus,
+                                agent,
+                                targetPlayer.transform.position,
+                                allAINodes,
+                                null,
+                                true,
+                                false,
+                                0f,
+                                _mls);
+
+                            if (pathStatus == AloeUtils.PathStatus.Invalid) moveTowardsDestination = false;
+                            else SetDestinationToPosition(closestNodeToPlayer.position);
+                        }
+                            
                     }
                     else
                     {
@@ -593,9 +641,11 @@ public class AloeServer : BiodiverseAI
         {
             _favouriteSpot =
                 AloeUtils.GetFarthestValidNodeFromPosition(
+                        out AloeUtils.PathStatus pathStatus,
                         agent,
-                        allAINodes,
                         _mainEntrancePosition != Vector3.zero ? _mainEntrancePosition : transform.position,
+                        allAINodes,
+                        bufferDistance: 0f,
                         logSource: _mls)
                     .position;
         }
@@ -659,53 +709,6 @@ public class AloeServer : BiodiverseAI
         transform.rotation = targetRotation;
         _hasTransitionedToRunningForwardsAndCarryingPlayer = true;
     }
-
-    /// <summary>
-    /// Creates a bind in the AloeBoundKidnaps dictionary and calls a network event to do several things in the client for kidnapping the target player.
-    /// </summary>
-    /// <param name="setToInCaptivity">Whether the target player is being kidnapped or finished being kidnapped.</param>
-    private void SetTargetPlayerInCaptivity(bool setToInCaptivity)
-    {
-        if (!IsServer) return;
-        if (targetPlayer == null) return;
-        if (setToInCaptivity)
-        {
-            if (!AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(this))
-                AloeSharedData.Instance.AloeBoundKidnaps.Add(this, targetPlayer);
-        }
-        else {
-            if (AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(this))
-                AloeSharedData.Instance.AloeBoundKidnaps.Remove(this);
-        }
-        
-        netcodeController.SetTargetPlayerInCaptivityClientRpc(_aloeId, setToInCaptivity);
-    }
-
-    /// <summary>
-    /// Is called by the teleporter patch to make sure the aloe reacts appropriately when a player is teleported away
-    /// </summary>
-    public void SetTargetPlayerEscapedByTeleportation()
-    {
-        if (!IsServer) return;
-        
-        LogDebug("Target player escaped by teleportation!");
-        SetTargetPlayerInCaptivity(false);
-        ChangeTargetPlayer(69420);
-        SwitchBehaviourStateLocally(States.PassiveRoaming);
-    }
-
-    /// <summary>
-    /// Is called on a network event when player manages to escape by mashing keys on their keyboard.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    private void HandleTargetPlayerEscaped(string receivedAloeId)
-    {
-        if (!IsServer) return;
-        
-        LogDebug("Target player escaped by force!");
-        SetTargetPlayerInCaptivity(false);
-        SwitchBehaviourStateLocally(States.ChasingEscapedPlayer);
-    }
     
     /// <summary>
     /// A coroutine that continuously avoids the closest player efficiently, without lagging the game.
@@ -721,28 +724,42 @@ public class AloeServer : BiodiverseAI
                 yield return null;
                 continue;
             }
+
+            float waitTimer = 5f;
             
-            // Todo: Add logic to check if the only path out is blocked by a player, and if it is then decrease the wait timer, and try to find a spot where no player is without caring about LOS
-            Transform farAwayTransform = _avoidingPlayer != null
+            AloeUtils.PathStatus pathStatus = AloeUtils.PathStatus.Unknown;
+            Transform farAwayNode = _avoidingPlayer != null
                 ? AloeUtils.GetFarthestValidNodeFromPosition(
-                    agent, 
-                    allAINodes, 
-                    _avoidingPlayer.transform.position, 
-                    avoidLineOfSight,
+                    pathStatus: out pathStatus,
+                    agent: agent,
+                    position: _avoidingPlayer.transform.position, 
+                    allAINodes: allAINodes,
+                    ignoredAINodes: null,
+                    checkLineOfSight: avoidLineOfSight,
+                    allowFallbackIfBlocked: true,
+                    bufferDistance: 2.5f,
                     logSource: _mls)
                 : null;
             
-            if (farAwayTransform != null)
+            if (farAwayNode != null && pathStatus != AloeUtils.PathStatus.Unknown && pathStatus != AloeUtils.PathStatus.Invalid)
             {
-                LogDebug($"Setting target node to {farAwayTransform.position}");
-                SetDestinationToPosition(farAwayTransform.position);
+                if (pathStatus == AloeUtils.PathStatus.ValidButInLos)
+                {
+                    waitTimer = 2f;
+                    LogDebug("Valid escape node found, but was in LOS.");
+                }
+                    
+                
+                LogDebug($"Setting escape node to {farAwayNode.position}.");
+                SetDestinationToPosition(farAwayNode.position);
             }
             else
             {
+                // todo: fix attacking state always going back to chasing player state
                 SwitchBehaviourStateLocally(States.AttackingPlayer);
             }
 
-            yield return new WaitForSeconds(5f);
+            yield return new WaitForSeconds(waitTimer);
         }
     }
 
@@ -875,6 +892,53 @@ public class AloeServer : BiodiverseAI
                 break;
             }
         }
+    }
+    
+    /// <summary>
+    /// Creates a bind in the AloeBoundKidnaps dictionary and calls a network event to do several things in the client for kidnapping the target player.
+    /// </summary>
+    /// <param name="setToInCaptivity">Whether the target player is being kidnapped or finished being kidnapped.</param>
+    private void SetTargetPlayerInCaptivity(bool setToInCaptivity)
+    {
+        if (!IsServer) return;
+        if (targetPlayer == null) return;
+        if (setToInCaptivity)
+        {
+            if (!AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(this))
+                AloeSharedData.Instance.AloeBoundKidnaps.Add(this, targetPlayer);
+        }
+        else {
+            if (AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(this))
+                AloeSharedData.Instance.AloeBoundKidnaps.Remove(this);
+        }
+        
+        netcodeController.SetTargetPlayerInCaptivityClientRpc(_aloeId, setToInCaptivity);
+    }
+
+    /// <summary>
+    /// Is called by the teleporter patch to make sure the aloe reacts appropriately when a player is teleported away
+    /// </summary>
+    public void SetTargetPlayerEscapedByTeleportation()
+    {
+        if (!IsServer) return;
+        
+        LogDebug("Target player escaped by teleportation!");
+        SetTargetPlayerInCaptivity(false);
+        ChangeTargetPlayer(69420);
+        SwitchBehaviourStateLocally(States.PassiveRoaming);
+    }
+
+    /// <summary>
+    /// Is called on a network event when player manages to escape by mashing keys on their keyboard.
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    private void HandleTargetPlayerEscaped(string receivedAloeId)
+    {
+        if (!IsServer) return;
+        
+        LogDebug("Target player escaped by force!");
+        SetTargetPlayerInCaptivity(false);
+        SwitchBehaviourStateLocally(States.ChasingEscapedPlayer);
     }
 
     /// <summary>
@@ -1114,7 +1178,7 @@ public class AloeServer : BiodiverseAI
                 netcodeController.IncreasePlayerFearLevelClientRpc(_aloeId, 2.5f, targetPlayer.actualClientId);
                 netcodeController.PlayAudioClipTypeServerRpc(_aloeId, AloeClient.AudioClipTypes.SnatchAndDrag);
 
-                if (!AloeUtils.IsPathValid(agent, _favouriteSpot, logSource: _mls))
+                if (AloeUtils.IsPathValid(agent, _favouriteSpot, logSource: _mls) != AloeUtils.PathStatus.Valid)
                 {
                     LogDebug("When initializing kidnapping, no path was found to the Aloe's favourite spot.");
                     SwitchBehaviourStateLocally(States.HealingPlayer);
@@ -1356,7 +1420,9 @@ public class AloeServer : BiodiverseAI
             _isStaringAtTargetPlayer ||
             !_finishedSpottedAnimation ||
             currentBehaviourStateIndex == (int)States.Dead ||
-            currentBehaviourStateIndex == (int)States.Spawning)
+            currentBehaviourStateIndex == (int)States.Spawning
+           // || currentBehaviourStateIndex == (int)States.KidnappingPlayer
+            )
         {
             agent.speed = 0;
             agent.acceleration = _agentMaxAcceleration;
