@@ -57,7 +57,10 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     // [field: Header("Spawn Settings.")]
     // [field: Tooltip("Whether to force the bracken room to spawn in if the dungeon is the interior.")]
     // public bool ForceBrackenRoomSpawn { get; private set; } = true;
+
+    [field: Tooltip("Whether the Aloe will spawn in games.")]
+    public bool AloeEnabled { get; private set; } = true;
     
-    [field: Tooltip("TEMPORARY SETTING, WILL BE REMOVED LATER.")]
-    public int Rarity { get; private set; } = 100;
+    [field: Tooltip("Spawn weight of the Aloe on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
+    public string Rarity { get; private set; } = "Experimentation:38,Assurance:75,March:85,Artifice:95,Aquatis:18,Vertigo:76,Solace:12,Azure:40,Argent:15,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Atlantica:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Seichi:8,Modded:2";
 }

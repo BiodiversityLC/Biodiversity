@@ -722,6 +722,7 @@ public class AloeServer : BiodiverseAI
                 continue;
             }
             
+            // Todo: Add logic to check if the only path out is blocked by a player, and if it is then decrease the wait timer, and try to find a spot where no player is without caring about LOS
             Transform farAwayTransform = _avoidingPlayer != null
                 ? AloeUtils.GetFarthestValidNodeFromPosition(
                     agent, 
@@ -969,6 +970,7 @@ public class AloeServer : BiodiverseAI
                 _avoidPlayerTimer = 0f;
                 openDoorSpeedMultiplier = 2f;
                 _avoidingPlayer = null;
+                _backupTargetPlayer = null;
                 moveTowardsDestination = true;
                 _reachedFavouriteSpotForRoaming = false;
                 
@@ -1078,6 +1080,7 @@ public class AloeServer : BiodiverseAI
                 _agentMaxAcceleration = 20f;
                 _isStaringAtTargetPlayer = false;
                 movingTowardsTargetPlayer = false;
+                _inGrabAnimation = false;
                 _avoidingPlayer = null;
                 _hasTransitionedToRunningForwardsAndCarryingPlayer = false;
                 _avoidPlayerTimer = 0f;
@@ -1238,6 +1241,7 @@ public class AloeServer : BiodiverseAI
                     _currentlyHasDarkSkin = true;
                 }
                 
+                netcodeController.SetAnimationTriggerClientRpc(_aloeId, AloeClient.Stand);
                 netcodeController.SetAnimationBoolClientRpc(_aloeId, AloeClient.Crawling, false);
                 netcodeController.SetAnimationBoolClientRpc(_aloeId, AloeClient.Healing, false);
                 
@@ -1267,6 +1271,7 @@ public class AloeServer : BiodiverseAI
                     _currentlyHasDarkSkin = true;
                 }
                 
+                netcodeController.SetAnimationTriggerClientRpc(_aloeId, AloeClient.Stand);
                 netcodeController.SetAnimationBoolClientRpc(_aloeId, AloeClient.Healing, false);
                 netcodeController.SetAnimationBoolClientRpc(_aloeId, AloeClient.Crawling, false);
                 
