@@ -1,4 +1,5 @@
 ﻿using Biodiversity.General;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
@@ -36,7 +37,10 @@ namespace Biodiversity.Creatures.Ogopogo
         float detectionRange = 10f;
 
         [NonSerialized] public QuicksandTrigger setWater = null;
+
+
         [NonSerialized] public bool spawnedByOgo = false;
+        [NonSerialized] public bool spawnedByVermin = false;
 
         public override void Start()
         {
@@ -48,7 +52,8 @@ namespace Biodiversity.Creatures.Ogopogo
                 {
                     BiodiversityPlugin.Logger.LogInfo(maybeWater);
                     BiodiversityPlugin.Logger.LogInfo(maybeWater.isWater);
-                    if (maybeWater.isWater)
+                    BiodiversityPlugin.Logger.LogInfo(maybeWater.gameObject.CompareTag("SpawnDenialPoint"));
+                    if (maybeWater.isWater && !maybeWater.gameObject.CompareTag("SpawnDenialPoint"))
                     {
                         waters.Add(maybeWater);
                     }
@@ -66,12 +71,23 @@ namespace Biodiversity.Creatures.Ogopogo
                     RoundManager.Instance.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
                     enemyType.numberSpawned++;
                 }
-                else if (TimeOfDay.Instance.currentLevelWeather != LevelWeatherType.Flooded)
+
+                if (spawnedByVermin)
+                {
+                    RoundManager.Instance.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
+                }
+
+                if (TimeOfDay.Instance.currentLevelWeather != LevelWeatherType.Flooded && !spawnedByOgo)
                 {
                     BiodiversityPlugin.Logger.LogInfo("Despawning because Ogopogo did not spawn this and it is not flooded. (vermin)");
                     SubtractFromPowerLevel();
                     RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
                     return;
+                }
+
+                if (!spawnedByOgo && !spawnedByVermin)
+                {
+                    spawnVermin();
                 }
 
                 // Set the water he will stay in and teleport to it
@@ -87,6 +103,18 @@ namespace Biodiversity.Creatures.Ogopogo
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+            }
+        }
+
+        void spawnVermin()
+        {
+            foreach (var i in Enumerable.Range(0, 3))
+            {
+                GameObject vermin = UnityEngine.Object.Instantiate<GameObject>(BiodiverseAssets.Vermin.enemyPrefab, this.transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
+                vermin.GetComponentInChildren<NetworkObject>().Spawn(true);
+                VerminAI AIscript = vermin.gameObject.GetComponent<VerminAI>();
+                AIscript.setWater = water;
+                AIscript.spawnedByVermin = true;
             }
         }
 
