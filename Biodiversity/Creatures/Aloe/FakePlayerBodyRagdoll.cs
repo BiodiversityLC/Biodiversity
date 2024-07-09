@@ -34,7 +34,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     }
 
 #pragma warning disable 0649
-    [SerializeField] private SkinnedMeshRenderer bodyMeshRenderer;
+    public SkinnedMeshRenderer bodyMeshRenderer;
 #pragma warning restore 0649
 
     public List<BodyPart> bodyParts = [];

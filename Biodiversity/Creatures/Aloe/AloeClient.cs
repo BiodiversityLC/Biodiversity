@@ -80,7 +80,8 @@ public class AloeClient : MonoBehaviour
     [Header("Transforms")] [Space(5f)] 
     [SerializeField] private Transform eye;
     [SerializeField] private Transform lookTarget;
-    [SerializeField] private Transform grabTarget;
+    [SerializeField] private Transform ragdollGrabTarget;
+    [SerializeField] private Transform playerGrabTarget;
     
     [Header("Controllers")] [Space(5f)]
     [SerializeField] private AloeNetcodeController netcodeController;
@@ -97,7 +98,7 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float smoothLookTargetPositionTime = 0.3f;
     
     private PlayerControllerB _targetPlayer;
-    private PlayerControllerB _visiblePlayer = null;
+    private PlayerControllerB _visiblePlayer;
 
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
     
@@ -108,6 +109,7 @@ public class AloeClient : MonoBehaviour
     private Coroutine _changeSkinColourCoroutine;
     
     private bool _targetPlayerCanEscape;
+    private bool _targetPlayerInCaptivity;
 
     private float _currentEscapeChargeValue;
     private float _agentCurrentSpeed;
@@ -236,25 +238,38 @@ public class AloeClient : MonoBehaviour
     
     private void LateUpdate()
     {
-        List<PlayerControllerB> playersInFov =
-            AloeUtils.GetAllVisiblePlayersFromEye(eye, _viewWidth, _viewRange, logSource: _mls);
+        // Make the look target aim at a player
+        {
+            List<PlayerControllerB> playersInFov =
+                AloeUtils.GetAllVisiblePlayersFromEye(eye, _viewWidth, _viewRange, logSource: _mls);
 
-        Vector3 lookTargetPosition;
-        if (playersInFov.Count == 0)
-        {
-            lookTargetPosition = eye.position + eye.forward * 2.0f;
+            Vector3 lookTargetPosition;
+            if (playersInFov.Count == 0)
+            {
+                lookTargetPosition = eye.position + eye.forward * 2.0f;
+            }
+            else if (_targetPlayer != null && playersInFov.Any(player => player == _targetPlayer))
+            {
+                lookTargetPosition = _targetPlayer.gameplayCamera.transform.position;
+            }
+            else
+            {
+                _visiblePlayer = AloeUtils.GetClosestPlayerFromList(playersInFov, eye, _visiblePlayer, logSource: _mls);
+                lookTargetPosition = _visiblePlayer.gameplayCamera.transform.position;
+            }
+        
+            AloeUtils.SmoothMoveTransformTo(lookTarget, lookTargetPosition, smoothLookTargetPositionTime, ref _lookTargetVelocity);
         }
-        else if (_targetPlayer != null && playersInFov.Any(player => player == _targetPlayer))
+
+        // Animate the real target player's body
         {
-            lookTargetPosition = _targetPlayer.gameplayCamera.transform.position;
-        }
-        else
-        {
-            _visiblePlayer = AloeUtils.GetClosestPlayerFromList(playersInFov, eye, _visiblePlayer, logSource: _mls);
-            lookTargetPosition = _visiblePlayer.gameplayCamera.transform.position;
+            if (_targetPlayerInCaptivity && _targetPlayer != null && _targetPlayer.inSpecialInteractAnimation)
+            {
+                _targetPlayer.transform.position = playerGrabTarget.position;
+                _targetPlayer.transform.rotation = playerGrabTarget.rotation;
+            }
         }
         
-        AloeUtils.SmoothMoveTransformTo(lookTarget, lookTargetPosition, smoothLookTargetPositionTime, ref _lookTargetVelocity);
     }
 
     /// <summary>
@@ -418,7 +433,7 @@ public class AloeClient : MonoBehaviour
         }
         
         _currentFakePlayerBodyRagdoll.DetachLimbFromTransform("Neck");
-        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Root", grabTarget);
+        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Root", ragdollGrabTarget);
     }
 
     private void HandleSpawnFakePlayerBodyRagdoll(string receivedAloeId,
@@ -437,7 +452,12 @@ public class AloeClient : MonoBehaviour
             return;
         }
 
-        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", grabTarget);
+        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", ragdollGrabTarget);
+
+        if (GameNetworkManager.Instance.localPlayerController == _targetPlayer)
+        {
+            _currentFakePlayerBodyRagdoll.bodyMeshRenderer.enabled = false;
+        }
     }
 
     /// <summary>
@@ -449,25 +469,50 @@ public class AloeClient : MonoBehaviour
     private void HandleSetTargetPlayerInCaptivity(string receivedAloeId, bool setToInCaptivity)
     {
         if (_aloeId != receivedAloeId) return;
-        if (_targetPlayer == null) return;
+        if (_targetPlayer == null)
+        {
+            _targetPlayerInCaptivity = false;
+            return;
+        }
         
         if (setToInCaptivity)
         {
-            _targetPlayer.inSpecialInteractAnimation = true;
-            _targetPlayer.DropAllHeldItemsAndSync();
+            if (_targetPlayer.inSpecialInteractAnimation && _targetPlayer.currentTriggerInAnimationWith != null)
+                _targetPlayer.currentTriggerInAnimationWith.CancelAnimationExternally();
+            
             HandleMuffleTargetPlayerVoice(_aloeId);
+            _targetPlayer.inSpecialInteractAnimation = true;
+            _targetPlayer.inAnimationWithEnemy = GetComponent<AloeServer>();
+            _targetPlayer.isInElevator = false;
+            _targetPlayer.isInHangarShipRoom = false;
+            _targetPlayer.ResetZAndXRotation();
+            _targetPlayer.DropAllHeldItemsAndSync();
+            
+            if (GameNetworkManager.Instance.localPlayerController != _targetPlayer)
+            {
+                // disable the target player's renderer
+            }
         }
         else
         {
-            _targetPlayer.inSpecialInteractAnimation = false;
-            HandleUnMuffleTargetPlayerVoice(_aloeId);
             if (_currentFakePlayerBodyRagdoll != null)
             {
                 Destroy(_currentFakePlayerBodyRagdoll.gameObject);
                 _currentFakePlayerBodyRagdoll = null;
             }
+            
+            if (GameNetworkManager.Instance.localPlayerController != _targetPlayer)
+            {
+                // enable the target player's renderer
+            }
+            
+            _targetPlayer.inSpecialInteractAnimation = false;
+            _targetPlayer.inAnimationWithEnemy = null;
+            _targetPlayer.ResetZAndXRotation();
+            HandleUnMuffleTargetPlayerVoice(_aloeId);
         }
-        
+
+        _targetPlayerInCaptivity = setToInCaptivity;
         LogDebug($"Set {_targetPlayer.playerUsername} in captivity: {setToInCaptivity}");
     }
 

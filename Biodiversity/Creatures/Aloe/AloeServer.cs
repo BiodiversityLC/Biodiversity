@@ -223,6 +223,8 @@ public class AloeServer : BiodiverseAI
         if (!IsServer) return;
         if (StartOfRound.Instance.livingPlayers == 0 || isEnemyDead || currentBehaviourStateIndex == (int)States.Dead) return;
 
+        if (stunNormalizedTimer > 0.0f) return;
+        
         switch (currentBehaviourStateIndex)
         {
             case (int)States.PassiveRoaming:
@@ -983,6 +985,7 @@ public class AloeServer : BiodiverseAI
                     _currentlyHasDarkSkin = false;
                 }
                 
+                ChangeTargetPlayer(69420);
                 netcodeController.SetAnimationBoolClientRpc(_aloeId, AloeClient.Crawling, false);
                 netcodeController.SetAnimationBoolClientRpc(_aloeId, AloeClient.Healing, false);
                 netcodeController.ChangeLookAimConstraintWeightClientRpc(_aloeId, 0, 0.5f);
