@@ -1,7 +1,7 @@
 ﻿using Unity.Netcode;
 using UnityEngine;
 
-namespace Biodiversity.Creatures.Aloe.CustomStateMachineBehaviours;
+namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
 public class SpottedAnimationStateBehaviour : BaseStateMachineBehaviour
 {
@@ -9,12 +9,12 @@ public class SpottedAnimationStateBehaviour : BaseStateMachineBehaviour
     {
         if (NetcodeController == null)
         {
-            Mls.LogError("Netcode Controller is null, cannot call RPC to complete spotted animation logic.");
+            Mls.LogError("Netcode Controller is null, cannot change network variable to complete spotted animation logic.");
             return;
         }
         
         if (!NetworkManager.Singleton.IsServer || !NetcodeController.IsOwner) return;
         LogDebug("Spotted animation complete.");
-        NetcodeController.SpottedAnimationCompleteServerRpc(AloeId);
+        NetcodeController.HasFinishedSpottedAnimation.Value = true;
     }
 }

@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
 using GameNetcodeStuff;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
+using Object = UnityEngine.Object;
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -492,6 +495,22 @@ public static class AloeUtils
     }
     
     /// <summary>
+    /// Gets the max health of the given player
+    /// This is needed because mods may increase the max health of a player
+    /// </summary>
+    /// <param name="player">The player to get the max health.</param>
+    /// <returns>The player's max health</returns>
+    public static int GetPlayerMaxHealth(PlayerControllerB player)
+    {
+        if (AloeSharedData.Instance.PlayersMaxHealth.ContainsKey(player))
+        {
+            return AloeSharedData.Instance.PlayersMaxHealth[player];
+        }
+
+        return -1;
+    }
+    
+    /// <summary>
     /// Determines whether the specified player is dead.
     /// </summary>
     /// <param name="player">The player to check.</param>
@@ -500,6 +519,14 @@ public static class AloeUtils
     {
         if (player == null) return true;
         return player.isPlayerDead || !player.isPlayerControlled;
+    }
+
+    public static void ChangeNetworkVar<T>(NetworkVariable<T> networkVariable, T newValue) where T : IEquatable<T>
+    {
+        if (!EqualityComparer<T>.Default.Equals(networkVariable.Value, newValue))
+        {
+            networkVariable.Value = newValue;
+        }
     }
     
     /// <summary>

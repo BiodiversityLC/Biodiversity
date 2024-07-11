@@ -2,7 +2,7 @@
 using UnityEngine;
 using Logger = BepInEx.Logging.Logger;
 
-namespace Biodiversity.Creatures.Aloe.CustomStateMachineBehaviours;
+namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
 public class BaseStateMachineBehaviour : StateMachineBehaviour
 {

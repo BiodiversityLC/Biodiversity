@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
-using Biodiversity.Creatures.Aloe.CustomStateMachineBehaviours;
+using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
+using Biodiversity.Creatures.Aloe.Types;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -24,6 +25,7 @@ public class AloeClient : MonoBehaviour
 
     private static readonly int Speed = Animator.StringToHash("Speed");
     private static readonly int Dead = Animator.StringToHash("Dead");
+    private static readonly int Spawning = Animator.StringToHash("Spawning");
     public static readonly int Stand = Animator.StringToHash("Stand");
     public static readonly int Crawling = Animator.StringToHash("Crawling");
     public static readonly int Stunned = Animator.StringToHash("Stunned");
@@ -98,7 +100,7 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float lookBlendDuration = 0.5f;
     [SerializeField] private float smoothLookTargetPositionTime = 0.3f;
     
-    private PlayerControllerB _targetPlayer;
+    private readonly NullableObject<PlayerControllerB> _targetPlayer = new();
     private PlayerControllerB _visiblePlayer;
 
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
@@ -128,8 +130,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnSyncAloeId += HandleSyncAloeId;
         netcodeController.OnInitializeConfigValues += HandleInitializeConfigValues;
         netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
-        netcodeController.OnSetAnimationBool += HandleSetAnimationBool;
-        netcodeController.OnChangeTargetPlayer += HandleChangeTargetPlayer;
         netcodeController.OnMuffleTargetPlayerVoice += HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice += HandleUnMuffleTargetPlayerVoice;
         netcodeController.OnIncreasePlayerFearLevel += HandleIncreasePlayerFearLevel;
@@ -138,13 +138,15 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnSetTargetPlayerAbleToEscape += HandleSetTargetPlayerAbleToEscape;
         netcodeController.OnEnterDeathState += HandleEnterDeathState;
         netcodeController.OnPlayHealingVfx += HandlePlayHealingVfx;
-        netcodeController.OnChangeAloeSkinColour += HandleChangeAloeSkinColour;
         netcodeController.OnPlayAudioClipType += HandlePlayAudioClipType;
         netcodeController.OnSnapPlayerNeck += HandleSnapPlayerNeck;
         netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll += HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer +=
             HandleTransitionToRunningForwardsAndCarryingPlayer;
+
+        netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
+        netcodeController.ShouldHaveDarkSkin.OnValueChanged += HandleChangeAloeSkinColour;
     }
 
     /// <summary>
@@ -156,8 +158,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnSyncAloeId -= HandleSyncAloeId;
         netcodeController.OnInitializeConfigValues -= HandleInitializeConfigValues;
         netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
-        netcodeController.OnSetAnimationBool -= HandleSetAnimationBool;
-        netcodeController.OnChangeTargetPlayer -= HandleChangeTargetPlayer;
         netcodeController.OnMuffleTargetPlayerVoice -= HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice -= HandleUnMuffleTargetPlayerVoice;
         netcodeController.OnIncreasePlayerFearLevel -= HandleIncreasePlayerFearLevel;
@@ -166,13 +166,15 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnSetTargetPlayerAbleToEscape -= HandleSetTargetPlayerAbleToEscape;
         netcodeController.OnEnterDeathState -= HandleEnterDeathState;
         netcodeController.OnPlayHealingVfx -= HandlePlayHealingVfx;
-        netcodeController.OnChangeAloeSkinColour -= HandleChangeAloeSkinColour;
         netcodeController.OnPlayAudioClipType -= HandlePlayAudioClipType;
         netcodeController.OnSnapPlayerNeck -= HandleSnapPlayerNeck;
         netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll -= HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer -=
             HandleTransitionToRunningForwardsAndCarryingPlayer;
+        
+        netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
+        netcodeController.ShouldHaveDarkSkin.OnValueChanged -= HandleChangeAloeSkinColour;
     }
 
     private void Awake()
@@ -199,7 +201,12 @@ public class AloeClient : MonoBehaviour
         Vector3 position = transform.position;
         _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
         _agentLastPosition = position;
+        
         animator.SetFloat(Speed, _agentCurrentSpeed);
+        animator.SetBool(Spawning, !netcodeController.HasFinishedSpawnAnimation.Value);
+        animator.SetBool(Healing, netcodeController.AnimationParamHealing.Value);
+        animator.SetBool(Crawling, netcodeController.AnimationParamCrawling.Value);
+        animator.SetBool(Stunned, netcodeController.AnimationParamStunned.Value);
         
         if (!_targetPlayerCanEscape)
         {
@@ -211,8 +218,8 @@ public class AloeClient : MonoBehaviour
         {
             case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer:
             {
-                if (_targetPlayer == null) break;
-                if (GameNetworkManager.Instance.localPlayerController.playerClientId != _targetPlayer.playerClientId) break;
+                if (!_targetPlayer.IsNotNull) break;
+                if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
         
                 if (Keyboard.current.spaceKey.wasPressedThisFrame)
                 {
@@ -243,16 +250,16 @@ public class AloeClient : MonoBehaviour
         {
             List<PlayerControllerB> playersInFov =
                 AloeUtils.GetAllVisiblePlayersFromEye(eye, _viewWidth, _viewRange, logSource: _mls);
-
+ 
             Vector3 lookTargetPosition;
             if (playersInFov.Count == 0)
             {
                 // Todo: replace this
-                lookTargetPosition = eye.position + eye.forward * 2.0f;
+                lookTargetPosition = eye.position + eye.forward * 10.0f;
             }
-            else if (_targetPlayer != null && playersInFov.Any(player => player == _targetPlayer))
+            else if (_targetPlayer.IsNotNull && playersInFov.Any(player => player == _targetPlayer.Value))
             {
-                lookTargetPosition = _targetPlayer.gameplayCamera.transform.position;
+                lookTargetPosition = _targetPlayer.Value.gameplayCamera.transform.position;
             }
             else
             {
@@ -265,10 +272,10 @@ public class AloeClient : MonoBehaviour
 
         // Animate the real target player's body
         {
-            if (_targetPlayerInCaptivity && _targetPlayer != null && _targetPlayer.inSpecialInteractAnimation)
+            if (_targetPlayerInCaptivity && _targetPlayer.IsNotNull && _targetPlayer.Value.inSpecialInteractAnimation)
             {
-                _targetPlayer.transform.position = playerGrabTarget.position;
-                _targetPlayer.transform.rotation = playerGrabTarget.rotation;
+                _targetPlayer.Value.transform.position = playerGrabTarget.position;
+                _targetPlayer.Value.transform.rotation = playerGrabTarget.rotation;
             }
         }
         
@@ -351,25 +358,19 @@ public class AloeClient : MonoBehaviour
         aloeVoiceSource.PlayOneShot(audioClipToPlay);
         WalkieTalkie.TransmitOneShotAudio(aloeVoiceSource, audioClipToPlay, aloeVoiceSource.volume);
     }
-
-    /// <summary>
-    /// Handles what should happen to make the Aloe change her skin colour
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="toDark">Whether the skin colour is going to a dark colour or not.</param>
-    private void HandleChangeAloeSkinColour(string receivedAloeId, bool toDark)
+    
+    private void HandleChangeAloeSkinColour(bool oldValue, bool newValue)
     {
-        if (_aloeId != receivedAloeId) return;
         if (bodyRenderer == null)
         {
             LogDebug("Body renderer is null, cannot change aloe skin colour");
             return;
         }
         
-        if (_changeSkinColourCoroutine != null) StopCoroutine(ChangeAloeSkinColour(toDark));
+        if (_changeSkinColourCoroutine != null) StopCoroutine(ChangeAloeSkinColour(newValue));
         _propertyBlock ??= new MaterialPropertyBlock();
         bodyRenderer.GetPropertyBlock(_propertyBlock);
-        _changeSkinColourCoroutine = StartCoroutine(ChangeAloeSkinColour(toDark));
+        _changeSkinColourCoroutine = StartCoroutine(ChangeAloeSkinColour(newValue));
     }
 
     /// <summary>
@@ -418,9 +419,10 @@ public class AloeClient : MonoBehaviour
     private void HandleHealTargetPlayerByAmount(string receivedAloeId, int healAmount)
     {
         if (_aloeId != receivedAloeId) return;
-        _targetPlayer.health += healAmount;
-        if (HUDManager.Instance.localPlayer == _targetPlayer) HUDManager.Instance.UpdateHealthUI(GameNetworkManager.Instance.localPlayerController.health, false);
-        LogDebug($"Target player health after last heal: {_targetPlayer.health}");
+        if (!_targetPlayer.IsNotNull) return;
+        _targetPlayer.Value.health += healAmount;
+        if (HUDManager.Instance.localPlayer == _targetPlayer.Value) HUDManager.Instance.UpdateHealthUI(GameNetworkManager.Instance.localPlayerController.health, false);
+        LogDebug($"Target player health after last heal: {_targetPlayer.Value.health}");
     }
 
     private void HandleTransitionToRunningForwardsAndCarryingPlayer(string receivedAloeId)
@@ -456,7 +458,7 @@ public class AloeClient : MonoBehaviour
 
         _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", ragdollGrabTarget);
 
-        if (GameNetworkManager.Instance.localPlayerController == _targetPlayer)
+        if (GameNetworkManager.Instance.localPlayerController == _targetPlayer.Value)
         {
             _currentFakePlayerBodyRagdoll.bodyMeshRenderer.enabled = false;
         }
@@ -471,7 +473,7 @@ public class AloeClient : MonoBehaviour
     private void HandleSetTargetPlayerInCaptivity(string receivedAloeId, bool setToInCaptivity)
     {
         if (_aloeId != receivedAloeId) return;
-        if (_targetPlayer == null)
+        if (!_targetPlayer.IsNotNull)
         {
             _targetPlayerInCaptivity = false;
             return;
@@ -479,18 +481,18 @@ public class AloeClient : MonoBehaviour
         
         if (setToInCaptivity)
         {
-            if (_targetPlayer.inSpecialInteractAnimation && _targetPlayer.currentTriggerInAnimationWith != null)
-                _targetPlayer.currentTriggerInAnimationWith.CancelAnimationExternally();
+            if (_targetPlayer.Value.inSpecialInteractAnimation && _targetPlayer.Value.currentTriggerInAnimationWith != null)
+                _targetPlayer.Value.currentTriggerInAnimationWith.CancelAnimationExternally();
             
             HandleMuffleTargetPlayerVoice(_aloeId);
-            _targetPlayer.inSpecialInteractAnimation = true;
-            _targetPlayer.inAnimationWithEnemy = GetComponent<AloeServer>();
-            _targetPlayer.isInElevator = false;
-            _targetPlayer.isInHangarShipRoom = false;
-            _targetPlayer.ResetZAndXRotation();
-            _targetPlayer.DropAllHeldItemsAndSync();
+            _targetPlayer.Value.inSpecialInteractAnimation = true;
+            _targetPlayer.Value.inAnimationWithEnemy = GetComponent<AloeServer>();
+            _targetPlayer.Value.isInElevator = false;
+            _targetPlayer.Value.isInHangarShipRoom = false;
+            _targetPlayer.Value.ResetZAndXRotation();
+            _targetPlayer.Value.DropAllHeldItemsAndSync();
             
-            if (GameNetworkManager.Instance.localPlayerController != _targetPlayer)
+            if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value)
             {
                 // disable the target player's renderer
             }
@@ -503,19 +505,19 @@ public class AloeClient : MonoBehaviour
                 _currentFakePlayerBodyRagdoll = null;
             }
             
-            if (GameNetworkManager.Instance.localPlayerController != _targetPlayer)
+            if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value)
             {
                 // enable the target player's renderer
             }
             
-            _targetPlayer.inSpecialInteractAnimation = false;
-            _targetPlayer.inAnimationWithEnemy = null;
-            _targetPlayer.ResetZAndXRotation();
+            _targetPlayer.Value.inSpecialInteractAnimation = false;
+            _targetPlayer.Value.inAnimationWithEnemy = null;
+            _targetPlayer.Value.ResetZAndXRotation();
             HandleUnMuffleTargetPlayerVoice(_aloeId);
         }
 
         _targetPlayerInCaptivity = setToInCaptivity;
-        LogDebug($"Set {_targetPlayer.playerUsername} in captivity: {setToInCaptivity}");
+        LogDebug($"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
     }
 
     /// <summary>
@@ -526,12 +528,12 @@ public class AloeClient : MonoBehaviour
     private void HandleSetTargetPlayerAbleToEscape(string receivedAloeId, bool canEscape)
     {
         if (_aloeId != receivedAloeId) return;
-        if (_targetPlayer == null) return;
+        if (!_targetPlayer.IsNotNull) return;
         _targetPlayerCanEscape = canEscape;
-        _targetPlayer.inSpecialInteractAnimation = true;
+        _targetPlayer.Value.inSpecialInteractAnimation = true;
         
-        if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer) HUDManager.Instance.DisplayTip("You can escape!", "Mash the spacebar to escape from The Aloe!");
-        LogDebug($"Set {_targetPlayer.playerUsername} able to escape");
+        if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer.Value) HUDManager.Instance.DisplayTip("You can escape!", "Mash the spacebar to escape from The Aloe!");
+        LogDebug($"Set {_targetPlayer.Value.playerUsername} able to escape");
     }
 
     /// <summary>
@@ -544,6 +546,7 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
+        if (player == null) return;
         player.JumpToFearLevel(targetInsanity);
         player.IncreaseFearLevelOverTime(0.8f);
     }
@@ -556,15 +559,15 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         
-        if (_targetPlayer.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-        if (_targetPlayer.currentVoiceChatAudioSource == null) return;
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
         
-        LogDebug($"Muffling {_targetPlayer.playerUsername}");
-        _targetPlayer.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 5f;
-        OccludeAudio component = _targetPlayer.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
+        LogDebug($"Muffling {_targetPlayer.Value.playerUsername}");
+        _targetPlayer.Value.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 5f;
+        OccludeAudio component = _targetPlayer.Value.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
         component.overridingLowPass = true;
         component.lowPassOverride = 500f;
-        _targetPlayer.voiceMuffledByEnemy = true;
+        _targetPlayer.Value.voiceMuffledByEnemy = true;
     }
     
     /// <summary>
@@ -575,15 +578,15 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         
-        if (_targetPlayer.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-        if (_targetPlayer.currentVoiceChatAudioSource == null) return;
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
         
-        LogDebug($"UnMuffling {_targetPlayer.playerUsername}");
-        _targetPlayer.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 1f;
-        OccludeAudio component = _targetPlayer.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
+        LogDebug($"UnMuffling {_targetPlayer.Value.playerUsername}");
+        _targetPlayer.Value.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 1f;
+        OccludeAudio component = _targetPlayer.Value.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
         component.overridingLowPass = false;
         component.lowPassOverride = 20000f;
-        _targetPlayer.voiceMuffledByEnemy = false;
+        _targetPlayer.Value.voiceMuffledByEnemy = false;
     }
 
     /// <summary>
@@ -600,7 +603,7 @@ public class AloeClient : MonoBehaviour
         healingOrbEffect.SetFloat("Duration", totalHealingTime);
         
         // Make the vfx go to the target player
-        healingOrbEffect.gameObject.transform.position = _targetPlayer.lowerSpine.transform.position;
+        healingOrbEffect.gameObject.transform.position = _targetPlayer.Value.lowerSpine.transform.position;
         
         // Play the vfx and audio
         LogDebug("Playing HealingOrbVfx");
@@ -635,23 +638,10 @@ public class AloeClient : MonoBehaviour
             StartCoroutine(BlendLookAimConstraintWeight(lookAimRig.weight, endWeight, duration));
     }
     
-    /// <summary>
-    /// Changes the target player to the player with the given playerObjectId.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="targetPlayerClientId">The target player's object ID.</param>
-    private void HandleChangeTargetPlayer(string receivedAloeId, ulong targetPlayerClientId)
+    private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        if (_aloeId != receivedAloeId) return;
-        if (targetPlayerClientId == 69420)
-        {
-            _targetPlayer = null;
-            return;
-        }
-        
-        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[targetPlayerClientId];
-        _targetPlayer = player;
-        LogDebug($"Changed target player to {_targetPlayer.playerUsername}");
+        _targetPlayer.Value = newValue == 69420 ? null : StartOfRound.Instance.allPlayerScripts[newValue];
+        if (_targetPlayer.IsNotNull) LogDebug($"Changed target player to {_targetPlayer.Value?.playerUsername}");
     }
 
     /// <summary>
@@ -677,6 +667,7 @@ public class AloeClient : MonoBehaviour
         bodyRenderer.enabled = false;
         petalsRenderer.enabled = false;
         
+        healingOrbEffect.Stop();
         aloeVoiceSource.Stop(true);
         aloeFootstepsSource.Stop(true);
         
@@ -730,18 +721,6 @@ public class AloeClient : MonoBehaviour
     private static Color HSVToRGB(float h, float s, float v)
     {
         return Color.HSVToRGB(h, s, v);
-    }
-
-    /// <summary>
-    /// Sets a bool animation parameter to the given value
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="parameter">The name of the parameter in the animator.</param>
-    /// <param name="value">The bool value to set it to.</param>
-    private void HandleSetAnimationBool(string receivedAloeId, int parameter, bool value)
-    {
-        if (_aloeId != receivedAloeId) return;
-        animator.SetBool(parameter, value);
     }
 
     /// <summary>

@@ -1,0 +1,118 @@
+﻿using Biodiversity.Creatures.Aloe.Types;
+using GameNetcodeStuff;
+using UnityEngine;
+
+namespace Biodiversity.Creatures.Aloe.BehaviourStates;
+
+public class PassiveRoamingState : BehaviourState
+{
+    public PassiveRoamingState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    {
+        Transitions =
+        [
+            new TransitionToAvoidingPlayer(aloeServerInstance),
+            new TransitionToPassivelyStalkingPlayer(aloeServerInstance)
+        ];
+    }
+    
+    public override void OnStateEnter()
+    {
+        AloeServerInstance.agentMaxSpeed = 2f;
+        AloeServerInstance.agentMaxAcceleration = 2f;
+        AloeServerInstance.openDoorSpeedMultiplier = 2f;
+        AloeServerInstance.moveTowardsDestination = true;
+
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, false);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, (ulong)69420);
+
+        AloeServerInstance.reachedFavouriteSpotForRoaming = false;
+    }
+
+    public override void AIIntervalBehaviour()
+    {
+        // Check if the aloe has reached her favourite spot, so she can start roaming from that position
+        if (!AloeServerInstance.reachedFavouriteSpotForRoaming)
+        {
+            AloeServerInstance.LogDebug("Heading towards favourite position before roaming");
+            AloeServerInstance.SetDestinationToPosition(AloeServerInstance.favouriteSpot);
+            if (AloeServerInstance.roamMap.inProgress) AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
+            if (Vector3.Distance(AloeServerInstance.favouriteSpot, AloeServerInstance.transform.position) <= 4)
+                AloeServerInstance.reachedFavouriteSpotForRoaming = true;
+        }
+        else
+        {
+            if (!AloeServerInstance.roamMap.inProgress)
+            {
+                AloeServerInstance.StartSearch(AloeServerInstance.transform.position, AloeServerInstance.roamMap);
+                AloeServerInstance.LogDebug("Starting to roam map");
+            }
+        }
+    }
+
+    public override void OnStateExit()
+    {
+        if (AloeServerInstance.roamMap.inProgress) 
+            AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
+        
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 0.5f);
+    }
+
+    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance) 
+        : StateTransition(aloeServerInstance)
+    {
+        private PlayerControllerB _playerLookingAtAloe;
+        
+        public override bool ShouldTransitionBeTaken()
+        {
+            // Check if a player sees the aloe
+            _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition
+                (AloeServerInstance.eye.transform, logSource: AloeServerInstance.Mls);
+            return _playerLookingAtAloe != null;
+        }
+
+        public override AloeServer.States NextState()
+        {
+            return AloeServer.States.AvoidingPlayer;
+        }
+
+        public override void OnTransition()
+        {
+            AloeServerInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
+        }
+    }
+
+    private class TransitionToPassivelyStalkingPlayer(AloeServer aloeServerInstance)
+        : StateTransition(aloeServerInstance)
+    {
+        private PlayerControllerB _stalkablePlayer;
+
+        public override bool ShouldTransitionBeTaken()
+        {
+            // Check if a player has below "playerHealthThresholdForStalking" % of health
+            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            {
+                if (player.HasLineOfSightToPosition(AloeServerInstance.eye.transform.position))
+                    AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc
+                        (AloeServerInstance.aloeId, 0.25f, player.playerClientId);
+                    
+                if (!AloeServerInstance.PlayerIsStalkable(player)) continue;
+                _stalkablePlayer = player;
+                return true;
+            }
+
+            return false;
+        }
+
+        public override AloeServer.States NextState()
+        {
+            return AloeServer.States.PassivelyStalkingPlayer;
+        }
+
+        public override void OnTransition()
+        {
+            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, _stalkablePlayer.actualClientId);
+        }
+    }
+}

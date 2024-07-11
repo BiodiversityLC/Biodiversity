@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using Biodiversity.Creatures.Aloe.SerializableTypes;
+using Biodiversity.Creatures.Aloe.Types;
 using GameNetcodeStuff;
 using UnityEngine;
 

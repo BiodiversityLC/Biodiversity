@@ -10,40 +10,37 @@ public class AloeNetcodeController : NetworkBehaviour
     private string _aloeId;
 
     public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
+    public readonly NetworkVariable<bool> HasFinishedSpawnAnimation = new();
+    public readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();
+    public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
+    public readonly NetworkVariable<bool> ShouldHaveDarkSkin = new();
+
+    public readonly NetworkVariable<bool> AnimationParamCrawling = new();
+    public readonly NetworkVariable<bool> AnimationParamHealing = new();
+    public readonly NetworkVariable<bool> AnimationParamStunned = new();
 
     public event Action<string> OnSyncAloeId;
     public event Action<string> OnInitializeConfigValues;
-    public event Action<string, int, bool> OnSetAnimationBool;
     public event Action<string, int> OnSetAnimationTrigger;
     public event Action<string, float, ulong> OnIncreasePlayerFearLevel;
     public event Action<string> OnMuffleTargetPlayerVoice;
     public event Action<string> OnUnMuffleTargetPlayerVoice;
-    public event Action<string, ulong> OnChangeTargetPlayer;
     public event Action<string, int> OnHealTargetPlayerByAmount;
     public event Action<string> OnTargetPlayerEscaped;
     public event Action<string> OnEnterDeathState;
     public event Action<string, bool> OnSetTargetPlayerInCaptivity;
     public event Action<string, bool> OnSetTargetPlayerAbleToEscape;
     public event Action<string, float> OnPlayHealingVfx;
-    public event Action<string, bool> OnChangeAloeSkinColour;
     public event Action<string, AloeClient.AudioClipTypes, int, bool> OnPlayAudioClipType;
     public event Action<string, ulong> OnSnapPlayerNeck;
     public event Action<string> OnGrabTargetPlayer;
     public event Action<string, float, float> OnChangeLookAimConstraintWeight;
-    public event Action<string> OnSpottedAnimationComplete;
     public event Action<string> OnTransitionToRunningForwardsAndCarryingPlayer;
     public event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
-    public event Action<string> OnSpawnAnimationComplete;
 
     private void Awake()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
-    }
-
-    [ServerRpc]
-    public void SpawnAnimationCompleteServerRpc(string receivedAloeId)
-    {
-        OnSpawnAnimationComplete?.Invoke(receivedAloeId);
     }
 
     [ClientRpc]
@@ -57,12 +54,6 @@ public class AloeNetcodeController : NetworkBehaviour
     public void TransitionToRunningForwardsAndCarryingPlayerClientRpc(string receivedAloeId)
     {
         OnTransitionToRunningForwardsAndCarryingPlayer?.Invoke(receivedAloeId);
-    }
-
-    [ServerRpc]
-    public void SpottedAnimationCompleteServerRpc(string receivedAloeId)
-    {
-        OnSpottedAnimationComplete?.Invoke(receivedAloeId);
     }
 
     [ClientRpc]
@@ -132,12 +123,6 @@ public class AloeNetcodeController : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void ChangeAloeSkinColourClientRpc(string receivedAloeId, bool toDark)
-    {
-        OnChangeAloeSkinColour?.Invoke(receivedAloeId, toDark);
-    }
-
-    [ClientRpc]
     public void PlayHealingVfxClientRpc(string receivedAloeId, float totalHealingTime)
     {
         OnPlayHealingVfx?.Invoke(receivedAloeId, totalHealingTime);
@@ -174,12 +159,6 @@ public class AloeNetcodeController : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void ChangeTargetPlayerClientRpc(string receivedAloeId, ulong targetPlayerObjectId)
-    {
-        OnChangeTargetPlayer?.Invoke(receivedAloeId, targetPlayerObjectId);
-    }
-
-    [ClientRpc]
     public void UnMuffleTargetPlayerVoiceClientRpc(string receivedAloeId)
     {
         OnUnMuffleTargetPlayerVoice?.Invoke(receivedAloeId);
@@ -207,18 +186,6 @@ public class AloeNetcodeController : NetworkBehaviour
     public void SetAnimationTriggerClientRpc(string receivedAloeId, int animationId)
     {
         OnSetAnimationTrigger?.Invoke(receivedAloeId, animationId);
-    }
-
-    /// <summary>
-    /// Invokes the change animation parameter event
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
-    /// <param name="value">The bool value to change to</param>
-    [ClientRpc]
-    public void SetAnimationBoolClientRpc(string receivedAloeId, int animationId, bool value)
-    {
-        OnSetAnimationBool?.Invoke(receivedAloeId, animationId, value);
     }
 
     /// <summary>

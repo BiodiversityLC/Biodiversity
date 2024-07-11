@@ -1,7 +1,7 @@
 ﻿using Unity.Netcode;
 using UnityEngine;
 
-namespace Biodiversity.Creatures.Aloe.CustomStateMachineBehaviours;
+namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
 public class DragPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
 {
@@ -9,7 +9,7 @@ public class DragPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
     {
         if (NetcodeController == null)
         {
-            Mls.LogError("Netcode Controller is null, cannot call RPC to complete grab animation logic.");
+            Mls.LogError("Netcode Controller is null, cannot change network variable to complete grab animation logic.");
             return;
         }
         

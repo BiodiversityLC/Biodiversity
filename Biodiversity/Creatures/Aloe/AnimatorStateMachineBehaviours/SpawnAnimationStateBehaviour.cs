@@ -1,7 +1,7 @@
 ﻿using Unity.Netcode;
 using UnityEngine;
 
-namespace Biodiversity.Creatures.Aloe.CustomStateMachineBehaviours;
+namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
 public class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
 {
@@ -10,15 +10,15 @@ public class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         animator.SetBool(Spawning, false);
-
+        
         if (NetcodeController == null)
         {
-            Mls.LogError("Netcode Controller is null, cannot call RPC to switch to passive roaming after spawn animation.");
+            Mls.LogError("Netcode Controller is null, cannot use network variable to switch to passive roaming after spawn animation.");
             return;
         }
         
         if (!NetworkManager.Singleton.IsServer || !NetcodeController.IsOwner) return;
-        LogDebug("Spawn animation complete, switching to passive roaming.");
-        NetcodeController.SpawnAnimationCompleteServerRpc(AloeId);
+        LogDebug("Spawn animation complete.");
+        NetcodeController.HasFinishedSpawnAnimation.Value = true;
     }
 }
