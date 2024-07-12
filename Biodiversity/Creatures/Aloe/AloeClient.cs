@@ -101,12 +101,12 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float smoothLookTargetPositionTime = 0.3f;
     
     private readonly NullableObject<PlayerControllerB> _targetPlayer = new();
-    private PlayerControllerB _visiblePlayer;
 
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
     
     private Vector3 _agentLastPosition;
     private Vector3 _lookTargetVelocity;
+    private Vector3 _lastReceivedLookTargetPosition;
 
     private Coroutine _blendLookAimConstraintWeightCoroutine;
     private Coroutine _changeSkinColourCoroutine;
@@ -116,10 +116,10 @@ public class AloeClient : MonoBehaviour
 
     private float _currentEscapeChargeValue;
     private float _agentCurrentSpeed;
-    private float _viewWidth;
-    
+    private float _lastReceivedNewLookTargetPositionTime;
+    private const float LookTargetPositionLerpTime = 0.1f;
+
     private int _currentBehaviourStateIndex;
-    private int _viewRange;
 
     /// <summary>
     /// Subscribe to the needed network events.
@@ -147,6 +147,7 @@ public class AloeClient : MonoBehaviour
 
         netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
         netcodeController.ShouldHaveDarkSkin.OnValueChanged += HandleChangeAloeSkinColour;
+        if (!netcodeController.IsOwner) netcodeController.LookTargetPosition.OnValueChanged += HandleLookTargetPositionChanged;
     }
 
     /// <summary>
@@ -175,6 +176,7 @@ public class AloeClient : MonoBehaviour
         
         netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
         netcodeController.ShouldHaveDarkSkin.OnValueChanged -= HandleChangeAloeSkinColour;
+        if (!netcodeController.IsOwner) netcodeController.LookTargetPosition.OnValueChanged -= HandleLookTargetPositionChanged;
     }
 
     private void Awake()
@@ -187,6 +189,8 @@ public class AloeClient : MonoBehaviour
     {
         _propertyBlock = new MaterialPropertyBlock();
         lookAimRig.weight = 0f;
+        _offset = playerGrabTarget.localPosition;
+        _initialGrabTargetPosition = playerGrabTarget.localPosition;
         
         AddStateMachineBehaviours(animator);
         
@@ -244,40 +248,80 @@ public class AloeClient : MonoBehaviour
             }
         }
     }
-    
+
+    private Vector3 _offset = Vector3.zero; // new(1, 1.2f, 0.6f); // -0.8f, 1.3f, -0.5f
+    private Vector3 _initialGrabTargetPosition;
+
     private void LateUpdate()
     {
         // Make the look target aim at a player
         {
-            List<PlayerControllerB> playersInFov =
-                AloeUtils.GetAllVisiblePlayersFromEye(eye, _viewWidth, _viewRange, logSource: _mls);
- 
-            Vector3 lookTargetPosition;
-            if (playersInFov.Count == 0)
+            Vector3 newPosition;
+            if (netcodeController.IsOwner)
             {
-                // Todo: replace this
-                lookTargetPosition = eye.position + eye.forward * 10.0f;
-            }
-            else if (_targetPlayer.IsNotNull && playersInFov.Any(player => player == _targetPlayer.Value))
-            {
-                lookTargetPosition = _targetPlayer.Value.gameplayCamera.transform.position;
+                newPosition = netcodeController.LookTargetPosition.Value;
             }
             else
             {
-                _visiblePlayer = AloeUtils.GetClosestPlayerFromList(playersInFov, eye, _visiblePlayer, logSource: _mls);
-                lookTargetPosition = _visiblePlayer.gameplayCamera.transform.position;
+                float timeSinceLastUpdate = Time.time - _lastReceivedNewLookTargetPositionTime;
+                float t = timeSinceLastUpdate / LookTargetPositionLerpTime;
+
+                newPosition = Vector3.Lerp(transform.position, _lastReceivedLookTargetPosition, t);
             }
-        
-            AloeUtils.SmoothMoveTransformTo(lookTarget, lookTargetPosition, smoothLookTargetPositionTime, ref _lookTargetVelocity);
+            AloeUtils.SmoothMoveTransformTo(lookTarget, newPosition, smoothLookTargetPositionTime, ref _lookTargetVelocity);
         }
 
         // Animate the real target player's body
         {
+            const float moveAmount = 0.1f;
+            
             if (_targetPlayerInCaptivity && _targetPlayer.IsNotNull && _targetPlayer.Value.inSpecialInteractAnimation)
             {
-                _targetPlayer.Value.transform.position = playerGrabTarget.position;
+                _targetPlayer.Value.transform.position = playerGrabTarget.position + _offset;
                 _targetPlayer.Value.transform.rotation = playerGrabTarget.rotation;
+                healingOrbEffect.gameObject.transform.position = _targetPlayer.Value.lowerSpine.transform.position;
             }
+            
+            // Use the Keyboard.current API to detect key presses for movement
+            if (Keyboard.current.numpad8Key.wasPressedThisFrame)
+            {
+                LogDebug("moved");
+                _offset += Vector3.up * moveAmount;
+            }
+            if (Keyboard.current.numpad2Key.wasPressedThisFrame)
+            {
+                LogDebug("moved");
+                _offset -= Vector3.up * moveAmount;
+            }
+            if (Keyboard.current.numpad4Key.wasPressedThisFrame)
+            {
+                LogDebug("moved");
+                _offset -= Vector3.right * moveAmount;
+            }
+            if (Keyboard.current.numpad6Key.wasPressedThisFrame)
+            {
+                LogDebug("moved");
+                _offset += Vector3.right * moveAmount;
+            }
+            if (Keyboard.current.numpad7Key.wasPressedThisFrame)
+            {
+                LogDebug("moved");
+                _offset -= Vector3.forward * moveAmount;
+            }
+            if (Keyboard.current.numpad9Key.wasPressedThisFrame)
+            {
+                LogDebug("moved");
+                _offset += Vector3.forward * moveAmount;
+            }
+        
+            // Reset position to original local position
+            if (Keyboard.current.numpad5Key.wasPressedThisFrame)
+            {
+                LogDebug("reset");
+                _offset = Vector3.zero;
+                playerGrabTarget.localPosition = _initialGrabTargetPosition;
+            }
+            
         }
         
     }
@@ -297,31 +341,6 @@ public class AloeClient : MonoBehaviour
         //player.inSpecialInteractAnimation = true;
         
         player.KillPlayer(Vector3.zero, true, CauseOfDeath.Strangulation);
-    }
-
-    /// <summary>
-    /// Blends the look multi-aim constraint weight parameter over a specific duration
-    /// </summary>
-    /// <param name="startWeight">The start weight of the blend.</param>
-    /// <param name="endWeight">The end weight of the blend.</param>
-    /// <param name="duration">The duration of the blend.</param>
-    /// <returns></returns>
-    private IEnumerator BlendLookAimConstraintWeight(float startWeight, float endWeight, float duration)
-    {
-        float elapsed = 0f;
-        
-        // Exit early if the start and end weights are the same
-        if (Mathf.Approximately(startWeight, endWeight)) yield break;
-
-        while (elapsed < duration)
-        {
-            lookAimRig.weight = Mathf.Lerp(startWeight, endWeight, elapsed / duration);
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        lookAimRig.weight = endWeight;
-        _blendLookAimConstraintWeightCoroutine = null;
     }
     
     /// <summary>
@@ -364,7 +383,7 @@ public class AloeClient : MonoBehaviour
     {
         if (bodyRenderer == null)
         {
-            LogDebug("Body renderer is null, cannot change aloe skin colour");
+            _mls.LogError("Body renderer is null, cannot change aloe skin colour");
             return;
         }
         
@@ -389,6 +408,8 @@ public class AloeClient : MonoBehaviour
         Color currentColour = bodyRenderer.material.GetColor(BaseColour);
         RGBToHSV(currentColour, out float h, out float s, out float v);
         float endV = toDark ? 0.5f : 1f;
+        
+        // Todo: add code that exits early if the skin colour is already the desired colour
 
         while (timeElapsed < skinMetallicTransitionTime)
         {
@@ -409,6 +430,31 @@ public class AloeClient : MonoBehaviour
         _propertyBlock.SetColor(BaseColour, HSVToRGB(h, s, endV));
         bodyRenderer.SetPropertyBlock(_propertyBlock);
         _changeSkinColourCoroutine = null;
+    }
+    
+    /// <summary>
+    /// Blends the look multi-aim constraint weight parameter over a specific duration
+    /// </summary>
+    /// <param name="startWeight">The start weight of the blend.</param>
+    /// <param name="endWeight">The end weight of the blend.</param>
+    /// <param name="duration">The duration of the blend.</param>
+    /// <returns></returns>
+    private IEnumerator BlendLookAimConstraintWeight(float startWeight, float endWeight, float duration)
+    {
+        float elapsed = 0f;
+        
+        // Exit early if the start and end weights are the same
+        if (Mathf.Approximately(startWeight, endWeight)) yield break;
+
+        while (elapsed < duration)
+        {
+            lookAimRig.weight = Mathf.Lerp(startWeight, endWeight, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        lookAimRig.weight = endWeight;
+        _blendLookAimConstraintWeightCoroutine = null;
     }
 
     /// <summary>
@@ -631,6 +677,7 @@ public class AloeClient : MonoBehaviour
     /// <param name="duration">The duration of the blend.</param>
     private void HandleChangeLookAimConstraintWeight(string receivedAloeId, float endWeight, float duration = -1f)
     {
+        return;
         if (_aloeId != receivedAloeId) return;
         if (duration < 0f) duration = lookBlendDuration;
         LogDebug($"Changing look aim constraint weight from {lookAimRig.weight} to {endWeight} in {duration} seconds blend time.");
@@ -643,6 +690,12 @@ public class AloeClient : MonoBehaviour
     {
         _targetPlayer.Value = newValue == 69420 ? null : StartOfRound.Instance.allPlayerScripts[newValue];
         if (_targetPlayer.IsNotNull) LogDebug($"Changed target player to {_targetPlayer.Value?.playerUsername}");
+    }
+
+    private void HandleLookTargetPositionChanged(Vector3 oldValue, Vector3 newValue)
+    {
+        _lastReceivedLookTargetPosition = newValue;
+        _lastReceivedNewLookTargetPositionTime = Time.time;
     }
 
     /// <summary>
@@ -673,7 +726,8 @@ public class AloeClient : MonoBehaviour
         aloeFootstepsSource.Stop(true);
         
         Destroy(scanNode.gameObject);
-        StartCoroutine(DestroyAloeObjectAfterDuration(poofParticleSystem.main.duration));
+        if (netcodeController.IsOwner) 
+            StartCoroutine(DestroyAloeObjectAfterDuration(poofParticleSystem.main.duration));
     }
     
     /// <summary>
@@ -743,9 +797,7 @@ public class AloeClient : MonoBehaviour
     private void HandleInitializeConfigValues(string receivedAloeId)
     {
         if (_aloeId != receivedAloeId) return;
-
-        _viewRange = Config.ViewRange;
-        _viewWidth = Config.ViewWidth;
+        
         escapeChargePerPress = Config.EscapeChargePerPress;
         escapeChargeDecayRate = Config.EscapeChargeDecayRate;
         escapeChargeThreshold = Config.EscapeChargeThreshold;

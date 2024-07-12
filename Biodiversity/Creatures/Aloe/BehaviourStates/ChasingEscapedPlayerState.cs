@@ -75,7 +75,9 @@ public class ChasingEscapedPlayerState : BehaviourState
                     AloeServerInstance.transform.position) <= 1.5f)) return false;
             
             AloeServerInstance.LogDebug("Player is close to aloe! Kidnapping him now");
-            // Todo: add grab animation
+            AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(
+                AloeServerInstance.aloeId,
+                AloeClient.Grab);
             return true;
 
         }

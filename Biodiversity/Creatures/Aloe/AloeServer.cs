@@ -25,13 +25,13 @@ public class AloeServer : BiodiverseAI
     
     [Header("AI and Pathfinding")] [Space(5f)]
     public AISearchRoutine roamMap;
-    
-    // The serialize field variables are pretty much options that can be edited with configs
+
     [SerializeField] private Vector2 amountRangeOfNodesToPathToInSearchRoutine = new(3, 8);
     [SerializeField] private float maxRoamingRadius = 50f;
     [SerializeField] private int proximityAwareness = 3;
     [SerializeField] private int playerHealthThresholdForStalking = 90;
     [SerializeField] private int playerHealthThresholdForHealing = 45;
+    
     public float ViewWidth { get; private set; } = 115f;
     public int ViewRange { get; private set; } = 80;
     public float PassiveStalkStaredownDistance { get; private set; } = 10f;
@@ -82,7 +82,7 @@ public class AloeServer : BiodiverseAI
         { typeof(CuddlingPlayerState), States.CuddlingPlayer },
         { typeof(ChasingEscapedPlayerState), States.ChasingEscapedPlayer },
         { typeof(AttackingPlayerState), States.AttackingPlayer },
-        //{ typeof(DeadState), States.Dead },
+        { typeof(DeadState), States.Dead },
     };
 
     public enum States
@@ -451,8 +451,6 @@ public class AloeServer : BiodiverseAI
         }
         else
         {
-            netcodeController.EnterDeathStateClientRpc(aloeId);
-            KillEnemyServerRpc(false);
             SwitchBehaviourState(States.Dead);
         }
     }
@@ -626,15 +624,9 @@ public class AloeServer : BiodiverseAI
             (_currentState.GetStateType() == States.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
             _currentState.GetStateType() == States.Dead ||
             _currentState.GetStateType() == States.Spawning
-           // || currentBehaviourStateIndex == (int)States.KidnappingPlayer
             )
         {
             agent.speed = 0;
-            agent.acceleration = agentMaxAcceleration;
-        }
-        else if (inGrabAnimation)
-        {
-            agent.speed = 1;
             agent.acceleration = agentMaxAcceleration;
         }
         else

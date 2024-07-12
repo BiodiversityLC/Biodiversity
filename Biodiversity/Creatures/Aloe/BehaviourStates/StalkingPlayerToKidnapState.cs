@@ -7,6 +7,12 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 public class StalkingPlayerToKidnapState : BehaviourState
 {
     private bool _isPlayerReachable;
+
+    private const float GrabAnimationAgentMaxSpeed = 2f;
+    private const float NormalAgentMaxSpeed = 5f;
+    
+    private const float GrabAnimationAgentMaxAcceleration = 200f;
+    private const float NormalAgentMaxAcceleration = 50f;
     
     public StalkingPlayerToKidnapState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
@@ -20,8 +26,8 @@ public class StalkingPlayerToKidnapState : BehaviourState
     public override void OnStateEnter()
     {
         base.OnStateEnter();
-        AloeServerInstance.agentMaxSpeed = 5f;
-        AloeServerInstance.agentMaxAcceleration = 50f;
+        AloeServerInstance.agentMaxSpeed = NormalAgentMaxSpeed;
+        AloeServerInstance.agentMaxAcceleration = NormalAgentMaxAcceleration;
         AloeServerInstance.inGrabAnimation = false;
         AloeServerInstance.movingTowardsTargetPlayer = false;
         AloeServerInstance.openDoorSpeedMultiplier = 4f;
@@ -32,14 +38,23 @@ public class StalkingPlayerToKidnapState : BehaviourState
 
     public override void AIIntervalBehaviour()
     {
+        _isPlayerReachable = true;
         if (AloeServerInstance.inGrabAnimation)
         {
-            AloeServerInstance.movingTowardsTargetPlayer = 
-                Vector3.Distance(AloeServerInstance.transform.position, 
-                    AloeServerInstance.ActualTargetPlayer.Value.transform.position) > 2f;
+            AloeServerInstance.agentMaxSpeed = GrabAnimationAgentMaxSpeed;
+            AloeServerInstance.agentMaxAcceleration = GrabAnimationAgentMaxAcceleration;
+            AloeServerInstance.agent.acceleration = GrabAnimationAgentMaxAcceleration;
+
+            float distanceToGrabbingPlayer = Vector3.Distance(AloeServerInstance.transform.position,
+                AloeServerInstance.ActualTargetPlayer.Value.transform.position);
+            AloeServerInstance.movingTowardsTargetPlayer = distanceToGrabbingPlayer > 2f;
+            AloeServerInstance.LogDebug($"Distance to grabbing player: {distanceToGrabbingPlayer}");
         }
         else
         {
+            AloeServerInstance.agentMaxSpeed = NormalAgentMaxSpeed;
+            AloeServerInstance.agentMaxAcceleration = NormalAgentMaxAcceleration;
+            
             if (Vector3.Distance(AloeServerInstance.transform.position, 
                     AloeServerInstance.ActualTargetPlayer.Value.transform.position) <= 2.5f && 
                 !AloeServerInstance.inGrabAnimation)
@@ -82,8 +97,6 @@ public class StalkingPlayerToKidnapState : BehaviourState
                     if (pathStatus == AloeUtils.PathStatus.Invalid) AloeServerInstance.moveTowardsDestination = false;
                     else AloeServerInstance.SetDestinationToPosition(closestNodeToPlayer.position);
                 }
-                
-                _isPlayerReachable = true;
             }
             else
             {

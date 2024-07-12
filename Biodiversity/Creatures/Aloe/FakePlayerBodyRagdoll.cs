@@ -39,8 +39,6 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     public List<BodyPart> bodyParts = [];
 
-    private Vector3 _forceDirection;
-
     public float maxVelocity = 0.4f;
     public float speedMultiplier = 14f;
 
@@ -57,6 +55,13 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     private float _moveToExactPositionTimer;
     private float _restBodyPartsTimer;
+    private float _lastReceivedTime;
+    private float _positionLerpTime = 0.1f;
+    
+    private Vector3 _forceDirection;
+    private Vector3 _lastReceivedPosition;
+
+    private Quaternion _lastReceivedRotation;
     
     private readonly NetworkVariable<Vector3> _networkPosition = new();
     private readonly NetworkVariable<Quaternion> _networkRotation = new();
@@ -65,6 +70,20 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     {
         _ragdollId = Guid.NewGuid().ToString();
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Player Ragdoll {_ragdollId}");
+    }
+
+    private void OnEnable()
+    {
+        if (IsOwner) return;
+        _networkPosition.OnValueChanged += OnNetworkPositionChanged;
+        _networkRotation.OnValueChanged += OnNetworkRotationChanged;
+    }
+
+    private void OnDisable()
+    {
+        if (IsOwner) return;
+        _networkPosition.OnValueChanged -= OnNetworkPositionChanged;
+        _networkRotation.OnValueChanged -= OnNetworkRotationChanged;
     }
 
     private void Start()
@@ -102,7 +121,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
             }
         }
 
-        // Todo: use interpolation/extrapolation to reduce network load
+        // Use interpolation to reduce network load
         if (IsOwner)
         {
             _networkPosition.Value = transform.position;
@@ -110,8 +129,11 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
         }
         else
         {
-            transform.position = _networkPosition.Value;
-            transform.rotation = _networkRotation.Value;
+            float timeSinceLastUpdate = Time.time - _lastReceivedTime;
+            float t = timeSinceLastUpdate / _positionLerpTime;
+
+            transform.position = Vector3.Lerp(transform.position, _lastReceivedPosition, t);
+            transform.rotation = Quaternion.Slerp(transform.rotation, _lastReceivedRotation, t);
         }
     }
 
@@ -251,6 +273,18 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
         }
 
         bodyPart.limbRigidbody.isKinematic = false;
+    }
+    
+    private void OnNetworkPositionChanged(Vector3 oldPosition, Vector3 newPosition)
+    {
+        _lastReceivedPosition = newPosition;
+        _lastReceivedTime = Time.time;
+    }
+
+    private void OnNetworkRotationChanged(Quaternion oldRotation, Quaternion newRotation)
+    {
+        _lastReceivedRotation = newRotation;
+        _lastReceivedTime = Time.time;
     }
 
     // public void SetRagdollPositionSafely(Vector3 newPosition, bool disableSpecialEffects = false)

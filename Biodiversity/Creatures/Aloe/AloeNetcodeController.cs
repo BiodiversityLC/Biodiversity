@@ -13,10 +13,11 @@ public class AloeNetcodeController : NetworkBehaviour
     private ManualLogSource _mls;
     private string _aloeId;
 
+    [HideInInspector] public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
     [HideInInspector] public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
     [HideInInspector] public readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();
-    [HideInInspector] public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
     [HideInInspector] public readonly NetworkVariable<bool> ShouldHaveDarkSkin = new();
+    [HideInInspector] public readonly NetworkVariable<Vector3> LookTargetPosition = new();
 
     [HideInInspector] public readonly NetworkVariable<bool> AnimationParamCrawling = new();
     [HideInInspector] public readonly NetworkVariable<bool> AnimationParamHealing = new();
