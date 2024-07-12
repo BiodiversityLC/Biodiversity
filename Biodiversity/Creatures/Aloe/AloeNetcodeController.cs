@@ -1,23 +1,26 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using BepInEx.Logging;
 using Unity.Netcode;
+using UnityEngine;
+using Logger = BepInEx.Logging.Logger;
 
 namespace Biodiversity.Creatures.Aloe;
 
+[SuppressMessage("ReSharper", "Unity.RedundantHideInInspectorAttribute")]
 public class AloeNetcodeController : NetworkBehaviour
 {
     private ManualLogSource _mls;
     private string _aloeId;
 
-    public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
-    public readonly NetworkVariable<bool> HasFinishedSpawnAnimation = new();
-    public readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();
-    public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
-    public readonly NetworkVariable<bool> ShouldHaveDarkSkin = new();
+    [HideInInspector] public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
+    [HideInInspector] public readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();
+    [HideInInspector] public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
+    [HideInInspector] public readonly NetworkVariable<bool> ShouldHaveDarkSkin = new();
 
-    public readonly NetworkVariable<bool> AnimationParamCrawling = new();
-    public readonly NetworkVariable<bool> AnimationParamHealing = new();
-    public readonly NetworkVariable<bool> AnimationParamStunned = new();
+    [HideInInspector] public readonly NetworkVariable<bool> AnimationParamCrawling = new();
+    [HideInInspector] public readonly NetworkVariable<bool> AnimationParamHealing = new();
+    [HideInInspector] public readonly NetworkVariable<bool> AnimationParamStunned = new();
 
     public event Action<string> OnSyncAloeId;
     public event Action<string> OnInitializeConfigValues;

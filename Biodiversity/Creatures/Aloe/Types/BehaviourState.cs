@@ -1,22 +1,31 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 namespace Biodiversity.Creatures.Aloe.Types;
 
-public abstract class BehaviourState(AloeServer aloeServerInstance)
+public abstract class BehaviourState(AloeServer aloeServerInstance, AloeServer.States stateType)
 {
     protected readonly AloeServer AloeServerInstance = aloeServerInstance;
+
     public List<StateTransition> Transitions = [];
 
-    public virtual void OnStateEnter(){}
+    public virtual void OnStateEnter()
+    {
+        AloeServerInstance.LogDebug($"OnStateEnter called for {stateType}.");
+    }
+    
     public virtual void UpdateBehaviour(){}
+    
     public virtual void LateUpdateBehaviour(){}
+    
     public virtual void AIIntervalBehaviour(){}
-    public virtual void OnStateExit(){}
+
+    public virtual void OnStateExit()
+    {
+        AloeServerInstance.LogDebug($"OnStateExit called for {stateType}.");
+    }
 
     public AloeServer.States GetStateType()
     {
-        return AloeServerInstance.StateDictionary
-            .FirstOrDefault(x => x.Value == this).Key;
+        return stateType;
     }
 }

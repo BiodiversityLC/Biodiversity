@@ -10,6 +10,7 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
     protected string AloeId;
     
     protected AloeNetcodeController NetcodeController;
+    protected AloeServer AloeServer;
 
     private bool _networkEventsSubscribed;
 
@@ -23,9 +24,10 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
         UnsubscribeToNetworkEvents();
     }
 
-    public void Initialize(AloeNetcodeController receivedNetcodeController)
+    public void Initialize(AloeNetcodeController receivedNetcodeController, AloeServer aloeServer)
     {
         NetcodeController = receivedNetcodeController;
+        AloeServer = aloeServer;
         SubscribeToNetworkEvents();
     }
 

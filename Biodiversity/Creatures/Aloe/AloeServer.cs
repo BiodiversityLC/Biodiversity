@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types;
@@ -26,23 +27,24 @@ public class AloeServer : BiodiverseAI
     public AISearchRoutine roamMap;
     
     // The serialize field variables are pretty much options that can be edited with configs
+    [SerializeField] private Vector2 amountRangeOfNodesToPathToInSearchRoutine = new(3, 8);
     [SerializeField] private float maxRoamingRadius = 50f;
-    public float viewWidth = 115f;
-    public int viewRange = 80;
     [SerializeField] private int proximityAwareness = 3;
     [SerializeField] private int playerHealthThresholdForStalking = 90;
     [SerializeField] private int playerHealthThresholdForHealing = 45;
-    public float passiveStalkStaredownDistance = 10f;
-    public float timeItTakesToFullyHealPlayer = 15f;
-    [SerializeField] private Vector2 amountRangeOfNodesToPathToInSearchRoutine = new(3, 8);
+    public float ViewWidth { get; private set; } = 115f;
+    public int ViewRange { get; private set; } = 80;
+    public float PassiveStalkStaredownDistance { get; private set; } = 10f;
+    public float TimeItTakesToFullyHealPlayer { get; private set; } = 15f;
+    public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 2f;
     
 #pragma warning disable 0649
     [Header("Controllers")] [Space(5f)] 
     public AloeNetcodeController netcodeController;
 #pragma warning restore 0649
 
-    [HideInInspector] public Dictionary<States, BehaviourState> StateDictionary = [];
     [HideInInspector] public BehaviourState PreviousState;
+    private Dictionary<States, BehaviourState> _stateDictionary = [];
     private BehaviourState _currentState;
 
     [HideInInspector] public Vector3 favouriteSpot;
@@ -67,6 +69,21 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public readonly NullableObject<PlayerControllerB> ActualTargetPlayer = new();
     [HideInInspector] public readonly NullableObject<PlayerControllerB> AvoidingPlayer = new();
     [HideInInspector] public PlayerControllerB backupTargetPlayer;
+    
+    private static readonly Dictionary<Type, States> StateTypeMapping = new()
+    {
+        { typeof(SpawningState), States.Spawning },
+        { typeof(PassiveRoamingState), States.PassiveRoaming },
+        { typeof(AvoidingPlayerState), States.AvoidingPlayer },
+        { typeof(PassivelyStalkingPlayerState), States.PassivelyStalkingPlayer },
+        { typeof(StalkingPlayerToKidnapState), States.StalkingPlayerToKidnap },
+        { typeof(KidnappingPlayerState), States.KidnappingPlayer },
+        { typeof(HealingPlayerState), States.HealingPlayer },
+        { typeof(CuddlingPlayerState), States.CuddlingPlayer },
+        { typeof(ChasingEscapedPlayerState), States.ChasingEscapedPlayer },
+        { typeof(AttackingPlayerState), States.AttackingPlayer },
+        //{ typeof(DeadState), States.Dead },
+    };
 
     public enum States
     {
@@ -78,7 +95,7 @@ public class AloeServer : BiodiverseAI
         KidnappingPlayer,
         HealingPlayer,
         CuddlingPlayer,
-        ChasingEscapedPlayer,
+        ChasingEscapedPlayer, 
         AttackingPlayer,
         Dead,
         Invalid,
@@ -124,24 +141,9 @@ public class AloeServer : BiodiverseAI
         netcodeController.SyncAloeIdClientRpc(aloeId);
         agent.updateRotation = false;
 
-        StateDictionary = new Dictionary<States, BehaviourState>
-        {
-            { States.Spawning, new SpawningState(this) },
-            { States.PassiveRoaming, new PassiveRoamingState(this) },
-            { States.AvoidingPlayer, new AvoidingPlayerState(this) },
-            { States.PassivelyStalkingPlayer, new PassivelyStalkingPlayerState(this) },
-            { States.StalkingPlayerToKidnap, new StalkingPlayerToKidnapState(this) },
-            { States.KidnappingPlayer, new KidnappingPlayerState(this) },
-            { States.HealingPlayer, new HealingPlayerState(this) },
-            { States.CuddlingPlayer, new CuddlingPlayerState(this) },
-            { States.ChasingEscapedPlayer, new ChasingEscapedPlayerState(this) },
-            { States.AttackingPlayer, new AttackingPlayerState(this) },
-        };
-
-        InitializeConfigValues();
-        PickFavouriteSpot();
-
-        _currentState = StateDictionary[States.Spawning];
+        ConstructStateDictionary();
+        
+        _currentState = _stateDictionary[States.Spawning];
         _currentState.OnStateEnter();
         
         LogDebug("Aloe Spawned!");
@@ -154,7 +156,7 @@ public class AloeServer : BiodiverseAI
     {
         base.Update();
         if (!IsServer) return;
-        if (isEnemyDead) return;
+        if (isEnemyDead || StartOfRound.Instance.livingPlayers == 0) return;
 
         _takeDamageCooldown -= Time.deltaTime;
         
@@ -171,14 +173,7 @@ public class AloeServer : BiodiverseAI
             return;
         }
         
-        _currentState.UpdateBehaviour();
-
-        foreach (StateTransition transition in _currentState.Transitions.Where(transition => transition.ShouldTransitionBeTaken()))
-        {
-            transition.OnTransition();
-            SwitchBehaviourState(transition.NextState());
-            return;
-        }
+        _currentState?.UpdateBehaviour();
     }
     
     /// <summary>
@@ -189,39 +184,101 @@ public class AloeServer : BiodiverseAI
     {
         base.DoAIInterval();
         if (!IsServer) return;
-        if (isEnemyDead) return;
+        if (isEnemyDead || StartOfRound.Instance.livingPlayers == 0) return;
+        if (stunNormalizedTimer > 0.0f) return;
         
-        _currentState.AIIntervalBehaviour();
+        _currentState?.AIIntervalBehaviour();
+        
+        // Check for transitions
+        foreach (StateTransition transition in (_currentState?.Transitions ?? []).Where(transition => transition.ShouldTransitionBeTaken()))
+        {
+            transition.OnTransition();
+            SwitchBehaviourState(transition.NextState());
+            break;
+        }
     }
 
     private void LateUpdate()
     {
         if (!IsServer) return;
-        if (isEnemyDead) return;
+        if (isEnemyDead || StartOfRound.Instance.livingPlayers == 0) return;
+        if (stunNormalizedTimer > 0.0f) return;
         
-        _currentState.LateUpdateBehaviour();
+        _currentState?.LateUpdateBehaviour();
     }
 
-    public void SwitchBehaviourState(States newState)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="newState"></param>
+    /// <param name="stateTransition">Used to call an OnTransition() function in the state class</param>
+    public void SwitchBehaviourState(States newState, StateTransition stateTransition = null)
     {
+        if (!IsServer) return;
         if (_currentState != null)
         {
-            LogDebug($"Exiting state {_currentState.GetType().Name}");
+            LogDebug($"Exiting state {_currentState.GetType().Name}.");
             _currentState.OnStateExit();
             PreviousState = _currentState;
             previousBehaviourStateIndex = currentBehaviourStateIndex;
+
+            stateTransition?.OnTransition();
+        }
+        else
+        {
+            LogDebug("Could not exit current state, because it is null.");
         }
 
-        LogDebug($"Entering state {newState.GetType().Name}");
-        _currentState = StateDictionary[newState];
-        _currentState.OnStateEnter();
-        currentBehaviourStateIndex = (int)newState;
-        netcodeController.CurrentBehaviourStateIndex.Value = currentBehaviourStateIndex;
-        LogDebug($"Successfully switched behaviour state to {newState.GetType().Name}");
+        if (_stateDictionary.TryGetValue(newState, out BehaviourState newStateInstance))
+        {
+            _currentState = newStateInstance;
+            currentBehaviourStateIndex = (int)newState;
+            LogDebug($"Entering state {newState}.");
+            _currentState.OnStateEnter();
+            netcodeController.CurrentBehaviourStateIndex.Value = currentBehaviourStateIndex;
+            
+            LogDebug($"Successfully switched behaviour state to {newState}.");
+        }
+        else
+        {
+            Mls.LogError($"State {newState} not found in StateDictionary.");
+        }
+    }
+    
+    private void ConstructStateDictionary()
+    {
+        if (!IsServer) return;
+        _stateDictionary = new Dictionary<States, BehaviourState>();
+
+        foreach ((Type stateType, States stateEnum) in StateTypeMapping)
+        {
+            try
+            {
+                // Use reflection to find the constructor that takes AloeServer and States as parameters
+                ConstructorInfo constructor = stateType.GetConstructor([typeof(AloeServer), typeof(States)]);
+                if (constructor != null)
+                {
+                    // Create an instance of the state type using the constructor
+                    BehaviourState stateInstance = (BehaviourState)constructor.Invoke([this, stateEnum]);
+                    _stateDictionary[stateEnum] = stateInstance;
+                    LogDebug($"Successfully created instance of {stateType.Name} for state {stateEnum}");
+                }
+                else
+                {
+                    Mls.LogError($"Constructor not found for type {stateType.Name}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Mls.LogError($"Error creating instance of {stateType.Name}: {ex.Message}");
+            }
+        }
     }
 
-    private void PickFavouriteSpot()
+    public void PickFavouriteSpot()
     {
+        if (!IsServer) return;
+        
         _mainEntrancePosition = RoundManager.FindMainEntrancePosition(true);
         Vector3 brackenRoomAloeNode = AloeSharedData.Instance.OccupyBrackenRoomAloeNode();
 
@@ -566,9 +623,9 @@ public class AloeServer : BiodiverseAI
         
         if (stunNormalizedTimer > 0 || 
             isStaringAtTargetPlayer ||
-            !netcodeController.HasFinishedSpawnAnimation.Value ||
-            currentBehaviourStateIndex == (int)States.Dead ||
-            currentBehaviourStateIndex == (int)States.Spawning
+            (_currentState.GetStateType() == States.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
+            _currentState.GetStateType() == States.Dead ||
+            _currentState.GetStateType() == States.Spawning
            // || currentBehaviourStateIndex == (int)States.KidnappingPlayer
             )
         {
@@ -604,7 +661,9 @@ public class AloeServer : BiodiverseAI
     {
         ActualTargetPlayer.Value = newValue == 69420 ? null : StartOfRound.Instance.allPlayerScripts[newValue];
         targetPlayer = ActualTargetPlayer.Value;
-        if (ActualTargetPlayer.IsNotNull) LogDebug($"Changed target player to {ActualTargetPlayer.Value?.playerUsername}");
+        LogDebug(ActualTargetPlayer.IsNotNull
+            ? $"Changed target player to {ActualTargetPlayer.Value?.playerUsername},"
+            : "Changed target player to null,");
     }
 
     /// <summary>
@@ -641,17 +700,18 @@ public class AloeServer : BiodiverseAI
     /// Gets the config values and assigns them to their respective [SerializeField] variables.
     /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
     /// </summary>
-    private void InitializeConfigValues()
+    public void InitializeConfigValues()
     {
         if (!IsServer) return;
 
         maxRoamingRadius = Config.MaxRoamingRadius;
-        viewWidth = Config.ViewWidth;
-        viewRange = Config.ViewRange;
+        ViewWidth = Config.ViewWidth;
+        ViewRange = Config.ViewRange;
         playerHealthThresholdForStalking = Config.PlayerHealthThresholdForStalking;
         playerHealthThresholdForHealing = Config.PlayerHealthThresholdForHealing;
-        timeItTakesToFullyHealPlayer = Config.TimeItTakesToFullyHealPlayer;
-        passiveStalkStaredownDistance = Config.PassiveStalkStaredownDistance;
+        TimeItTakesToFullyHealPlayer = Config.TimeItTakesToFullyHealPlayer;
+        PassiveStalkStaredownDistance = Config.PassiveStalkStaredownDistance;
+        WaitBeforeChasingEscapedPlayerTime = Config.WaitBeforeChasingEscapedPlayerTime;
         
         roamMap.searchWidth = maxRoamingRadius;
         

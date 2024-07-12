@@ -7,14 +7,15 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 public class AvoidingPlayerState : BehaviourState
 {
+    private readonly NullableObject<PlayerControllerB> _playerLookingAtAloe = new();
+    
     private float _avoidPlayerAudioTimer;
     private float _avoidPlayerIntervalTimer;
+    private float _avoidPlayerTimerTotal;
 
     private bool _shouldTransitionToAttacking;
 
-    private float _avoidPlayerTimerTotal;
-
-    public AvoidingPlayerState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public AvoidingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -25,21 +26,28 @@ public class AvoidingPlayerState : BehaviourState
 
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agentMaxSpeed = 9f;
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.agent.acceleration = 50f;
         AloeServerInstance.openDoorSpeedMultiplier = 20f;
 
         _avoidPlayerAudioTimer = 4.1f;
-        _avoidPlayerIntervalTimer = 5;
+        _avoidPlayerIntervalTimer = 0f;
         _avoidPlayerTimerTotal = 0f;
 
-        if (AloeServerInstance.overridePlaySpottedAnimation) AloeServerInstance.overridePlaySpottedAnimation = false;
+        if (AloeServerInstance.overridePlaySpottedAnimation)
+        {
+            AloeServerInstance.overridePlaySpottedAnimation = false;
+            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, true);
+        }
         else
+        {
+            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, false);
             AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(AloeServerInstance.aloeId,
                 AloeClient.Spotted);
-
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, false);
+        }
+        
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
         AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(
             AloeServerInstance.aloeId, AloeClient.AudioClipTypes.InterruptedHealing);
@@ -71,11 +79,11 @@ public class AvoidingPlayerState : BehaviourState
         if (!AloeServerInstance.netcodeController.HasFinishedSpottedAnimation.Value)
             return;
         
-        PlayerControllerB tempPlayer = AloeUtils.GetClosestPlayerLookingAtPosition(
+        _playerLookingAtAloe.Value = AloeUtils.GetClosestPlayerLookingAtPosition(
             AloeServerInstance.eye.transform, logSource: AloeServerInstance.Mls);
-        if (tempPlayer != null)
+        if (_playerLookingAtAloe.IsNotNull)
         {
-            AloeServerInstance.AvoidingPlayer.Value = tempPlayer;
+            AloeServerInstance.AvoidingPlayer.Value = _playerLookingAtAloe.Value;
             if (_avoidPlayerAudioTimer <= 0)
             {
                 _avoidPlayerAudioTimer = 4.1f;
@@ -89,6 +97,7 @@ public class AvoidingPlayerState : BehaviourState
         float waitTimer = 5f;
         _avoidPlayerIntervalTimer -= Time.deltaTime;
         if (_avoidPlayerIntervalTimer > 0) return;
+        _shouldTransitionToAttacking = false;
 
         AloeUtils.PathStatus pathStatus = AloeUtils.PathStatus.Unknown;
         Transform farAwayNode = AloeServerInstance.AvoidingPlayer.IsNotNull
@@ -103,7 +112,7 @@ public class AvoidingPlayerState : BehaviourState
                 bufferDistance: 2.5f,
                 logSource: AloeServerInstance.Mls)
             : null;
-
+        
         if (farAwayNode != null && pathStatus != AloeUtils.PathStatus.Unknown &&
             pathStatus != AloeUtils.PathStatus.Invalid)
         {
@@ -115,11 +124,10 @@ public class AvoidingPlayerState : BehaviourState
 
             AloeServerInstance.LogDebug($"Setting escape node to {farAwayNode.position}.");
             AloeServerInstance.SetDestinationToPosition(farAwayNode.position);
-            _shouldTransitionToAttacking = false;
         }
         else
         {
-            _shouldTransitionToAttacking = true;
+            if (AloeServerInstance.AvoidingPlayer.IsNotNull) _shouldTransitionToAttacking = true;
         }
 
         _avoidPlayerIntervalTimer = waitTimer;
@@ -127,6 +135,7 @@ public class AvoidingPlayerState : BehaviourState
 
     public override void OnStateExit()
     {
+        base.OnStateExit();
         AloeServerInstance.AvoidingPlayer.Value = null;
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, false);
     }
@@ -138,14 +147,18 @@ public class AvoidingPlayerState : BehaviourState
         {
             float avoidTimerCompareValue = AloeServerInstance.timesFoundSneaking % 3 != 0 ? 11f : 21f;
             if (avoidingPlayerState._avoidPlayerTimerTotal > avoidTimerCompareValue) return true;
+            if (!AloeServerInstance.netcodeController.HasFinishedSpottedAnimation.Value) return false;
 
             Vector3 closestPlayerPosition = AloeUtils.GetClosestPlayerFromList(
                     players: StartOfRound.Instance.allPlayerScripts.ToList(),
                     transform: AloeServerInstance.transform,
-                    inputPlayer: null, 
+                    inputPlayer: null,
                 logSource: AloeServerInstance.Mls).transform.position;
-
-            return Vector3.Distance(AloeServerInstance.transform.position, closestPlayerPosition) <= 12f;
+            
+            float distanceToClosestPlayer = Vector3.Distance(AloeServerInstance.transform.position, closestPlayerPosition);
+            return distanceToClosestPlayer > 35f && 
+                   avoidingPlayerState._avoidPlayerTimerTotal >= 5f &&
+                   !avoidingPlayerState._playerLookingAtAloe.IsNotNull;
         }
 
         public override AloeServer.States NextState()
@@ -159,7 +172,8 @@ public class AvoidingPlayerState : BehaviourState
     {
         public override bool ShouldTransitionBeTaken()
         {
-           return avoidingPlayerState._shouldTransitionToAttacking;
+            return AloeServerInstance.netcodeController.HasFinishedSpottedAnimation.Value &&
+                   avoidingPlayerState._shouldTransitionToAttacking;
         }
 
         public override AloeServer.States NextState()

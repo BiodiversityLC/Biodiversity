@@ -189,6 +189,8 @@ public class AloeClient : MonoBehaviour
         lookAimRig.weight = 0f;
         
         AddStateMachineBehaviours(animator);
+        
+        animator.SetBool(Spawning, true);
     }
 
     /// <summary>
@@ -203,7 +205,6 @@ public class AloeClient : MonoBehaviour
         _agentLastPosition = position;
         
         animator.SetFloat(Speed, _agentCurrentSpeed);
-        animator.SetBool(Spawning, !netcodeController.HasFinishedSpawnAnimation.Value);
         animator.SetBool(Healing, netcodeController.AnimationParamHealing.Value);
         animator.SetBool(Crawling, netcodeController.AnimationParamCrawling.Value);
         animator.SetBool(Stunned, netcodeController.AnimationParamStunned.Value);
@@ -687,12 +688,13 @@ public class AloeClient : MonoBehaviour
     
     private void AddStateMachineBehaviours(Animator receivedAnimator)
     {
+        AloeServer aloeServer = GetComponent<AloeServer>();
         StateMachineBehaviour[] behaviours = receivedAnimator.GetBehaviours<StateMachineBehaviour>();
         foreach (StateMachineBehaviour behaviour in behaviours)
         {
             if (behaviour is BaseStateMachineBehaviour baseStateMachineBehaviour)
             {
-                baseStateMachineBehaviour.Initialize(netcodeController);
+                baseStateMachineBehaviour.Initialize(netcodeController, aloeServer);
             }
         }
     }

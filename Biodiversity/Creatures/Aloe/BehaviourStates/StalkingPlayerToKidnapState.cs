@@ -8,7 +8,7 @@ public class StalkingPlayerToKidnapState : BehaviourState
 {
     private bool _isPlayerReachable;
     
-    public StalkingPlayerToKidnapState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public StalkingPlayerToKidnapState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -19,6 +19,7 @@ public class StalkingPlayerToKidnapState : BehaviourState
 
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agentMaxSpeed = 5f;
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.inGrabAnimation = false;
@@ -55,8 +56,8 @@ public class StalkingPlayerToKidnapState : BehaviourState
                          player: AloeServerInstance.ActualTargetPlayer.Value, 
                          transform: AloeServerInstance.transform, 
                          eye: AloeServerInstance.eye, 
-                         viewWidth: AloeServerInstance.viewWidth, 
-                         viewRange: AloeServerInstance.viewRange, 
+                         viewWidth: AloeServerInstance.ViewWidth, 
+                         viewRange: AloeServerInstance.ViewRange, 
                          logSource: AloeServerInstance.Mls))
             {
                 if (Vector3.Distance(

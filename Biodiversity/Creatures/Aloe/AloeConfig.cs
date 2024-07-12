@@ -54,6 +54,10 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Range(0f, 30f)]
     public float DarkSkinTransitionTime { get; private set; } = 7.5f;
 
+    [field: Tooltip("The amount of time the Aloe will stare at you before chasing you if you escape.")]
+    [field: Range(0f, 30f)]
+    public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 2f;
+
     // [field: Header("Spawn Settings.")]
     // [field: Tooltip("Whether to force the bracken room to spawn in if the dungeon is the interior.")]
     // public bool ForceBrackenRoomSpawn { get; private set; } = true;

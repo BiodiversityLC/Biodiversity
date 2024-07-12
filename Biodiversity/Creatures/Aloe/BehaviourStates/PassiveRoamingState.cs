@@ -6,7 +6,7 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 public class PassiveRoamingState : BehaviourState
 {
-    public PassiveRoamingState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public PassiveRoamingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -17,6 +17,7 @@ public class PassiveRoamingState : BehaviourState
     
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agentMaxSpeed = 2f;
         AloeServerInstance.agentMaxAcceleration = 2f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
@@ -53,6 +54,7 @@ public class PassiveRoamingState : BehaviourState
 
     public override void OnStateExit()
     {
+        base.OnStateExit();
         if (AloeServerInstance.roamMap.inProgress) 
             AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
         

@@ -10,7 +10,7 @@ public class KidnappingPlayerState : BehaviourState
 {
     private float _dragPlayerTimer;
     
-    public KidnappingPlayerState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public KidnappingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -20,6 +20,7 @@ public class KidnappingPlayerState : BehaviourState
     
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agentMaxSpeed = 8f;
         AloeServerInstance.agentMaxAcceleration = 20f;
         AloeServerInstance.openDoorSpeedMultiplier = 20f;

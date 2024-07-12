@@ -9,7 +9,7 @@ public class ChasingEscapedPlayerState : BehaviourState
 
     private bool _isPlayerTargetable;
     
-    public ChasingEscapedPlayerState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public ChasingEscapedPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -20,6 +20,7 @@ public class ChasingEscapedPlayerState : BehaviourState
 
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agentMaxSpeed = 6f;
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.movingTowardsTargetPlayer = false;
@@ -33,7 +34,7 @@ public class ChasingEscapedPlayerState : BehaviourState
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
 
-        _waitBeforeChasingTimer = 0f;
+        _waitBeforeChasingTimer = AloeServerInstance.WaitBeforeChasingEscapedPlayerTime;
         _isPlayerTargetable = true;
     }
 
@@ -57,8 +58,8 @@ public class ChasingEscapedPlayerState : BehaviourState
         else if (AloeUtils.DoesEyeHaveLineOfSightToPosition(
                      pos: AloeServerInstance.ActualTargetPlayer.Value.transform.position, 
                      eye: AloeServerInstance.eye, 
-                     width: AloeServerInstance.viewWidth, 
-                     range: AloeServerInstance.viewRange, 
+                     width: AloeServerInstance.ViewWidth, 
+                     range: AloeServerInstance.ViewRange, 
                      logSource: AloeServerInstance.Mls))
         {
             AloeServerInstance.LookAtPosition(AloeServerInstance.ActualTargetPlayer.Value.transform.position);

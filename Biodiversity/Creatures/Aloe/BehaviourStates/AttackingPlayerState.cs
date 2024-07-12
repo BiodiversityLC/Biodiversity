@@ -7,7 +7,7 @@ public class AttackingPlayerState : BehaviourState
 {
     private bool _isPlayerTargetable;
     
-    public AttackingPlayerState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public AttackingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -17,6 +17,7 @@ public class AttackingPlayerState : BehaviourState
 
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agentMaxSpeed = 5f;
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
@@ -41,6 +42,7 @@ public class AttackingPlayerState : BehaviourState
 
     public override void OnStateExit()
     {
+        base.OnStateExit();
         AloeServerInstance.netcodeController.TargetPlayerClientId.Value = AloeServerInstance.backupTargetPlayer.actualClientId;
         AloeServerInstance.backupTargetPlayer = null;
     }

@@ -6,7 +6,7 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 public class CuddlingPlayerState : BehaviourState
 {
-    public CuddlingPlayerState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public CuddlingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -16,6 +16,7 @@ public class CuddlingPlayerState : BehaviourState
 
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agent.speed = 0;
         AloeServerInstance.agentMaxSpeed = 0f;
         AloeServerInstance.agentMaxAcceleration = 50f;

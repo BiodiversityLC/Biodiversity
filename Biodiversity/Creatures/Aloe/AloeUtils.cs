@@ -322,7 +322,7 @@ public static class AloeUtils
         List<PlayerControllerB> players, 
         Transform transform,
         PlayerControllerB inputPlayer, 
-        float bufferDistance = 1.5f, 
+        float bufferDistance = 1.5f,
         ManualLogSource logSource = null)
     {
         PlayerControllerB closestPlayer = inputPlayer;

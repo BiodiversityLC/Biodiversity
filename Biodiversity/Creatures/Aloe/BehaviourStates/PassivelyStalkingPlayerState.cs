@@ -9,7 +9,7 @@ public class PassivelyStalkingPlayerState : BehaviourState
     private bool _isStaringAtTargetPlayer;
     private bool _isPlayerReachable;
     
-    public PassivelyStalkingPlayerState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public PassivelyStalkingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -21,9 +21,11 @@ public class PassivelyStalkingPlayerState : BehaviourState
 
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agentMaxSpeed = 5f;
         AloeServerInstance.agentMaxAcceleration = 70f;
         AloeServerInstance.movingTowardsTargetPlayer = false;
+        AloeServerInstance.moveTowardsDestination = true;
         AloeServerInstance.openDoorSpeedMultiplier = 4f;
 
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
@@ -41,7 +43,7 @@ public class PassivelyStalkingPlayerState : BehaviourState
         if (!AloeServerInstance.ActualTargetPlayer.IsNotNull) return;
         
         // See if the aloe can stare at the player
-        if (Vector3.Distance(AloeServerInstance.transform.position, AloeServerInstance.ActualTargetPlayer.Value.transform.position) <= AloeServerInstance.passiveStalkStaredownDistance &&
+        if (Vector3.Distance(AloeServerInstance.transform.position, AloeServerInstance.ActualTargetPlayer.Value.transform.position) <= AloeServerInstance.PassiveStalkStaredownDistance &&
             !Physics.Linecast(AloeServerInstance.eye.position, AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position,
                 StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
         {
@@ -52,6 +54,7 @@ public class PassivelyStalkingPlayerState : BehaviourState
             AloeServerInstance.moveTowardsDestination = false;
             AloeServerInstance.movingTowardsTargetPlayer = false;
             _isStaringAtTargetPlayer = true;
+            _isPlayerReachable = true;
         }
         // If she cant stare, then go and find the player
         else
@@ -65,8 +68,8 @@ public class PassivelyStalkingPlayerState : BehaviourState
                     player: AloeServerInstance.ActualTargetPlayer.Value, 
                     transform: AloeServerInstance.transform, 
                     eye: AloeServerInstance.eye, 
-                    viewWidth: AloeServerInstance.viewWidth, 
-                    viewRange: AloeServerInstance.viewRange, 
+                    viewWidth: AloeServerInstance.ViewWidth, 
+                    viewRange: AloeServerInstance.ViewRange, 
                     logSource: AloeServerInstance.Mls))
             {
                 Transform closestNodeToPlayer = AloeUtils.GetClosestValidNodeToPosition(
@@ -88,8 +91,10 @@ public class PassivelyStalkingPlayerState : BehaviourState
             else
             {
                 _isPlayerReachable = false;
-            } 
+            }
         }
+        
+        AloeServerInstance.LogDebug($"Is player reachable: {_isPlayerReachable}");
     }
     
     private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance, PassivelyStalkingPlayerState passivelyStalkingPlayerState)
@@ -130,6 +135,7 @@ public class PassivelyStalkingPlayerState : BehaviourState
     {
         public override bool ShouldTransitionBeTaken()
         {
+            AloeServerInstance.LogDebug($"Is player dead?: {AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value)}");
             return AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value) ||
                    !passivelyStalkingPlayerState._isPlayerReachable;
         }

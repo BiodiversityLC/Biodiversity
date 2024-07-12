@@ -9,7 +9,7 @@ public class HealingPlayerState : BehaviourState
 
     private bool _finishedHealing;
     
-    public HealingPlayerState(AloeServer aloeServerInstance) : base(aloeServerInstance)
+    public HealingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -19,6 +19,7 @@ public class HealingPlayerState : BehaviourState
 
     public override void OnStateEnter()
     {
+        base.OnStateEnter();
         AloeServerInstance.agent.speed = 0;
         AloeServerInstance.agentMaxSpeed = 0f;
         AloeServerInstance.agentMaxAcceleration = 50f;
@@ -44,7 +45,7 @@ public class HealingPlayerState : BehaviourState
             AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
                     
         // Calculate the heal amount per AIInterval
-        float baseHealingRate = 100f / AloeServerInstance.timeItTakesToFullyHealPlayer;
+        float baseHealingRate = 100f / AloeServerInstance.TimeItTakesToFullyHealPlayer;
         float healingRate = baseHealingRate * playerMaxHealth / 100f;
         _healingPerInterval = Mathf.CeilToInt(healingRate * AloeServerInstance.AIIntervalTime);
                 
