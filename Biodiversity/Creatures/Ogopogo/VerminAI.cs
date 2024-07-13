@@ -42,6 +42,9 @@ namespace Biodiversity.Creatures.Ogopogo
         [NonSerialized] public bool spawnedByOgo = false;
         [NonSerialized] public bool spawnedByVermin = false;
 
+        // Mapping
+        public Transform MapDot;
+
         public override void Start()
         {
             base.Start();
@@ -59,7 +62,7 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                 }
 
-                if (waters.Count == 0 || enemyType.numberSpawned >= enemyType.MaxCount)
+                if (waters.Count == 0 || enemyType.numberSpawned >= enemyType.MaxCount && !spawnedByVermin)
                 {
                     BiodiversityPlugin.Logger.LogInfo("Despawning because there are too many of this enemy or there is no water. (vermin)");
                     RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
@@ -99,6 +102,13 @@ namespace Biodiversity.Creatures.Ogopogo
 
                 transform.position = water.transform.position; 
                 setWanderPos();
+
+                BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
+
+                if (!spawnedByOgo)
+                {
+                    transform.position = new Vector3(transform.position.x, collider.bounds.max.y, transform.position.z);
+                }
             }
             catch (Exception ex)
             {
@@ -192,6 +202,16 @@ namespace Biodiversity.Creatures.Ogopogo
         public override void Update()
         {
             base.Update();
+
+            if (StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory)
+            {
+                MapDot.position = this.transform.position;
+            }
+            else
+            {
+                MapDot.position = new Vector3(this.transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, this.transform.position.z);
+            }
+
             // Step timers
             if (currentBehaviourStateIndex == (int)State.WANDERING)
             {
