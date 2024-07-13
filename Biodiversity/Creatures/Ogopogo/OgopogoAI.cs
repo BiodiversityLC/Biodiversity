@@ -72,6 +72,9 @@ namespace Biodiversity.Creatures.Ogopogo
         // Default position of this.eye (needed for water stun to work)
         [SerializeField]Transform defaultEye;
 
+        // Mapping
+        public Transform MapDot; 
+
         public override void Start()
         {
             base.Start();
@@ -130,6 +133,14 @@ namespace Biodiversity.Creatures.Ogopogo
         public override void Update()
         {
             base.Update();
+
+            if (StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory)
+            {
+                MapDot.position = this.transform.position;
+            } else
+            {
+                MapDot.position = new Vector3(this.transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, this.transform.position.z);
+            }
 
             if (GameNetworkManager.Instance.localPlayerController.isInsideFactory)
             {
