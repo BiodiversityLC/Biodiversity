@@ -16,8 +16,8 @@ namespace Biodiversity.Creatures.Aloe;
 
 public class AloeServer : BiodiverseAI
 {
-    public ManualLogSource Mls;
-    public string aloeId;
+    [HideInInspector] public ManualLogSource Mls;
+    [HideInInspector] public string aloeId;
     
 #if !UNITY_EDITOR
     [field: HideInInspector] [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
@@ -25,9 +25,8 @@ public class AloeServer : BiodiverseAI
     
     [Header("AI and Pathfinding")] [Space(5f)]
     public AISearchRoutine roamMap;
-
-    [SerializeField] private Vector2 amountRangeOfNodesToPathToInSearchRoutine = new(3, 8);
-    [SerializeField] private float maxRoamingRadius = 50f;
+    
+    [SerializeField] private float roamingRadius = 50f;
     [SerializeField] private int proximityAwareness = 3;
     [SerializeField] private int playerHealthThresholdForStalking = 90;
     [SerializeField] private int playerHealthThresholdForHealing = 45;
@@ -40,6 +39,8 @@ public class AloeServer : BiodiverseAI
     
 #pragma warning disable 0649
     [Header("Controllers")] [Space(5f)] 
+    [SerializeField] private Transform rootTransform;
+    [SerializeField] private Transform headBone;
     public AloeNetcodeController netcodeController;
 #pragma warning restore 0649
 
@@ -47,12 +48,14 @@ public class AloeServer : BiodiverseAI
     private Dictionary<States, BehaviourState> _stateDictionary = [];
     private BehaviourState _currentState;
 
+    [HideInInspector] public Vector3 lookAheadVector;
     [HideInInspector] public Vector3 favouriteSpot;
     private Vector3 _mainEntrancePosition;
     private Vector3 _agentLastPosition;
-
+    
     [HideInInspector] public float agentMaxAcceleration;
     [HideInInspector] public float agentMaxSpeed;
+    [SerializeField] private float lookAheadDistance = 200f;
     private float _agentCurrentSpeed;
     private float _takeDamageCooldown;
 
@@ -116,6 +119,7 @@ public class AloeServer : BiodiverseAI
     
     private void OnEnable()
     {
+        if (!IsServer) return;
         SubscribeToNetworkEvents();
     }
     
@@ -124,8 +128,10 @@ public class AloeServer : BiodiverseAI
         #if DEBUG
         if (ActualTargetPlayer.IsNotNull) ActualTargetPlayer.Value.inSpecialInteractAnimation = false;
         #endif
+
+        if (!IsServer) return;
         
-        if (!IsServer) AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(favouriteSpot);
+        AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(favouriteSpot);
         UnsubscribeFromNetworkEvents();
     }
 
@@ -140,6 +146,8 @@ public class AloeServer : BiodiverseAI
         Random.InitState(StartOfRound.Instance.randomMapSeed + aloeId.GetHashCode());
         netcodeController.SyncAloeIdClientRpc(aloeId);
         agent.updateRotation = false;
+
+        lookAheadVector = rootTransform.forward * lookAheadDistance + headBone.up;
 
         ConstructStateDictionary();
         
@@ -374,14 +382,14 @@ public class AloeServer : BiodiverseAI
         Vector3 forwardDirection = agent.velocity.normalized;
         Quaternion initialRotation = transform.rotation;
         Quaternion targetRotation = Quaternion.LookRotation(forwardDirection);
-        netcodeController.TransitionToRunningForwardsAndCarryingPlayerClientRpc(aloeId);
+        netcodeController.TransitionToRunningForwardsAndCarryingPlayerClientRpc(aloeId, transitionDuration);
         float elapsedTime = 0f;
 
         while (elapsedTime < transitionDuration)
         {
+            yield return null;
             transform.rotation = Quaternion.Slerp(initialRotation, targetRotation, elapsedTime / transitionDuration);
             elapsedTime += Time.deltaTime;
-            yield return null;
         }
 
         transform.rotation = targetRotation;
@@ -696,7 +704,7 @@ public class AloeServer : BiodiverseAI
     {
         if (!IsServer) return;
 
-        maxRoamingRadius = Config.MaxRoamingRadius;
+        roamingRadius = Config.RoamingRadius;
         ViewWidth = Config.ViewWidth;
         ViewRange = Config.ViewRange;
         playerHealthThresholdForStalking = Config.PlayerHealthThresholdForStalking;
@@ -705,7 +713,7 @@ public class AloeServer : BiodiverseAI
         PassiveStalkStaredownDistance = Config.PassiveStalkStaredownDistance;
         WaitBeforeChasingEscapedPlayerTime = Config.WaitBeforeChasingEscapedPlayerTime;
         
-        roamMap.searchWidth = maxRoamingRadius;
+        roamMap.searchWidth = roamingRadius;
         
         netcodeController.InitializeConfigValuesClientRpc(aloeId);
     }

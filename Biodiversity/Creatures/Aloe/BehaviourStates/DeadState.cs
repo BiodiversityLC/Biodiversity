@@ -16,10 +16,6 @@ public class DeadState : BehaviourState
     {
         base.OnStateEnter();
         
-        AloeServerInstance.SetTargetPlayerInCaptivity(false);
-        AloeServerInstance.netcodeController.EnterDeathStateClientRpc(AloeServerInstance.aloeId);
-        AloeServerInstance.KillEnemyServerRpc(false);
-        
         AloeServerInstance.agent.speed *= 0.1f;
         AloeServerInstance.agent.acceleration = 200f;
         AloeServerInstance.agentMaxSpeed = 0f;
@@ -28,6 +24,14 @@ public class DeadState : BehaviourState
         AloeServerInstance.moveTowardsDestination = false;
         AloeServerInstance.openDoorSpeedMultiplier = 0f;
         AloeServerInstance.isEnemyDead = true;
+
+        AloeServerInstance.netcodeController.AnimationParamDead.Value = true;
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.lookAheadVector);
+        AloeServerInstance.SetTargetPlayerInCaptivity(false);
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
+            AloeServerInstance.aloeId, 0, 0f);
+        AloeServerInstance.KillEnemyServerRpc(false);
         
         if (AloeServerInstance.roamMap.inProgress) AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
     }

@@ -22,6 +22,7 @@ public class AloeNetcodeController : NetworkBehaviour
     [HideInInspector] public readonly NetworkVariable<bool> AnimationParamCrawling = new();
     [HideInInspector] public readonly NetworkVariable<bool> AnimationParamHealing = new();
     [HideInInspector] public readonly NetworkVariable<bool> AnimationParamStunned = new();
+    [HideInInspector] public readonly NetworkVariable<bool> AnimationParamDead = new();
 
     public event Action<string> OnSyncAloeId;
     public event Action<string> OnInitializeConfigValues;
@@ -31,7 +32,6 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string> OnUnMuffleTargetPlayerVoice;
     public event Action<string, int> OnHealTargetPlayerByAmount;
     public event Action<string> OnTargetPlayerEscaped;
-    public event Action<string> OnEnterDeathState;
     public event Action<string, bool> OnSetTargetPlayerInCaptivity;
     public event Action<string, bool> OnSetTargetPlayerAbleToEscape;
     public event Action<string, float> OnPlayHealingVfx;
@@ -39,7 +39,7 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, ulong> OnSnapPlayerNeck;
     public event Action<string> OnGrabTargetPlayer;
     public event Action<string, float, float> OnChangeLookAimConstraintWeight;
-    public event Action<string> OnTransitionToRunningForwardsAndCarryingPlayer;
+    public event Action<string, float> OnTransitionToRunningForwardsAndCarryingPlayer;
     public event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
 
     private void Awake()
@@ -55,9 +55,9 @@ public class AloeNetcodeController : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void TransitionToRunningForwardsAndCarryingPlayerClientRpc(string receivedAloeId)
+    public void TransitionToRunningForwardsAndCarryingPlayerClientRpc(string receivedAloeId, float transitionDuration)
     {
-        OnTransitionToRunningForwardsAndCarryingPlayer?.Invoke(receivedAloeId);
+        OnTransitionToRunningForwardsAndCarryingPlayer?.Invoke(receivedAloeId, transitionDuration);
     }
 
     [ClientRpc]
@@ -142,12 +142,6 @@ public class AloeNetcodeController : NetworkBehaviour
     public void SetTargetPlayerInCaptivityClientRpc(string receivedAloeId, bool setToInCaptivity)
     {
         OnSetTargetPlayerInCaptivity?.Invoke(receivedAloeId, setToInCaptivity);
-    }
-
-    [ClientRpc]
-    public void EnterDeathStateClientRpc(string receivedAloeId)
-    {
-        OnEnterDeathState?.Invoke(receivedAloeId);
     }
 
     [ServerRpc(RequireOwnership = false)]

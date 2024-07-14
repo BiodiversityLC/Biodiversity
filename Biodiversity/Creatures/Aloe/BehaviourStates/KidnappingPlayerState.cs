@@ -22,7 +22,7 @@ public class KidnappingPlayerState : BehaviourState
     {
         base.OnStateEnter();
         AloeServerInstance.agentMaxSpeed = 8f;
-        AloeServerInstance.agentMaxAcceleration = 20f;
+        AloeServerInstance.agentMaxAcceleration = 8f;
         AloeServerInstance.openDoorSpeedMultiplier = 20f;
         AloeServerInstance.moveTowardsDestination = true;
         AloeServerInstance.movingTowardsTargetPlayer = false;
@@ -44,22 +44,22 @@ public class KidnappingPlayerState : BehaviourState
         NetworkObject fakePlayerBodyRagdollNetworkObject =
             fakePlayerBodyRagdollGameObject.GetComponent<NetworkObject>();
         fakePlayerBodyRagdollNetworkObject.Spawn();
-                
+        
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
         AloeServerInstance.SetTargetPlayerInCaptivity(true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
         AloeServerInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(AloeServerInstance.aloeId, fakePlayerBodyRagdollNetworkObject);
         AloeServerInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(AloeServerInstance.aloeId, false);
         AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(AloeServerInstance.aloeId, 3f, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
         AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId, AloeClient.AudioClipTypes.SnatchAndDrag);
-
+        
         if (AloeUtils.IsPathValid(
                 agent: AloeServerInstance.agent, 
                 position: AloeServerInstance.favouriteSpot, 
-                logSource: AloeServerInstance.Mls) != AloeUtils.PathStatus.Valid)
-        {
-            AloeServerInstance.LogDebug("When initializing kidnapping, no path was found to the Aloe's favourite spot.");
-            AloeServerInstance.SwitchBehaviourState(AloeServer.States.HealingPlayer);
+                logSource: AloeServerInstance.Mls) != AloeUtils.PathStatus.Valid) 
+        { 
+            AloeServerInstance.LogDebug("When initializing kidnapping, no path was found to the Aloe's favourite spot."); 
+            AloeServerInstance.SwitchBehaviourState(AloeServer.States.HealingPlayer); 
             return;
         }
                 
@@ -77,13 +77,6 @@ public class KidnappingPlayerState : BehaviourState
             
             AloeServerInstance.StartCoroutine(AloeServerInstance.TransitionToRunningForwardsAndCarryingPlayer(0.3f));
         }
-    }
-
-    public override void LateUpdateBehaviour()
-    {
-        const float distanceInFront = -1.5f;
-        Vector3 newPosition = AloeServerInstance.transform.position + AloeServerInstance.transform.forward * distanceInFront;
-        AloeServerInstance.ActualTargetPlayer.Value.transform.position = newPosition;
     }
 
     public override void AIIntervalBehaviour()
