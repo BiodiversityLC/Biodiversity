@@ -13,7 +13,6 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 [HarmonyPatch(typeof(Landmine))]
 internal class LandminePatch
 {
-    
     [HarmonyPatch(nameof(Landmine.OnTriggerEnter))]
     [HarmonyPrefix]
     private static bool PrefixTriggerEntry(Landmine __instance, Collider other)

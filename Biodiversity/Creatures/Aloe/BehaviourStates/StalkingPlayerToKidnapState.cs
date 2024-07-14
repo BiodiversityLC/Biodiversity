@@ -34,6 +34,8 @@ public class StalkingPlayerToKidnapState : BehaviourState
         
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, true);
+        
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.3f);
     }
 
     public override void AIIntervalBehaviour()
@@ -47,7 +49,7 @@ public class StalkingPlayerToKidnapState : BehaviourState
 
             float distanceToGrabbingPlayer = Vector3.Distance(AloeServerInstance.transform.position,
                 AloeServerInstance.ActualTargetPlayer.Value.transform.position);
-            AloeServerInstance.movingTowardsTargetPlayer = distanceToGrabbingPlayer > 2f;
+            AloeServerInstance.movingTowardsTargetPlayer = distanceToGrabbingPlayer > 3f;
             AloeServerInstance.LogDebug($"Distance to grabbing player: {distanceToGrabbingPlayer}");
         }
         else
@@ -56,7 +58,7 @@ public class StalkingPlayerToKidnapState : BehaviourState
             AloeServerInstance.agentMaxAcceleration = NormalAgentMaxAcceleration;
             
             if (Vector3.Distance(AloeServerInstance.transform.position, 
-                    AloeServerInstance.ActualTargetPlayer.Value.transform.position) <= 2.5f && 
+                    AloeServerInstance.ActualTargetPlayer.Value.transform.position) <= 3f && 
                 !AloeServerInstance.inGrabAnimation)
             {
                 // See if the aloe can kidnap the player

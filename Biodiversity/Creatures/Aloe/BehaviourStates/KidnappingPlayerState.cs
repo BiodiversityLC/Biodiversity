@@ -52,6 +52,7 @@ public class KidnappingPlayerState : BehaviourState
         AloeServerInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(AloeServerInstance.aloeId, false);
         AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(AloeServerInstance.aloeId, 3f, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
         AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId, AloeClient.AudioClipTypes.SnatchAndDrag);
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.25f);
         
         if (AloeUtils.IsPathValid(
                 agent: AloeServerInstance.agent, 

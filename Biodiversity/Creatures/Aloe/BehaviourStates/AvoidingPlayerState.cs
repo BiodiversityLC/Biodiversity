@@ -53,7 +53,7 @@ public class AvoidingPlayerState : BehaviourState
             AloeServerInstance.aloeId, AloeClient.AudioClipTypes.InterruptedHealing);
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
             AloeServerInstance.aloeId,
-            0.1f,
+            0.9f,
             0.5f);
     }
 
@@ -63,10 +63,21 @@ public class AvoidingPlayerState : BehaviourState
         if (!AloeServerInstance.netcodeController.HasFinishedSpottedAnimation.Value)
         {
             if (AloeServerInstance.AvoidingPlayer.IsNotNull)
+            {
                 AloeServerInstance.LookAtPosition(AloeServerInstance.AvoidingPlayer.Value.transform.position);
-
+                AloeServerInstance.netcodeController.LookTargetPosition.Value =
+                    AloeServerInstance.AvoidingPlayer.Value.gameplayCamera.transform.position;
+            }
+            
             AloeServerInstance.moveTowardsDestination = false;
             return;
+        }
+
+        // This only triggers on the first frame after the spotted animation has been completed
+        if (!AloeServerInstance.moveTowardsDestination)
+        {
+            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.lookAheadVector);
+            AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 1f);
         }
 
         AloeServerInstance.moveTowardsDestination = true;

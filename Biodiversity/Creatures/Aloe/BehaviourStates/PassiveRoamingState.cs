@@ -22,13 +22,15 @@ public class PassiveRoamingState : BehaviourState
         AloeServerInstance.agentMaxAcceleration = 2f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
         AloeServerInstance.moveTowardsDestination = true;
+        AloeServerInstance.reachedFavouriteSpotForRoaming = false;
 
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.lookAheadVector);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, (ulong)69420);
 
-        AloeServerInstance.reachedFavouriteSpotForRoaming = false;
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 0.5f);
     }
 
     public override void AIIntervalBehaviour()
@@ -57,8 +59,6 @@ public class PassiveRoamingState : BehaviourState
         base.OnStateExit();
         if (AloeServerInstance.roamMap.inProgress) 
             AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
-        
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 0.5f);
     }
 
     private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance) 

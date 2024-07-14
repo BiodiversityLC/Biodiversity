@@ -201,6 +201,7 @@ public class AloeServer : BiodiverseAI
         foreach (StateTransition transition in (_currentState?.Transitions ?? []).Where(transition => transition.ShouldTransitionBeTaken()))
         {
             transition.OnTransition();
+            LogDebug("SwitchBehaviourState() called from DoAIInterval()");
             SwitchBehaviourState(transition.NextState());
             break;
         }

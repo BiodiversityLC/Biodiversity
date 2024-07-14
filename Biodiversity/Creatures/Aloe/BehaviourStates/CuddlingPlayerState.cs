@@ -22,6 +22,8 @@ public class CuddlingPlayerState : BehaviourState
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.movingTowardsTargetPlayer = false;
         AloeServerInstance.openDoorSpeedMultiplier = 4f;
+        
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 1, 0.5f);
     }
 
     public override void AIIntervalBehaviour()
@@ -33,11 +35,18 @@ public class CuddlingPlayerState : BehaviourState
         
         if (tempPlayer != null)
         {
+            AloeServerInstance.netcodeController.LookTargetPosition.Value =
+                tempPlayer.gameplayCamera.transform.position;
             AloeServerInstance.LookAtPosition(tempPlayer.transform.position);
         }
         else if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
         {
+            AloeServerInstance.netcodeController.LookTargetPosition.Value =
+                AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
             AloeServerInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
         }
+        
+        AloeServerInstance.netcodeController.LookTargetPosition.Value =
+            AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
     }
 }

@@ -28,6 +28,7 @@ public class HealingPlayerState : BehaviourState
 
         AloeServerInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(AloeServerInstance.aloeId, true);
         AloeServerInstance.netcodeController.UnMuffleTargetPlayerVoiceClientRpc(AloeServerInstance.aloeId);
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 1f, 1f);
 
         int playerMaxHealth = AloeUtils.GetPlayerMaxHealth(AloeServerInstance.ActualTargetPlayer.Value);
         if (AloeServerInstance.ActualTargetPlayer.Value.health == playerMaxHealth)
@@ -58,6 +59,8 @@ public class HealingPlayerState : BehaviourState
 
     public override void AIIntervalBehaviour()
     {
+        AloeServerInstance.netcodeController.LookTargetPosition.Value =
+            AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
         if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
             AloeServerInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
                 

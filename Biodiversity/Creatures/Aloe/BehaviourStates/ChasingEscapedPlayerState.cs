@@ -21,9 +21,8 @@ public class ChasingEscapedPlayerState : BehaviourState
     public override void OnStateEnter()
     {
         base.OnStateEnter();
-        AloeServerInstance.agentMaxSpeed = 8f;
-        AloeServerInstance.agentMaxAcceleration = 5f;
-        AloeServerInstance.movingTowardsTargetPlayer = false;
+        AloeServerInstance.agentMaxSpeed = 6f;
+        AloeServerInstance.agentMaxAcceleration = 12f;
         AloeServerInstance.movingTowardsTargetPlayer = false;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
         AloeServerInstance.inGrabAnimation = false;
@@ -48,20 +47,36 @@ public class ChasingEscapedPlayerState : BehaviourState
         _isPlayerTargetable = true;
         if (_waitBeforeChasingTimer <= 0)
         {
+            if (!AloeServerInstance.movingTowardsTargetPlayer)
+            {
+                AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.6f, 0.25f);
+            }
+            
             if (AloeUtils.IsPlayerTargetable(AloeServerInstance.ActualTargetPlayer.Value))
             {
                 AloeServerInstance.movingTowardsTargetPlayer = true;
             }
-            else _isPlayerTargetable = false;
+            else
+            {
+                _isPlayerTargetable = false;
+            }
         }
-        else if (AloeUtils.DoesEyeHaveLineOfSightToPosition(
+        
+        if (AloeUtils.DoesEyeHaveLineOfSightToPosition(
                      pos: AloeServerInstance.ActualTargetPlayer.Value.transform.position, 
                      eye: AloeServerInstance.eye, 
                      width: AloeServerInstance.ViewWidth, 
                      range: AloeServerInstance.ViewRange, 
                      logSource: AloeServerInstance.Mls))
         {
-            AloeServerInstance.LookAtPosition(AloeServerInstance.ActualTargetPlayer.Value.transform.position);
+            AloeServerInstance.netcodeController.LookTargetPosition.Value =
+                AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
+            if (_waitBeforeChasingTimer <= 0)
+                AloeServerInstance.LookAtPosition(AloeServerInstance.ActualTargetPlayer.Value.transform.position);
+        }
+        else
+        {
+            AloeServerInstance.netcodeController.LookTargetPosition.Value = AloeServerInstance.lookAheadVector;
         }
     }
 

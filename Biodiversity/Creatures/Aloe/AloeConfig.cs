@@ -58,6 +58,9 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Range(0f, 30f)]
     public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 2f;
 
+    // [field: Tooltip("Whether landmines will blow up if the Aloe moves over one while carrying a player.")]
+    // public bool LandminesBlowUpAloe { get; private set; } = false;
+
     // [field: Header("Spawn Settings.")]
     // [field: Tooltip("Whether to force the bracken room to spawn in if the dungeon is the interior.")]
     // public bool ForceBrackenRoomSpawn { get; private set; } = true;
