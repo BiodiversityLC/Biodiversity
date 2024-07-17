@@ -34,6 +34,8 @@ public class AloeClient : MonoBehaviour
     public static readonly int Healing = Animator.StringToHash("Healing");
     public static readonly int Grab = Animator.StringToHash("Grab");
     public static readonly int KidnapRun = Animator.StringToHash("KidnapRun");
+    public static readonly int Slap = Animator.StringToHash("Slap");
+    public static readonly int Crush = Animator.StringToHash("Crush");
 
     public const float SnatchAndGrabAudioLength = 2.019f;
 

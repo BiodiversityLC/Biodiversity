@@ -15,9 +15,10 @@ public class RoamingState : BehaviourState
         ];
     }
     
-    public override void OnStateEnter()
+    public override void OnStateEnter(ref StateData initData)
     {
-        base.OnStateEnter();
+        base.OnStateEnter(ref initData);
+        
         AloeServerInstance.agentMaxSpeed = 2f;
         AloeServerInstance.agentMaxAcceleration = 2f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;

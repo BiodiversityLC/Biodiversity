@@ -9,9 +9,7 @@ public class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         animator.SetBool(Spawning, false);
-
         LogDebug("Spawn animation complete.");
-        
-        if (AloeServer.IsServer) AloeServer.SwitchBehaviourState(AloeServer.States.Roaming);
+        if (AloeServerInstance.IsServer) AloeServerInstance.SwitchBehaviourState(AloeServer.States.Roaming);
     }
 }

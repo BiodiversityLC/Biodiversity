@@ -91,6 +91,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     
     private void Update()
     {
+        if (!IsOwner) return;
+        
         foreach (BodyPart bodyPart in bodyParts.Where(bodyPart => bodyPart.active))
         {
             if (bodyPart.attachedTo != null && matchPositionExactly)
@@ -107,21 +109,21 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     private void LateUpdate()
     {
-        foreach (BodyPart bodyPart in bodyParts.Where(bodyPart => bodyPart.active))
-        {
-            if (bodyPart.attachedTo == null || bodyPart.attachedTo.parent == transform)
-            {
-                HandleDetachedLimb(bodyPart);
-            }
-            else
-            {
-                HandleAttachedLimb(bodyPart);
-            }
-        }
-
-        // Use interpolation to reduce network load
         if (IsOwner)
         {
+            foreach (BodyPart bodyPart in bodyParts.Where(bodyPart => bodyPart.active))
+            {
+                if (bodyPart.attachedTo == null || bodyPart.attachedTo.parent == transform)
+                {
+                    HandleDetachedLimb(bodyPart);
+                }
+                else
+                {
+                    HandleAttachedLimb(bodyPart);
+                }
+            }
+            
+            // Use interpolation to reduce network load
             _networkPosition.Value = transform.position;
             _networkRotation.Value = transform.rotation;
         }
@@ -137,6 +139,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     private void HandleDetachedLimb(BodyPart bodyPart)
     {
+        if (!IsOwner) return;
+        
         _moveToExactPositionTimer = 0.0f;
         if (!_wasMatchingPosition) return;
         _wasMatchingPosition = false;
@@ -153,6 +157,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     private void HandleAttachedLimb(BodyPart bodyPart)
     {
+        if (!IsOwner) return;
         if (matchPositionExactly)
         {
             if (lerpBeforeMatchingPosition && _moveToExactPositionTimer < lerpDuration)
@@ -175,6 +180,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     private void ApplyForcesToLimb(Rigidbody limb, Transform target)
     {
+        if (!IsOwner) return;
+        
         _forceDirection = (target.position - limb.position).normalized;
         float distance = Vector3.Distance(target.position, limb.position);
         
@@ -197,6 +204,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     private void ResetBodyPositionIfTooFarFromAttachment(BodyPart activeBodyPart)
     {
+        if (!IsOwner) return;
+        
         foreach (BodyPart bodyPart in bodyParts.Where(
                      bodyPart => Vector3.Distance(
                                      bodyPart.limbRigidbody.position,
@@ -210,6 +219,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     private void EnableCollisionOnBodyParts()
     {
+        if (!IsOwner) return;
+        
         foreach (BodyPart bodyPart in bodyParts)
         {
             bodyPart.limbCollider.enabled = true;
@@ -228,6 +239,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     public void AttachLimbToTransform(string bodyPartName, Transform transformToAttachTo, bool retainVelocity = false)
     {
+        if (!IsOwner) return;
+        
         LogDebug($"In {nameof(AttachLimbToTransform)}");
         BodyPart bodyPart = bodyParts.Find(bp => bp.name == bodyPartName);
         if (bodyPart == null)
@@ -257,6 +270,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     public void DetachLimbFromTransform(string bodyPartName, bool retainVelocity = false)
     {
+        if (!IsOwner) return;
+        
         LogDebug($"In {nameof(DetachLimbFromTransform)}");
         BodyPart bodyPart = bodyParts.Find(bp => bp.name == bodyPartName);
         if (bodyPart == null) return;
@@ -284,31 +299,20 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
         _lastReceivedRotation = newRotation;
         _lastReceivedTime = Time.time;
     }
-
-    // public void SetRagdollPositionSafely(Vector3 newPosition, bool disableSpecialEffects = false)
-    // {
-    //     transform.position = newPosition + Vector3.up * 2.5f;
-    //     foreach (Rigidbody bodyPart in bodyParts)
-    //     {
-    //         bodyPart.velocity = Vector3.zero;
-    //     }
-    // }
     
     private void SubscribeToNetworkEvents()
     {
-        if (IsOwner && _networkEventsSubscribed) return;
+        if (IsOwner || _networkEventsSubscribed) return;
         _networkPosition.OnValueChanged += OnNetworkPositionChanged;
         _networkRotation.OnValueChanged += OnNetworkRotationChanged;
-
         _networkEventsSubscribed = true;
     }
 
     private void UnsubscribeFromNetworkEvents()
     {
-        if (IsOwner && !_networkEventsSubscribed) return;
+        if (IsOwner || !_networkEventsSubscribed) return;
         _networkPosition.OnValueChanged -= OnNetworkPositionChanged;
         _networkRotation.OnValueChanged -= OnNetworkRotationChanged;
-
         _networkEventsSubscribed = false;
     }
     

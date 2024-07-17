@@ -15,6 +15,9 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler> {
         Assets = new AloeAssets("aloebracken");
         Config = new AloeConfig(BiodiversityPlugin.Instance.CreateConfig("aloe"));
 
+        Assets.EnemyType.PowerLevel = Config.PowerLevel;
+        Assets.EnemyType.MaxCount = Config.MaxAmount;
+
         RegisterEnemyWithConfig(
             Config.AloeEnabled, 
             Config.Rarity,

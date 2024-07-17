@@ -1,16 +1,18 @@
 ﻿using BepInEx.Logging;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 using Logger = BepInEx.Logging.Logger;
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
+[SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public class BaseStateMachineBehaviour : StateMachineBehaviour
 {
     protected ManualLogSource Mls;
     protected string AloeId;
     
     protected AloeNetcodeController NetcodeController;
-    protected AloeServer AloeServer;
+    protected AloeServer AloeServerInstance;
 
     private bool _networkEventsSubscribed;
 
@@ -24,30 +26,24 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
         UnsubscribeToNetworkEvents();
     }
 
-    public void Initialize(AloeNetcodeController receivedNetcodeController, AloeServer aloeServer)
+    public void Initialize(AloeNetcodeController receivedNetcodeController, AloeServer receivedAloeServer)
     {
         NetcodeController = receivedNetcodeController;
-        AloeServer = aloeServer;
+        AloeServerInstance = receivedAloeServer;
         SubscribeToNetworkEvents();
     }
 
     private void SubscribeToNetworkEvents()
     {
-        if (_networkEventsSubscribed) return;
-        if (NetcodeController == null) return;
-        
+        if (_networkEventsSubscribed || NetcodeController == null) return;
         NetcodeController.OnSyncAloeId += HandleSyncAloeId;
-
         _networkEventsSubscribed = true;
     }
 
     private void UnsubscribeToNetworkEvents()
     {
-        if (!_networkEventsSubscribed) return;
-        if (NetcodeController == null) return;
-        
+        if (!_networkEventsSubscribed || NetcodeController == null) return;
         NetcodeController.OnSyncAloeId -= HandleSyncAloeId;
-        
         _networkEventsSubscribed = false;
     }
 

@@ -23,9 +23,9 @@ public class AggressiveStalkingState : BehaviourState
         ];
     }
 
-    public override void OnStateEnter()
+    public override void OnStateEnter(ref StateData initData)
     {
-        base.OnStateEnter();
+        base.OnStateEnter(ref initData);
         AloeServerInstance.agentMaxSpeed = NormalAgentMaxSpeed;
         AloeServerInstance.agentMaxAcceleration = NormalAgentMaxAcceleration;
         AloeServerInstance.inGrabAnimation = false;

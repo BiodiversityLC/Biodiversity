@@ -14,9 +14,10 @@ public class CuddlingPlayerState : BehaviourState
         ];
     }
 
-    public override void OnStateEnter()
+    public override void OnStateEnter(ref StateData initData)
     {
-        base.OnStateEnter();
+        base.OnStateEnter(ref initData);
+        
         AloeServerInstance.agent.speed = 0;
         AloeServerInstance.agentMaxSpeed = 0f;
         AloeServerInstance.agentMaxAcceleration = 50f;

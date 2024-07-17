@@ -14,6 +14,7 @@ public class AvoidingPlayerState : BehaviourState
     private float _avoidPlayerTimerTotal;
 
     private bool _shouldTransitionToAttacking;
+    private bool _avoidingAnEnemy;
 
     public AvoidingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
@@ -24,9 +25,10 @@ public class AvoidingPlayerState : BehaviourState
         ];
     }
 
-    public override void OnStateEnter()
+    public override void OnStateEnter(ref StateData initData)
     {
-        base.OnStateEnter();
+        base.OnStateEnter(ref initData);
+        
         AloeServerInstance.agentMaxSpeed = 9f;
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.agent.acceleration = 50f;
@@ -38,9 +40,8 @@ public class AvoidingPlayerState : BehaviourState
         
         AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
         
-        if (AloeServerInstance.overridePlaySpottedAnimation)
+        if (initData.ContainsKey("overridePlaySpottedAnimation") && initData.Get<bool>("overridePlaySpottedAnimation"))
         {
-            AloeServerInstance.overridePlaySpottedAnimation = false;
             AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, true);
         }
         else

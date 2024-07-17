@@ -15,9 +15,10 @@ public class AttackingPlayerState : BehaviourState
         ];
     }
 
-    public override void OnStateEnter()
+    public override void OnStateEnter(ref StateData initData)
     {
-        base.OnStateEnter();
+        base.OnStateEnter(ref initData);
+        
         AloeServerInstance.agentMaxSpeed = 5f;
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;

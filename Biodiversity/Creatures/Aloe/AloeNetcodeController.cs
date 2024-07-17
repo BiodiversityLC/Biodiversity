@@ -37,14 +37,20 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, float> OnPlayHealingVfx;
     public event Action<string, AloeClient.AudioClipTypes, int, bool> OnPlayAudioClipType;
     public event Action<string, ulong> OnSnapPlayerNeck;
-    public event Action<string> OnGrabTargetPlayer;
     public event Action<string, float, float> OnChangeLookAimConstraintWeight;
     public event Action<string, float> OnTransitionToRunningForwardsAndCarryingPlayer;
     public event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
+    public event Action<string, ulong, int> OnDamagePlayer;
 
     private void Awake()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller");
+    }
+
+    [ClientRpc]
+    public void DamagePlayerClientRpc(string receivedAloeId, ulong playerId, int damage)
+    {
+        OnDamagePlayer?.Invoke(receivedAloeId, playerId, damage);
     }
 
     [ClientRpc]
@@ -64,12 +70,6 @@ public class AloeNetcodeController : NetworkBehaviour
     public void ChangeLookAimConstraintWeightClientRpc(string receivedAloeId, float endWeight, float duration = -1f)
     {
         OnChangeLookAimConstraintWeight?.Invoke(receivedAloeId, endWeight, duration);
-    }
-
-    [ServerRpc]
-    public void GrabTargetPlayerServerRpc(string receivedAloeId)
-    {
-        OnGrabTargetPlayer?.Invoke(receivedAloeId);
     }
 
     [ClientRpc]

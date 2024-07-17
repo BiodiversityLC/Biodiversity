@@ -12,9 +12,10 @@ public class SpawningState : BehaviourState
         ];
     }
     
-    public override void OnStateEnter()
+    public override void OnStateEnter(ref StateData initData)
     {
-        base.OnStateEnter();
+        base.OnStateEnter(ref initData);
+        
         AloeServerInstance.agentMaxSpeed = 0f;
         AloeServerInstance.agentMaxAcceleration = 50f;
         
@@ -25,16 +26,16 @@ public class SpawningState : BehaviourState
         AloeServerInstance.PickFavouriteSpot();
     }
 
-    // private class TransitionToPassiveRoaming(AloeServer aloeServerInstance) : StateTransition(aloeServerInstance)
+    // private class TransitionToPassiveRoaming(AloeServerInstance aloeServerInstance) : StateTransition(aloeServerInstance)
     // {
     //     public override bool ShouldTransitionBeTaken()
     //     {
     //         return !AloeServerInstance.netcodeController.AnimationParamSpawning.Value;
     //     }
     //
-    //     public override AloeServer.States NextState()
+    //     public override AloeServerInstance.States NextState()
     //     {
-    //         return AloeServer.States.Roaming;
+    //         return AloeServerInstance.States.Roaming;
     //     }
     // }
 }

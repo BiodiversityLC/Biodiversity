@@ -7,10 +7,11 @@ public abstract class BehaviourState(AloeServer aloeServerInstance, AloeServer.S
     protected readonly AloeServer AloeServerInstance = aloeServerInstance;
 
     public List<StateTransition> Transitions = [];
-
-    public virtual void OnStateEnter()
+    
+    public virtual void OnStateEnter(ref StateData initData)
     {
         AloeServerInstance.LogDebug($"OnStateEnter called for {stateType}.");
+        initData ??= new StateData();
     }
     
     public virtual void UpdateBehaviour(){}
