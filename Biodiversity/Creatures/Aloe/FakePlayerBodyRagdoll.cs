@@ -52,12 +52,13 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     public float maxDistanceToReset = 4.0f;
 
     private bool _wasMatchingPosition;
+    private bool _networkEventsSubscribed;
 
     private float _moveToExactPositionTimer;
     private float _restBodyPartsTimer;
     private float _lastReceivedTime;
-    private float _positionLerpTime = 0.1f;
-    
+    private const float PositionLerpTime = 0.1f;
+
     private Vector3 _forceDirection;
     private Vector3 _lastReceivedPosition;
 
@@ -74,20 +75,17 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
     private void OnEnable()
     {
-        if (IsOwner) return;
-        _networkPosition.OnValueChanged += OnNetworkPositionChanged;
-        _networkRotation.OnValueChanged += OnNetworkRotationChanged;
+        SubscribeToNetworkEvents();
     }
 
     private void OnDisable()
     {
-        if (IsOwner) return;
-        _networkPosition.OnValueChanged -= OnNetworkPositionChanged;
-        _networkRotation.OnValueChanged -= OnNetworkRotationChanged;
+        UnsubscribeFromNetworkEvents();
     }
 
     private void Start()
     {
+        SubscribeToNetworkEvents();
         LogDebug("Fake player body ragdoll spawned");
     }
     
@@ -130,7 +128,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
         else
         {
             float timeSinceLastUpdate = Time.time - _lastReceivedTime;
-            float t = timeSinceLastUpdate / _positionLerpTime;
+            float t = timeSinceLastUpdate / PositionLerpTime;
 
             transform.position = Vector3.Lerp(transform.position, _lastReceivedPosition, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, _lastReceivedRotation, t);
@@ -295,6 +293,24 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     //         bodyPart.velocity = Vector3.zero;
     //     }
     // }
+    
+    private void SubscribeToNetworkEvents()
+    {
+        if (IsOwner && _networkEventsSubscribed) return;
+        _networkPosition.OnValueChanged += OnNetworkPositionChanged;
+        _networkRotation.OnValueChanged += OnNetworkRotationChanged;
+
+        _networkEventsSubscribed = true;
+    }
+
+    private void UnsubscribeFromNetworkEvents()
+    {
+        if (IsOwner && !_networkEventsSubscribed) return;
+        _networkPosition.OnValueChanged -= OnNetworkPositionChanged;
+        _networkRotation.OnValueChanged -= OnNetworkRotationChanged;
+
+        _networkEventsSubscribed = false;
+    }
     
     /// <summary>
     /// Only logs the given message if the assembly version is in debug, not release

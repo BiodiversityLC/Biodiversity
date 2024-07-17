@@ -34,7 +34,7 @@ public class SpawningState : BehaviourState
     //
     //     public override AloeServer.States NextState()
     //     {
-    //         return AloeServer.States.PassiveRoaming;
+    //         return AloeServer.States.Roaming;
     //     }
     // }
 }

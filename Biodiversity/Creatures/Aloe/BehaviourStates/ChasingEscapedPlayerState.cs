@@ -27,6 +27,7 @@ public class ChasingEscapedPlayerState : BehaviourState
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
         AloeServerInstance.inGrabAnimation = false;
         
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.9f, 0.5f);
         AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId, AloeClient.AudioClipTypes.Chase);
         AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(AloeServerInstance.aloeId, AloeClient.Stand);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
@@ -49,7 +50,7 @@ public class ChasingEscapedPlayerState : BehaviourState
         {
             if (!AloeServerInstance.movingTowardsTargetPlayer)
             {
-                AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.6f, 0.25f);
+                AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.25f);
             }
             
             if (AloeUtils.IsPlayerTargetable(AloeServerInstance.ActualTargetPlayer.Value))
@@ -76,7 +77,7 @@ public class ChasingEscapedPlayerState : BehaviourState
         }
         else
         {
-            AloeServerInstance.netcodeController.LookTargetPosition.Value = AloeServerInstance.lookAheadVector;
+            AloeServerInstance.netcodeController.LookTargetPosition.Value = AloeServerInstance.GetLookAheadVector();
         }
     }
 
@@ -113,7 +114,7 @@ public class ChasingEscapedPlayerState : BehaviourState
 
         public override AloeServer.States NextState()
         {
-            return AloeServer.States.PassiveRoaming;
+            return AloeServer.States.Roaming;
         }
     }
 }

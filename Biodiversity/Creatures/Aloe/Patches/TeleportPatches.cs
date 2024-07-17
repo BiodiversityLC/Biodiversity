@@ -18,10 +18,11 @@ internal class TeleportPatches
         if (!__instance.IsHost && !__instance.IsServer) return;
         if (__instance == null) return;
 
-        if (!AloeSharedData.Instance.AloeBoundKidnaps.ContainsValue(__instance)) return;
+        if (!AloeSharedData.Instance.IsPlayerKidnapBound(__instance)) return;
         AloeServer aloeAI = AloeSharedData.Instance.AloeBoundKidnaps.FirstOrDefault(x => x.Value == __instance).Key;
+        
         if (aloeAI == null) return;
+        AloeSharedData.Instance.UnbindStalk(aloeAI);
         aloeAI.SetTargetPlayerEscapedByTeleportation();
-        AloeSharedData.Instance.AloeBoundKidnaps.Remove(aloeAI);
     }
 }

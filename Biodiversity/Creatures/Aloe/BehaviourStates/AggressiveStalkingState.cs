@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class StalkingPlayerToKidnapState : BehaviourState
+public class AggressiveStalkingState : BehaviourState
 {
     private bool _isPlayerReachable;
 
@@ -14,7 +14,7 @@ public class StalkingPlayerToKidnapState : BehaviourState
     private const float GrabAnimationAgentMaxAcceleration = 200f;
     private const float NormalAgentMaxAcceleration = 50f;
     
-    public StalkingPlayerToKidnapState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+    public AggressiveStalkingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -134,18 +134,19 @@ public class StalkingPlayerToKidnapState : BehaviourState
 
     private class TransitionToPassiveRoaming(
         AloeServer aloeServerInstance,
-        StalkingPlayerToKidnapState stalkingPlayerToKidnapState)
+        AggressiveStalkingState aggressiveStalkingState)
         : StateTransition(aloeServerInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            return AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value) ||
-                   !stalkingPlayerToKidnapState._isPlayerReachable;
+            bool isPlayerDead = AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value);
+            AloeServerInstance.LogDebug($"Is player dead?: {isPlayerDead}");
+            return isPlayerDead || !aggressiveStalkingState._isPlayerReachable;
         }
 
         public override AloeServer.States NextState()
         {
-            return AloeServer.States.PassiveRoaming;
+            return AloeServer.States.Roaming;
         }
     }
 }

@@ -35,7 +35,7 @@ public class HealingPlayerState : BehaviourState
         AloeServerInstance.netcodeController.UnMuffleTargetPlayerVoiceClientRpc(AloeServerInstance.aloeId);
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 1f, 1f);
 
-        int playerMaxHealth = AloeUtils.GetPlayerMaxHealth(AloeServerInstance.ActualTargetPlayer.Value);
+        int playerMaxHealth = AloeSharedData.Instance.GetPlayerMaxHealth(AloeServerInstance.ActualTargetPlayer.Value);
         if (AloeServerInstance.ActualTargetPlayer.Value.health == playerMaxHealth)
         {
             AloeServerInstance.LogDebug("Target player is already at max health, switching to cuddling player.");
@@ -65,7 +65,7 @@ public class HealingPlayerState : BehaviourState
         if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
             AloeServerInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
         
-        int targetPlayerMaxHealth = AloeUtils.GetPlayerMaxHealth(AloeServerInstance.ActualTargetPlayer.Value);
+        int targetPlayerMaxHealth = AloeSharedData.Instance.GetPlayerMaxHealth(AloeServerInstance.ActualTargetPlayer.Value);
         if (AloeServerInstance.ActualTargetPlayer.Value.health < targetPlayerMaxHealth)
         {
             // First check if the current heal amount will give the player too much health

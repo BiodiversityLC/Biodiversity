@@ -32,10 +32,7 @@ internal class StartOfRoundPatch
     {
         foreach (PlayerControllerB player in __instance.allPlayerScripts)
         {
-            if (AloeSharedData.Instance.PlayersMaxHealth.ContainsKey(player))
-                AloeSharedData.Instance.PlayersMaxHealth.Remove(player);
-            
-            AloeSharedData.Instance.PlayersMaxHealth.Add(player, player.health);
+            AloeSharedData.Instance.SetPlayerMaxHealth(player, player.health);
         }
     }
 }

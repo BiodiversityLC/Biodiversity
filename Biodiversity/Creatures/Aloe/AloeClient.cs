@@ -80,12 +80,12 @@ public class AloeClient : MonoBehaviour
         new Tuple<string, Type>("LOD3", typeof(SkinnedMeshRenderer)),
         new Tuple<string, Type>("LevelSticker", typeof(MeshRenderer)),
         new Tuple<string, Type>("BetaBadge", typeof(MeshRenderer)),
-        new Tuple<string, Type>("Circle", typeof(SkinnedMeshRenderer)),
-        new Tuple<string, Type>("CopyHeldProp", typeof(MeshRenderer)),
-        new Tuple<string, Type>("PlayerPhysicsBox", typeof(MeshRenderer)),
-        new Tuple<string, Type>("LineOfSightCube", typeof(MeshRenderer)),
-        new Tuple<string, Type>("LineOfSightCubeSmall", typeof(MeshRenderer)),
-        new Tuple<string, Type>("LineOfSight2", typeof(MeshRenderer)),
+        // new Tuple<string, Type>("Circle", typeof(SkinnedMeshRenderer)),
+        // new Tuple<string, Type>("CopyHeldProp", typeof(MeshRenderer)),
+        // new Tuple<string, Type>("PlayerPhysicsBox", typeof(MeshRenderer)),
+        // new Tuple<string, Type>("LineOfSightCube", typeof(MeshRenderer)),
+        // new Tuple<string, Type>("LineOfSightCubeSmall", typeof(MeshRenderer)),
+        // new Tuple<string, Type>("LineOfSight2", typeof(MeshRenderer)),
     ];
 
 #if !UNITY_EDITOR
@@ -138,7 +138,7 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float lookBlendDuration = 0.5f;
     [SerializeField] private float smoothLookTargetPositionTime = 0.3f;
     
-    private Dictionary<ulong, List<Component>> _targetPlayersCachedRenderers = new();
+    private readonly Dictionary<ulong, List<Component>> _targetPlayersCachedRenderers = new();
 
     private readonly NullableObject<PlayerControllerB> _targetPlayer = new();
 
@@ -719,6 +719,12 @@ public class AloeClient : MonoBehaviour
 
     private void ToggleTargetPlayerRenderers(bool setToEnabled)
     {
+        if (!_targetPlayer.IsNotNull)
+        {
+            _mls.LogError("Cannot toggle target player renderers because the target player variable is null.");
+            return;
+        }
+        
         ulong targetPlayerId = _targetPlayer.Value.actualClientId;
         if (_targetPlayersCachedRenderers.TryGetValue(targetPlayerId, out List<Component> rendererComponents))
         {
@@ -729,19 +735,38 @@ public class AloeClient : MonoBehaviour
         }
         else
         {
+            List<Component> newRendererComponents = [];
             foreach (Tuple<string, Type> rendererTuple in _playerRendererObjects)
             {
-                Transform rendererTransform = _targetPlayer.Value.transform.Find(rendererTuple.Item1);
-                if (rendererTransform == null) continue;
-                LogDebug($"Found transform for renderer: {rendererTuple.Item1}");
-            
-                Renderer rendererComponent = rendererTransform.GetComponent(rendererTuple.Item2) as Renderer;
-                if (rendererComponent == null) continue;
-                LogDebug($"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
+                try
+                {
+                    Transform rendererTransform = _targetPlayer.Value.transform.Find(rendererTuple.Item1);
+                    if (rendererTransform == null)
+                    {
+                        _mls.LogWarning($"Transform not found for renderer: {rendererTuple.Item1}");
+                        continue;
+                    }
+                    LogDebug($"Found transform for renderer: {rendererTuple.Item1}");
 
-                rendererComponent.enabled = setToEnabled;
-                _targetPlayersCachedRenderers[targetPlayerId].Add(rendererComponent);
-            } 
+                    if (rendererTransform.GetComponent(rendererTuple.Item2) is Renderer rendererComponent)
+                    {
+                        LogDebug($"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
+                        rendererComponent.enabled = setToEnabled;
+                        newRendererComponents.Add(rendererComponent);
+                    }
+                    else
+                    {
+                        _mls.LogWarning($"Component of type {rendererTuple.Item2} not found or incorrect type for renderer: {rendererTuple.Item1}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _mls.LogError($"Error processing renderer: {rendererTuple.Item1} for player ID {targetPlayerId}: {ex.Message}");
+                }
+            }
+
+            if (newRendererComponents.Count > 0)
+                _targetPlayersCachedRenderers[targetPlayerId] = newRendererComponents;
         }
     }
 
@@ -786,7 +811,6 @@ public class AloeClient : MonoBehaviour
     /// <param name="duration">The duration of the blend.</param>
     private void HandleChangeLookAimConstraintWeight(string receivedAloeId, float endWeight, float duration = -1f)
     {
-        return;
         if (_aloeId != receivedAloeId) return;
         if (duration < 0f) duration = lookBlendDuration;
         LogDebug(
@@ -799,7 +823,9 @@ public class AloeClient : MonoBehaviour
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
         _targetPlayer.Value = newValue == 69420 ? null : StartOfRound.Instance.allPlayerScripts[newValue];
-        if (_targetPlayer.IsNotNull) LogDebug($"Changed target player to {_targetPlayer.Value?.playerUsername}.");
+        LogDebug(_targetPlayer.IsNotNull
+            ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
+            : "Changed target player to null.");
     }
 
     private void HandleLookTargetPositionChanged(Vector3 oldValue, Vector3 newValue)

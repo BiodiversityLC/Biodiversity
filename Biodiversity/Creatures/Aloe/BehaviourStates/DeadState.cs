@@ -26,8 +26,12 @@ public class DeadState : BehaviourState
         AloeServerInstance.isEnemyDead = true;
 
         AloeServerInstance.netcodeController.AnimationParamDead.Value = true;
+        
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.lookAheadVector);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
+        
+        AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
+        
         AloeServerInstance.SetTargetPlayerInCaptivity(false);
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
             AloeServerInstance.aloeId, 0, 0f);

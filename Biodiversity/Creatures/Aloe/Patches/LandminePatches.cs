@@ -26,7 +26,7 @@ internal class LandminePatch
         }
 
         PlayerControllerB component = other.gameObject.GetComponent<PlayerControllerB>();
-        if (component != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsValue(component) && !component.isPlayerDead)
+        if (component != null && AloeSharedData.Instance.IsPlayerKidnapBound(component) && !component.isPlayerDead)
         {
             return false;
         }
@@ -47,7 +47,7 @@ internal class LandminePatch
         }
 
         PlayerControllerB component = other.gameObject.GetComponent<PlayerControllerB>();
-        if (component != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsValue(component) && !component.isPlayerDead)
+        if (component != null && AloeSharedData.Instance.IsPlayerKidnapBound(component) && !component.isPlayerDead)
         {
             return false;
         }

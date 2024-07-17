@@ -457,7 +457,7 @@ public static class AloeUtils
         return !IsPlayerDead(player) &&
                player.isInsideFactory &&
                !(player.sinkingValue >= 0.7300000190734863) &&
-               !AloeSharedData.Instance.AloeBoundKidnaps.ContainsValue(player);
+               !AloeSharedData.Instance.IsPlayerKidnapBound(player);
     }
     
     /// <summary>
@@ -492,22 +492,6 @@ public static class AloeUtils
         }
         
         return insideNodePositions;
-    }
-    
-    /// <summary>
-    /// Gets the max health of the given player
-    /// This is needed because mods may increase the max health of a player
-    /// </summary>
-    /// <param name="player">The player to get the max health.</param>
-    /// <returns>The player's max health</returns>
-    public static int GetPlayerMaxHealth(PlayerControllerB player)
-    {
-        if (AloeSharedData.Instance.PlayersMaxHealth.ContainsKey(player))
-        {
-            return AloeSharedData.Instance.PlayersMaxHealth[player];
-        }
-
-        return -1;
     }
     
     /// <summary>

@@ -12,6 +12,6 @@ public class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
 
         LogDebug("Spawn animation complete.");
         
-        if (AloeServer.IsServer) AloeServer.SwitchBehaviourState(AloeServer.States.PassiveRoaming);
+        if (AloeServer.IsServer) AloeServer.SwitchBehaviourState(AloeServer.States.Roaming);
     }
 }

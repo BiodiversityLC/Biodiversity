@@ -12,7 +12,7 @@ internal static class EnemyAIPatches
     private static bool PlayerIsTargetablePatch(EnemyAI __instance, PlayerControllerB playerScript, ref bool __result)
     {
         // Stops the player from being targeted by enemies if they are being kidnapped
-        if (!AloeSharedData.Instance.AloeBoundKidnaps.ContainsValue(playerScript)) return true;
+        if (!AloeSharedData.Instance.IsPlayerKidnapBound(playerScript)) return true;
         __result = false;
         return false;
     }

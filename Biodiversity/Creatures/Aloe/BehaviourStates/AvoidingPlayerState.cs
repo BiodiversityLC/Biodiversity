@@ -35,7 +35,9 @@ public class AvoidingPlayerState : BehaviourState
         _avoidPlayerAudioTimer = 4.1f;
         _avoidPlayerIntervalTimer = 0f;
         _avoidPlayerTimerTotal = 0f;
-
+        
+        AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
+        
         if (AloeServerInstance.overridePlaySpottedAnimation)
         {
             AloeServerInstance.overridePlaySpottedAnimation = false;
@@ -76,7 +78,7 @@ public class AvoidingPlayerState : BehaviourState
         // This only triggers on the first frame after the spotted animation has been completed
         if (!AloeServerInstance.moveTowardsDestination)
         {
-            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.lookAheadVector);
+            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
             AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 1f);
         }
 

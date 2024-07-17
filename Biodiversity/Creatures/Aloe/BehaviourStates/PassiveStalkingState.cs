@@ -4,18 +4,18 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class PassivelyStalkingPlayerState : BehaviourState
+public class PassiveStalkingState : BehaviourState
 {
     private bool _isStaringAtTargetPlayer;
     private bool _isPlayerReachable;
     
-    public PassivelyStalkingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+    public PassiveStalkingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
         [
             new TransitionToAvoidingPlayer(aloeServerInstance, this),
+            new TransitionToPassiveRoaming(aloeServerInstance, this),
             new TransitionToStalkingPlayerToKidnap(aloeServerInstance),
-            new TransitionToPassiveRoaming(aloeServerInstance, this)
         ];
     }
 
@@ -40,6 +40,7 @@ public class PassivelyStalkingPlayerState : BehaviourState
 
     public override void AIIntervalBehaviour()
     {
+        _isPlayerReachable = true;
         if (!AloeServerInstance.ActualTargetPlayer.IsNotNull) return;
         
         // See if the aloe can stare at the player
@@ -54,7 +55,6 @@ public class PassivelyStalkingPlayerState : BehaviourState
             AloeServerInstance.moveTowardsDestination = false;
             AloeServerInstance.movingTowardsTargetPlayer = false;
             _isStaringAtTargetPlayer = true;
-            _isPlayerReachable = true;
         }
         // If she cant stare, then go and find the player
         else
@@ -85,8 +85,6 @@ public class PassivelyStalkingPlayerState : BehaviourState
 
                 if (pathStatus == AloeUtils.PathStatus.Invalid) AloeServerInstance.moveTowardsDestination = false;
                 else AloeServerInstance.SetDestinationToPosition(closestNodeToPlayer.position);
-
-                _isPlayerReachable = true;
             }
             else
             {
@@ -97,7 +95,7 @@ public class PassivelyStalkingPlayerState : BehaviourState
         AloeServerInstance.LogDebug($"Is player reachable: {_isPlayerReachable}");
     }
     
-    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance, PassivelyStalkingPlayerState passivelyStalkingPlayerState)
+    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance, PassiveStalkingState passiveStalkingState)
         : StateTransition(aloeServerInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
@@ -121,7 +119,7 @@ public class PassivelyStalkingPlayerState : BehaviourState
             AloeServerInstance.timesFoundSneaking++;
             
             // Greatly increase fear level if the player turns around to see the Aloe starting at them
-            if (passivelyStalkingPlayerState._isStaringAtTargetPlayer &&
+            if (passiveStalkingState._isStaringAtTargetPlayer &&
                 AloeServerInstance.ActualTargetPlayer.Value == AloeServerInstance.AvoidingPlayer.Value)
                 AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
                     AloeServerInstance.aloeId, 0.8f, AloeServerInstance.AvoidingPlayer.Value.playerClientId);
@@ -130,19 +128,30 @@ public class PassivelyStalkingPlayerState : BehaviourState
 
     private class TransitionToPassiveRoaming(
         AloeServer aloeServerInstance,
-        PassivelyStalkingPlayerState passivelyStalkingPlayerState)
+        PassiveStalkingState passiveStalkingState)
         : StateTransition(aloeServerInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            AloeServerInstance.LogDebug($"Is player dead?: {AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value)}");
-            return AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value) ||
-                   !passivelyStalkingPlayerState._isPlayerReachable;
+            if (AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value))
+            {
+                AloeServerInstance.LogDebug("Player that I was stalking is dead, switching back to passive roaming.");
+                return true;
+            }
+
+            if (!passiveStalkingState._isPlayerReachable)
+            {
+                AloeServerInstance.LogDebug("Player that I was stalking isn't reachable, switching back to passive roaming.");
+                return true;
+            }
+            
+            return false;
+
         }
 
         public override AloeServer.States NextState()
         {
-            return AloeServer.States.PassiveRoaming;
+            return AloeServer.States.Roaming;
         }
     }
     
@@ -151,24 +160,13 @@ public class PassivelyStalkingPlayerState : BehaviourState
     {
         public override bool ShouldTransitionBeTaken()
         {
-            // Check if a player has below "playerHealthThresholdForHealing" % of health
-            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
-            {
-                if (player.HasLineOfSightToPosition(AloeServerInstance.eye.transform.position))
-                    AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(AloeServerInstance.aloeId, 0.5f, player.playerClientId);
-                    
-                if (!AloeServerInstance.PlayerIsStalkable(player)) continue;
-
-                AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, player.actualClientId);
-                return true;
-            }
-
-            return false;
+            return AloeServerInstance.ActualTargetPlayer.Value.health <=
+                   AloeServerInstance.PlayerHealthThresholdForHealing;
         }
 
         public override AloeServer.States NextState()
         {
-            return AloeServer.States.StalkingPlayerToKidnap;
+            return AloeServer.States.AggressiveStalking;
         }
     }
 }

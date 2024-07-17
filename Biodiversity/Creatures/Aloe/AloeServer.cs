@@ -14,6 +14,8 @@ using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Aloe;
 
+// Todo: Make a dictionary in the aloe shared data that ignores players that are dead so it doesnt keep on targeting them
+
 public class AloeServer : BiodiverseAI
 {
     [HideInInspector] public ManualLogSource Mls;
@@ -28,9 +30,8 @@ public class AloeServer : BiodiverseAI
     
     [SerializeField] private float roamingRadius = 50f;
     [SerializeField] private int proximityAwareness = 3;
-    [SerializeField] private int playerHealthThresholdForStalking = 90;
-    [SerializeField] private int playerHealthThresholdForHealing = 45;
-    
+    public int PlayerHealthThresholdForStalking { get; private set; } = 90;
+    public int PlayerHealthThresholdForHealing { get; private set; } = 45;
     public float ViewWidth { get; private set; } = 115f;
     public int ViewRange { get; private set; } = 80;
     public float PassiveStalkStaredownDistance { get; private set; } = 10f;
@@ -47,8 +48,7 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public BehaviourState PreviousState;
     private Dictionary<States, BehaviourState> _stateDictionary = [];
     private BehaviourState _currentState;
-
-    [HideInInspector] public Vector3 lookAheadVector;
+    
     [HideInInspector] public Vector3 favouriteSpot;
     private Vector3 _mainEntrancePosition;
     private Vector3 _agentLastPosition;
@@ -76,10 +76,10 @@ public class AloeServer : BiodiverseAI
     private static readonly Dictionary<Type, States> StateTypeMapping = new()
     {
         { typeof(SpawningState), States.Spawning },
-        { typeof(PassiveRoamingState), States.PassiveRoaming },
+        { typeof(RoamingState), States.Roaming },
         { typeof(AvoidingPlayerState), States.AvoidingPlayer },
-        { typeof(PassivelyStalkingPlayerState), States.PassivelyStalkingPlayer },
-        { typeof(StalkingPlayerToKidnapState), States.StalkingPlayerToKidnap },
+        { typeof(PassiveStalkingState), States.PassiveStalking },
+        { typeof(AggressiveStalkingState), States.AggressiveStalking },
         { typeof(KidnappingPlayerState), States.KidnappingPlayer },
         { typeof(HealingPlayerState), States.HealingPlayer },
         { typeof(CuddlingPlayerState), States.CuddlingPlayer },
@@ -91,10 +91,10 @@ public class AloeServer : BiodiverseAI
     public enum States
     {
         Spawning,
-        PassiveRoaming,
+        Roaming,
         AvoidingPlayer,
-        PassivelyStalkingPlayer,
-        StalkingPlayerToKidnap,
+        PassiveStalking,
+        AggressiveStalking,
         KidnappingPlayer,
         HealingPlayer,
         CuddlingPlayer,
@@ -143,11 +143,9 @@ public class AloeServer : BiodiverseAI
         // Ensure SubscribeToNetworkEvents is called again in Start to handle network initialization timing
         SubscribeToNetworkEvents();
 
-        Random.InitState(StartOfRound.Instance.randomMapSeed + aloeId.GetHashCode());
+        Random.InitState(StartOfRound.Instance.randomMapSeed + aloeId.GetHashCode() - thisEnemyIndex);
         netcodeController.SyncAloeIdClientRpc(aloeId);
         agent.updateRotation = false;
-
-        lookAheadVector = rootTransform.forward * lookAheadDistance + headBone.up;
 
         ConstructStateDictionary();
         
@@ -395,6 +393,8 @@ public class AloeServer : BiodiverseAI
 
         transform.rotation = targetRotation;
         hasTransitionedToRunningForwardsAndCarryingPlayer = true;
+        agentMaxAcceleration = 20f;
+        agentMaxSpeed = 10f;
     }
 
     /// <summary>
@@ -420,7 +420,7 @@ public class AloeServer : BiodiverseAI
         {
             switch (currentBehaviourStateIndex)
             {
-                case (int)States.Spawning or (int)States.PassiveRoaming or (int)States.PassivelyStalkingPlayer or (int)States.StalkingPlayerToKidnap:
+                case (int)States.Spawning or (int)States.Roaming or (int)States.PassiveStalking or (int)States.AggressiveStalking:
                 {
                     if (playerWhoHit != null) AvoidingPlayer.Value = playerWhoHit;
 
@@ -487,7 +487,7 @@ public class AloeServer : BiodiverseAI
         
         switch (currentBehaviourStateIndex)
         { 
-            case (int)States.Spawning or (int)States.PassiveRoaming or (int)States.PassivelyStalkingPlayer or (int)States.StalkingPlayerToKidnap:
+            case (int)States.Spawning or (int)States.Roaming or (int)States.PassiveStalking or (int)States.AggressiveStalking:
             {
                 if (setStunnedByPlayer != null) AvoidingPlayer.Value = setStunnedByPlayer;
 
@@ -537,12 +537,13 @@ public class AloeServer : BiodiverseAI
         if (!ActualTargetPlayer.IsNotNull) return;
         if (setToInCaptivity)
         {
-            if (!AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(this))
-                AloeSharedData.Instance.AloeBoundKidnaps.Add(this, ActualTargetPlayer.Value);
+            if (!AloeSharedData.Instance.IsAloeKidnapBound(this))
+                AloeSharedData.Instance.BindKidnap(this, ActualTargetPlayer.Value);
         }
-        else {
-            if (AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(this))
-                AloeSharedData.Instance.AloeBoundKidnaps.Remove(this);
+        else 
+        {
+            if (AloeSharedData.Instance.IsAloeKidnapBound(this))
+                AloeSharedData.Instance.UnbindKidnap(this);
         }
         
         netcodeController.SetTargetPlayerInCaptivityClientRpc(aloeId, setToInCaptivity);
@@ -560,7 +561,7 @@ public class AloeServer : BiodiverseAI
         LogDebug("Target player escaped by teleportation!");
         SetTargetPlayerInCaptivity(false);
         netcodeController.TargetPlayerClientId.Value = 69420;
-        SwitchBehaviourState(States.PassiveRoaming);
+        SwitchBehaviourState(States.Roaming);
     }
 
     /// <summary>
@@ -583,11 +584,13 @@ public class AloeServer : BiodiverseAI
     /// <returns>Whether the given player is stalkable</returns>
     public bool PlayerIsStalkable(PlayerControllerB player)
     {
-        int healthThreshold = _currentState.GetStateType() == States.PassiveRoaming
-            ? playerHealthThresholdForStalking
-            : playerHealthThresholdForHealing;
+        int healthThreshold = _currentState.GetStateType() == States.Roaming
+            ? PlayerHealthThresholdForStalking
+            : PlayerHealthThresholdForHealing;
         
-        return player.health <= healthThreshold && AloeUtils.IsPlayerTargetable(player);
+        return player.health <= healthThreshold && 
+               AloeUtils.IsPlayerTargetable(player) &&
+               !AloeSharedData.Instance.IsPlayerStalkBound(player);
     }
 
     /// <summary>
@@ -611,7 +614,7 @@ public class AloeServer : BiodiverseAI
     {
         if (!IsServer) return;
         if (aloeId != receivedAloeId) return;
-        if (currentBehaviourStateIndex != (int)States.StalkingPlayerToKidnap) return;
+        if (currentBehaviourStateIndex != (int)States.AggressiveStalking) return;
         
         LogDebug("Grab target player network event triggered");
         SwitchBehaviourState(States.KidnappingPlayer);
@@ -663,8 +666,13 @@ public class AloeServer : BiodiverseAI
         ActualTargetPlayer.Value = newValue == 69420 ? null : StartOfRound.Instance.allPlayerScripts[newValue];
         targetPlayer = ActualTargetPlayer.Value;
         LogDebug(ActualTargetPlayer.IsNotNull
-            ? $"Changed target player to {ActualTargetPlayer.Value?.playerUsername},"
-            : "Changed target player to null,");
+            ? $"Changed target player to {ActualTargetPlayer.Value?.playerUsername}."
+            : "Changed target player to null.");
+    }
+
+    public Vector3 GetLookAheadVector()
+    {
+        return rootTransform.forward * lookAheadDistance + headBone.up;
     }
 
     /// <summary>
@@ -708,8 +716,8 @@ public class AloeServer : BiodiverseAI
         roamingRadius = Config.RoamingRadius;
         ViewWidth = Config.ViewWidth;
         ViewRange = Config.ViewRange;
-        playerHealthThresholdForStalking = Config.PlayerHealthThresholdForStalking;
-        playerHealthThresholdForHealing = Config.PlayerHealthThresholdForHealing;
+        PlayerHealthThresholdForStalking = Config.PlayerHealthThresholdForStalking;
+        PlayerHealthThresholdForHealing = Config.PlayerHealthThresholdForHealing;
         TimeItTakesToFullyHealPlayer = Config.TimeItTakesToFullyHealPlayer;
         PassiveStalkStaredownDistance = Config.PassiveStalkStaredownDistance;
         WaitBeforeChasingEscapedPlayerTime = Config.WaitBeforeChasingEscapedPlayerTime;
