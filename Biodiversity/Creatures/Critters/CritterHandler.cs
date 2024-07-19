@@ -12,6 +12,6 @@ internal class CritterHandler : BiodiverseAIHandler<CritterHandler> {
 		Assets = new CritterAssets("critters");
 		Config = new CritterConfig(BiodiversityPlugin.Instance.CreateConfig("critters"));
 		
-		Enemies.RegisterEnemy(Assets.FungiEnemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, 100 } }, []);
+		Enemies.RegisterEnemy(Assets.PrototaxEnemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, 100 } }, []);
 	}
 }
