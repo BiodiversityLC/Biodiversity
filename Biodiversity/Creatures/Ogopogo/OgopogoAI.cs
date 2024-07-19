@@ -1,12 +1,8 @@
 ﻿using GameNetcodeStuff;
-using LethalLib.Modules;
 using Biodiversity.Util.Scripts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 using Biodiversity.General;
@@ -385,14 +381,52 @@ namespace Biodiversity.Creatures.Ogopogo
             }
         }
 
+        [ClientRpc]
+        public void TakeOutOfTruckClientRpc()
+        {
+            VehicleController vehicle = FindObjectOfType<VehicleController>();
+
+            if (vehicle == null)
+            {
+                return;
+            }
+
+            if (vehicle.localPlayerInControl)
+            {
+                vehicle.ExitDriverSideSeat();
+            }
+
+            if (vehicle.localPlayerInPassengerSeat)
+            {
+                vehicle.ExitPassengerSideSeat();
+            }
+        }
+
         // Handle grabbing
         public override void OnCollideWithPlayer(UnityEngine.Collider other)
         {
+            PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
             if (currentBehaviourStateIndex != (int)State.RESET && currentBehaviourStateIndex != (int)State.GOINGDOWN)
             {
-                SetPlayerGrabbedClientRpc((int)other.gameObject.GetComponent<PlayerControllerB>().playerClientId);
+                player.inAnimationWithEnemy = this;
+                player.inSpecialInteractAnimation = true;
+
+                inSpecialAnimationWithPlayer = player;
+
+                TakeOutOfTruckClientRpc();
+                SetPlayerGrabbedClientRpc((int)player.playerClientId);
                 this.creatureAnimator.SetInteger("AnimID", 3);
             }
+        }
+
+
+        public override void CancelSpecialAnimationWithPlayer()
+        {
+            base.CancelSpecialAnimationWithPlayer();
+            SetPlayerGrabbedClientRpc(0, true);
+            inSpecialAnimationWithPlayer.inAnimationWithEnemy = null;
+            inSpecialAnimationWithPlayer.inSpecialInteractAnimation = false;
+            inSpecialAnimationWithPlayer = null;
         }
 
         public override void DoAIInterval()
@@ -518,6 +552,9 @@ namespace Biodiversity.Creatures.Ogopogo
                         playerGrabbed.fallValue = 0f;
                         playerGrabbed.fallValueUncapped = 0f;
                         SetPlayerGrabbedClientRpc(0, true);
+                        inSpecialAnimationWithPlayer.inAnimationWithEnemy = null;
+                        inSpecialAnimationWithPlayer.inSpecialInteractAnimation = false;
+                        inSpecialAnimationWithPlayer = null;
                     }
                     
                     if (!(this.transform.position.y - water.gameObject.transform.position.y > 0f) && splineDone)
