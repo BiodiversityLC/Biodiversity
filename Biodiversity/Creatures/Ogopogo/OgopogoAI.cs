@@ -115,6 +115,51 @@ namespace Biodiversity.Creatures.Ogopogo
                 // Set the water he will stay in and teleport to it
                 water = waters[UnityEngine.Random.Range(0, waters.Count)];
                 transform.position = water.transform.position;
+
+                bool usedPredefinedPos = false;
+
+                if (StartOfRound.Instance.currentLevel.sceneName == "Level3Vow")
+                {
+                    usedPredefinedPos = true;
+
+                    int vowrand = UnityEngine.Random.Range(0, 2);
+                    if (vowrand == 0)
+                    {
+                        transform.position = new Vector3(-104.800003f, -22.0610008f, 110.330002f);
+                    }
+                    else
+                    {
+                        transform.position = new Vector3(27f, -22.0610008f, -61.2000008f);
+                    }
+                }
+                if (StartOfRound.Instance.currentLevel.sceneName == "Level10Adamance")
+                {
+                    usedPredefinedPos = true;
+
+                    int adarand = UnityEngine.Random.Range(0, 2);
+                    if (adarand == 0)
+                    {
+                        transform.position = new Vector3(58.1199989f, -11.04f, -1.85000002f);
+                    }
+                    else
+                    {
+                        transform.position = new Vector3(52.0800018f, -11.04f, -12.5900002f);
+                    }
+                }
+
+                foreach (var waterd in waters)
+                {
+                    if (usedPredefinedPos)
+                    {
+                        if (Collision2d(transform.position, water.GetComponent<BoxCollider>()))
+                        {
+                            water = waterd;
+                        }
+                    }
+                }
+
+
+
                 setWanderPos();
             }
             catch (Exception ex)

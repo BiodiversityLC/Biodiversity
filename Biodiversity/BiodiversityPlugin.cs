@@ -52,7 +52,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
 
         OgoEnabled = Config.Bind("General", "Enable Ogopogo", true, "Turn to false to disable Ogopogo spawning");
         VerminEnabled = Config.Bind("General", "Enable Vermin", true, "Turn to false to disable Vermin spawning");
-        levelsOgo = Config.Bind("General", "Ogopogo Levels", "MarchLevel:100,AdamanceLevel:100", "The moons that Ogopogo will spawn on");
+        levelsOgo = Config.Bind("General", "Ogopogo Levels", "VowLevel:34,MarchLevel:55,AdamanceLevel:85,Submersion:15,Corrosion:1,Aquatis:25,Seichi:40,Cesspool:80,Gorgonzola:5", "The moons that Ogopogo will spawn on");
         levelsVermin = Config.Bind("General", "Vermin Levels", "All:100", "The moons that Vermin will spawn on");
         OgoDetectionRange = Config.Bind("General", "Ogopogo detection range", 45f, "The range that Ogopogo will detect you at");
         OgoLoseRange = Config.Bind("General", "Ogopogo lose range", 70f, "The range that Ogopogo will lose you at");
