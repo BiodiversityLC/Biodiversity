@@ -27,16 +27,17 @@ public class DeadState : BehaviourState
 
         AloeServerInstance.netcodeController.AnimationParamDead.Value = true;
         
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
-        
-        AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
-        
         AloeServerInstance.SetTargetPlayerInCaptivity(false);
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
             AloeServerInstance.aloeId, 0, 0f);
-        AloeServerInstance.KillEnemyServerRpc(false);
+        
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServer.NullPlayerId);
+        
+        AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
         
         if (AloeServerInstance.roamMap.inProgress) AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
+        AloeServerInstance.KillEnemyServerRpc(false);
     }
 }

@@ -114,7 +114,7 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private Renderer petalsRenderer;
     [SerializeField] private MaterialPropertyBlock _propertyBlock;
     [SerializeField] private float skinMetallicTransitionTime = 7.5f;
-    [SerializeField] private float skinMetallicPropertyValue = 0.735f;
+    [SerializeField] private float skinMetallicValueDark = 0.735f;
 
     [Header("Visual Effects")] [Space(5f)] 
     [SerializeField] private VisualEffect healingOrbEffect;
@@ -455,20 +455,25 @@ public class AloeClient : MonoBehaviour
     {
         LogDebug($"Changing Aloe's skin to a {(toDark ? "dark" : "light")} colour");
         float timeElapsed = 0f;
-        float startMetallicValue = toDark ? 0 : skinMetallicPropertyValue;
-        float endMetallicValue = toDark ? skinMetallicPropertyValue : 0;
+        float startMetallicValue = toDark ? 0 : skinMetallicValueDark;
+        float endMetallicValue = toDark ? skinMetallicValueDark : 0;
 
         Color currentColour = bodyRenderer.material.GetColor(BaseColour);
         RGBToHSV(currentColour, out float h, out float s, out float v);
         float endV = toDark ? 0.5f : 1f;
 
-        // Todo: add code that exits early if the skin colour is already the desired colour
+        // Early exit if the skin colour is already the desired colour
+        if (Mathf.Approximately(v, endV) && Mathf.Approximately(bodyRenderer.material.GetFloat(Metallic), endMetallicValue))
+        {
+            _changeSkinColourCoroutine = null;
+            yield break;
+        }
 
         while (timeElapsed < skinMetallicTransitionTime)
         {
-            float currentMetallicValue = Mathf.Lerp(startMetallicValue, endMetallicValue,
-                timeElapsed / skinMetallicTransitionTime);
-            float currentV = Mathf.Lerp(v, endV, timeElapsed / skinMetallicTransitionTime);
+            float t = timeElapsed / skinMetallicTransitionTime;
+            float currentMetallicValue = Mathf.Lerp(startMetallicValue, endMetallicValue, t);
+            float currentV = Mathf.Lerp(v, endV, t);
             Color newColour = HSVToRGB(h, s, currentV);
 
             _propertyBlock.SetFloat(Metallic, currentMetallicValue);
@@ -483,6 +488,7 @@ public class AloeClient : MonoBehaviour
         _propertyBlock.SetFloat(Metallic, endMetallicValue);
         _propertyBlock.SetColor(BaseColour, HSVToRGB(h, s, endV));
         bodyRenderer.SetPropertyBlock(_propertyBlock);
+        
         _changeSkinColourCoroutine = null;
     }
 
@@ -824,7 +830,7 @@ public class AloeClient : MonoBehaviour
 
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        _targetPlayer.Value = newValue == 69420 ? null : StartOfRound.Instance.allPlayerScripts[newValue];
+        _targetPlayer.Value = newValue == AloeServer.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
         LogDebug(_targetPlayer.IsNotNull
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
             : "Changed target player to null.");

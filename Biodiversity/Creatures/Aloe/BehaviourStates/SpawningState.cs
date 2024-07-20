@@ -25,17 +25,4 @@ public class SpawningState : BehaviourState
         AloeServerInstance.InitializeConfigValues();
         AloeServerInstance.PickFavouriteSpot();
     }
-
-    // private class TransitionToPassiveRoaming(AloeServerInstance aloeServerInstance) : StateTransition(aloeServerInstance)
-    // {
-    //     public override bool ShouldTransitionBeTaken()
-    //     {
-    //         return !AloeServerInstance.netcodeController.AnimationParamSpawning.Value;
-    //     }
-    //
-    //     public override AloeServerInstance.States NextState()
-    //     {
-    //         return AloeServerInstance.States.Roaming;
-    //     }
-    // }
 }

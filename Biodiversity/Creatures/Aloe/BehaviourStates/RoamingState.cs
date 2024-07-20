@@ -6,6 +6,8 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 public class RoamingState : BehaviourState
 {
+    private bool _reachedFavouriteSpotForRoaming;
+    
     public RoamingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {
         Transitions =
@@ -23,7 +25,7 @@ public class RoamingState : BehaviourState
         AloeServerInstance.agentMaxAcceleration = 2f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
         AloeServerInstance.moveTowardsDestination = true;
-        AloeServerInstance.reachedFavouriteSpotForRoaming = false;
+        _reachedFavouriteSpotForRoaming = false;
         
         AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
         
@@ -31,7 +33,7 @@ public class RoamingState : BehaviourState
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, (ulong)69420);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServer.NullPlayerId);
 
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 0.5f);
         
@@ -43,9 +45,9 @@ public class RoamingState : BehaviourState
     public override void AIIntervalBehaviour()
     {
         // Check if the aloe has reached her favourite spot, so she can start roaming from that position
-        if (!AloeServerInstance.reachedFavouriteSpotForRoaming && Vector3.Distance(AloeServerInstance.favouriteSpot, AloeServerInstance.transform.position) <= 4)
+        if (!_reachedFavouriteSpotForRoaming && Vector3.Distance(AloeServerInstance.favouriteSpot, AloeServerInstance.transform.position) <= 4)
         {
-            AloeServerInstance.reachedFavouriteSpotForRoaming = true;
+            _reachedFavouriteSpotForRoaming = true;
         }
         else
         {

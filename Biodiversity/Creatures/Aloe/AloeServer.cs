@@ -103,7 +103,8 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public int timesFoundSneaking;
     private int _slapDamage;
     
-    [HideInInspector] public bool reachedFavouriteSpotForRoaming;
+    public static ulong NullPlayerId = 69420;
+    
     [HideInInspector] public bool hasTransitionedToRunningForwardsAndCarryingPlayer;
     [HideInInspector] public bool isStaringAtTargetPlayer;
     [HideInInspector] public bool inGrabAnimation;
@@ -433,11 +434,11 @@ public class AloeServer : BiodiverseAI
             
             switch (currentStateType)
             {
-                case States.Roaming or States.PassiveStalking or States.AggressiveStalking:
+                case States.Roaming or States.AvoidingPlayer or States.PassiveStalking or States.AggressiveStalking:
                 {
                     if (PlayerWhoHitMe.IsNotNull)
                     {
-                        if (currentStateType is not States.Roaming || enemyHP <= Config.Health / 2)
+                        if (currentStateType is not (States.Roaming or States.AvoidingPlayer) || enemyHP <= Config.Health / 2)
                         {
                             netcodeController.SetAnimationTriggerClientRpc(aloeId, AloeClient.Slap);
                         }
@@ -451,7 +452,7 @@ public class AloeServer : BiodiverseAI
                         stateData.Add("hitByEnemy", true);
                     }
                     
-                    SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
+                    if (currentStateType is not States.AvoidingPlayer) SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
                     
                     break;
                 }
@@ -646,7 +647,7 @@ public class AloeServer : BiodiverseAI
         
         LogDebug("Target player escaped by teleportation!");
         SetTargetPlayerInCaptivity(false);
-        netcodeController.TargetPlayerClientId.Value = 69420;
+        netcodeController.TargetPlayerClientId.Value = NullPlayerId;
         SwitchBehaviourState(States.Roaming);
     }
 
@@ -731,7 +732,7 @@ public class AloeServer : BiodiverseAI
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        ActualTargetPlayer.Value = newValue == 69420 ? null : StartOfRound.Instance.allPlayerScripts[newValue];
+        ActualTargetPlayer.Value = newValue == NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
         targetPlayer = ActualTargetPlayer.Value;
         LogDebug(ActualTargetPlayer.IsNotNull
             ? $"Changed target player to {ActualTargetPlayer.Value?.playerUsername}."
