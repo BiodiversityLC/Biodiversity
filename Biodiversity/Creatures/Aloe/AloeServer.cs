@@ -72,6 +72,7 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public PlayerControllerB backupTargetPlayer;
 
     public Coroutine SlapCoroutine;
+    public Coroutine CrushHeadCoroutine;
     
     private static readonly Dictionary<Type, States> StateTypeMapping = new()
     {
@@ -107,6 +108,7 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public bool isStaringAtTargetPlayer;
     [HideInInspector] public bool inGrabAnimation;
     [HideInInspector] public bool inSlapAnimation;
+    [HideInInspector] public bool inCrushHeadAnimation;
     private bool _networkEventsSubscribed;
     private bool _inStunAnimation;
     
@@ -307,8 +309,7 @@ public class AloeServer : BiodiverseAI
             Vector3 enemyPos = transform.position;
             Vector3 closestOutsideNode = Vector3.positiveInfinity;
             Vector3 closestInsideNode = Vector3.positiveInfinity;
-
-            // Todo: Cache and use the results for these two functions in the AloeSharedData
+            
             IEnumerable<Vector3> insideNodePositions = AloeUtils.FindInsideAINodePositions();
             IEnumerable<Vector3> outsideNodePositions = AloeUtils.FindOutsideAINodePositions();
 
@@ -359,22 +360,10 @@ public class AloeServer : BiodiverseAI
     {
         const float turnSpeed = 5f;
 
-        switch (currentBehaviourStateIndex)
+        switch (_currentState.GetStateType())
         {
-            case (int)States.Dead or (int)States.HealingPlayer:
+            case States.Dead or States.HealingPlayer or States.CuddlingPlayer:
                 break;
-            
-            case (int)States.CuddlingPlayer:
-            {
-                // Todo: integrate this properly with the cuddling state class
-                PlayerControllerB whoIsLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition(eye.transform, ActualTargetPlayer.Value, logSource: Mls);
-                if (whoIsLookingAtAloe != null)
-                {
-                    LookAtPosition(whoIsLookingAtAloe.transform.position);
-                }
-
-                break;
-            }
             
             default:
             {

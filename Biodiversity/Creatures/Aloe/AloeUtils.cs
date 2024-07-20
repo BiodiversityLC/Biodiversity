@@ -466,7 +466,7 @@ public static class AloeUtils
     /// <returns>An enumerable collection of Vector3 positions for all outside AI nodes.</returns>
     public static IEnumerable<Vector3> FindOutsideAINodePositions()
     {
-        GameObject[] outsideAINodes = GameObject.FindGameObjectsWithTag("OutsideAINode");
+        GameObject[] outsideAINodes = AloeSharedData.Instance.GetInsideAINodes();
         Vector3[] outsideNodePositions = new Vector3[outsideAINodes.Length];
                 
         for (int i = 0; i < outsideAINodes.Length; i++)
@@ -483,7 +483,7 @@ public static class AloeUtils
     /// <returns>An enumerable collection of Vector3 positions for all inside AI nodes.</returns>
     public static IEnumerable<Vector3> FindInsideAINodePositions()
     {
-        GameObject[] insideAINodes = GameObject.FindGameObjectsWithTag("AINode");
+        GameObject[] insideAINodes = AloeSharedData.Instance.GetInsideAINodes();
         Vector3[] insideNodePositions = new Vector3[insideAINodes.Length];
                 
         for (int i = 0; i < insideAINodes.Length; i++)

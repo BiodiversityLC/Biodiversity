@@ -385,11 +385,11 @@ public class AloeClient : MonoBehaviour
     }
 
     /// <summary>
-    /// Handles what should happen to make the Aloe snap a player's neck
+    /// Handles what should happen to make the Aloe crush a player's head
     /// </summary>
     /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="playerClientId">The player's client id whose neck will be snapped.</param>
-    private void HandleSnapPlayerNeck(string receivedAloeId, ulong playerClientId)
+    /// <param name="playerClientId">The player's client id whose head will be crushed.</param>
+    private void HandleCrushPlayerAnimation(string receivedAloeId, ulong playerClientId)
     {
         if (_aloeId != receivedAloeId) return;
 
@@ -948,7 +948,7 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnSetTargetPlayerAbleToEscape += HandleSetTargetPlayerAbleToEscape;
         netcodeController.OnPlayHealingVfx += HandlePlayHealingVfx;
         netcodeController.OnPlayAudioClipType += HandlePlayAudioClipType;
-        netcodeController.OnSnapPlayerNeck += HandleSnapPlayerNeck;
+        netcodeController.OnCrushPlayerNeck += HandleCrushPlayerAnimation;
         netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll += HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer +=
@@ -979,7 +979,7 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnSetTargetPlayerAbleToEscape -= HandleSetTargetPlayerAbleToEscape;
         netcodeController.OnPlayHealingVfx -= HandlePlayHealingVfx;
         netcodeController.OnPlayAudioClipType -= HandlePlayAudioClipType;
-        netcodeController.OnSnapPlayerNeck -= HandleSnapPlayerNeck;
+        netcodeController.OnCrushPlayerNeck -= HandleCrushPlayerAnimation;
         netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll -= HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer -=

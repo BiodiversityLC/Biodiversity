@@ -36,7 +36,7 @@ public class AloeNetcodeController : NetworkBehaviour
     public event Action<string, bool> OnSetTargetPlayerAbleToEscape;
     public event Action<string, float> OnPlayHealingVfx;
     public event Action<string, AloeClient.AudioClipTypes, int, bool> OnPlayAudioClipType;
-    public event Action<string, ulong> OnSnapPlayerNeck;
+    public event Action<string, ulong> OnCrushPlayerNeck;
     public event Action<string, float, float> OnChangeLookAimConstraintWeight;
     public event Action<string, float> OnTransitionToRunningForwardsAndCarryingPlayer;
     public event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
@@ -73,9 +73,9 @@ public class AloeNetcodeController : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void SnapPlayerNeckClientRpc(string receivedAloeId, ulong playerClientId)
+    public void CrushPlayerClientRpc(string receivedAloeId, ulong playerClientId)
     {
-        OnSnapPlayerNeck?.Invoke(receivedAloeId, playerClientId);
+        OnCrushPlayerNeck?.Invoke(receivedAloeId, playerClientId);
     }
     
     [ServerRpc]

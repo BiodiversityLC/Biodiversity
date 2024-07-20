@@ -23,7 +23,7 @@ public class AttackingPlayerState : BehaviourState
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
         
-        AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(AloeServerInstance.aloeId, AloeClient.Stand);
+        AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(AloeServerInstance.aloeId, AloeClient.Crush);
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.5f);
         
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
@@ -58,8 +58,8 @@ public class AttackingPlayerState : BehaviourState
             if (!(Vector3.Distance(AloeServerInstance.ActualTargetPlayer.Value.transform.position,
                     AloeServerInstance.transform.position) <= 1.5f)) return !attackingPlayerState._isPlayerTargetable;
             
-            AloeServerInstance.LogDebug("Player is close to aloe! Snapping his neck");
-            AloeServerInstance.netcodeController.SnapPlayerNeckClientRpc(
+            AloeServerInstance.LogDebug("Player is close to aloe! Killing them!");
+            AloeServerInstance.netcodeController.CrushPlayerClientRpc(
                 AloeServerInstance.aloeId, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
 
             return true;

@@ -36,13 +36,15 @@ internal class AloeSharedData
     private readonly ConcurrentDictionary<AloeServer, PlayerControllerB> _aloeBoundStalks = new();
     private readonly ConcurrentDictionary<PlayerControllerB, int> _playersMaxHealth = new();
     private readonly List<BrackenRoomAloeNode> _brackenRoomAloeNodes = [];
+    private readonly ConcurrentBag<GameObject> _insideAINodes = [];
+    private readonly ConcurrentBag<GameObject> _outsideAINodes = [];
 
     public Vector3 BrackenRoomDoorPosition { get; set; } = Vector3.zero;
 
     public IReadOnlyDictionary<AloeServer, PlayerControllerB> AloeBoundKidnaps => _aloeBoundKidnaps;
     public IReadOnlyDictionary<AloeServer, PlayerControllerB> AloeBoundStalks => _aloeBoundStalks;
     public IReadOnlyDictionary<PlayerControllerB, int> PlayersMaxHealth => _playersMaxHealth;
-
+    
     public IReadOnlyList<BrackenRoomAloeNode> BrackenRoomAloeNodes
     {
         get
@@ -118,6 +120,40 @@ internal class AloeSharedData
         Mls.LogWarning($"Max health of given player {player.playerUsername} is {maxHealth}. This should not happen. Returning a max health of 100 as a failsafe.");
         return 100;
     }
+
+    public GameObject[] GetInsideAINodes()
+    {
+        lock (Padlock)
+        {
+            if (_insideAINodes.Count == 0)
+            {
+                GameObject[] insideAINodes = GameObject.FindGameObjectsWithTag("AINode");
+                foreach (GameObject node in insideAINodes)
+                {
+                    _insideAINodes.Add(node);
+                }
+            }
+        
+            return _insideAINodes.ToArray();
+        }
+    }
+
+    public GameObject[] GetOutsideAINodes()
+    {
+        lock (Padlock)
+        {
+            if (_outsideAINodes.Count == 0)
+            {
+                GameObject[] outsideAINodes = GameObject.FindGameObjectsWithTag("OutsideAINode");
+                foreach (GameObject node in outsideAINodes)
+                {
+                    _outsideAINodes.Add(node);
+                }
+            }
+
+            return _outsideAINodes.ToArray();
+        }
+    }
     
     public void PopulateBrackenRoomAloeNodes(Transform brackenRoomTransform)
     {
@@ -170,6 +206,8 @@ internal class AloeSharedData
             _aloeBoundKidnaps.Clear();
             _aloeBoundStalks.Clear();
             _playersMaxHealth.Clear();
+            _insideAINodes.Clear();
+            _outsideAINodes.Clear();
         }
     }
 
