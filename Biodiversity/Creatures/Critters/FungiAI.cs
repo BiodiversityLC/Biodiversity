@@ -49,4 +49,8 @@ public class FungiAI : BiodiverseAI {
 		agent.isStopped = false;
 		speedBoostTime = Config.FungiBoostTime;
 	}
+
+	internal override float GetDelayBeforeContinueSearch() {
+		return Random.Range(5f, 10f);
+	}
 }

@@ -62,4 +62,8 @@ public abstract class BiodiverseAI : EnemyAI {
             BiodiversityPlugin.Logger.LogDebug($"[{enemyType.enemyName}] {message}");
         }
     }
+
+    internal virtual float GetDelayBeforeContinueSearch() {
+        return 0;
+    }
 }
