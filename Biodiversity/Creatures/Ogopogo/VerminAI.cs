@@ -236,7 +236,7 @@ namespace Biodiversity.Creatures.Ogopogo
 
         public override void OnCollideWithPlayer(UnityEngine.Collider other)
         {
-            if (isEnemyDead)
+            if (isEnemyDead || stunNormalizedTimer > 0)
             {
                 return;
             }
@@ -276,7 +276,16 @@ namespace Biodiversity.Creatures.Ogopogo
             {
                 transform.position = new Vector3(transform.position.x, WaterTop(coll), transform.position.z);
             }
-            
+
+            if (stunNormalizedTimer > 0)
+            {
+                creatureAnimator.SetBool("Stun", true);
+                return;
+            }
+            else
+            {
+                creatureAnimator.SetBool("Stun", false);
+            }
 
             switch (currentBehaviourStateIndex)
             {
