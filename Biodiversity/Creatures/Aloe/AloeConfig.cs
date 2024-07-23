@@ -9,14 +9,13 @@ namespace Biodiversity.Creatures.Aloe;
 public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg)
 {
     [field: Header("General Settings.")]
-    
     [field: Tooltip("The health of the Aloe upon spawning.")]
     [field: Range(1, int.MaxValue)]
-    public int Health { get; private set; }
-    
+    public int Health { get; private set; } = 6;
+
     [field: Tooltip("The damage that the Aloe's slap does.")]
     [field: Range(0, int.MaxValue)]
-    public int SlapDamage { get; private set; }
+    public int SlapDamage { get; private set; } = 30;
     
     [field: Tooltip("The radius in meters the Aloe is allowed roam from her favourite spot.")]
     [field: Range(50f, 500f)]

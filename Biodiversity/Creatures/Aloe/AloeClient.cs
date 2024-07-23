@@ -196,6 +196,7 @@ public class AloeClient : MonoBehaviour
         lookAimRig.weight = 0f;
 
         AddStateMachineBehaviours(animator);
+        InitializeConfigValues();
 
         animator.SetBool(Spawning, true);
     }
@@ -395,10 +396,17 @@ public class AloeClient : MonoBehaviour
 
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
         if (player == null) return;
-        
+
+        StartCoroutine(CrushPlayerAnimation(player));
+    }
+
+    private IEnumerator CrushPlayerAnimation(PlayerControllerB player)
+    {
         LogDebug($"Killing player: {player.name}");
-        // player.inSpecialInteractAnimation = true;
-        player.KillPlayer(Vector3.zero, true, CauseOfDeath.Strangulation);
+        player.inSpecialInteractAnimation = true;
+        player.transform.LookAt(transform.position);
+        yield return new WaitForSeconds(0.3f);
+        player.KillPlayer(Vector3.zero, true, CauseOfDeath.Crushing, 1);
     }
 
     /// <summary>
@@ -944,7 +952,6 @@ public class AloeClient : MonoBehaviour
         if (_networkEventsSubscribed) return;
 
         netcodeController.OnSyncAloeId += HandleSyncAloeId;
-        netcodeController.OnInitializeConfigValues += HandleInitializeConfigValues;
         netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
         netcodeController.OnMuffleTargetPlayerVoice += HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice += HandleUnMuffleTargetPlayerVoice;
@@ -975,7 +982,6 @@ public class AloeClient : MonoBehaviour
         if (!_networkEventsSubscribed) return;
 
         netcodeController.OnSyncAloeId -= HandleSyncAloeId;
-        netcodeController.OnInitializeConfigValues -= HandleInitializeConfigValues;
         netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
         netcodeController.OnMuffleTargetPlayerVoice -= HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice -= HandleUnMuffleTargetPlayerVoice;
@@ -1015,11 +1021,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets the configurable variables to their value in the player's config
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    private void HandleInitializeConfigValues(string receivedAloeId)
+    private void InitializeConfigValues()
     {
-        if (_aloeId != receivedAloeId) return;
-
         escapeChargePerPress = Config.EscapeChargePerPress;
         escapeChargeDecayRate = Config.EscapeChargeDecayRate;
         escapeChargeThreshold = Config.EscapeChargeThreshold;

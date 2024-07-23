@@ -790,10 +790,8 @@ public class AloeServer : BiodiverseAI
         PassiveStalkStaredownDistance = Config.PassiveStalkStaredownDistance;
         WaitBeforeChasingEscapedPlayerTime = Config.WaitBeforeChasingEscapedPlayerTime;
         _slapDamage = Config.SlapDamage;
-        
+
         roamMap.searchWidth = roamingRadius;
-        
-        netcodeController.InitializeConfigValuesClientRpc(aloeId);
     }
     
     /// <summary>
