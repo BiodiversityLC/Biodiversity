@@ -68,6 +68,8 @@ namespace Biodiversity.Creatures.Ogopogo
         // Default position of this.eye (needed for water stun to work)
         [SerializeField]Transform defaultEye;
 
+        bool stunnedLastFrame = false;
+
         // Mapping
         public Transform MapDot; 
 
@@ -219,12 +221,6 @@ namespace Biodiversity.Creatures.Ogopogo
 
         public void LateUpdate()
         {
-            // Move the grabbed player
-            if (playerGrabbed != null)
-            {
-                playerGrabbed.transform.position = GrabPos.position;
-                playerGrabbed.transform.rotation = GrabPos.rotation;
-            }
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
                 PlayerDistances[player.playerClientId] = Distance2d(StartOfRound.Instance.shipBounds.gameObject, player.gameObject);
@@ -237,6 +233,12 @@ namespace Biodiversity.Creatures.Ogopogo
         {
             wallInFront = checkForWall();
             dropRaycast = Physics.Raycast(GrabPos.position, Vector3.down, 20f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/);
+            // Move the grabbed player
+            if (playerGrabbed != null)
+            {
+                playerGrabbed.transform.position = GrabPos.position;
+                playerGrabbed.transform.rotation = GrabPos.rotation;
+            }
         }
 
         // Set wander position. (Only matters when run on server)
@@ -360,6 +362,12 @@ namespace Biodiversity.Creatures.Ogopogo
             {
                 playerGrabbed = StartOfRound.Instance.allPlayerScripts[playerID];
                 playerHasBeenGrabbed = true;
+                try
+                {
+                    inSpecialAnimationWithPlayer.inAnimationWithEnemy = null;
+                    inSpecialAnimationWithPlayer.inSpecialInteractAnimation = false;
+                }
+                catch (Exception e) { }
             }
             else
             {
@@ -469,8 +477,6 @@ namespace Biodiversity.Creatures.Ogopogo
         {
             base.CancelSpecialAnimationWithPlayer();
             SetPlayerGrabbedClientRpc(0, true);
-            inSpecialAnimationWithPlayer.inAnimationWithEnemy = null;
-            inSpecialAnimationWithPlayer.inSpecialInteractAnimation = false;
             inSpecialAnimationWithPlayer = null;
         }
 
@@ -482,7 +488,12 @@ namespace Biodiversity.Creatures.Ogopogo
             if (stunNormalizedTimer > 0)
             {
                 SetPlayerGrabbedClientRpc(0, true);
+                creatureAnimator.SetBool("Stun", true);
                 return;
+            }
+            else
+            {
+                creatureAnimator.SetBool("Stun", false);
             }
 
             switch (currentBehaviourStateIndex)
@@ -597,11 +608,9 @@ namespace Biodiversity.Creatures.Ogopogo
                         playerGrabbed.fallValue = 0f;
                         playerGrabbed.fallValueUncapped = 0f;
                         SetPlayerGrabbedClientRpc(0, true);
-                        inSpecialAnimationWithPlayer.inAnimationWithEnemy = null;
-                        inSpecialAnimationWithPlayer.inSpecialInteractAnimation = false;
                         inSpecialAnimationWithPlayer = null;
                     }
-                    
+
                     if (!(this.transform.position.y - water.gameObject.transform.position.y > 0f) && splineDone)
                     {
                         this.transform.position = new Vector3(this.transform.position.x, water.transform.position.y, this.transform.position.z);

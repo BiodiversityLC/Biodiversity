@@ -212,6 +212,11 @@ namespace Biodiversity.Creatures.Ogopogo
                 MapDot.position = new Vector3(this.transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, this.transform.position.z);
             }
 
+            if (isEnemyDead && transform.position.y < water.GetComponent<BoxCollider>().bounds.max.y)
+            {
+                Rise(0.2f);
+            }
+
             // Step timers
             if (currentBehaviourStateIndex == (int)State.WANDERING)
             {
@@ -231,6 +236,10 @@ namespace Biodiversity.Creatures.Ogopogo
 
         public override void OnCollideWithPlayer(UnityEngine.Collider other)
         {
+            if (isEnemyDead)
+            {
+                return;
+            }
             if (damageTimer <= 0)
             {
                 other.gameObject.GetComponent<PlayerControllerB>().DamagePlayer(5, false, true, CauseOfDeath.Mauling, 0, false, default);
@@ -243,7 +252,20 @@ namespace Biodiversity.Creatures.Ogopogo
             return coll.transform.localScale.y * coll.size.y / 2 + coll.transform.position.y;
         }
 
+        public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+        {
+            base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
+            enemyHP -= force;
+            if (enemyHP <= 0)
+            {
+                KillEnemyOnOwnerClient();
+            }
+        }
 
+        void Rise(float speed)
+        {
+            this.transform.Translate(Vector3.up * speed * Time.deltaTime);
+        }
         public override void DoAIInterval()
         {
             base.DoAIInterval();

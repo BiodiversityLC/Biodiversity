@@ -196,7 +196,7 @@ public class EasyIK : MonoBehaviour
         jointTransforms.Last().rotation = ikTarget.rotation * offset;
     }
 
-    void Update()
+    void LateUpdate()
     {
         SolveIK();
     }
