@@ -239,6 +239,17 @@ namespace Biodiversity.Creatures.Ogopogo
                 playerGrabbed.transform.position = GrabPos.position;
                 playerGrabbed.transform.rotation = GrabPos.rotation;
             }
+            try
+            {
+                if (playerGrabbed.playerClientId == GameNetworkManager.Instance.localPlayerController.playerClientId)
+                {
+                    playerGrabbed.thisPlayerModelArms.enabled = false;
+                    playerGrabbed.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = false;
+                }
+            } catch (Exception e) 
+            {
+                GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = true;
+            }
         }
 
         // Set wander position. (Only matters when run on server)
