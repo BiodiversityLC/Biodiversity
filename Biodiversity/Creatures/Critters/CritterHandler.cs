@@ -14,5 +14,8 @@ internal class CritterHandler : BiodiverseAIHandler<CritterHandler> {
 		
 		TranslateTerminalNode(Assets.PrototaxTerminalNode);
 		Enemies.RegisterEnemy(Assets.PrototaxEnemyType, Enemies.SpawnType.Daytime, Config.FungiRarity.VanillaRarities, Config.FungiRarity.ModdedRarities, Assets.PrototaxTerminalNode, Assets.PrototaxTerminalKeyword);
+		
+		TranslateTerminalNode(Assets.LeafyBoiTerminalNode);
+		Enemies.RegisterEnemy(Assets.LeafyBoiEnemyType, Enemies.SpawnType.Outside, Config.LeafyBoiRarity.VanillaRarities, Config.LeafyBoiRarity.ModdedRarities, Assets.LeafyBoiTerminalNode, Assets.LeafyBoiTerminalKeyword);
 	}
 }

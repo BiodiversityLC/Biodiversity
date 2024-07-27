@@ -37,4 +37,8 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 			{"Fray", 40}
 		}
 	);
+	
+	public EnemyRaritiesPerMoon LeafyBoiRarity { get; private set; } = new(
+		150
+	);
 }
