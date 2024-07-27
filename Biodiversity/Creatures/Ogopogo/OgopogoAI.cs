@@ -71,7 +71,9 @@ namespace Biodiversity.Creatures.Ogopogo
         bool stunnedLastFrame = false;
 
         // Mapping
-        public Transform MapDot; 
+        public Transform MapDot;
+
+        public EasyIK IK;
 
         public override void Start()
         {
@@ -367,24 +369,27 @@ namespace Biodiversity.Creatures.Ogopogo
 
         // Set the grabbed player or set as null
         [ClientRpc]
-        public void SetPlayerGrabbedClientRpc(int playerID, bool setNull = false)
+        public void SetPlayerGrabbedClientRpc(int playerID, bool setNull = false, bool resetSpecialPlayer = true)
         {
             if (!setNull)
             {
                 playerGrabbed = StartOfRound.Instance.allPlayerScripts[playerID];
                 playerHasBeenGrabbed = true;
-                try
-                {
-                    inSpecialAnimationWithPlayer.inAnimationWithEnemy = null;
-                    inSpecialAnimationWithPlayer.inSpecialInteractAnimation = false;
-                }
-                catch (Exception e) { }
             }
             else
             {
                 playerGrabbed = null;
                 playerHasBeenGrabbed = false;
             }
+            try
+            {
+                if (resetSpecialPlayer)
+                {
+                    inSpecialAnimationWithPlayer.inAnimationWithEnemy = null;
+                    inSpecialAnimationWithPlayer.inSpecialInteractAnimation = false;
+                }
+            }
+            catch (Exception e) { }
         }
 
         // Play sounds
@@ -478,8 +483,29 @@ namespace Biodiversity.Creatures.Ogopogo
                 inSpecialAnimationWithPlayer = player;
 
                 TakeOutOfTruckClientRpc();
-                SetPlayerGrabbedClientRpc((int)player.playerClientId);
+                SetPlayerGrabbedClientRpc((int)player.playerClientId, false, false);
                 this.creatureAnimator.SetInteger("AnimID", 3);
+            }
+        }
+
+        [ClientRpc]
+        public void DisableIKClientRpc()
+        {
+            IK.enabled = false;
+        }
+
+        public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+        {
+            base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
+            BiodiversityPlugin.Logger.LogInfo("It's running");
+            enemyHP -= force;
+            if (enemyHP <= 0)
+            {
+                KillEnemyOnOwnerClient();
+                if (IsHost || IsServer)
+                {
+                    DisableIKClientRpc();
+                }
             }
         }
 

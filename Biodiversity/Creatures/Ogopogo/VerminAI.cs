@@ -100,7 +100,7 @@ namespace Biodiversity.Creatures.Ogopogo
                     water = setWater;
                 }
 
-                transform.position = water.transform.position; 
+                transform.position = water.transform.position;
                 setWanderPos();
 
                 BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
@@ -212,7 +212,7 @@ namespace Biodiversity.Creatures.Ogopogo
                 MapDot.position = new Vector3(this.transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, this.transform.position.z);
             }
 
-            if (isEnemyDead && transform.position.y < water.GetComponent<BoxCollider>().bounds.max.y)
+            if (isEnemyDead && transform.position.y < water.GetComponent<BoxCollider>().bounds.max.y && (IsHost || IsServer))
             {
                 Rise(0.2f);
             }
