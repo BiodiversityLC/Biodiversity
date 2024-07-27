@@ -474,6 +474,9 @@ namespace Biodiversity.Creatures.Ogopogo
         // Handle grabbing
         public override void OnCollideWithPlayer(UnityEngine.Collider other)
         {
+            if (isEnemyDead) { 
+                return;
+            }
             PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
             if (currentBehaviourStateIndex != (int)State.RESET && currentBehaviourStateIndex != (int)State.GOINGDOWN)
             {
