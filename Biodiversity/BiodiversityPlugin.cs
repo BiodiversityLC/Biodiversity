@@ -18,6 +18,7 @@ using System.Threading;
 using BepInEx.Configuration;
 using Biodiversity.Creatures;
 using Dissonance;
+using LethalLevelLoader;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;

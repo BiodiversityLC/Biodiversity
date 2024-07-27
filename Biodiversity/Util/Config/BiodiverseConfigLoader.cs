@@ -57,6 +57,12 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
             if(property.PropertyType == typeof(bool)) {
                 property.SetValue(this, configFile.Bind(CurrentHeader, property.Name, (bool)property.GetValue(this), configDescription).Value);
             }
+
+            if (property.PropertyType == typeof(EnemyRaritiesPerMoon)) {
+                EnemyRaritiesPerMoon rarities = (EnemyRaritiesPerMoon) property.GetValue(this);
+                rarities.Bind(configFile, property.Name);
+                property.SetValue(this, rarities);
+            }
         }
 
     }

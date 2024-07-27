@@ -13,6 +13,6 @@ internal class CritterHandler : BiodiverseAIHandler<CritterHandler> {
 		Config = new CritterConfig(BiodiversityPlugin.Instance.CreateConfig("critters"));
 		
 		TranslateTerminalNode(Assets.PrototaxTerminalNode);
-		Enemies.RegisterEnemy(Assets.PrototaxEnemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, 100 } }, [], Assets.PrototaxTerminalNode, Assets.PrototaxTerminalKeyword);
+		Enemies.RegisterEnemy(Assets.PrototaxEnemyType, Enemies.SpawnType.Daytime, Config.FungiRarity.VanillaRarities, Config.FungiRarity.ModdedRarities, Assets.PrototaxTerminalNode, Assets.PrototaxTerminalKeyword);
 	}
 }
