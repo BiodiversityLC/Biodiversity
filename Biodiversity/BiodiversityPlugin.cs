@@ -88,6 +88,7 @@ public class BiodiversityPlugin : BaseUnityPlugin {
             x.BaseType != null
             && x.BaseType.IsGenericType
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
+            && x.Name != "HoneyFeederHandler"
         ).ToList();
         
         foreach(Type type in creatureHandlers) {
