@@ -398,6 +398,4 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 Biodiversity/Biodiversity.csproj.user
-Biodiversity/AssetBundles/AssetBundles
-Biodiversity/AssetBundles/AssetBundles.manifest
-*.manifest
+Biodiversity/AssetBundles/*

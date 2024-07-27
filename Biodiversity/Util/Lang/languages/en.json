@@ -1,4 +1,6 @@
 {
   "lang.missing": "missing: <translation_id>.",
-  "lang.test": "Hello from the LangParser!"
+  "lang.test": "Hello from the LangParser!",
+  
+  "bestiary.prototax": "Prototax\n\nScientific name: Lycoperdon-eternis\n\nLycoperdon-eternis are blind and deaf, but they thrive due to their highly durable bodies.\nThey are known for their longevity and for being quite dangerous if mishandled, as even if they may appear harmless at first Prototax will spew out poisonous gas in the form of its spores when they feel threatened.\n\nTheir spores are able to take out large predators like Leo caecus and even Satyrid-proceritas, which seems to be the reason behind their longevity.\n\nTheir cousins, Lycoperdon-perlatum are famous for growing on Lacerta-glomerum, also known as Spore lizards."
 }

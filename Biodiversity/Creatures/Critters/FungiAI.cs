@@ -79,8 +79,8 @@ public class FungiAI : BiodiverseAI {
 	void StunOverClientRPC() {
 		creatureAnimator.SetTrigger("stun_over");
 	}
-
+	// fixme: kinda doesn't work at all lol
 	internal override float GetDelayBeforeContinueSearch() {
-		return 100;
+		return 0;
 	}
 }
