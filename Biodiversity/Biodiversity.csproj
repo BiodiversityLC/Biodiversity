@@ -5,7 +5,7 @@
         <AssemblyName>me.biodiversity.Biodiversity</AssemblyName>
         <Product>Biodiversity</Product>
         <!-- Change to whatever version you're currently on. -->
-        <Version>1.0.0</Version>
+        <Version>0.0.1</Version>
     </PropertyGroup>
 
     <!-- Project Properties -->
@@ -75,6 +75,7 @@
 	<Target Name="CleanAssetBundles" AfterTargets="NetcodePatch">
 		<ItemGroup>
 			<FilesToDelete Include="$(ProjectDir)AssetBundles/AssetBundles.*" />
+            <FilesToDelete Include="$(ProjectDir)AssetBundles/*.manifest" />
 		</ItemGroup>
 		<Delete Files="@(FilesToDelete)" />
 	</Target>
@@ -91,4 +92,8 @@
 		<MakeDir Directories="$(TargetDir)lang" Condition="!Exists('$(TargetDir)lang')" />
 		<Copy SourceFiles="@(LangFiles)" DestinationFolder="$(TargetDir)lang\" />
 	</Target>
+
+    <Target Name="MakeThunderstorePackage" AfterTargets="BuildLangFiles" Condition="$(Configuration) == 'Release'">
+        <Exec Command="tcli build --config-path .\Thunderstore\thunderstore.toml --package-version $(Version)"/>
+    </Target>
 </Project>
