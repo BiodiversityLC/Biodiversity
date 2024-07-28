@@ -1,16 +1,17 @@
+using System.Collections.Generic;
 using Biodiversity.General;
+using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 
 namespace Biodiversity.Creatures.Critters;
 
 public class LeafyBoiAI : BiodiverseAI {
+    // TODO: Make these config
 	private const int SCARY_PLAYER_DISTANCE = 6;
     private const float BASE_MOVEMENT_SPEED = 1.5F;
     private const float SCARED_SPEED_MULTIPLIER = 4F;
-
-    [SerializeField]
-    private float forgetScaryPlayersTimer;
+    const float PLAYER_FORGET_TIME = 3f;
 
     private float timeSinceSeenPlayer;
     private static readonly int _AnimationIdHash = Animator.StringToHash("AnimationId");
@@ -28,6 +29,7 @@ public class LeafyBoiAI : BiodiverseAI {
     public AIState State {
         get => _state;
         set {
+            if(_state == value) return;
             LogVerbose($"Updating state: {_state} -> {value}");
             _state = value;
         }
@@ -42,13 +44,14 @@ public class LeafyBoiAI : BiodiverseAI {
 
         if (!agent.isOnNavMesh) return;
 
+        if(!wanderRoutine.inProgress)
+            StartSearch(transform.position, wanderRoutine);
+        
+        ScanForPlayers();
+        
         switch (State) {
             case AIState.WANDERING:
                 agent.speed = BASE_MOVEMENT_SPEED;
-                if(!wanderRoutine.inProgress)
-                    StartSearch(transform.position, wanderRoutine);
-                
-                ScanForPlayers();
                 break;
             
             case AIState.RUNNING:
@@ -58,12 +61,8 @@ public class LeafyBoiAI : BiodiverseAI {
             
             case AIState.SCARED:
                 agent.speed = BASE_MOVEMENT_SPEED * SCARED_SPEED_MULTIPLIER;
-                if(!wanderRoutine.inProgress)
-                    StartSearch(transform.position, wanderRoutine);
                 
-                ScanForPlayers();
-                
-                if (timeSinceSeenPlayer > forgetScaryPlayersTimer) {
+                if (timeSinceSeenPlayer > PLAYER_FORGET_TIME) {
                     State = AIState.WANDERING;
                 }
                 
@@ -91,21 +90,11 @@ public class LeafyBoiAI : BiodiverseAI {
     }
 
     private void ScanForPlayers() {
-        var playersInLineOfSight = GetAllPlayersInLineOfSight(range: SCARY_PLAYER_DISTANCE);
-
-        if (playersInLineOfSight.Length != 0) { // player in sight
-            if (State == AIState.RUNNING) return; // we are already running away.
-
+        if (GetPlayersCloseBy(SCARY_PLAYER_DISTANCE, out List<PlayerControllerB> players)) { // player nearby
+            timeSinceSeenPlayer = 0;
             State = AIState.RUNNING;
-            return;
-        }
-
-        if (State != AIState.SCARED) {
+        } else if (State == AIState.RUNNING) {
             State = AIState.SCARED;
-            StopSearch(currentSearch); // restart search
-            // TODO: maybe find a more appropriate point to run to?
         }
-
-        timeSinceSeenPlayer = 0;
     }
 }
