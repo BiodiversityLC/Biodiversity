@@ -196,7 +196,6 @@ public class AloeClient : MonoBehaviour
         lookAimRig.weight = 0f;
 
         AddStateMachineBehaviours(animator);
-        InitializeConfigValues();
 
         animator.SetBool(Spawning, true);
     }
@@ -637,6 +636,11 @@ public class AloeClient : MonoBehaviour
             {
                 ToggleTargetPlayerRenderers(false);
             }
+            else
+            {
+                GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = false;
+                GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = false;
+            }
         }
         else
         {
@@ -649,6 +653,11 @@ public class AloeClient : MonoBehaviour
             if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value)
             {
                 ToggleTargetPlayerRenderers(true);
+            }
+            else
+            {
+                GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
+                GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = true;
             }
 
             _targetPlayer.Value.inSpecialInteractAnimation = false;
@@ -952,6 +961,7 @@ public class AloeClient : MonoBehaviour
         if (_networkEventsSubscribed) return;
 
         netcodeController.OnSyncAloeId += HandleSyncAloeId;
+        netcodeController.OnInitializeConfigValues += HandleInitializeConfigValues;
         netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
         netcodeController.OnMuffleTargetPlayerVoice += HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice += HandleUnMuffleTargetPlayerVoice;
@@ -982,6 +992,7 @@ public class AloeClient : MonoBehaviour
         if (!_networkEventsSubscribed) return;
 
         netcodeController.OnSyncAloeId -= HandleSyncAloeId;
+        netcodeController.OnInitializeConfigValues -= HandleInitializeConfigValues;
         netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
         netcodeController.OnMuffleTargetPlayerVoice -= HandleMuffleTargetPlayerVoice;
         netcodeController.OnUnMuffleTargetPlayerVoice -= HandleUnMuffleTargetPlayerVoice;
@@ -1021,8 +1032,10 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets the configurable variables to their value in the player's config
     /// </summary>
-    private void InitializeConfigValues()
+    private void HandleInitializeConfigValues(string receivedAloeId)
     {
+        if (_aloeId != receivedAloeId) return;
+        
         escapeChargePerPress = Config.EscapeChargePerPress;
         escapeChargeDecayRate = Config.EscapeChargeDecayRate;
         escapeChargeThreshold = Config.EscapeChargeThreshold;

@@ -11,6 +11,7 @@ using GameNetcodeStuff;
 using UnityEngine;
 using Logger = BepInEx.Logging.Logger;
 using Random = UnityEngine.Random;
+#pragma warning disable CS0169 // Field is never used
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -792,6 +793,8 @@ public class AloeServer : BiodiverseAI
         _slapDamage = Config.SlapDamage;
 
         roamMap.searchWidth = roamingRadius;
+        
+        netcodeController.InitializeConfigValuesClientRpc(aloeId);
     }
     
     /// <summary>

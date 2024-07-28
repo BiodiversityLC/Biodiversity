@@ -25,6 +25,7 @@ public class AloeNetcodeController : NetworkBehaviour
     [HideInInspector] public readonly NetworkVariable<bool> AnimationParamDead = new();
 
     public event Action<string> OnSyncAloeId;
+    public event Action<string> OnInitializeConfigValues;
     public event Action<string, int> OnSetAnimationTrigger;
     public event Action<string, float, ulong> OnIncreasePlayerFearLevel;
     public event Action<string> OnMuffleTargetPlayerVoice;
@@ -183,6 +184,16 @@ public class AloeNetcodeController : NetworkBehaviour
     public void SetAnimationTriggerClientRpc(string receivedAloeId, int animationId)
     {
         OnSetAnimationTrigger?.Invoke(receivedAloeId, animationId);
+    }
+    
+    /// <summary>
+    /// Invokes the initialize config values event
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    [ClientRpc]
+    public void InitializeConfigValuesClientRpc(string receivedAloeId)
+    {
+        OnInitializeConfigValues?.Invoke(receivedAloeId);
     }
 
     /// <summary>
