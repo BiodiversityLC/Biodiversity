@@ -15,6 +15,24 @@ public class LeafyBoiAI : BiodiverseAI {
     private float timeSinceSeenPlayer;
     private static readonly int _AnimationIdHash = Animator.StringToHash("AnimationId");
 
+    AISearchRoutine wanderRoutine = new AISearchRoutine();
+
+    public enum AIState {
+        WANDERING, // normal
+        RUNNING, // actively running
+        SCARED // recently ran away.
+    }
+
+    AIState _state = AIState.WANDERING;
+
+    public AIState State {
+        get => _state;
+        set {
+            LogVerbose($"Updating state: {_state} -> {value}");
+            _state = value;
+        }
+    }
+    
     public override void DoAIInterval() {
         base.DoAIInterval();
 
@@ -24,17 +42,30 @@ public class LeafyBoiAI : BiodiverseAI {
 
         if (!agent.isOnNavMesh) return;
 
-        if (currentSearch is not {
-                inProgress: true,
-            } && currentBehaviourStateIndex is 0 or 1) StartSearch(serverPosition);
+        switch (State) {
+            case AIState.WANDERING:
+                agent.speed = BASE_MOVEMENT_SPEED;
+                if(!wanderRoutine.inProgress)
+                    StartSearch(transform.position, wanderRoutine);
+                
+                ScanForPlayers();
+                break;
+            
+            case AIState.RUNNING:
+                // run.
+                agent.speed = BASE_MOVEMENT_SPEED * SCARED_SPEED_MULTIPLIER;
+                break;
+            
+            case AIState.SCARED:
+                agent.speed = BASE_MOVEMENT_SPEED * SCARED_SPEED_MULTIPLIER;
+                ScanForPlayers();
 
-        ScanForPlayers();
-
-        if (currentBehaviourStateIndex is 0) agent.speed = BASE_MOVEMENT_SPEED;
-
-        if (currentBehaviourStateIndex is not 1) return;
-
-        agent.speed = BASE_MOVEMENT_SPEED * SCARED_SPEED_MULTIPLIER;
+                if (timeSinceSeenPlayer > forgetScaryPlayersTimer) {
+                    State = AIState.WANDERING;
+                }
+                
+                break;
+        }
     }
 
     public override void Update() {
@@ -59,21 +90,17 @@ public class LeafyBoiAI : BiodiverseAI {
     private void ScanForPlayers() {
         var playersInLineOfSight = GetAllPlayersInLineOfSight(range: SCARY_PLAYER_DISTANCE);
 
-        if (playersInLineOfSight is not {
-                Length: > 0,
-            }) {
-            if (currentBehaviourStateIndex is 0) return;
+        if (playersInLineOfSight.Length != 0) { // player in sight
+            if (State == AIState.RUNNING) return; // we are already running away.
 
-            if(forgetScaryPlayersTimer > timeSinceSeenPlayer) return;
-            SwitchToBehaviourStateOnLocalClient(0);
-            SwitchToBehaviourClientRpc(0);
+            State = AIState.RUNNING;
             return;
         }
 
-        if (currentBehaviourStateIndex is not 1) {
-            SwitchToBehaviourStateOnLocalClient(1);
-            SwitchToBehaviourClientRpc(1);
-            StopSearch(currentSearch);
+        if (State != AIState.SCARED) {
+            State = AIState.SCARED;
+            StopSearch(currentSearch); // restart search
+            // TODO: maybe find a more appropriate point to run to?
         }
 
         timeSinceSeenPlayer = 0;
