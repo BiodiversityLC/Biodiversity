@@ -15,8 +15,9 @@ namespace Biodiversity.Patches;
 static class EnemyAIPatch {
 	
 	// TODO: basically extract most of this into some helper classes that let you patch in a yield return anywhere. i am just too lazy
-	
-	[HarmonyPatch(nameof(EnemyAI.CurrentSearchCoroutine), MethodType.Enumerator), HarmonyTranspiler]
+	// FIXME: broken
+    
+	//[HarmonyPatch(nameof(EnemyAI.CurrentSearchCoroutine), MethodType.Enumerator), HarmonyTranspiler]
 	static IEnumerable<CodeInstruction> AllowSearchRoutineDelay(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase __originalMethod) {
 		Type coroutineType = __originalMethod.DeclaringType;
 
