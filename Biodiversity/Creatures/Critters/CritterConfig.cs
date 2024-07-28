@@ -38,7 +38,18 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 		}
 	);
 	
-	public EnemyRaritiesPerMoon LeafyBoiRarity { get; private set; } = new(
-		150
+	public EnemyRaritiesPerMoon LeafBoyRarity { get; private set; } = new(
+		0,
+		new Dictionary<Levels.LevelTypes, int> {
+			{Levels.LevelTypes.VowLevel, 65},
+			{Levels.LevelTypes.AdamanceLevel, 100},
+			{ Levels.LevelTypes.ExperimentationLevel, 70 },
+			{ Levels.LevelTypes.AssuranceLevel, 100 },
+			{ Levels.LevelTypes.OffenseLevel, 80 },
+			{ Levels.LevelTypes.ArtificeLevel, 65 },
+			{ Levels.LevelTypes.RendLevel, 50 },
+			{ Levels.LevelTypes.DineLevel, 65 },
+			{ Levels.LevelTypes.TitanLevel, 10 }
+		}
 	);
 }
