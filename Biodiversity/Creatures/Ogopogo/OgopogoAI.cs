@@ -250,6 +250,10 @@ namespace Biodiversity.Creatures.Ogopogo
                 }
             } catch (Exception e) 
             {
+                if (!GameNetworkManager.Instance.localPlayerController.isPlayerDead)
+                {
+                    GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
+                }
                 GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = true;
             }
         }
