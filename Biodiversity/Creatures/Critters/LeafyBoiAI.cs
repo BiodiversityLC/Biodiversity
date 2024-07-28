@@ -58,8 +58,11 @@ public class LeafyBoiAI : BiodiverseAI {
             
             case AIState.SCARED:
                 agent.speed = BASE_MOVEMENT_SPEED * SCARED_SPEED_MULTIPLIER;
+                if(!wanderRoutine.inProgress)
+                    StartSearch(transform.position, wanderRoutine);
+                
                 ScanForPlayers();
-
+                
                 if (timeSinceSeenPlayer > forgetScaryPlayersTimer) {
                     State = AIState.WANDERING;
                 }
