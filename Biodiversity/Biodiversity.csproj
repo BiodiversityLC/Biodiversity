@@ -42,28 +42,53 @@
         -->
         <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
+    <ItemGroup>
+      <None Remove="Util\Lang\defs.json" />
+    </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Include="Util\Lang\defs.json" />
+    </ItemGroup>
 
     <!-- Primary Package References -->
     <ItemGroup>
         <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
-        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
         <PackageReference Include="BepInEx.Core" Version="5.*" PrivateAssets="all" />
+        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all"/>
         <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" PrivateAssets="all" />
-        <PackageReference Include="Evaisa.LethalLib" Version="0.14.4" />
+        <PackageReference Include="Evaisa.LethalLib" Version="0.16.1" Publicize="true" />
+        <PackageReference Include="IAmBatby.LethalLevelLoader" Version="1.3.7" Publicize="true" />
         <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" Publicize="true" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
         <PackageReference Include="UnityEngine.Modules" Version="2022.3.9" IncludeAssets="compile" PrivateAssets="all" />
+        
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Patches\" />
-    </ItemGroup>
-
-    <!-- Netcode Patcher Post-Build Event -->
+	<!-- Netcode Patcher Post-Build Event -->
     <Target Name="NetcodePatch" AfterTargets="PostBuildEvent">
         <Exec Command="netcode-patch &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
     </Target>
+
+	<Target Name="CleanAssetBundles" AfterTargets="NetcodePatch">
+		<ItemGroup>
+			<FilesToDelete Include="$(ProjectDir)AssetBundles/AssetBundles.*" />
+		</ItemGroup>
+		<Delete Files="@(FilesToDelete)" />
+	</Target>
+
+	<Target Name="BuildLangFiles" AfterTargets="CleanAssetBundles">
+		<Message Importance="high" Text="Collecting lang files!" />
+		
+		<ItemGroup>
+			<LangFiles Include="$(ProjectDir)Util/Lang/languages/*.json" Exclude="$(ProjectDir)Util/Lang/languages/defs.json">
+				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			</LangFiles>
+		</ItemGroup>
+
+		<MakeDir Directories="$(TargetDir)lang" Condition="!Exists('$(TargetDir)lang')" />
+		<Copy SourceFiles="@(LangFiles)" DestinationFolder="$(TargetDir)lang\" />
+	</Target>
 </Project>
