@@ -42,9 +42,9 @@ public class DamageTrigger : MonoBehaviour {
 	}
 
 	void OnTriggerEnter(Collider other) {
-		if (other.TryGetComponent(out EnemyAI enemy) && !enemiesToIgnore.Contains(enemy)) {
-			if (!enemiesToHit.Contains(enemy))
-				enemiesToHit.Add(enemy);
+		if (other.TryGetComponent(out EnemyAICollisionDetect enemy) && !enemiesToIgnore.Contains(enemy.mainScript)) {
+			if (!enemiesToHit.Contains(enemy.mainScript))
+				enemiesToHit.Add(enemy.mainScript);
 		}
 
 		if (other.TryGetComponent(out PlayerControllerB player) && GameNetworkManager.Instance.localPlayerController == player) {
@@ -53,9 +53,9 @@ public class DamageTrigger : MonoBehaviour {
 	}
 	
 	void OnTriggerExit(Collider other) {
-		if (other.TryGetComponent(out EnemyAI enemy) && !enemiesToIgnore.Contains(enemy)) {
-			if (enemiesToHit.Contains(enemy))
-				enemiesToHit.Remove(enemy);
+		if (other.TryGetComponent(out EnemyAICollisionDetect enemy) && !enemiesToIgnore.Contains(enemy.mainScript)) {
+			if (enemiesToHit.Contains(enemy.mainScript))
+				enemiesToHit.Remove(enemy.mainScript);
 		}
 
 		if (other.TryGetComponent(out PlayerControllerB player) && GameNetworkManager.Instance.localPlayerController == player) {
