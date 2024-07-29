@@ -79,9 +79,9 @@ namespace Biodiversity.Creatures.Ogopogo
         {
             base.Start();
 
-            detectionRange = BiodiversityPlugin.OgoDetectionRange.Value;
-            loseRange = BiodiversityPlugin.OgoLoseRange.Value;
-            attackDistance = BiodiversityPlugin.OgoAttackDistance.Value;
+            detectionRange = OgopogoHandler.Instance.Config.DetectionRange;
+            loseRange = OgopogoHandler.Instance.Config.LoseRange;
+            attackDistance = OgopogoHandler.Instance.Config.AttackDistance;
 
             /**
             foreach (SelectableLevel level in StartOfRound.Instance.levels)
