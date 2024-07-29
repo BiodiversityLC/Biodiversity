@@ -124,39 +124,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
             type.GetConstructor([]).Invoke([]);
         }
         Logger.LogInfo($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
-        //Enemies.RegisterEnemy(BiodiverseAssets.HoneyFeeder, Enemies.SpawnType.Outside);
-
-        OgoEnabled = Config.Bind("General", "Enable Ogopogo", true, "Turn to false to disable Ogopogo spawning");
-        VerminEnabled = Config.Bind("General", "Enable Vermin", true, "Turn to false to disable Vermin spawning");
-        levelsOgo = Config.Bind("General", "Ogopogo Levels", "VowLevel:34,MarchLevel:55,AdamanceLevel:85,Submersion:15,Corrosion:1,Aquatis:25,Seichi:40,Cesspool:80,Gorgonzola:5", "The moons that Ogopogo will spawn on");
-        levelsVermin = Config.Bind("General", "Vermin Levels", "All:100", "The moons that Vermin will spawn on");
-        OgoDetectionRange = Config.Bind("General", "Ogopogo detection range", 45f, "The range that Ogopogo will detect you at");
-        OgoLoseRange = Config.Bind("General", "Ogopogo lose range", 70f, "The range that Ogopogo will lose you at");
-        OgoAttackDistance = Config.Bind("General", "Ogopogo attack distance", 30f, "The distance that Ogopogo will attack you at");
-
-        OgoEnabledValue = false;
-
-        if (OgoDetectionRange.Value >= OgoLoseRange.Value)
-        {
-            Logger.LogInfo("Ogopogo detection range lower than lose range. Disabling Ogopogo spawning until this is fixed.");
-        }
-        else if (OgoAttackDistance.Value > OgoDetectionRange.Value)
-        {
-            Logger.LogInfo("Ogopogo attack distance is not in the detection distance. Disabling Ogopogo spawning until this is fixed.");
-        }
-        else
-        {
-            OgoEnabledValue = OgoEnabled.Value;
-        }
-
-
-        (Dictionary<LevelTypes, int> OgoLevelType, Dictionary<string, int> OgoCustomLevelType) = SolveLevels(levelsOgo.Value, OgoEnabledValue);
-        (Dictionary<LevelTypes, int> VerminLevelType, Dictionary<string, int> VerminCustomLevelType) = SolveLevels(levelsVermin.Value, VerminEnabled.Value);
-
-
-        Enemies.RegisterEnemy(BiodiverseAssets.Ogopogo, Enemies.SpawnType.Daytime, OgoLevelType, OgoCustomLevelType, BiodiverseAssets.OgopogoNode, BiodiverseAssets.OgopogoKeyword);
-        Enemies.RegisterEnemy(BiodiverseAssets.Vermin, Enemies.SpawnType.Outside, VerminLevelType, VerminCustomLevelType, BiodiverseAssets.VerminNode, BiodiverseAssets.VerminKeyword);
-
+        
         timer.Stop();
 
         (string, string) quote = silly_quotes[UnityEngine.Random.Range(0, silly_quotes.Length)];
