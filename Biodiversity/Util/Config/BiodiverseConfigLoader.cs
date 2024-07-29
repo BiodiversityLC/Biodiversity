@@ -18,6 +18,7 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
     public BiodiverseConfigLoader(ConfigFile configFile) {
         string CurrentHeader = "Misc";
         Type type = typeof(T);
+        configFile.SaveOnConfigSet = false;
         foreach(PropertyInfo property in type.GetProperties()) {
             FieldInfo backingField = property.DeclaringType.GetField($"<{property.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -65,5 +66,7 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
             }
         }
 
+        configFile.SaveOnConfigSet = true;
+        configFile.Save();
     }
 }

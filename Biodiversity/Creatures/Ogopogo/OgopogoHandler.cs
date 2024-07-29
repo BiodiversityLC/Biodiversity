@@ -11,7 +11,7 @@ class OgopogoHandler : BiodiverseAIHandler<OgopogoHandler> {
     
 	public OgopogoHandler() {
 		Assets = new OgopogoAssets("biodiversity_ogopogo");
-		Config = new OgopogoConfig();
+		Config = new OgopogoConfig(BiodiversityPlugin.Instance.CreateConfig("ogopogo"));
 		
 		if (Config.DetectionRange >= Config.LoseRange)
 		{
