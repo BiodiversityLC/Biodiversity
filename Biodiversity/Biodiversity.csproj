@@ -67,7 +67,13 @@
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
     </ItemGroup>
 
-	<!-- Netcode Patcher Post-Build Event -->
+    <ItemGroup>
+      <Folder Include="3rdParty\" />
+      <Folder Include="Patches\" />
+      <Folder Include="Util\Scripts\" />
+    </ItemGroup>
+
+    <!-- Netcode Patcher Post-Build Event -->
     <Target Name="NetcodePatch" AfterTargets="PostBuildEvent">
         <Exec Command="netcode-patch &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
     </Target>
