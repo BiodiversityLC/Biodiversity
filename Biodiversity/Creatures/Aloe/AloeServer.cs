@@ -20,10 +20,6 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public ManualLogSource Mls;
     [HideInInspector] public string aloeId;
     
-#if !UNITY_EDITOR
-    [field: HideInInspector] [field: SerializeField] public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
-#endif
-    
     [Header("AI and Pathfinding")] [Space(5f)]
     public AISearchRoutine roamMap;
     
@@ -73,7 +69,6 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public PlayerControllerB backupTargetPlayer;
 
     public Coroutine SlapCoroutine;
-    public Coroutine CrushHeadCoroutine;
     
     private static readonly Dictionary<Type, States> StateTypeMapping = new()
     {
@@ -439,8 +434,9 @@ public class AloeServer : BiodiverseAI
                 {
                     if (PlayerWhoHitMe.IsNotNull)
                     {
-                        if (currentStateType is not (States.Roaming or States.AvoidingPlayer) || enemyHP <= Config.Health / 2)
+                        if (currentStateType is not (States.Roaming or States.AvoidingPlayer) || enemyHP <= AloeHandler.Instance.Config.Health / 2)
                         {
+                            LogDebug("Triggering bitch slap.");
                             netcodeController.SetAnimationTriggerClientRpc(aloeId, AloeClient.Slap);
                         }
                         
@@ -543,12 +539,12 @@ public class AloeServer : BiodiverseAI
         netcodeController.AnimationParamHealing.Value = false;
         netcodeController.ChangeLookAimConstraintWeightClientRpc(aloeId, 0, 0f);
 
-        NullableObject<PlayerControllerB> stunnedByPlayer = new(setStunnedByPlayer);
+        NullableObject<PlayerControllerB> stunnedByPlayer2 = new(setStunnedByPlayer);
         switch (currentBehaviourStateIndex)
         { 
             case (int)States.Spawning or (int)States.Roaming or (int)States.PassiveStalking or (int)States.AggressiveStalking:
             {
-                if (setStunnedByPlayer != null) AvoidingPlayer.Value = setStunnedByPlayer;
+                if (stunnedByPlayer2.IsNotNull) AvoidingPlayer.Value = stunnedByPlayer2.Value;
                 
                 SwitchBehaviourState(States.AvoidingPlayer);
                 break; 
@@ -557,10 +553,10 @@ public class AloeServer : BiodiverseAI
             case (int)States.KidnappingPlayer or (int)States.HealingPlayer or (int)States.CuddlingPlayer:
             {
                 SetTargetPlayerInCaptivity(false);
-                if (setStunnedByPlayer != null)
+                if (stunnedByPlayer2.IsNotNull)
                 {
                     backupTargetPlayer = ActualTargetPlayer.Value;
-                    netcodeController.TargetPlayerClientId.Value = setStunnedByPlayer.actualClientId;
+                    netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
                     SwitchBehaviourState(States.AttackingPlayer);
                 }
                 else
@@ -574,10 +570,11 @@ public class AloeServer : BiodiverseAI
             
             case (int)States.AttackingPlayer:
             {
-                if (setStunnedByPlayer == null) break;
+                if (!stunnedByPlayer2.IsNotNull) break;
 
                 if (ActualTargetPlayer.Value != setStunnedByPlayer)
-                    netcodeController.TargetPlayerClientId.Value = setStunnedByPlayer.actualClientId;
+                    netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
+                
                 
                 break;
             }
@@ -587,6 +584,7 @@ public class AloeServer : BiodiverseAI
     public IEnumerator SlapIfClose()
     {
         if (!IsServer) yield break;
+        LogDebug("Started slapping in SlapIfClose IEnumerator");
 
         inSlapAnimation = true;
         HashSet<Collider> collidersAlreadyHit = [];
@@ -781,16 +779,16 @@ public class AloeServer : BiodiverseAI
     {
         if (!IsServer) return;
 
-        enemyHP = Config.Health;
-        roamingRadius = Config.RoamingRadius;
-        ViewWidth = Config.ViewWidth;
-        ViewRange = Config.ViewRange;
-        PlayerHealthThresholdForStalking = Config.PlayerHealthThresholdForStalking;
-        PlayerHealthThresholdForHealing = Config.PlayerHealthThresholdForHealing;
-        TimeItTakesToFullyHealPlayer = Config.TimeItTakesToFullyHealPlayer;
-        PassiveStalkStaredownDistance = Config.PassiveStalkStaredownDistance;
-        WaitBeforeChasingEscapedPlayerTime = Config.WaitBeforeChasingEscapedPlayerTime;
-        _slapDamage = Config.SlapDamage;
+        enemyHP = AloeHandler.Instance.Config.Health;
+        roamingRadius = AloeHandler.Instance.Config.RoamingRadius;
+        ViewWidth = AloeHandler.Instance.Config.ViewWidth;
+        ViewRange = AloeHandler.Instance.Config.ViewRange;
+        PlayerHealthThresholdForStalking = AloeHandler.Instance.Config.PlayerHealthThresholdForStalking;
+        PlayerHealthThresholdForHealing = AloeHandler.Instance.Config.PlayerHealthThresholdForHealing;
+        TimeItTakesToFullyHealPlayer = AloeHandler.Instance.Config.TimeItTakesToFullyHealPlayer;
+        PassiveStalkStaredownDistance = AloeHandler.Instance.Config.PassiveStalkStaredownDistance;
+        WaitBeforeChasingEscapedPlayerTime = AloeHandler.Instance.Config.WaitBeforeChasingEscapedPlayerTime;
+        _slapDamage = AloeHandler.Instance.Config.SlapDamage;
 
         roamMap.searchWidth = roamingRadius;
         

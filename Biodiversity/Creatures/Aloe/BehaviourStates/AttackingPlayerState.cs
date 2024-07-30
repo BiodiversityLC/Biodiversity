@@ -23,7 +23,6 @@ public class AttackingPlayerState : BehaviourState
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
         
-        AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(AloeServerInstance.aloeId, AloeClient.Crush);
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.5f);
         
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
@@ -55,6 +54,7 @@ public class AttackingPlayerState : BehaviourState
     {
         public override bool ShouldTransitionBeTaken()
         {
+            // todo: add logic that makes sure another aloe doesnt target the player that this aloe is trying to kill
             if (!(Vector3.Distance(AloeServerInstance.ActualTargetPlayer.Value.transform.position,
                     AloeServerInstance.transform.position) <= 1.5f)) return !attackingPlayerState._isPlayerTargetable;
             

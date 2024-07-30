@@ -402,8 +402,19 @@ public class AloeClient : MonoBehaviour
     private IEnumerator CrushPlayerAnimation(PlayerControllerB player)
     {
         LogDebug($"Killing player: {player.name}");
+        if (player.inSpecialInteractAnimation &&
+            player.currentTriggerInAnimationWith != null)
+            player.currentTriggerInAnimationWith.CancelAnimationExternally();
+        
+        player.inSpecialInteractAnimation = true;
+        player.inAnimationWithEnemy = GetComponent<AloeServer>();
+        player.isInElevator = false;
+        player.isInHangarShipRoom = false;
+        player.ResetZAndXRotation();
+        player.DropAllHeldItemsAndSync();
         player.inSpecialInteractAnimation = true;
         player.transform.LookAt(transform.position);
+        animator.SetTrigger(Crush);
         yield return new WaitForSeconds(0.3f);
         player.KillPlayer(Vector3.zero, true, CauseOfDeath.Crushing, 1);
     }
@@ -817,6 +828,19 @@ public class AloeClient : MonoBehaviour
         HandlePlayAudioClipType(receivedAloeId, AudioClipTypes.Healing, 0, true);
     }
 
+    private void HandleDamagePlayer(string receivedAloeId, ulong playerId, int damage)
+    {
+        if (_aloeId != receivedAloeId || !netcodeController.IsServer) return;
+        NullableObject<PlayerControllerB> playerToDamage = new(StartOfRound.Instance.allPlayerScripts[playerId]);
+        if (!playerToDamage.IsNotNull)
+        {
+            _mls.LogError($"Cannot damage player with id {playerId}, because they do not exist.");
+            return;
+        }
+        LogDebug($"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
+        playerToDamage.Value.DamagePlayer(damage, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.Value.turnCompass.forward * -1 * 5);
+    }
+
     /// <summary>
     /// Plays a random footstep sound effect when the Aloe's foot touches the ground in an animation.
     /// </summary>
@@ -972,6 +996,7 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnPlayHealingVfx += HandlePlayHealingVfx;
         netcodeController.OnPlayAudioClipType += HandlePlayAudioClipType;
         netcodeController.OnCrushPlayerNeck += HandleCrushPlayerAnimation;
+        netcodeController.OnDamagePlayer += HandleDamagePlayer;
         netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll += HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer +=
@@ -1003,6 +1028,7 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnPlayHealingVfx -= HandlePlayHealingVfx;
         netcodeController.OnPlayAudioClipType -= HandlePlayAudioClipType;
         netcodeController.OnCrushPlayerNeck -= HandleCrushPlayerAnimation;
+        netcodeController.OnDamagePlayer -= HandleDamagePlayer;
         netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll -= HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer -=
