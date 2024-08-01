@@ -694,7 +694,12 @@ public class AloeClient : MonoBehaviour
         _targetPlayer.Value.inSpecialInteractAnimation = true;
 
         if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer.Value)
-            HUDManager.Instance.DisplayTip("You can escape!", "Mash the spacebar to escape from The Aloe!");
+            HUDManager.Instance.DisplayTip(
+                "You can escape!", 
+                "Mash the spacebar to escape from The Aloe!",
+                false,
+                true,
+                "LC_AloeGrabTip");
         LogDebug($"Set {_targetPlayer.Value.playerUsername} able to escape");
     }
 

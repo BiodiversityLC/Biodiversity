@@ -440,6 +440,7 @@ public class AloeServer : BiodiverseAI
                             netcodeController.SetAnimationTriggerClientRpc(aloeId, AloeClient.Slap);
                         }
                         
+                        LogDebug($"Did not trigger bitch slap. Current health: {enemyHP}. Health needed to trigger slap: {AloeHandler.Instance.Config.Health / 2}");
                         AvoidingPlayer.Value = PlayerWhoHitMe.Value;
                         stateData.Add("hitByEnemy", false);
                     }

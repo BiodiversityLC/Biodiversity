@@ -18,7 +18,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     public int SlapDamage { get; private set; } = 30;
     
     [field: Tooltip("The radius in meters the Aloe is allowed roam from her favourite spot.")]
-    [field: Range(50f, 500f)]
+    [field: Range(45f, 500f)]
     public float RoamingRadius { get; private set; } = 50f;
     
     [field: Tooltip("The view width in degrees of the Aloe.")]
@@ -26,15 +26,15 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     public float ViewWidth { get; private set; } = 135f;
     
     [field: Tooltip("The view range in meters of the Aloe.")]
-    [field: Range(1f, 200f)]
+    [field: Range(1, 200)]
     public int ViewRange { get; private set; } = 80;
     
     [field: Tooltip("The required health a player needs to be or lower for the Aloe to stalk them.")]
-    [field: Range(1f, 100f)]
+    [field: Range(1, 100)]
     public int PlayerHealthThresholdForStalking { get; private set; } = 90;
     
     [field: Tooltip("The required health a player needs to be or lower for the Aloe to kidnap and heal them.")]
-    [field: Range(1f, 100f)]
+    [field: Range(1, 100)]
     public int PlayerHealthThresholdForHealing { get; private set; } = 45;
 
     [field: Tooltip("The distance from the player the Aloe will stop and stare at the player from.")]
@@ -51,7 +51,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("The amount of 'escape charge' that decays per second when trying to escape from the Aloe.")]
     [field: Range(0.01f, 100f)]
-    public float EscapeChargeDecayRate { get; private set; } = 15;
+    public float EscapeChargeDecayRate { get; private set; } = 15f;
 
     [field: Tooltip("The amount of 'escape charge' needed to break free from the Aloe.")]
     [field: Range(1f, 1000f)]
@@ -77,8 +77,8 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     public string Rarity { get; private set; } = "Experimentation:38,Assurance:75,March:85,Artifice:95,Aquatis:18,Vertigo:76,Solace:12,Azure:40,Argent:15,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Atlantica:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Seichi:8,Modded:2";
 
     [field: Tooltip("The power level of the Aloe.")]
-    [field: Range(0, float.MaxValue)]
-    public float PowerLevel { get; private set; } = 3;
+    [field: Range(0f, float.MaxValue)]
+    public float PowerLevel { get; private set; } = 3f;
 
     [field: Tooltip("The max amount of Aloes that can spawn in the map.")]
     [field: Range(0, int.MaxValue)]

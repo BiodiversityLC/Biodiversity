@@ -9,7 +9,6 @@ public class AvoidingPlayerState : BehaviourState
 {
     private readonly NullableObject<PlayerControllerB> _playerLookingAtAloe = new();
     
-    private float _avoidPlayerAudioTimer;
     private float _avoidPlayerIntervalTimer;
     private float _avoidPlayerTimerTotal;
 
@@ -33,8 +32,7 @@ public class AvoidingPlayerState : BehaviourState
         AloeServerInstance.agentMaxAcceleration = 50f;
         AloeServerInstance.agent.acceleration = 50f;
         AloeServerInstance.openDoorSpeedMultiplier = 20f;
-
-        _avoidPlayerAudioTimer = 4.1f;
+        
         _avoidPlayerIntervalTimer = 0f;
         _avoidPlayerTimerTotal = 0f;
         
@@ -83,8 +81,9 @@ public class AvoidingPlayerState : BehaviourState
             AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 1f);
         }
 
+        AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId,
+            AloeClient.AudioClipTypes.InterruptedHealing);
         AloeServerInstance.moveTowardsDestination = true;
-        _avoidPlayerAudioTimer -= Time.deltaTime;
         _avoidPlayerTimerTotal += Time.deltaTime;
     }
 
@@ -98,14 +97,6 @@ public class AvoidingPlayerState : BehaviourState
         if (_playerLookingAtAloe.IsNotNull)
         {
             AloeServerInstance.AvoidingPlayer.Value = _playerLookingAtAloe.Value;
-            if (_avoidPlayerAudioTimer <= 0)
-            {
-                _avoidPlayerAudioTimer = 4.1f;
-                AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId,
-                    AloeClient.AudioClipTypes.InterruptedHealing);
-            }
-
-            _avoidPlayerTimerTotal = 0f;
         }
 
         float waitTimer = 5f;
