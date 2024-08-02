@@ -10,11 +10,11 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 {
     [field: Header("General Settings.")]
     [field: Tooltip("The health of the Aloe upon spawning.")]
-    [field: Range(1, int.MaxValue)]
+    [field: Range(1, 100)]
     public int Health { get; private set; } = 6;
 
     [field: Tooltip("The damage that the Aloe's slap does.")]
-    [field: Range(0, int.MaxValue)]
+    [field: Range(0, 100)]
     public int SlapDamage { get; private set; } = 30;
     
     [field: Tooltip("The radius in meters the Aloe is allowed roam from her favourite spot.")]
@@ -77,10 +77,10 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     public string Rarity { get; private set; } = "Experimentation:38,Assurance:75,March:85,Artifice:95,Aquatis:18,Vertigo:76,Solace:12,Azure:40,Argent:15,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Atlantica:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Seichi:8,Modded:2";
 
     [field: Tooltip("The power level of the Aloe.")]
-    [field: Range(0f, float.MaxValue)]
+    [field: Range(0f, 15f)]
     public float PowerLevel { get; private set; } = 3f;
 
     [field: Tooltip("The max amount of Aloes that can spawn in the map.")]
-    [field: Range(0, int.MaxValue)]
+    [field: Range(0, 10)]
     public int MaxAmount { get; private set; } = 1;
 }
