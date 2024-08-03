@@ -158,6 +158,14 @@ public class AloeServer : BiodiverseAI
         _currentState = _stateDictionary[States.Spawning];
         _currentState.OnStateEnter(ref tempStateData);
         
+        LogDebug("Attempting to turn off collisions");
+        EnemyAICollisionDetect enemyAiCollisionDetect = GetComponentInChildren<EnemyAICollisionDetect>();
+        if (enemyAiCollisionDetect != null)
+        {
+            enemyAiCollisionDetect.canCollideWithEnemies = false;
+            LogDebug("Successfully turned off collisions");
+        }
+        
         LogDebug("Aloe Spawned!");
     }
 
@@ -356,6 +364,8 @@ public class AloeServer : BiodiverseAI
     private void CalculateRotation()
     {
         const float turnSpeed = 5f;
+
+        if (inSlapAnimation) return;
 
         switch (_currentState.GetStateType())
         {

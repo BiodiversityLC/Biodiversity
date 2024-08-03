@@ -80,9 +80,7 @@ public class AvoidingPlayerState : BehaviourState
             AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
             AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 1f);
         }
-
-        AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId,
-            AloeClient.AudioClipTypes.InterruptedHealing);
+        
         AloeServerInstance.moveTowardsDestination = true;
         _avoidPlayerTimerTotal += Time.deltaTime;
     }
