@@ -19,13 +19,11 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler> {
         Assets.EnemyType.MaxCount = Config.MaxAmount;
 
         RegisterEnemyWithConfig(
-            Config.AloeEnabled, 
+            Config.AloeEnabled,
             Config.Rarity,
             Assets.EnemyType,
             Assets.TerminalNode,
             Assets.TerminalKeyword);
-
-        AddSpawnRequirement(Assets.EnemyType, () => false);
     }
     
     // Xu's config setup
