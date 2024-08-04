@@ -22,10 +22,13 @@ class OgopogoHandler : BiodiverseAIHandler<OgopogoHandler> {
 			
 			BiodiversityPlugin.Logger.LogInfo("Ogopogo attack distance is not in the detection distance. Disabling Ogopogo spawning until this is fixed.");
 		} else {
+			TranslateTerminalNode(Assets.OgopogoTerminalNode);
 			Enemies.RegisterEnemy(Assets.OgopogoEnemyType, Enemies.SpawnType.Daytime, Config.OgopogoRarity.VanillaRarities, Config.OgopogoRarity.ModdedRarities, Assets.OgopogoTerminalNode, Assets.OgopogoTerminalKeyword);
 		}
-		
-		if(Config.EnableVermin)
+
+		if (Config.EnableVermin) {
+			TranslateTerminalNode(Assets.VerminTerminalNode);
 			Enemies.RegisterEnemy(Assets.VerminEnemyType, Enemies.SpawnType.Outside, Config.VerminRarity.VanillaRarities, Config.VerminRarity.ModdedRarities, Assets.VerminTerminalNode, Assets.VerminTerminalKeyword);
+		}
 	}
 }
