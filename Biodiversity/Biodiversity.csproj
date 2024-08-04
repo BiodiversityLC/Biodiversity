@@ -2,7 +2,7 @@
 
     <!-- BepInEx Properties -->
     <PropertyGroup>
-        <AssemblyName>me.biodiversity.Biodiversity</AssemblyName>
+        <AssemblyName>com.github.biodiversitylc.Biodiversity</AssemblyName>
         <Product>Biodiversity</Product>
         <!-- Change to whatever version you're currently on. -->
         <Version>0.0.1</Version>

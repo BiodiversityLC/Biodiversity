@@ -25,7 +25,7 @@ source = "../AssetBundles"
 target = "./BepInEx/plugins/Biodiversity/assets"
 
 [[build.copy]]
-source = "../bin/Release/netstandard2.1/me.biodiversity.Biodiversity.dll"
+source = "../bin/Release/netstandard2.1/com.github.biodiversitylc.Biodiversity.dll"
 target = "./BepInEx/plugins/Biodiversity/"
 
 [publish]
