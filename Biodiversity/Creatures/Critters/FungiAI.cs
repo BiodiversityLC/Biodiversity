@@ -14,7 +14,14 @@ public class FungiAI : BiodiverseAI {
 
 	[SerializeField]
 	Transform sporeCloudOrigin;
-    
+
+	[Header("Footstep Audio")]
+	[SerializeField]
+	AudioSource footstepSource;
+
+	[SerializeField]
+	AudioClip[] footstepSFX = [];
+	
 	AISearchRoutine wanderRoutine = new AISearchRoutine();
 
 	float speedBoostTime;
@@ -79,8 +86,12 @@ public class FungiAI : BiodiverseAI {
 	void StunOverClientRPC() {
 		creatureAnimator.SetTrigger("stun_over");
 	}
-	// fixme: kinda doesn't work at all lol
-	internal override float GetDelayBeforeContinueSearch() {
-		return 0;
+	
+	public override void AnimationEventA() {
+		base.AnimationEventA();
+
+		AudioClip clip = footstepSFX[Random.Range(0, footstepSFX.Length)];
+		footstepSource.PlayOneShot(clip);
+		WalkieTalkie.TransmitOneShotAudio(footstepSource, clip, 1f);
 	}
 }
