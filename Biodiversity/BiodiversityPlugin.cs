@@ -19,6 +19,7 @@ using System.Reflection;
 using System.Threading;
 using BepInEx.Configuration;
 using Biodiversity.Creatures;
+using Biodiversity.Util.Assetloading;
 using Dissonance;
 using LethalLevelLoader;
 using Unity.Netcode;
@@ -104,6 +105,10 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Stopwatch timer = Stopwatch.StartNew();
         VanillaEnemies.Init();
 
+        // why does unity not let you preload video clips like audio clips.
+        Logger.LogInfo("Loading VideoClip bundle.");
+        LoadBundle("biodiversity_video_clips");
+        
         Logger.LogInfo("Registering the silly little creatures.");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType != null
@@ -198,5 +203,12 @@ public class BiodiversityPlugin : BaseUnityPlugin
     internal ConfigFile CreateConfig(string name)
     {
         return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + name + ".cfg"), saveOnInit: false, MetadataHelper.GetMetadata(this));
+    }
+    
+    internal AssetBundle LoadBundle(string name) {
+        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "assets", name));
+        Logger.LogDebug($"[AssetBundle Loading] {name} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
+
+        return bundle;
     }
 }

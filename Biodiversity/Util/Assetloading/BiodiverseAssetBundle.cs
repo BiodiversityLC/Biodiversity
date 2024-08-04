@@ -7,13 +7,13 @@ using System.Reflection;
 using System.Text;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace Biodiversity.Util.Assetloading;
 internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle<T> {
 
     public BiodiverseAssetBundle(string filePath) {
-        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "assets", filePath));
-        BiodiversityPlugin.Logger.LogDebug($"[AssetBundle Loading] {filePath} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
+        AssetBundle bundle = BiodiversityPlugin.Instance.LoadBundle(filePath);
 
         Type type = typeof(T);
         foreach(FieldInfo field in type.GetFields()) {
@@ -23,10 +23,21 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
             field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
         }
 
-        foreach(GameObject gameObject in bundle.LoadAllAssets<GameObject>()) {
-            if(gameObject.GetComponent<NetworkObject>() == null) continue;
-            if(GameNetworkManagerPatch.networkPrefabsToRegister.Contains(gameObject)) continue;
-            GameNetworkManagerPatch.networkPrefabsToRegister.Add(gameObject);
+        foreach (UnityEngine.Object asset in bundle.LoadAllAssets()) {
+            if (asset is GameObject gameObject) {
+                if(gameObject.GetComponent<NetworkObject>() == null) continue;
+                if(GameNetworkManagerPatch.networkPrefabsToRegister.Contains(gameObject)) continue;
+                GameNetworkManagerPatch.networkPrefabsToRegister.Add(gameObject);
+            }
+
+            if (asset is AudioClip clip && !clip.preloadAudioData) {
+                BiodiversityPlugin.Logger.LogWarning($"Loading Audio data for '{clip.name}' because it does not have preloadAudioData enabled!");
+                clip.LoadAudioData();
+            }
+
+            if (asset is VideoClip videoClip) {
+                BiodiversityPlugin.Logger.LogError($"VideoClip: '{videoClip.name}' is being loaded from '{typeof(T).Name}' instead of the dedicated video clip bundle. It will not work correctly.");
+            }
         }
 
         bundle.Unload(false);
