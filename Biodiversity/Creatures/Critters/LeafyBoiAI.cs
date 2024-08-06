@@ -16,6 +16,15 @@ public class LeafyBoiAI : BiodiverseAI {
     private float timeSinceSeenPlayer;
     private static readonly int _AnimationIdHash = Animator.StringToHash("AnimationId");
 
+    float timeUntilNextBarkSFX = 5;
+    
+    [Header("Audio")]
+    [SerializeField]
+    AudioClip scaredSFX;
+
+    [SerializeField]
+    AudioClip[] randomBarkSFX;
+    
     AISearchRoutine wanderRoutine = new AISearchRoutine();
 
     public enum AIState {
@@ -25,7 +34,7 @@ public class LeafyBoiAI : BiodiverseAI {
     }
 
     AIState _state = AIState.WANDERING;
-
+    
     public AIState State {
         get => _state;
         set {
@@ -73,6 +82,14 @@ public class LeafyBoiAI : BiodiverseAI {
     public override void Update() {
         base.Update();
         timeSinceSeenPlayer += Time.deltaTime;
+
+        timeUntilNextBarkSFX -= Time.deltaTime;
+        if (timeUntilNextBarkSFX < 0) {
+            timeUntilNextBarkSFX = Random.Range(40f, 90f);
+            AudioClip clip = randomBarkSFX[Random.Range(0, randomBarkSFX.Length)];
+            creatureSFX.PlayOneShot(clip);
+            WalkieTalkie.TransmitOneShotAudio(creatureSFX, clip);
+        }
     }
 
     private void CheckAnimations() {
@@ -92,6 +109,12 @@ public class LeafyBoiAI : BiodiverseAI {
     private void ScanForPlayers() {
         if (GetPlayersCloseBy(SCARY_PLAYER_DISTANCE, out List<PlayerControllerB> players)) { // player nearby
             timeSinceSeenPlayer = 0;
+
+            if (State == AIState.WANDERING) {
+                creatureSFX.PlayOneShot(scaredSFX);
+                WalkieTalkie.TransmitOneShotAudio(creatureSFX, scaredSFX);
+            }
+            
             State = AIState.RUNNING;
         } else if (State == AIState.RUNNING) {
             State = AIState.SCARED;
