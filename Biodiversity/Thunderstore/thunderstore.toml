@@ -2,7 +2,7 @@
 schemaVersion = "0.0.1"
 
 [package]
-namespace = "SuperFuckingCoolAndBadassTeam"
+namespace = "BiodiversityTeam"
 name = "Biodiversity"
 description = "Expanding the fauna of Lethal Company!"
 websiteUrl = "https://github.com/BiodiversityLC"
