@@ -20,7 +20,7 @@ public class LeafyBoiAI : BiodiverseAI {
     
     [Header("Audio")]
     [SerializeField]
-    AudioClip scaredSFX;
+    AudioClip[] scaredSFX;
 
     [SerializeField]
     AudioClip[] randomBarkSFX;
@@ -111,8 +111,10 @@ public class LeafyBoiAI : BiodiverseAI {
             timeSinceSeenPlayer = 0;
 
             if (State == AIState.WANDERING) {
-                creatureSFX.PlayOneShot(scaredSFX);
-                WalkieTalkie.TransmitOneShotAudio(creatureSFX, scaredSFX);
+                AudioClip clip = scaredSFX[Random.Range(0, scaredSFX.Length)];
+                LogVerbose($"playing scared clip: {clip.name}");
+                creatureSFX.PlayOneShot(clip);
+                WalkieTalkie.TransmitOneShotAudio(creatureSFX, clip);
             }
             
             State = AIState.RUNNING;
