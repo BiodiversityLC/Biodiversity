@@ -32,6 +32,8 @@ public static class VanillaEnemies {
 	public static EnemyType Butler { get; private set; }
 	public static EnemyType ButlerBees { get; private set; }
 	public static EnemyType FlowerSnake { get; private set; }
+	public static EnemyType BushWolf { get; private set; }
+	public static EnemyType ClaySurgeon { get; private set; }
 	
 	internal static void Init() {
 		List<string> unknownTypes = [];

@@ -18,6 +18,7 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
     public BiodiverseConfigLoader(ConfigFile configFile) {
         string CurrentHeader = "Misc";
         Type type = typeof(T);
+        configFile.SaveOnConfigSet = false;
         foreach(PropertyInfo property in type.GetProperties()) {
             try {
                 FieldInfo backingField = property.DeclaringType.GetField($"<{property.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -66,7 +67,15 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
                 BiodiversityPlugin.Logger.LogError($"Exception while binding: {property.Name}");
                 BiodiversityPlugin.Logger.LogError(ex.ToString());
             }
+
+            if (property.PropertyType == typeof(EnemyRaritiesPerMoon)) {
+                EnemyRaritiesPerMoon rarities = (EnemyRaritiesPerMoon) property.GetValue(this);
+                rarities.Bind(configFile, property.Name);
+                property.SetValue(this, rarities);
+            }
         }
 
+        configFile.SaveOnConfigSet = true;
+        configFile.Save();
     }
 }

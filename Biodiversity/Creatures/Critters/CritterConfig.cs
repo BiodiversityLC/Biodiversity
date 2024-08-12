@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using BepInEx.Configuration;
 using Biodiversity.Util.Config;
+using LethalLib.Modules;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters;
@@ -20,5 +22,34 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	
 	[field: Tooltip("Length of stunned time after being hit.")]
 	[field: Range(3, 20)]
-	public float FungiStunTime { get; private set; } = 2f;
+	public float FungiStunTime { get; private set; } = 4f;
+
+	public EnemyRaritiesPerMoon FungiRarity { get; private set; } = new(
+		0,
+		new Dictionary<Levels.LevelTypes, int> {
+			{Levels.LevelTypes.ExperimentationLevel, 80},
+			{Levels.LevelTypes.AdamanceLevel, 100},
+			{Levels.LevelTypes.MarchLevel, 80},
+			{Levels.LevelTypes.ArtificeLevel, 100}
+		},
+		new Dictionary<string, int> {
+			{"Solace", 80},
+			{"Fray", 40}
+		}
+	);
+	
+	public EnemyRaritiesPerMoon LeafBoyRarity { get; private set; } = new(
+		0,
+		new Dictionary<Levels.LevelTypes, int> {
+			{Levels.LevelTypes.VowLevel, 65},
+			{Levels.LevelTypes.AdamanceLevel, 100},
+			{ Levels.LevelTypes.ExperimentationLevel, 70 },
+			{ Levels.LevelTypes.AssuranceLevel, 100 },
+			{ Levels.LevelTypes.OffenseLevel, 80 },
+			{ Levels.LevelTypes.ArtificeLevel, 65 },
+			{ Levels.LevelTypes.RendLevel, 50 },
+			{ Levels.LevelTypes.DineLevel, 65 },
+			{ Levels.LevelTypes.TitanLevel, 10 }
+		}
+	);
 }

@@ -21,13 +21,15 @@ public abstract class BiodiverseAI : EnemyAI {
     /// A bool on if any players are nearby.
     /// </returns>
     protected bool GetPlayersCloseBy(float radius, out List<PlayerControllerB> players) {
-        Collider[] hitColliders = new Collider[StartOfRound.Instance.allPlayerScripts.Length]; // don't hardcode to 4 as to not break lobby expansion mods
-        if(Physics.OverlapSphereNonAlloc(base.transform.position, radius, hitColliders, 8, QueryTriggerInteraction.Ignore) <= 0) { // no clue what the 8 means but it was in the thumpers code lol
-            players = [];
-            return false;
+        players = [];
+
+        foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts) {
+            if ((transform.position - player.transform.position).magnitude <= radius) {
+                players.Add(player);
+            }
         }
-        players = hitColliders.Select(collider => collider.GetComponent<PlayerControllerB>()).ToList();
-        return true;
+        
+        return players.Count != 0;
     }
 
     // https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5
@@ -61,5 +63,9 @@ public abstract class BiodiverseAI : EnemyAI {
         if (BiodiversityPlugin.Config.VerboseLogging) {
             BiodiversityPlugin.Logger.LogDebug($"[{enemyType.enemyName}] {message}");
         }
+    }
+
+    internal virtual float GetDelayBeforeContinueSearch() {
+        return 0;
     }
 }

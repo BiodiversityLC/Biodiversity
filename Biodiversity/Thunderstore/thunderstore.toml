@@ -1,0 +1,37 @@
+[config]
+schemaVersion = "0.0.1"
+
+[package]
+namespace = "BiodiversityTeam"
+name = "Biodiversity"
+description = "Expanding the fauna of Lethal Company!"
+websiteUrl = "https://github.com/BiodiversityLC"
+containsNsfwContent = false
+[package.dependencies]
+BepInEx-BepInExPack = "5.4.2100"
+Evaisa-LethalLib = "0.15.1"
+
+[build]
+icon = "./icon.png"
+readme = "../README.md"
+outdir = "../../Packages"
+
+[[build.copy]]
+source = "../bin/Release/netstandard2.1/lang"
+target = "./BepInEx/plugins/Biodiversity/lang"
+
+[[build.copy]]
+source = "../AssetBundles"
+target = "./BepInEx/plugins/Biodiversity/assets"
+
+[[build.copy]]
+source = "../bin/Release/netstandard2.1/com.github.biodiversitylc.Biodiversity.dll"
+target = "./BepInEx/plugins/Biodiversity/"
+
+[publish]
+repository = "https://thunderstore.io"
+communities = [ "riskofrain2", ]
+[publish.categories]
+riskofrain2 = [ "items", "skills", ]
+
+

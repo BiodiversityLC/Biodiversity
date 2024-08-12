@@ -1,11 +1,27 @@
 using System.Collections;
+using Biodiversity.Behaviours;
 using Biodiversity.General;
 using GameNetcodeStuff;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters;
 
 public class FungiAI : BiodiverseAI {
+	[Header("Spore")]
+	[SerializeField]
+	GameObject sporeCloudPrefab;
+
+	[SerializeField]
+	Transform sporeCloudOrigin;
+
+	[Header("Footstep Audio")]
+	[SerializeField]
+	AudioSource footstepSource;
+
+	[SerializeField]
+	AudioClip[] footstepSFX = [];
+	
 	AISearchRoutine wanderRoutine = new AISearchRoutine();
 
 	float speedBoostTime;
@@ -13,6 +29,7 @@ public class FungiAI : BiodiverseAI {
 
 	static CritterConfig Config => CritterHandler.Instance.Config;
 	
+    
 	public override void DoAIInterval() {
 		base.DoAIInterval();
 		if(isStunned) return;
@@ -39,14 +56,42 @@ public class FungiAI : BiodiverseAI {
 		moveTowardsDestination = false;
 		agent.isStopped = true;
 		StopSearch(wanderRoutine, true);
-		LogVerbose("[Fungi] Stunning.");
+		LogVerbose("[Fungi] spewing all over.");
 
+		SpewSporeClientRPC();
+        
 		yield return new WaitForSeconds(Config.FungiStunTime);
 
-		LogVerbose("[Fungi] Stopping stun.");
-
+		LogVerbose("[Fungi] stun is over, ");
+		StunOverClientRPC();
+		
 		isStunned = false;
 		agent.isStopped = false;
 		speedBoostTime = Config.FungiBoostTime;
+	}
+
+	[ClientRpc]
+	void SpewSporeClientRPC() {
+		creatureAnimator.SetTrigger("spew");
+	}
+
+	// triggered in animation event
+	public void SpawnSpores() {
+		GameObject spores = Instantiate(sporeCloudPrefab, sporeCloudOrigin.position, Quaternion.identity, RoundManager.Instance.mapPropsContainer.transform);
+		spores.GetComponent<DamageTrigger>().enemiesToIgnore.Add(this);
+		spores.GetComponent<Animation>().Play(); // this is fucked
+	}
+    
+	[ClientRpc]
+	void StunOverClientRPC() {
+		creatureAnimator.SetTrigger("stun_over");
+	}
+	
+	public override void AnimationEventA() {
+		base.AnimationEventA();
+
+		AudioClip clip = footstepSFX[Random.Range(0, footstepSFX.Length)];
+		footstepSource.PlayOneShot(clip);
+		WalkieTalkie.TransmitOneShotAudio(footstepSource, clip, 1f);
 	}
 }
