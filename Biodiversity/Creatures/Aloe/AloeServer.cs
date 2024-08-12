@@ -97,10 +97,10 @@ public class AloeServer : BiodiverseAI
     private float _takeDamageCooldown;
 
     [HideInInspector] public int timesFoundSneaking;
-    private int _slapDamage;
-    
-    public static ulong NullPlayerId = 69420;
-    
+    private int _slapDamage = 30;
+
+    public const ulong NullPlayerId = 69420;
+
     [HideInInspector] public bool hasTransitionedToRunningForwardsAndCarryingPlayer;
     [HideInInspector] public bool isStaringAtTargetPlayer;
     [HideInInspector] public bool inGrabAnimation;
@@ -158,14 +158,6 @@ public class AloeServer : BiodiverseAI
         _currentState = _stateDictionary[States.Spawning];
         _currentState.OnStateEnter(ref tempStateData);
         
-        LogDebug("Attempting to turn off collisions");
-        EnemyAICollisionDetect enemyAiCollisionDetect = GetComponentInChildren<EnemyAICollisionDetect>();
-        if (enemyAiCollisionDetect != null)
-        {
-            enemyAiCollisionDetect.canCollideWithEnemies = false;
-            LogDebug("Successfully turned off collisions");
-        }
-        
         LogDebug("Aloe Spawned!");
     }
 
@@ -188,7 +180,7 @@ public class AloeServer : BiodiverseAI
             netcodeController.AnimationParamStunned.Value = false;
             _inStunAnimation = false;
         }
-        else if (_inStunAnimation || inSlapAnimation)
+        else if (_inStunAnimation || inSlapAnimation || inCrushHeadAnimation)
         {
             return;
         }
@@ -365,7 +357,7 @@ public class AloeServer : BiodiverseAI
     {
         const float turnSpeed = 5f;
 
-        if (inSlapAnimation) return;
+        if (inSlapAnimation || inCrushHeadAnimation) return;
 
         switch (_currentState.GetStateType())
         {
@@ -712,7 +704,7 @@ public class AloeServer : BiodiverseAI
         
         if (stunNormalizedTimer > 0 || 
             isStaringAtTargetPlayer ||
-            inSlapAnimation ||
+            inSlapAnimation || inCrushHeadAnimation ||
             (_currentState.GetStateType() == States.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
             _currentState.GetStateType() == States.Dead ||
             _currentState.GetStateType() == States.Spawning)
