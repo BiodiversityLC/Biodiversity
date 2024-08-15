@@ -408,6 +408,8 @@ public class AloeServer : BiodiverseAI
         {
             case States.ChasingEscapedPlayer:
             {
+                if (((ChasingEscapedPlayerState)_currentState).WaitBeforeChasingTimer > 0) break;
+                
                 LogDebug("Player is touching the aloe! Kidnapping him now.");
                 netcodeController.SetAnimationTriggerClientRpc(aloeId, AloeClient.Grab);
                 SwitchBehaviourState(States.KidnappingPlayer);

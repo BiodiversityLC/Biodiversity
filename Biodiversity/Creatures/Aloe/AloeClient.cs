@@ -378,7 +378,7 @@ public class AloeClient : MonoBehaviour
         // Animate the real target player's body
         if (netcodeController.CurrentBehaviourStateIndex.Value is (int)AloeServer.States.KidnappingPlayer
                 or (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer &&
-            _targetPlayerInCaptivity && _targetPlayer.IsNotNull && _targetPlayer.Value.inSpecialInteractAnimation)
+            _targetPlayer.IsNotNull && _targetPlayerInCaptivity && _targetPlayer.Value.inSpecialInteractAnimation)
         {
             _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
             _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
@@ -900,8 +900,7 @@ public class AloeClient : MonoBehaviour
     {
         switch (newValue)
         {
-            case (int)AloeServer.States.HealingPlayer when
-                oldValue is not ((int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer):
+            case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer when oldValue is not ((int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer):
             {
                 LogDebug("Switching target player offset to cuddled.");
                 if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
