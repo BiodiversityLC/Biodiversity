@@ -17,6 +17,8 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler> {
 
         Assets.EnemyType.PowerLevel = Config.PowerLevel;
         Assets.EnemyType.MaxCount = Config.MaxAmount;
+        
+        TranslateTerminalNode(Assets.TerminalNode);
 
         RegisterEnemyWithConfig(
             Config.AloeEnabled,

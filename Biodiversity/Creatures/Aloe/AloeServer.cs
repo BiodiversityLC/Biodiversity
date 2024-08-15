@@ -400,6 +400,30 @@ public class AloeServer : BiodiverseAI
         agentMaxSpeed = 10f;
     }
 
+    public override void OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        if (!IsServer) return;
+        switch (_currentState.GetStateType())
+        {
+            case States.ChasingEscapedPlayer:
+            {
+                LogDebug("Player is touching the aloe! Kidnapping him now.");
+                netcodeController.SetAnimationTriggerClientRpc(aloeId, AloeClient.Grab);
+                SwitchBehaviourState(States.KidnappingPlayer);
+                break;
+            }
+
+            case States.AttackingPlayer:
+            {
+                LogDebug("Player is touching the aloe! Killing them!");
+                netcodeController.CrushPlayerClientRpc(aloeId, ActualTargetPlayer.Value.actualClientId);
+                SwitchBehaviourState(States.ChasingEscapedPlayer);
+                break;
+            }
+        }
+    }
+
     /// <summary>
     /// The function for handling when the Aloe gets hit.
     /// This function is from the base EnemyAI class.

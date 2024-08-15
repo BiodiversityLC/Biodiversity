@@ -91,7 +91,7 @@ public class ChasingEscapedPlayerState : BehaviourState
                 Vector3.Distance(AloeServerInstance.ActualTargetPlayer.Value.transform.position,
                     AloeServerInstance.transform.position) > 1.5f) return false;
             
-            AloeServerInstance.LogDebug("Player is close to aloe! Kidnapping him now");
+            AloeServerInstance.LogDebug("Player is close to aloe! Kidnapping him now.");
             AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(
                 AloeServerInstance.aloeId,
                 AloeClient.Grab);

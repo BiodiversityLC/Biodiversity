@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Util.Lang;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
 using UnityEngine.InputSystem;
 using UnityEngine.VFX;
@@ -674,6 +676,12 @@ public class AloeClient : MonoBehaviour
             _targetPlayer.Value.inSpecialInteractAnimation = false;
             _targetPlayer.Value.inAnimationWithEnemy = null;
             _targetPlayer.Value.ResetZAndXRotation();
+            
+            // Make sure the player is on a navmesh
+            Vector3 validPosition =
+                RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 1.5f);
+            _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
+            
             HandleUnMuffleTargetPlayerVoice(_aloeId);
         }
 
@@ -695,8 +703,8 @@ public class AloeClient : MonoBehaviour
 
         if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer.Value)
             HUDManager.Instance.DisplayTip(
-                "You can escape!", 
-                "Mash the spacebar to escape from The Aloe!",
+                LangParser.GetTranslation("You can escape!"), 
+                LangParser.GetTranslation("Mash the spacebar to escape from The Aloe!"),
                 false,
                 true,
                 "LC_AloeGrabTip");
