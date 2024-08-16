@@ -405,10 +405,7 @@ public static class AloeUtils
         foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
         {
             if (player.isPlayerDead || !player.isInsideFactory) continue;
-            if (isThereAPlayerToIgnore)
-            {
-                if (ignorePlayer == player) continue;
-            }
+            if (isThereAPlayerToIgnore && ignorePlayer == player) continue;
             
             if (!player.HasLineOfSightToPosition(transform.position, 50f)) continue;
             float distance = Vector3.Distance(transform.position, player.transform.position);

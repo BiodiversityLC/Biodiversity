@@ -50,8 +50,6 @@ public class AvoidingPlayerState : BehaviourState
         }
         
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
-        AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(
-            AloeServerInstance.aloeId, AloeClient.AudioClipTypes.InterruptedHealing);
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
             AloeServerInstance.aloeId,
             0.9f,

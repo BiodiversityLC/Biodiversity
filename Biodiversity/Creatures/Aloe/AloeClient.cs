@@ -382,7 +382,7 @@ public class AloeClient : MonoBehaviour
         {
             _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
             _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
-            healingOrbEffect.gameObject.transform.position = _targetPlayer.Value.lowerSpine.transform.position;
+            // healingOrbEffect.gameObject.transform.position = _targetPlayer.Value.lowerSpine.transform.position;
         }
     }
 
@@ -673,6 +673,7 @@ public class AloeClient : MonoBehaviour
                 GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = true;
             }
 
+            healingOrbEffect.Stop();
             _targetPlayer.Value.inSpecialInteractAnimation = false;
             _targetPlayer.Value.inAnimationWithEnemy = null;
             _targetPlayer.Value.ResetZAndXRotation();

@@ -54,7 +54,6 @@ public class AttackingPlayerState : BehaviourState
     {
         public override bool ShouldTransitionBeTaken()
         {
-            // todo: add logic that makes sure another aloe doesnt target the player that this aloe is trying to kill
             if (!(Vector3.Distance(AloeServerInstance.ActualTargetPlayer.Value.transform.position,
                     AloeServerInstance.transform.position) <= 1.5f)) return !attackingPlayerState._isPlayerTargetable;
             

@@ -561,6 +561,10 @@ public class AloeServer : BiodiverseAI
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
         if (!IsServer) return;
+        if (isEnemyDead) return;
+        
+        States currentState = _currentState.GetStateType();
+        if (currentState is States.Dead) return;
 
         _inStunAnimation = true;
         netcodeController.PlayAudioClipTypeServerRpc(aloeId, AloeClient.AudioClipTypes.Stun, true);
@@ -568,18 +572,21 @@ public class AloeServer : BiodiverseAI
         netcodeController.AnimationParamHealing.Value = false;
         netcodeController.ChangeLookAimConstraintWeightClientRpc(aloeId, 0, 0f);
 
+        StateData stateData = new();
+        stateData.Add("overridePlaySpottedAnimation", true);
+        
         NullableObject<PlayerControllerB> stunnedByPlayer2 = new(setStunnedByPlayer);
-        switch (currentBehaviourStateIndex)
+        switch (currentState)
         { 
-            case (int)States.Spawning or (int)States.Roaming or (int)States.PassiveStalking or (int)States.AggressiveStalking:
+            case States.Spawning or States.Roaming or States.PassiveStalking or States.AggressiveStalking:
             {
                 if (stunnedByPlayer2.IsNotNull) AvoidingPlayer.Value = stunnedByPlayer2.Value;
                 
-                SwitchBehaviourState(States.AvoidingPlayer);
-                break; 
+                SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
+                break;
             }
             
-            case (int)States.KidnappingPlayer or (int)States.HealingPlayer or (int)States.CuddlingPlayer:
+            case States.KidnappingPlayer or States.HealingPlayer or States.CuddlingPlayer:
             {
                 SetTargetPlayerInCaptivity(false);
                 if (stunnedByPlayer2.IsNotNull)
@@ -591,19 +598,18 @@ public class AloeServer : BiodiverseAI
                 else
                 {
                     AvoidingPlayer.Value = null;
-                    SwitchBehaviourState(States.AvoidingPlayer);
+                    SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
                 }
                 
                 break;
             }
             
-            case (int)States.AttackingPlayer:
+            case States.AttackingPlayer:
             {
                 if (!stunnedByPlayer2.IsNotNull) break;
 
                 if (ActualTargetPlayer.Value != setStunnedByPlayer)
                     netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
-                
                 
                 break;
             }
