@@ -83,8 +83,7 @@ public class KidnappingPlayerState : BehaviourState
 
     public override void AIIntervalBehaviour()
     {
-        // Todo: move this to clientside
-        List<PlayerControllerB> playersLookingAtAloe = AloeUtils.GetAllPlayersLookingAtPosition(AloeServerInstance.eye.transform);
+        List<PlayerControllerB> playersLookingAtAloe = AloeUtils.GetAllPlayersLookingAtPosition(AloeServerInstance.eye.transform, playerViewWidth: 40f, playerViewRange: 40);
         foreach (PlayerControllerB player in playersLookingAtAloe)
         {
             AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(

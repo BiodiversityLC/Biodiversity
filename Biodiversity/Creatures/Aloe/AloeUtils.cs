@@ -435,9 +435,9 @@ public static class AloeUtils
         ManualLogSource logSource = null)
     {
         List<PlayerControllerB> players = [];
-        bool isThereAPlayerToIgnore = ignorePlayer != null; // better than doing `PlayerControllerB != null` everytime
+        bool isThereAPlayerToIgnore = ignorePlayer != null;
 
-        players.AddRange(from player in StartOfRound.Instance.allPlayerScripts where IsPlayerTargetable(player) where !isThereAPlayerToIgnore || ignorePlayer != player where player.HasLineOfSightToPosition(transform.position, playerViewWidth, playerViewRange) select player);
+        players.AddRange(from player in StartOfRound.Instance.allPlayerScripts where !IsPlayerDead(player) where !isThereAPlayerToIgnore || player != ignorePlayer where player.HasLineOfSightToPosition(transform.position, playerViewWidth, playerViewRange) select player);
 
         return players;
     }

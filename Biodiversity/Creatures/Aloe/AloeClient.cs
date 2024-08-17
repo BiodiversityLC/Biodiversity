@@ -30,14 +30,14 @@ public class AloeClient : MonoBehaviour
     private static readonly int Dead = Animator.StringToHash("Dead");
     private static readonly int Spawning = Animator.StringToHash("Spawning");
     public static readonly int Stand = Animator.StringToHash("Stand");
-    public static readonly int Crawling = Animator.StringToHash("Crawling");
-    public static readonly int Stunned = Animator.StringToHash("Stunned");
+    private static readonly int Crawling = Animator.StringToHash("Crawling");
+    private static readonly int Stunned = Animator.StringToHash("Stunned");
     public static readonly int Spotted = Animator.StringToHash("Spotted");
-    public static readonly int Healing = Animator.StringToHash("Healing");
+    private static readonly int Healing = Animator.StringToHash("Healing");
     public static readonly int Grab = Animator.StringToHash("Grab");
     public static readonly int KidnapRun = Animator.StringToHash("KidnapRun");
     public static readonly int Slap = Animator.StringToHash("Slap");
-    public static readonly int Crush = Animator.StringToHash("Crush");
+    private static readonly int Crush = Animator.StringToHash("Crush");
 
     public const float SnatchAndGrabAudioLength = 2.019f;
 
@@ -119,6 +119,7 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float skinMetallicValueDark = 0.735f;
 
     [Header("Visual Effects")] [Space(5f)] 
+    [SerializeField] private Light healingLightEffect;
     [SerializeField] private VisualEffect healingOrbEffect;
     [SerializeField] private ParticleSystem poofParticleSystem;
 
@@ -217,141 +218,145 @@ public class AloeClient : MonoBehaviour
         animator.SetBool(Stunned, netcodeController.AnimationParamStunned.Value);
         animator.SetBool(Dead, netcodeController.AnimationParamDead.Value);
 
-        // const float moveAmount = 0.1f;
-        // const float rotationAmount = 5f;
-        //
-        // if (Keyboard.current.numpad8Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("moved up");
-        //     _offsetPosition += Vector3.up * moveAmount;
-        // }
-        //
-        // if (Keyboard.current.numpad2Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("moved down");
-        //     _offsetPosition -= Vector3.up * moveAmount;
-        // }
-        //
-        // if (Keyboard.current.numpad4Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("moved left");
-        //     _offsetPosition -= Vector3.right * moveAmount;
-        // }
-        //
-        // if (Keyboard.current.numpad6Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("moved right");
-        //     _offsetPosition += Vector3.right * moveAmount;
-        // }
-        //
-        // if (Keyboard.current.numpad7Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("moved back");
-        //     _offsetPosition -= Vector3.forward * moveAmount;
-        // }
-        //
-        // if (Keyboard.current.numpad9Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("moved forwards");
-        //     _offsetPosition += Vector3.forward * moveAmount;
-        // }
-        //
-        // if (Keyboard.current.numpad1Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("rotated up");
-        //     _offsetRotation *= Quaternion.Euler(Vector3.up * rotationAmount);
-        // }
-        //
-        // if (Keyboard.current.numpad3Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("rotated down");
-        //     _offsetRotation *= Quaternion.Euler(Vector3.down * rotationAmount);
-        // }
-        //
-        // if (Keyboard.current.numpadDivideKey.wasPressedThisFrame)
-        // {
-        //     LogDebug("rotated left");
-        //     _offsetRotation *= Quaternion.Euler(Vector3.left * rotationAmount);
-        // }
-        //
-        // if (Keyboard.current.numpadMultiplyKey.wasPressedThisFrame)
-        // {
-        //     LogDebug("rotated right");
-        //     _offsetRotation *= Quaternion.Euler(Vector3.right * rotationAmount);
-        // }
-        //
-        // if (Keyboard.current.numpad0Key.wasPressedThisFrame)
-        // {
-        //     LogDebug("rotated forward");
-        //     _offsetRotation *= Quaternion.Euler(Vector3.forward * rotationAmount);
-        // }
-        //
-        // if (Keyboard.current.numpadPeriodKey.wasPressedThisFrame)
-        // {
-        //     LogDebug("rotated back");
-        //     _offsetRotation *= Quaternion.Euler(Vector3.back * rotationAmount);
-        // }
-        //
-        // // Reset position to original local position
-        // if (Keyboard.current.homeKey.wasPressedThisFrame)
-        // {
-        //     LogDebug("reset all");
-        //     _offsetPosition = Vector3.zero;
-        //     _offsetRotation = Quaternion.identity;
-        // }
-        //
-        // if (Keyboard.current.pageUpKey.wasPressedThisFrame)
-        // {
-        //     LogDebug("reset rotation");
-        //     _offsetRotation = Quaternion.identity;
-        // }
-        //
-        // if (Keyboard.current.pageDownKey.wasPressedThisFrame)
-        // {
-        //     LogDebug("reset position");
-        //     _offsetPosition = Vector3.zero;
-        // }
-        //
-        // if (Keyboard.current.numpadPlusKey.wasPressedThisFrame)
-        // {
-        //     LogDebug(
-        //         $"Offset Position: {_offsetPosition}, Offset Rotation: {_offsetRotation}, current position: {_targetPlayer.Value.transform.position}, bob: {transform.position + _offsetPosition}");
-        // }
-
-        if (!_targetPlayerCanEscape)
+        /*
+        const float moveAmount = 0.1f;
+        const float rotationAmount = 5f;
+        
+        if (Keyboard.current.numpad8Key.wasPressedThisFrame)
         {
-            _currentEscapeChargeValue = 0;
-            return;
+            LogDebug("moved up");
+            _offsetPosition += Vector3.up * moveAmount;
         }
-
-        switch (_currentBehaviourStateIndex)
+        
+        if (Keyboard.current.numpad2Key.wasPressedThisFrame)
         {
-            case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer:
+            LogDebug("moved down");
+            _offsetPosition -= Vector3.up * moveAmount;
+        }
+        
+        if (Keyboard.current.numpad4Key.wasPressedThisFrame)
+        {
+            LogDebug("moved left");
+            _offsetPosition -= Vector3.right * moveAmount;
+        }
+        
+        if (Keyboard.current.numpad6Key.wasPressedThisFrame)
+        {
+            LogDebug("moved right");
+            _offsetPosition += Vector3.right * moveAmount;
+        }
+        
+        if (Keyboard.current.numpad7Key.wasPressedThisFrame)
+        {
+            LogDebug("moved back");
+            _offsetPosition -= Vector3.forward * moveAmount;
+        }
+        
+        if (Keyboard.current.numpad9Key.wasPressedThisFrame)
+        {
+            LogDebug("moved forwards");
+            _offsetPosition += Vector3.forward * moveAmount;
+        }
+        
+        if (Keyboard.current.numpad1Key.wasPressedThisFrame)
+        {
+            LogDebug("rotated up");
+            _offsetRotation *= Quaternion.Euler(Vector3.up * rotationAmount);
+        }
+        
+        if (Keyboard.current.numpad3Key.wasPressedThisFrame)
+        {
+            LogDebug("rotated down");
+            _offsetRotation *= Quaternion.Euler(Vector3.down * rotationAmount);
+        }
+        
+        if (Keyboard.current.numpadDivideKey.wasPressedThisFrame)
+        {
+            LogDebug("rotated left");
+            _offsetRotation *= Quaternion.Euler(Vector3.left * rotationAmount);
+        }
+        
+        if (Keyboard.current.numpadMultiplyKey.wasPressedThisFrame)
+        {
+            LogDebug("rotated right");
+            _offsetRotation *= Quaternion.Euler(Vector3.right * rotationAmount);
+        }
+        
+        if (Keyboard.current.numpad0Key.wasPressedThisFrame)
+        {
+            LogDebug("rotated forward");
+            _offsetRotation *= Quaternion.Euler(Vector3.forward * rotationAmount);
+        }
+        
+        if (Keyboard.current.numpadPeriodKey.wasPressedThisFrame)
+        {
+            LogDebug("rotated back");
+            _offsetRotation *= Quaternion.Euler(Vector3.back * rotationAmount);
+        }
+        
+        // Reset position to original local position
+        if (Keyboard.current.homeKey.wasPressedThisFrame)
+        {
+            LogDebug("reset all");
+            _offsetPosition = Vector3.zero;
+            _offsetRotation = Quaternion.identity;
+        }
+        
+        if (Keyboard.current.pageUpKey.wasPressedThisFrame)
+        {
+            LogDebug("reset rotation");
+            _offsetRotation = Quaternion.identity;
+        }
+        
+        if (Keyboard.current.pageDownKey.wasPressedThisFrame)
+        {
+            LogDebug("reset position");
+            _offsetPosition = Vector3.zero;
+        }
+        
+        if (Keyboard.current.numpadPlusKey.wasPressedThisFrame)
+        {
+            LogDebug(
+                $"Offset Position: {_offsetPosition}, Offset Rotation: {_offsetRotation}, current position: {_targetPlayer.Value.transform.position}, bob: {transform.position + _offsetPosition}");
+        }
+        */
+
+        if (_targetPlayerCanEscape)
+        {
+            switch (_currentBehaviourStateIndex)
             {
-                if (!_targetPlayer.IsNotNull) break;
-                if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
-
-                if (Keyboard.current.spaceKey.wasPressedThisFrame)
+                case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer:
                 {
-                    LogDebug($"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
-                    _currentEscapeChargeValue += escapeChargePerPress;
+                    if (!_targetPlayer.IsNotNull) break;
+                    if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
+
+                    if (Keyboard.current.spaceKey.wasPressedThisFrame)
+                    {
+                        LogDebug($"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
+                        _currentEscapeChargeValue += escapeChargePerPress;
+                    }
+
+                    if (_currentEscapeChargeValue > 0) _currentEscapeChargeValue -= escapeChargeDecayRate * Time.deltaTime;
+                    else _currentEscapeChargeValue = 0;
+
+                    if (_currentEscapeChargeValue >= escapeChargeThreshold)
+                    {
+                        LogDebug("Triggering aloe escape");
+                        _currentEscapeChargeValue = 0;
+                        _targetPlayerCanEscape = false;
+                        netcodeController.TargetPlayerEscapedServerRpc(_aloeId);
+                        
+                        // healingOrbEffect.Stop();
+                        healingLightEffect.enabled = false;
+                    }
+
+                    break;
                 }
-
-                if (_currentEscapeChargeValue > 0) _currentEscapeChargeValue -= escapeChargeDecayRate * Time.deltaTime;
-                else _currentEscapeChargeValue = 0;
-
-                if (_currentEscapeChargeValue >= escapeChargeThreshold)
-                {
-                    LogDebug("Triggering aloe escape");
-                    _currentEscapeChargeValue = 0;
-                    _targetPlayerCanEscape = false;
-                    healingOrbEffect.Stop();
-                    netcodeController.TargetPlayerEscapedServerRpc(_aloeId);
-                }
-
-                break;
             }
         }
+        else 
+            _currentEscapeChargeValue = 0;
+        
     }
 
     private void LateUpdate()
@@ -382,7 +387,6 @@ public class AloeClient : MonoBehaviour
         {
             _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
             _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
-            // healingOrbEffect.gameObject.transform.position = _targetPlayer.Value.lowerSpine.transform.position;
         }
     }
 
@@ -673,7 +677,8 @@ public class AloeClient : MonoBehaviour
                 GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = true;
             }
 
-            healingOrbEffect.Stop();
+            // healingOrbEffect.Stop();
+            healingLightEffect.enabled = false;
             _targetPlayer.Value.inSpecialInteractAnimation = false;
             _targetPlayer.Value.inAnimationWithEnemy = null;
             _targetPlayer.Value.ResetZAndXRotation();
@@ -828,18 +833,21 @@ public class AloeClient : MonoBehaviour
     private void HandlePlayHealingVfx(string receivedAloeId, float totalHealingTime)
     {
         if (_aloeId != receivedAloeId) return;
-
-        // Set the duration of the vfx
-        healingOrbEffect.Stop();
-        healingOrbEffect.SetFloat("Duration", totalHealingTime);
-
-        // Make the vfx go to the target player
-        healingOrbEffect.gameObject.transform.position = _targetPlayer.Value.lowerSpine.transform.position;
-
-        // Play the vfx and audio
+        
+        // healingOrbEffect.Stop();
+        // healingOrbEffect.SetFloat("Duration", totalHealingTime);
+        // healingOrbEffect.SendEvent("OnShowHealingOrb");
+        
+        healingLightEffect.enabled = true;
         LogDebug("Playing HealingOrbVfx");
-        healingOrbEffect.SendEvent("OnShowHealingOrb");
+        StartCoroutine(DisableHealingLightDelayed(totalHealingTime));
         HandlePlayAudioClipType(receivedAloeId, AudioClipTypes.Healing, 0, true);
+    }
+
+    private IEnumerator DisableHealingLightDelayed(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        healingLightEffect.enabled = false;
     }
 
     private void HandleDamagePlayer(string receivedAloeId, ulong playerId, int damage)
@@ -899,6 +907,10 @@ public class AloeClient : MonoBehaviour
 
     private void HandleBehaviourStateChanged(int oldValue, int newValue)
     {
+        petalsRenderer.enabled = newValue is (int)AloeServer.States.HealingPlayer
+            or (int)AloeServer.States.CuddlingPlayer or (int)AloeServer.States.ChasingEscapedPlayer
+            or (int)AloeServer.States.AttackingPlayer;
+        
         switch (newValue)
         {
             case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer when oldValue is not ((int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer):
@@ -935,7 +947,8 @@ public class AloeClient : MonoBehaviour
         bodyRenderer.enabled = false;
         petalsRenderer.enabled = false;
 
-        healingOrbEffect.Stop();
+        // healingOrbEffect.Stop();
+        healingLightEffect.enabled = false;
         aloeVoiceSource.Stop(true);
         aloeFootstepsSource.Stop(true);
 
