@@ -13,7 +13,6 @@ public class AvoidingPlayerState : BehaviourState
     private float _avoidPlayerTimerTotal;
 
     private bool _shouldTransitionToAttacking;
-    private bool _avoidingAnEnemy; // todo: what dis var do
 
     public AvoidingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
     {

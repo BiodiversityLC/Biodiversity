@@ -60,6 +60,9 @@ public static class AloeUtils
         // Check if any segment of the path is intersected by line of sight
         if (checkLineOfSight)
         {
+            if (Vector3.Distance(path.corners[^1], RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 2.7f)) > 1.5)
+                return PathStatus.ValidButInLos;
+            
             for (int i = 1; i < path.corners.Length; ++i)
             {
                 if (Physics.Linecast(path.corners[i - 1], path.corners[i], 262144))
@@ -407,7 +410,7 @@ public static class AloeUtils
             if (player.isPlayerDead || !player.isInsideFactory) continue;
             if (isThereAPlayerToIgnore && ignorePlayer == player) continue;
             
-            if (!player.HasLineOfSightToPosition(transform.position, 50f)) continue;
+            if (!player.HasLineOfSightToPosition(transform.position, 60f)) continue;
             float distance = Vector3.Distance(transform.position, player.transform.position);
             if (!(distance < closestDistance)) continue;
             
