@@ -1,9 +1,8 @@
-using System.Collections.Generic;
-using Biodiversity.General;
-using LethalLib.Modules;
+using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.Critters;
 
+[UsedImplicitly]
 internal class CritterHandler : BiodiverseAIHandler<CritterHandler> {
 	internal CritterAssets Assets { get; }
 	internal CritterConfig Config { get; }
@@ -13,9 +12,23 @@ internal class CritterHandler : BiodiverseAIHandler<CritterHandler> {
 		Config = new CritterConfig(BiodiversityPlugin.Instance.CreateConfig("critters"));
 		
 		TranslateTerminalNode(Assets.PrototaxTerminalNode);
-		Enemies.RegisterEnemy(Assets.PrototaxEnemyType, Enemies.SpawnType.Daytime, Config.FungiRarity.VanillaRarities, Config.FungiRarity.ModdedRarities, Assets.PrototaxTerminalNode, Assets.PrototaxTerminalKeyword);
+		RegisterEnemyWithConfig(
+			Config.FungiEnabled,
+			Config.FungiRarity,
+			Assets.PrototaxEnemyType,
+			Assets.PrototaxTerminalNode,
+			Assets.PrototaxTerminalKeyword);
+		
+		// Enemies.RegisterEnemy(Assets.PrototaxEnemyType, Enemies.SpawnType.Daytime, Config.FungiRarity.VanillaRarities, Config.FungiRarity.ModdedRarities, Assets.PrototaxTerminalNode, Assets.PrototaxTerminalKeyword);
 		
 		TranslateTerminalNode(Assets.LeafyBoiTerminalNode);
-		Enemies.RegisterEnemy(Assets.LeafyBoiEnemyType, Enemies.SpawnType.Outside, Config.LeafBoyRarity.VanillaRarities, Config.LeafBoyRarity.ModdedRarities, Assets.LeafyBoiTerminalNode, Assets.LeafyBoiTerminalKeyword);
+		RegisterEnemyWithConfig(
+			Config.LeafBoyEnabled,
+			Config.LeafBoyRarity,
+			Assets.LeafyBoiEnemyType,
+			Assets.LeafyBoiTerminalNode,
+			Assets.LeafyBoiTerminalKeyword);
+		
+		// Enemies.RegisterEnemy(Assets.LeafyBoiEnemyType, Enemies.SpawnType.Outside, Config.LeafBoyRarity.VanillaRarities, Config.LeafBoyRarity.ModdedRarities, Assets.LeafyBoiTerminalNode, Assets.LeafyBoiTerminalKeyword);
 	}
 }

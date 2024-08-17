@@ -24,32 +24,44 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	[field: Range(3, 20)]
 	public float FungiStunTime { get; private set; } = 4f;
 
-	public EnemyRaritiesPerMoon FungiRarity { get; private set; } = new(
-		0,
-		new Dictionary<Levels.LevelTypes, int> {
-			{Levels.LevelTypes.ExperimentationLevel, 80},
-			{Levels.LevelTypes.AdamanceLevel, 100},
-			{Levels.LevelTypes.MarchLevel, 80},
-			{Levels.LevelTypes.ArtificeLevel, 100}
-		},
-		new Dictionary<string, int> {
-			{"Solace", 80},
-			{"Fray", 40}
-		}
-	);
+	[field: Tooltip("Whether the Fungi will spawn in games.")]
+	public bool FungiEnabled { get; private set; } = true;
 	
-	public EnemyRaritiesPerMoon LeafBoyRarity { get; private set; } = new(
-		0,
-		new Dictionary<Levels.LevelTypes, int> {
-			{Levels.LevelTypes.VowLevel, 65},
-			{Levels.LevelTypes.AdamanceLevel, 100},
-			{ Levels.LevelTypes.ExperimentationLevel, 70 },
-			{ Levels.LevelTypes.AssuranceLevel, 100 },
-			{ Levels.LevelTypes.OffenseLevel, 80 },
-			{ Levels.LevelTypes.ArtificeLevel, 65 },
-			{ Levels.LevelTypes.RendLevel, 50 },
-			{ Levels.LevelTypes.DineLevel, 65 },
-			{ Levels.LevelTypes.TitanLevel, 10 }
-		}
-	);
+	// public EnemyRaritiesPerMoon FungiRarity { get; private set; } = new(
+	// 	0,
+	// 	new Dictionary<Levels.LevelTypes, int> {
+	// 		{Levels.LevelTypes.ExperimentationLevel, 80},
+	// 		{Levels.LevelTypes.AdamanceLevel, 100},
+	// 		{Levels.LevelTypes.MarchLevel, 80},
+	// 		{Levels.LevelTypes.ArtificeLevel, 100}
+	// 	},
+	// 	new Dictionary<string, int> {
+	// 		{"Solace", 80},
+	// 		{"Fray", 40}
+	// 	}
+	// );
+	
+	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
+	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:100,March:80,Artifice:100,Solace:80,Fray:100,Seichi:16,Hydro:50,Collateral:8,Corrosion:5,Icebound:45";
+
+	[field: Tooltip("Whether the Leaf Boy will spawn in games.")]
+	public bool LeafBoyEnabled { get; private set; } = true;
+	
+	// public EnemyRaritiesPerMoon LeafBoyRarity { get; private set; } = new(
+	// 	0,
+	// 	new Dictionary<Levels.LevelTypes, int> {
+	// 		{Levels.LevelTypes.VowLevel, 65},
+	// 		{Levels.LevelTypes.AdamanceLevel, 100},
+	// 		{ Levels.LevelTypes.ExperimentationLevel, 70 },
+	// 		{ Levels.LevelTypes.AssuranceLevel, 100 },
+	// 		{ Levels.LevelTypes.OffenseLevel, 80 },
+	// 		{ Levels.LevelTypes.ArtificeLevel, 65 },
+	// 		{ Levels.LevelTypes.RendLevel, 50 },
+	// 		{ Levels.LevelTypes.DineLevel, 65 },
+	// 		{ Levels.LevelTypes.TitanLevel, 10 }
+	// 	}
+	// );
+	
+	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
+	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:60,Experimentation:0,Assurance:85,Offense:30,Artifice:0,Rend:0,Dine:10:Titan:0,Seichi:38,Fray:300,Vertigo:30,Integrity:25,Collateral:40";
 }

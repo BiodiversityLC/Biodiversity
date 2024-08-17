@@ -10,25 +10,27 @@ namespace Biodiversity.Creatures.Critters;
 public class FungiAI : BiodiverseAI {
 	[Header("Spore")]
 	[SerializeField]
-	GameObject sporeCloudPrefab;
+	private GameObject sporeCloudPrefab;
 
-	[SerializeField]
-	Transform sporeCloudOrigin;
+	[SerializeField] 
+	private Transform sporeCloudOrigin;
 
 	[Header("Footstep Audio")]
 	[SerializeField]
-	AudioSource footstepSource;
+	private AudioSource footstepSource;
 
 	[SerializeField]
-	AudioClip[] footstepSFX = [];
+	private AudioClip[] footstepSFX = [];
 	
-	AISearchRoutine wanderRoutine = new AISearchRoutine();
+	private AISearchRoutine wanderRoutine = new();
 
-	float speedBoostTime;
-	bool isStunned;
-
-	static CritterConfig Config => CritterHandler.Instance.Config;
+	private float speedBoostTime;
+	private bool isStunned;
 	
+	private static readonly int Spew = Animator.StringToHash("spew");
+	private static readonly int StunOver = Animator.StringToHash("stun_over");
+
+	private static CritterConfig Config => CritterHandler.Instance.Config;
     
 	public override void DoAIInterval() {
 		base.DoAIInterval();
@@ -51,7 +53,7 @@ public class FungiAI : BiodiverseAI {
 		}
 	}
 
-	IEnumerator ApplySpeedBoost() {
+	private IEnumerator ApplySpeedBoost() {
 		isStunned = true;
 		moveTowardsDestination = false;
 		agent.isStopped = true;
@@ -71,8 +73,8 @@ public class FungiAI : BiodiverseAI {
 	}
 
 	[ClientRpc]
-	void SpewSporeClientRPC() {
-		creatureAnimator.SetTrigger("spew");
+	private void SpewSporeClientRPC() {
+		creatureAnimator.SetTrigger(Spew);
 	}
 
 	// triggered in animation event
@@ -83,8 +85,8 @@ public class FungiAI : BiodiverseAI {
 	}
     
 	[ClientRpc]
-	void StunOverClientRPC() {
-		creatureAnimator.SetTrigger("stun_over");
+	private void StunOverClientRPC() {
+		creatureAnimator.SetTrigger(StunOver);
 	}
 	
 	public override void AnimationEventA() {

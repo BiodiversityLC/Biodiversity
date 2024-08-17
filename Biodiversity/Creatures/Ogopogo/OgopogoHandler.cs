@@ -1,10 +1,10 @@
-using Biodiversity.Creatures.Critters;
-using Biodiversity.General;
+using JetBrains.Annotations;
 using LethalLib.Modules;
 
 namespace Biodiversity.Creatures.Ogopogo;
 
-class OgopogoHandler : BiodiverseAIHandler<OgopogoHandler> {
+[UsedImplicitly]
+internal class OgopogoHandler : BiodiverseAIHandler<OgopogoHandler> {
 	internal OgopogoAssets Assets { get; private set; }
 
 	internal OgopogoConfig Config { get; private set; }
@@ -19,11 +19,17 @@ class OgopogoHandler : BiodiverseAIHandler<OgopogoHandler> {
 		}
 		else if (Config.AttackDistance > Config.DetectionRange)
 		{
-			
 			BiodiversityPlugin.Logger.LogInfo("Ogopogo attack distance is not in the detection distance. Disabling Ogopogo spawning until this is fixed.");
 		} else {
 			TranslateTerminalNode(Assets.OgopogoTerminalNode);
-			Enemies.RegisterEnemy(Assets.OgopogoEnemyType, Enemies.SpawnType.Daytime, Config.OgopogoRarity.VanillaRarities, Config.OgopogoRarity.ModdedRarities, Assets.OgopogoTerminalNode, Assets.OgopogoTerminalKeyword);
+			RegisterEnemyWithConfig(
+				Config.OgopogoEnabled,
+				Config.OgopogoRarity,
+				Assets.OgopogoEnemyType,
+				Assets.OgopogoTerminalNode,
+				Assets.OgopogoTerminalKeyword);
+			
+			// Enemies.RegisterEnemy(Assets.OgopogoEnemyType, Enemies.SpawnType.Daytime, Config.OgopogoRarity.VanillaRarities, Config.OgopogoRarity.ModdedRarities, Assets.OgopogoTerminalNode, Assets.OgopogoTerminalKeyword);
 		}
 
 		if (Config.EnableVermin) {

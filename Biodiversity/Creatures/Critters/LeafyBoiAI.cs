@@ -11,21 +11,21 @@ public class LeafyBoiAI : BiodiverseAI {
 	private const int SCARY_PLAYER_DISTANCE = 6;
     private const float BASE_MOVEMENT_SPEED = 1.5F;
     private const float SCARED_SPEED_MULTIPLIER = 4F;
-    const float PLAYER_FORGET_TIME = 3f;
+    private const float PLAYER_FORGET_TIME = 3f;
 
     private float timeSinceSeenPlayer;
     private static readonly int _AnimationIdHash = Animator.StringToHash("AnimationId");
 
-    float timeUntilNextBarkSFX = 5;
+    private float timeUntilNextBarkSFX = 5;
     
     [Header("Audio")]
     [SerializeField]
-    AudioClip[] scaredSFX;
+    private AudioClip[] scaredSFX;
 
     [SerializeField]
-    AudioClip[] randomBarkSFX;
+    private AudioClip[] randomBarkSFX;
     
-    AISearchRoutine wanderRoutine = new AISearchRoutine();
+    private AISearchRoutine wanderRoutine = new();
 
     public enum AIState {
         WANDERING, // normal
@@ -33,7 +33,7 @@ public class LeafyBoiAI : BiodiverseAI {
         SCARED // recently ran away.
     }
 
-    AIState _state = AIState.WANDERING;
+    private AIState _state = AIState.WANDERING;
     
     public AIState State {
         get => _state;
