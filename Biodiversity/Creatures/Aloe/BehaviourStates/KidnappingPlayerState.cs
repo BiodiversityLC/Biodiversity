@@ -33,6 +33,7 @@ public class KidnappingPlayerState : BehaviourState
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
         
         // Spawn fake player body ragdoll
         GameObject fakePlayerBodyRagdollGameObject = 
@@ -46,8 +47,6 @@ public class KidnappingPlayerState : BehaviourState
             fakePlayerBodyRagdollGameObject.GetComponent<NetworkObject>();
         fakePlayerBodyRagdollNetworkObject.Spawn();
         
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
         AloeServerInstance.SetTargetPlayerInCaptivity(true);
         AloeServerInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(AloeServerInstance.aloeId, fakePlayerBodyRagdollNetworkObject);
         AloeServerInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(AloeServerInstance.aloeId, false);
