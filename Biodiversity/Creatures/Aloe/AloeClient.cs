@@ -860,7 +860,7 @@ public class AloeClient : MonoBehaviour
             return;
         }
         LogDebug($"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
-        playerToDamage.Value.DamagePlayer(damage, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.Value.turnCompass.forward * -1 * 5);
+        playerToDamage.Value.DamagePlayer(damage, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.Value.turnCompass.forward * (-1 * 5));
     }
 
     /// <summary>
