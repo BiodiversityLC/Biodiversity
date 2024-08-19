@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Creatures.Aloe.Types.Networking;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
@@ -35,7 +36,7 @@ public class DeadState : BehaviourState
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServer.NullPlayerId);
         
-        AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
+        AloeSharedData.Instance.Unbind(AloeServerInstance, BindType.Stalk);
         
         if (AloeServerInstance.roamMap.inProgress) AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
         AloeServerInstance.KillEnemyServerRpc(false);

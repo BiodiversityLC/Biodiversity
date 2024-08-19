@@ -20,7 +20,7 @@ internal class LandminePatch
         if (!__instance.IsHost && !__instance.IsServer) return true;
 
         AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
-        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI))
+        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.aloeId))
         {
             return false;
         }
@@ -41,7 +41,7 @@ internal class LandminePatch
         if (!__instance.IsHost && !__instance.IsServer) return true;
         
         AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
-        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI))
+        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.aloeId))
         {
             return false;
         }

@@ -6,6 +6,7 @@ using System.Reflection;
 using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.General;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -659,12 +660,12 @@ public class AloeServer : BiodiverseAI
         if (setToInCaptivity)
         {
             if (!AloeSharedData.Instance.IsAloeKidnapBound(this))
-                AloeSharedData.Instance.BindKidnap(this, ActualTargetPlayer.Value);
+                AloeSharedData.Instance.Bind(this, ActualTargetPlayer.Value, BindType.Kidnap);
         }
         else 
         {
             if (AloeSharedData.Instance.IsAloeKidnapBound(this))
-                AloeSharedData.Instance.UnbindKidnap(this);
+                AloeSharedData.Instance.Unbind(this, BindType.Kidnap);
         }
         
         netcodeController.SetTargetPlayerInCaptivityClientRpc(aloeId, setToInCaptivity);
@@ -676,11 +677,20 @@ public class AloeServer : BiodiverseAI
     public void SetTargetPlayerEscapedByTeleportation()
     {
         if (!IsServer) return;
+        if (!ActualTargetPlayer.IsNotNull)
+        {
+            Mls.LogWarning($"{nameof(SetTargetPlayerEscapedByTeleportation)} called, but the target player object is null.");
+            return;
+        }
+        
         States localCurrentState = _currentState.GetStateType();
         if (localCurrentState is not (States.KidnappingPlayer or States.CuddlingPlayer or States.HealingPlayer)) return;
         
         LogDebug("Target player escaped by teleportation!");
+        if (AloeSharedData.Instance.IsPlayerStalkBound(ActualTargetPlayer.Value))
+            AloeSharedData.Instance.Unbind(this, BindType.Stalk);
         SetTargetPlayerInCaptivity(false);
+            
         netcodeController.TargetPlayerClientId.Value = NullPlayerId;
         SwitchBehaviourState(States.Roaming);
     }

@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Creatures.Aloe.Types.Networking;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Concurrent;
+using Unity.Collections;
+using Unity.Netcode;
 using UnityEngine;
 using Logger = BepInEx.Logging.Logger;
 
@@ -26,24 +29,28 @@ internal class AloeSharedData
             lock (Padlock)
             {
                 _instance ??= new AloeSharedData();
+                _instance.RegisterMessageHandlers();
             }
 
             return _instance;
         }
     }
+    
+    private AloeSharedData() { }
 
-    private readonly ConcurrentDictionary<AloeServer, PlayerControllerB> _aloeBoundKidnaps = new();
-    private readonly ConcurrentDictionary<AloeServer, PlayerControllerB> _aloeBoundStalks = new();
-    private readonly ConcurrentDictionary<PlayerControllerB, int> _playersMaxHealth = new();
+    private readonly ConcurrentDictionary<string, ulong> _aloeBoundKidnaps = new();
+    private readonly ConcurrentDictionary<AloeServer, PlayerControllerB> _aloeBoundKidnapsServer = new();
+    private readonly ConcurrentDictionary<string, ulong> _aloeBoundStalks = new();
+    private readonly ConcurrentDictionary<ulong, int> _playersMaxHealth = new();
     private readonly List<BrackenRoomAloeNode> _brackenRoomAloeNodes = [];
     private readonly ConcurrentBag<GameObject> _insideAINodes = [];
     private readonly ConcurrentBag<GameObject> _outsideAINodes = [];
 
     public Vector3 BrackenRoomDoorPosition { get; set; } = Vector3.zero;
 
-    public IReadOnlyDictionary<AloeServer, PlayerControllerB> AloeBoundKidnaps => _aloeBoundKidnaps;
-    public IReadOnlyDictionary<AloeServer, PlayerControllerB> AloeBoundStalks => _aloeBoundStalks;
-    public IReadOnlyDictionary<PlayerControllerB, int> PlayersMaxHealth => _playersMaxHealth;
+    public IReadOnlyDictionary<string, ulong> AloeBoundKidnaps => _aloeBoundKidnaps;
+    public IReadOnlyDictionary<string, ulong> AloeBoundStalks => _aloeBoundStalks;
+    public IReadOnlyDictionary<ulong, int> PlayersMaxHealth => _playersMaxHealth;
     
     public IReadOnlyList<BrackenRoomAloeNode> BrackenRoomAloeNodes
     {
@@ -55,50 +62,138 @@ internal class AloeSharedData
             }
         }
     }
-
-    public void BindKidnap(AloeServer server, PlayerControllerB player)
+    
+    public void Bind(AloeServer server, PlayerControllerB player, BindType bindType)
     {
-        _aloeBoundKidnaps.TryAdd(server, player);
+        if (NetworkManager.Singleton.IsServer)
+        {
+            SendBindToClients(server.aloeId, player.actualClientId, bindType);
+            if (bindType == BindType.Kidnap) _aloeBoundKidnapsServer.TryAdd(server, player);
+        }
+        
+        else SendBindRequestToServer(server.aloeId, player.actualClientId, bindType);
     }
 
-    public void UnbindKidnap(AloeServer server)
+    public void Unbind(AloeServer server, BindType bindType)
     {
-        _aloeBoundKidnaps.TryRemove(server, out _);
-    }
-
-    public void BindStalk(AloeServer server, PlayerControllerB player)
-    {
-        _aloeBoundStalks.TryAdd(server, player);
-    }
-
-    public void UnbindStalk(AloeServer server)
-    {
-        _aloeBoundStalks.TryRemove(server, out _);
+        if (NetworkManager.Singleton.IsServer)
+        {
+            SendUnbindToClients(server.aloeId, bindType);
+            if (bindType == BindType.Kidnap) _aloeBoundKidnapsServer.TryRemove(server, out _);
+        }
+        
+        else SendUnbindRequestToServer(server.aloeId, bindType);
     }
 
     public bool IsAloeKidnapBound(AloeServer server)
     {
         if (server == null)
         {
-            throw new ArgumentNullException(nameof(server), "The provided aloe server is null.");
+            throw new ArgumentNullException(nameof(server), "The provided aloe server instance is null, cannot determine whether she is kidnap bound.");
         }
 
-        return _aloeBoundKidnaps.ContainsKey(server);
+        return _aloeBoundKidnaps.ContainsKey(server.aloeId);
     }
 
     public bool IsPlayerKidnapBound(PlayerControllerB player)
     {
-        return _aloeBoundKidnaps.Values.Contains(player);
-    }
+        if (player == null)
+        {
+            throw new ArgumentNullException(nameof(player),
+                "The given player object instance is null, cannot determine whether they are kidnap bound.");
+        }
 
+        return _aloeBoundKidnaps.Values.Any(p => p == player.actualClientId);
+    }
+    
     public bool IsPlayerStalkBound(PlayerControllerB player)
     {
-        return _aloeBoundStalks.Values.Contains(player);
+        if (player == null)
+        {
+            throw new ArgumentNullException(nameof(player),
+                "The given player object instance is null, cannot determine whether they are stalk bound.");
+        }
+
+        return _aloeBoundStalks.Values.Any(p => p == player.actualClientId);
+    }
+
+    private static void SendBindRequestToServer(string aloeId, ulong playerId, BindType bindType)
+    {
+        BindMessage networkMessage = new() { AloeId = aloeId, PlayerId = playerId };
+        using FastBufferWriter writer = new(128, Allocator.Temp, 128);
+        writer.WriteNetworkSerializable(networkMessage);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage($"Aloe_Bind{bindType}Request", NetworkManager.ServerClientId, writer);
+    }
+    
+    private static void SendUnbindRequestToServer(string aloeId, BindType bindType)
+    {
+        UnbindMessage networkMessage = new() { AloeId = aloeId};
+        using FastBufferWriter writer = new(128, Allocator.Temp, 128);
+        writer.WriteNetworkSerializable(networkMessage);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage($"Aloe_Unbind{bindType}Request", NetworkManager.ServerClientId, writer);
+    }
+
+    private static void SendBindToClients(string aloeId, ulong playerId, BindType bindType)
+    {
+        BindMessage networkMessage = new() { AloeId = aloeId, PlayerId = playerId };
+        using FastBufferWriter writer = new(128, Allocator.Temp, 128);
+        writer.WriteNetworkSerializable(networkMessage);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll($"Aloe_Bind{bindType}", writer);
+    }
+    
+    private static void SendUnbindToClients(string aloeId, BindType bindType)
+    {
+        BindMessage networkMessage = new() { AloeId = aloeId };
+        using FastBufferWriter writer = new(128, Allocator.Temp, 128);
+        writer.WriteNetworkSerializable(networkMessage);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll($"Aloe_Unbind{bindType}", writer);
+    }
+
+    private void RegisterMessageHandlers()
+    {
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindKidnapMessage", HandleBindKidnapMessage);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_UnbindKidnapMessage", HandleUnbindKidnapMessage);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindStalkMessage", HandleBindStalkMessage);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_UnbindStalkMessage", HandleUnbindStalkMessage);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_PlayerTeleportedMessage", HandlePlayerTeleportedMessage);
+    }
+
+    private void HandleBindKidnapMessage(ulong clientId, FastBufferReader reader)
+    {
+        reader.ReadNetworkSerializable(out BindMessage message);
+        _aloeBoundKidnaps.TryAdd(message.AloeId, message.PlayerId);
+    }
+
+    private void HandleUnbindKidnapMessage(ulong clientId, FastBufferReader reader)
+    {
+        reader.ReadNetworkSerializable(out UnbindMessage message);
+        _aloeBoundKidnaps.TryRemove(message.AloeId, out _);
+    }
+    
+    private void HandleBindStalkMessage(ulong clientId, FastBufferReader reader)
+    {
+        reader.ReadNetworkSerializable(out BindMessage message);
+        _aloeBoundStalks.TryAdd(message.AloeId, message.PlayerId);
+    }
+
+    private void HandleUnbindStalkMessage(ulong clientId, FastBufferReader reader)
+    {
+        reader.ReadNetworkSerializable(out UnbindMessage message);
+        _aloeBoundStalks.TryRemove(message.AloeId, out _);
+    }
+
+    private void HandlePlayerTeleportedMessage(ulong clientId, FastBufferReader reader)
+    {
+        reader.ReadNetworkSerializable(out PlayerTeleportedMessage message);
+        AloeServer aloeServer = _aloeBoundKidnapsServer.Keys.FirstOrDefault(aloe => aloe.aloeId == message.AloeId);
+        
+        if (aloeServer == null) Mls.LogError($"In {nameof(HandlePlayerTeleportedMessage)}, the given Aloe ID: '{message.AloeId}' does not belong to any Aloe currently in the game.");
+        else aloeServer.SetTargetPlayerEscapedByTeleportation();
     }
 
     public void SetPlayerMaxHealth(PlayerControllerB player, int maxHealth)
     {
-        _playersMaxHealth[player] = maxHealth;
+        _playersMaxHealth[player.actualClientId] = maxHealth;
     }
 
     /// <summary>
@@ -114,7 +209,7 @@ internal class AloeSharedData
             throw new ArgumentNullException(nameof(player), "The provided player is null, cannot get max health.");
         }
         
-        _playersMaxHealth.TryGetValue(player, out int maxHealth);
+        _playersMaxHealth.TryGetValue(player.actualClientId, out int maxHealth);
         if (maxHealth > 0) return maxHealth;
         
         Mls.LogWarning($"Max health of given player {player.playerUsername} is {maxHealth}. This should not happen. Returning a max health of 100 as a failsafe.");

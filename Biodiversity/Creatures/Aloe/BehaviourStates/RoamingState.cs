@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Creatures.Aloe.Types.Networking;
 using GameNetcodeStuff;
 using UnityEngine;
 
@@ -27,7 +28,7 @@ public class RoamingState : BehaviourState
         AloeServerInstance.moveTowardsDestination = true;
         _reachedFavouriteSpotForRoaming = false;
         
-        AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
+        AloeSharedData.Instance.Unbind(AloeServerInstance, BindType.Stalk);
         
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, false);
@@ -118,7 +119,7 @@ public class RoamingState : BehaviourState
 
         public override void OnTransition()
         {
-            AloeSharedData.Instance.BindStalk(AloeServerInstance, _stalkablePlayer);
+            AloeSharedData.Instance.Bind(AloeServerInstance, _stalkablePlayer, BindType.Stalk);
             AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, _stalkablePlayer.actualClientId);
         }
     }

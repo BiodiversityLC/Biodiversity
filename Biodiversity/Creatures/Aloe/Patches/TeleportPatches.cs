@@ -1,7 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Biodiversity.Creatures.Aloe.Types.Networking;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using GameNetcodeStuff;
 using HarmonyLib;
+using Unity.Collections;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
@@ -19,10 +22,11 @@ internal class TeleportPatches
         if (__instance == null) return;
 
         if (!AloeSharedData.Instance.IsPlayerKidnapBound(__instance)) return;
-        AloeServer aloeAI = AloeSharedData.Instance.AloeBoundKidnaps.FirstOrDefault(x => x.Value == __instance).Key;
-        
-        if (aloeAI == null) return;
-        AloeSharedData.Instance.UnbindStalk(aloeAI);
-        aloeAI.SetTargetPlayerEscapedByTeleportation();
+        string aloeId = AloeSharedData.Instance.AloeBoundKidnaps.FirstOrDefault(x => x.Value == __instance.actualClientId).Key;
+
+        PlayerTeleportedMessage networkMessage = new() { AloeId = aloeId, PlayerId = __instance.actualClientId };
+        using FastBufferWriter writer = new(128, Allocator.Temp, 128);
+        writer.WriteNetworkSerializable(networkMessage);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("Aloe_PlayerTeleportedMessage", NetworkManager.ServerClientId, writer);
     }
 }

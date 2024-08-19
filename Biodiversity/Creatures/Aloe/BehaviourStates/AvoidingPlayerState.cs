@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Creatures.Aloe.Types.Networking;
 using GameNetcodeStuff;
 using UnityEngine;
 
@@ -35,7 +36,7 @@ public class AvoidingPlayerState : BehaviourState
         _avoidPlayerIntervalTimer = 0f;
         _avoidPlayerTimerTotal = 0f;
         
-        AloeSharedData.Instance.UnbindStalk(AloeServerInstance);
+        AloeSharedData.Instance.Unbind(AloeServerInstance, BindType.Stalk);
         
         if (initData.ContainsKey("overridePlaySpottedAnimation") && initData.Get<bool>("overridePlaySpottedAnimation"))
         {
