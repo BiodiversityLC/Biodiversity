@@ -8,9 +8,13 @@ namespace Biodiversity.Creatures.Aloe;
 
 public class SlapCollisionDetection : MonoBehaviour
 {
+    [SerializeField] private AudioSource slapAudioSource;
+    [SerializeField] private AudioClip slapSfx;
+    
     private readonly HashSet<ulong> _playersAlreadyHitBySlap = [];
     private readonly HashSet<int> _enemiesAlreadyHitBySlap = [];
 
+    private bool _playedSlapSfx;
     private bool _canBeSlapped;
     
     private void OnTriggerStay(Collider other)
@@ -65,11 +69,17 @@ public class SlapCollisionDetection : MonoBehaviour
     private void SlapPlayerClientRpc(ulong playerId)
     {
         _playersAlreadyHitBySlap.Add(playerId);
+
+        if (_playedSlapSfx) return;
+        _playedSlapSfx = true;
+        slapAudioSource.PlayOneShot(slapSfx);
+        WalkieTalkie.TransmitOneShotAudio(slapAudioSource, slapSfx, slapAudioSource.volume);
     }
 
     public void OnAnimationEventEnableSlap()
     {
         _canBeSlapped = true;
+        _playedSlapSfx = false;
         _playersAlreadyHitBySlap.Clear();
         _enemiesAlreadyHitBySlap.Clear();
     }
@@ -77,6 +87,7 @@ public class SlapCollisionDetection : MonoBehaviour
     public void OnAnimationEventDisableSlap()
     {
         _canBeSlapped = false;
+        _playedSlapSfx = false;
         _playersAlreadyHitBySlap.Clear();
         _enemiesAlreadyHitBySlap.Clear();
     }

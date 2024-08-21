@@ -12,7 +12,8 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 internal class StartOfRoundPatch
 {
     /// <summary>
-    /// It makes sure the bracken room location is set to null when the ship leaves
+    /// It makes sure to clear the round specific data when the round is finished.
+    /// It is called on all clients.
     /// </summary>
     /// <param name="__instance"></param>
     [HarmonyPatch(nameof(StartOfRound.ShipLeave))]

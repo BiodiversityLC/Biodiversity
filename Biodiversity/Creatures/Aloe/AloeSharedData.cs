@@ -19,7 +19,11 @@ internal class AloeSharedData
 {
     private static readonly object Padlock = new();
     private static AloeSharedData _instance;
-    private static readonly ManualLogSource Mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Shared Data");
+
+    private static readonly ManualLogSource Mls =
+        Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Shared Data");
+
+    private readonly bool _hasRegisteredMessageHandlers;
 
     public static AloeSharedData Instance
     {
@@ -29,14 +33,18 @@ internal class AloeSharedData
             lock (Padlock)
             {
                 _instance ??= new AloeSharedData();
-                _instance.RegisterMessageHandlers();
             }
 
             return _instance;
         }
     }
-    
-    private AloeSharedData() { }
+
+    private AloeSharedData()
+    {
+        if (_hasRegisteredMessageHandlers) return;
+        _hasRegisteredMessageHandlers = true;
+        RegisterMessageHandlers();
+    }
 
     private readonly ConcurrentDictionary<string, ulong> _aloeBoundKidnaps = new();
     private readonly ConcurrentDictionary<AloeServer, PlayerControllerB> _aloeBoundKidnapsServer = new();
@@ -70,8 +78,10 @@ internal class AloeSharedData
             SendBindToClients(server.aloeId, player.actualClientId, bindType);
             if (bindType == BindType.Kidnap) _aloeBoundKidnapsServer.TryAdd(server, player);
         }
-        
-        else SendBindRequestToServer(server.aloeId, player.actualClientId, bindType);
+        else
+        {
+            SendBindRequestToServer(server.aloeId, player.actualClientId, bindType);
+        }
     }
 
     public void Unbind(AloeServer server, BindType bindType)
@@ -117,74 +127,100 @@ internal class AloeSharedData
         return _aloeBoundStalks.Values.Any(p => p == player.actualClientId);
     }
 
-    private static void SendBindRequestToServer(string aloeId, ulong playerId, BindType bindType)
+    private void SendBindRequestToServer(string aloeId, ulong playerId, BindType bindType)
     {
-        BindMessage networkMessage = new() { AloeId = aloeId, PlayerId = playerId };
+        LogDebug($"Sending bind request to server: aloeId: {aloeId}, playerId: {playerId}, bindType: {bindType}");
+        BindMessage networkMessage = new() { AloeId = aloeId, PlayerId = playerId, BindType = bindType};
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage($"Aloe_Bind{bindType}Request", NetworkManager.ServerClientId, writer);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage($"Aloe_BindRequest", NetworkManager.ServerClientId, writer);
     }
     
-    private static void SendUnbindRequestToServer(string aloeId, BindType bindType)
+    private void SendUnbindRequestToServer(string aloeId, BindType bindType)
     {
-        UnbindMessage networkMessage = new() { AloeId = aloeId};
+        LogDebug($"Sending unbind request to server: aloeId: {aloeId}, bindType: {bindType}");
+        UnbindMessage networkMessage = new() { AloeId = aloeId, BindType = bindType};
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage($"Aloe_Unbind{bindType}Request", NetworkManager.ServerClientId, writer);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage($"Aloe_UnbindRequest", NetworkManager.ServerClientId, writer);
     }
 
-    private static void SendBindToClients(string aloeId, ulong playerId, BindType bindType)
+    private void SendBindToClients(string aloeId, ulong playerId, BindType bindType)
     {
-        BindMessage networkMessage = new() { AloeId = aloeId, PlayerId = playerId };
+        LogDebug($"Sending bind request to clients: aloeId: {aloeId}, playerId: {playerId}, bindType: {bindType}");
+        BindMessage networkMessage = new() { AloeId = aloeId, PlayerId = playerId, BindType = bindType };
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll($"Aloe_Bind{bindType}", writer);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll($"Aloe_BindMessage", writer);
     }
     
-    private static void SendUnbindToClients(string aloeId, BindType bindType)
+    private void SendUnbindToClients(string aloeId, BindType bindType)
     {
-        BindMessage networkMessage = new() { AloeId = aloeId };
+        LogDebug($"Sending unbind request to clients: aloeId: {aloeId}, bindType: {bindType}");
+        UnbindMessage networkMessage = new() { AloeId = aloeId, BindType = bindType };
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll($"Aloe_Unbind{bindType}", writer);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll($"Aloe_UnbindMessage", writer);
     }
 
     private void RegisterMessageHandlers()
     {
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindKidnapMessage", HandleBindKidnapMessage);
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_UnbindKidnapMessage", HandleUnbindKidnapMessage);
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindStalkMessage", HandleBindStalkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_UnbindStalkMessage", HandleUnbindStalkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_PlayerTeleportedMessage", HandlePlayerTeleportedMessage);
+        LogDebug("Registering message handlers.");
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindMessage", HandleBindMessage);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_UnbindMessage", HandleUnbindMessage);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindRequest", HandleBindRequest);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_UnbindRequest", HandleUnbindRequest);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_PlayerTeleportedRequest", HandlePlayerTeleportedMessage);
     }
 
-    private void HandleBindKidnapMessage(ulong clientId, FastBufferReader reader)
+    private void HandleBindRequest(ulong clientId, FastBufferReader reader)
     {
         reader.ReadNetworkSerializable(out BindMessage message);
-        _aloeBoundKidnaps.TryAdd(message.AloeId, message.PlayerId);
-    }
-
-    private void HandleUnbindKidnapMessage(ulong clientId, FastBufferReader reader)
-    {
-        reader.ReadNetworkSerializable(out UnbindMessage message);
-        _aloeBoundKidnaps.TryRemove(message.AloeId, out _);
+        SendBindToClients(message.AloeId, message.PlayerId, message.BindType);
     }
     
-    private void HandleBindStalkMessage(ulong clientId, FastBufferReader reader)
-    {
-        reader.ReadNetworkSerializable(out BindMessage message);
-        _aloeBoundStalks.TryAdd(message.AloeId, message.PlayerId);
-    }
-
-    private void HandleUnbindStalkMessage(ulong clientId, FastBufferReader reader)
+    private void HandleUnbindRequest(ulong clientId, FastBufferReader reader)
     {
         reader.ReadNetworkSerializable(out UnbindMessage message);
-        _aloeBoundStalks.TryRemove(message.AloeId, out _);
+        SendUnbindToClients(message.AloeId, message.BindType);
+    }
+
+    private void HandleBindMessage(ulong clientId, FastBufferReader reader)
+    {
+        reader.ReadNetworkSerializable(out BindMessage message);
+        LogDebug($"Processing bind message from server: aloeId: {message.AloeId}, playerId: {message.PlayerId}, bindType: {message.BindType}");
+
+        switch (message.BindType)
+        {
+            case BindType.Kidnap:
+                _aloeBoundKidnaps.TryAdd(message.AloeId, message.PlayerId);
+                break;
+            case BindType.Stalk:
+                _aloeBoundStalks.TryAdd(message.AloeId, message.PlayerId);
+                break;
+        }
+    }
+    
+    private void HandleUnbindMessage(ulong clientId, FastBufferReader reader)
+    {
+        reader.ReadNetworkSerializable(out UnbindMessage message);
+        LogDebug($"Processing unbind message from server: aloeId: {message.AloeId}, bindType: {message.BindType}");
+
+        switch (message.BindType)
+        {
+            case BindType.Kidnap:
+                _aloeBoundKidnaps.TryRemove(message.AloeId, out _);
+                break;
+            case BindType.Stalk:
+                _aloeBoundStalks.TryRemove(message.AloeId, out _);
+                break;
+        }
     }
 
     private void HandlePlayerTeleportedMessage(ulong clientId, FastBufferReader reader)
     {
         reader.ReadNetworkSerializable(out PlayerTeleportedMessage message);
+        LogDebug($"Received player teleported message: aloeId: {message.AloeId}, playerId: {message.PlayerId}");
         AloeServer aloeServer = _aloeBoundKidnapsServer.Keys.FirstOrDefault(aloe => aloe.aloeId == message.AloeId);
         
         if (aloeServer == null) Mls.LogError($"In {nameof(HandlePlayerTeleportedMessage)}, the given Aloe ID: '{message.AloeId}' does not belong to any Aloe currently in the game.");
