@@ -15,7 +15,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("The damage that the Aloe's slap does to players.")]
     [field: Range(0, 500)]
-    public int SlapDamagePlayers { get; private set; } = 30;
+    public int SlapDamagePlayers { get; private set; } = 45;
     
     [field: Tooltip("The damage that the Aloe's slap does to enemies.")]
     [field: Range(0, 10)]

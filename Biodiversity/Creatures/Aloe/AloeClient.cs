@@ -131,6 +131,7 @@ public class AloeClient : MonoBehaviour
 
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private AloeNetcodeController netcodeController;
+    public SlapCollisionDetection slapCollisionDetection;
 
     [Header("Other")] [Space(5f)] 
     [SerializeField] private GameObject scanNode;
@@ -975,7 +976,7 @@ public class AloeClient : MonoBehaviour
         {
             if (behaviour is BaseStateMachineBehaviour baseStateMachineBehaviour)
             {
-                baseStateMachineBehaviour.Initialize(netcodeController, aloeServer);
+                baseStateMachineBehaviour.Initialize(netcodeController, aloeServer, this);
             }
         }
     }

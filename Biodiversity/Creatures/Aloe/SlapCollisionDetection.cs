@@ -76,7 +76,7 @@ public class SlapCollisionDetection : MonoBehaviour
         WalkieTalkie.TransmitOneShotAudio(slapAudioSource, slapSfx, slapAudioSource.volume);
     }
 
-    public void OnAnimationEventEnableSlap()
+    public void EnableSlap()
     {
         _canBeSlapped = true;
         _playedSlapSfx = false;
@@ -84,7 +84,7 @@ public class SlapCollisionDetection : MonoBehaviour
         _enemiesAlreadyHitBySlap.Clear();
     }
 
-    public void OnAnimationEventDisableSlap()
+    public void DisableSlap()
     {
         _canBeSlapped = false;
         _playedSlapSfx = false;

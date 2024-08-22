@@ -18,8 +18,6 @@ internal class TurretPatch
     private static void PostfixCheckForPlayersInLineOfSight(Turret __instance, ref PlayerControllerB __result, float radius, bool angleRangeCheck)
     {
         if (__result != null && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
-        {
             __result = null;
-        }
     }
 }
