@@ -1,6 +1,8 @@
-﻿namespace Biodiversity.Creatures.Aloe.Types;
+﻿using System.Collections.Generic;
 
-public class NullableObject<T> where T : class
+namespace Biodiversity.Creatures.Aloe.Types;
+
+public class NullableObject<T>
 {
     private T _value;
     public bool IsNotNull { get; private set; }
@@ -11,11 +13,11 @@ public class NullableObject<T> where T : class
         set
         {
             _value = value;
-            IsNotNull = _value != null;
+            IsNotNull = !EqualityComparer<T>.Default.Equals(_value, default);
         }
     }
 
-    public NullableObject(T value = null)
+    public NullableObject(T value = default)
     {
         Value = value;
     }

@@ -22,24 +22,24 @@ internal class VerminAI : BiodiverseAI
     private readonly QuicksandTrigger[] sandAndWater = FindObjectsOfType<QuicksandTrigger>();
     private readonly List<QuicksandTrigger> waters = [];
 
-    private float damageTimer = 0f;
-    private NetworkVariable<bool> damageTimerBelowZero = new(); 
+    private float damageTimer;
+    private readonly NetworkVariable<bool> damageTimerBelowZero = new(); 
 
     // Wander vars
-    private float wanderTimer = 0f;
+    private float wanderTimer;
     private Vector3 wanderPos = Vector3.zero;
 
-    private bool wallInFront = false;
+    private bool wallInFront;
 
     [SerializeField] private Transform RaycastPos;
     private const float Speed = 5f;
     private const float LoseRange = 15f;
     private const float DetectionRange = 10f;
 
-    [NonSerialized] public QuicksandTrigger SetWater = null;
+    [NonSerialized] public QuicksandTrigger SetWater;
 
     [NonSerialized] public bool SpawnedByOgo = false;
-    [NonSerialized] private bool spawnedByVermin = false;
+    [NonSerialized] private bool spawnedByVermin;
 
     // Mapping
     public Transform MapDot;
@@ -145,12 +145,12 @@ internal class VerminAI : BiodiverseAI
         {
             if (smallestDistance == 0f)
             {
-                smallestDistance = Distance2d(player.gameObject, this.gameObject);
+                smallestDistance = Distance2d(player.gameObject, gameObject);
                 ret = player;
             }
             else
             {
-                float distance = Distance2d(player.gameObject, this.gameObject);
+                float distance = Distance2d(player.gameObject, gameObject);
 
                 if (distance < smallestDistance)
                 {

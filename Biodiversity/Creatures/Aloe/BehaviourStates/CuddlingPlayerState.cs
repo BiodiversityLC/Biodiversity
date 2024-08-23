@@ -24,7 +24,7 @@ public class CuddlingPlayerState : BehaviourState
         AloeServerInstance.movingTowardsTargetPlayer = false;
         AloeServerInstance.openDoorSpeedMultiplier = 4f;
         
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 1, 0.5f);
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.8f, 1f);
     }
 
     public override void AIIntervalBehaviour()

@@ -148,6 +148,12 @@ public class AloeClient : MonoBehaviour
 
     private readonly NullableObject<PlayerControllerB> _targetPlayer = new();
 
+    private CachedValue<AloeServer> _aloeServer;
+
+    private CachedDictionary<ulong, MeshRenderer> _playerVisorRenderers;
+    private CachedDictionary<ulong, AudioLowPassFilter> _playerAudioLowPassFilters;
+    private CachedDictionary<ulong, OccludeAudio> _playerOccludeAudios;
+    
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
 
     private Vector3 _agentLastPosition;
@@ -176,6 +182,19 @@ public class AloeClient : MonoBehaviour
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client");
         if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
+
+        _aloeServer = new CachedValue<AloeServer>(GetComponent<AloeServer>);
+        
+        _playerVisorRenderers = new CachedDictionary<ulong, MeshRenderer>(playerId =>
+            StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
+                .GetComponentsInChildren<MeshRenderer>()[0]);
+
+        _playerAudioLowPassFilters = new CachedDictionary<ulong, AudioLowPassFilter>(playerId =>
+            StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource
+                .GetComponent<AudioLowPassFilter>());
+
+        _playerOccludeAudios = new CachedDictionary<ulong, OccludeAudio>(playerId =>
+            StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource.GetComponent<OccludeAudio>());
     }
 
     /// <summary>
@@ -364,18 +383,11 @@ public class AloeClient : MonoBehaviour
     {
         // Make the look target aim at a player
         {
-            Vector3 newPosition;
-            if (netcodeController.IsOwner)
-            {
-                newPosition = netcodeController.LookTargetPosition.Value;
-            }
-            else
-            {
-                float timeSinceLastUpdate = Time.time - _lastReceivedNewLookTargetPositionTime;
-                float t = timeSinceLastUpdate / LookTargetPositionLerpTime;
+            
+            float timeSinceLastUpdate = Time.time - _lastReceivedNewLookTargetPositionTime;
+            float t = timeSinceLastUpdate / LookTargetPositionLerpTime;
 
-                newPosition = Vector3.Lerp(transform.position, _lastReceivedLookTargetPosition, t);
-            }
+            Vector3 newPosition = Vector3.Lerp(transform.position, _lastReceivedLookTargetPosition, t);
 
             AloeUtils.SmoothMoveTransformTo(lookTarget, newPosition, smoothLookTargetPositionTime,
                 ref _lookTargetVelocity);
@@ -414,7 +426,7 @@ public class AloeClient : MonoBehaviour
             player.currentTriggerInAnimationWith.CancelAnimationExternally();
         
         player.inSpecialInteractAnimation = true;
-        player.inAnimationWithEnemy = GetComponent<AloeServer>();
+        player.inAnimationWithEnemy = _aloeServer.Value;
         player.isInElevator = false;
         player.isInHangarShipRoom = false;
         player.ResetZAndXRotation();
@@ -643,7 +655,7 @@ public class AloeClient : MonoBehaviour
 
             HandleMuffleTargetPlayerVoice(_aloeId);
             _targetPlayer.Value.inSpecialInteractAnimation = true;
-            _targetPlayer.Value.inAnimationWithEnemy = GetComponent<AloeServer>();
+            _targetPlayer.Value.inAnimationWithEnemy = _aloeServer.Value;
             _targetPlayer.Value.isInElevator = false;
             _targetPlayer.Value.isInHangarShipRoom = false;
             _targetPlayer.Value.ResetZAndXRotation();
@@ -656,7 +668,7 @@ public class AloeClient : MonoBehaviour
             else
             {
                 GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = false;
-                GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = false;
+                _playerVisorRenderers[_targetPlayer.Value.actualClientId].enabled = false;
             }
         }
         else
@@ -674,7 +686,7 @@ public class AloeClient : MonoBehaviour
             else
             {
                 GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
-                GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = true;
+                _playerVisorRenderers[_targetPlayer.Value.actualClientId].enabled = true;
             }
 
             // healingOrbEffect.Stop();
@@ -745,10 +757,9 @@ public class AloeClient : MonoBehaviour
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
 
         LogDebug($"Muffling {_targetPlayer.Value.playerUsername}");
-        _targetPlayer.Value.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 5f;
-        OccludeAudio component = _targetPlayer.Value.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
-        component.overridingLowPass = true;
-        component.lowPassOverride = 500f;
+        _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 5f;
+        _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = true;
+        _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 500f;
         _targetPlayer.Value.voiceMuffledByEnemy = true;
     }
 
@@ -765,10 +776,9 @@ public class AloeClient : MonoBehaviour
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
 
         LogDebug($"UnMuffling {_targetPlayer.Value.playerUsername}");
-        _targetPlayer.Value.currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 1f;
-        OccludeAudio component = _targetPlayer.Value.currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
-        component.overridingLowPass = false;
-        component.lowPassOverride = 20000f;
+        _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 1f;
+        _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = false;
+        _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 20000f;
         _targetPlayer.Value.voiceMuffledByEnemy = false;
     }
 
@@ -969,7 +979,7 @@ public class AloeClient : MonoBehaviour
 
     private void AddStateMachineBehaviours(Animator receivedAnimator)
     {
-        AloeServer aloeServer = GetComponent<AloeServer>();
+        AloeServer aloeServer = _aloeServer.Value;
         StateMachineBehaviour[] behaviours = receivedAnimator.GetBehaviours<StateMachineBehaviour>();
         foreach (StateMachineBehaviour behaviour in behaviours)
         {

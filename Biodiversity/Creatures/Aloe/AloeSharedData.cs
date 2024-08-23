@@ -105,6 +105,7 @@ internal class AloeSharedData
         return _aloeBoundKidnaps.ContainsKey(server.aloeId);
     }
 
+    [SuppressMessage("ReSharper", "LoopCanBeConvertedToQuery")]
     public bool IsPlayerKidnapBound(PlayerControllerB player)
     {
         if (player == null)
@@ -112,8 +113,13 @@ internal class AloeSharedData
             throw new ArgumentNullException(nameof(player),
                 "The given player object instance is null, cannot determine whether they are kidnap bound.");
         }
+        
+        foreach (KeyValuePair<string, ulong> keyValuePair in _aloeBoundKidnaps)
+        {
+            if (keyValuePair.Value == player.actualClientId) return true;
+        }
 
-        return _aloeBoundKidnaps.Values.Any(p => p == player.actualClientId);
+        return false;
     }
     
     public bool IsPlayerStalkBound(PlayerControllerB player)
