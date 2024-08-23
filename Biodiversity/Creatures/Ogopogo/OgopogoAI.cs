@@ -450,11 +450,11 @@ namespace Biodiversity.Creatures.Ogopogo
         {
             foreach (var i in Enumerable.Range(0, 4))
             {
-                GameObject vermin = Instantiate<GameObject>(OgopogoHandler.Instance.Assets.VerminEnemyType.enemyPrefab, transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
+                GameObject vermin = Instantiate(OgopogoHandler.Instance.Assets.VerminEnemyType.enemyPrefab, transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
                 vermin.GetComponentInChildren<NetworkObject>().Spawn(true);
-                VerminAI AIscript = vermin.gameObject.GetComponent<VerminAI>();
-                AIscript.setWater = water;
-                AIscript.spawnedByOgo = true;
+                VerminAI aIscript = vermin.gameObject.GetComponent<VerminAI>();
+                aIscript.SetWater = water;
+                aIscript.SpawnedByOgo = true;
             }
         }
 

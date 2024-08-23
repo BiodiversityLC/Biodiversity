@@ -12,16 +12,18 @@ internal class VerminAI : BiodiverseAI
 {
     private enum State
     {
-        WANDERING,
-        CHASING
+        Wandering,
+        Chasing
     }
 
     // Variables related to water
     private QuicksandTrigger water;
+    private BoxCollider waterCollider;
     private readonly QuicksandTrigger[] sandAndWater = FindObjectsOfType<QuicksandTrigger>();
     private readonly List<QuicksandTrigger> waters = [];
 
     private float damageTimer = 0f;
+    private NetworkVariable<bool> damageTimerBelowZero = new(); 
 
     // Wander vars
     private float wanderTimer = 0f;
@@ -30,23 +32,25 @@ internal class VerminAI : BiodiverseAI
     private bool wallInFront = false;
 
     [SerializeField] private Transform RaycastPos;
-    private const float speed = 5f;
-    private const float loseRange = 15f;
-    private const float detectionRange = 10f;
+    private const float Speed = 5f;
+    private const float LoseRange = 15f;
+    private const float DetectionRange = 10f;
 
-    [NonSerialized] public QuicksandTrigger setWater = null;
+    [NonSerialized] public QuicksandTrigger SetWater = null;
 
-
-    [NonSerialized] public bool spawnedByOgo = false;
+    [NonSerialized] public bool SpawnedByOgo = false;
     [NonSerialized] private bool spawnedByVermin = false;
 
     // Mapping
     public Transform MapDot;
+    
     private static readonly int Stun = Animator.StringToHash("Stun");
 
     public override void Start()
     {
         base.Start();
+        if (!IsServer) return;
+        
         // Loop through all triggers and get all the water
         try
         {
@@ -64,11 +68,11 @@ internal class VerminAI : BiodiverseAI
             if (waters.Count == 0 || enemyType.numberSpawned >= enemyType.MaxCount && !spawnedByVermin)
             {
                 // BiodiversityPlugin.Logger.LogInfo("Despawning because there are too many of this enemy or there is no water. (vermin)");
-                RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
+                RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(gameObject.GetComponent<NetworkObject>()));
                 return;
             }
 
-            if (spawnedByOgo)
+            if (SpawnedByOgo)
             {
                 RoundManager.Instance.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
                 enemyType.numberSpawned++;
@@ -76,38 +80,33 @@ internal class VerminAI : BiodiverseAI
 
             if (spawnedByVermin)
             {
-                RoundManager.Instance.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
+                RoundManager.Instance.SpawnedEnemies.Add(this);
             }
 
-            if (TimeOfDay.Instance.currentLevelWeather != LevelWeatherType.Flooded && !spawnedByOgo)
+            if (TimeOfDay.Instance.currentLevelWeather != LevelWeatherType.Flooded && !SpawnedByOgo)
             {
-                // BiodiversityPlugin.Logger.LogInfo("Despawning because Ogopogo did not spawn this and it is not flooded. (vermin)");
+                // BiodiversityPlugin.Logger.LogInfo("Despawning because Ogopogo did not spawn this, and it is not flooded. (vermin)");
                 SubtractFromPowerLevel();
-                RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
+                RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(gameObject.GetComponent<NetworkObject>()));
                 return;
             }
 
-            if (!spawnedByOgo && !spawnedByVermin)
+            if (!SpawnedByOgo && !spawnedByVermin)
             {
-                spawnVermin();
+                SpawnVermin();
             }
 
             // Set the water he will stay in and teleport to it
             water = waters[UnityEngine.Random.Range(0, waters.Count)];
-            if (setWater != null)
-            {
-                water = setWater;
-            }
+            if (SetWater != null) water = SetWater;
 
             transform.position = water.transform.position;
-            setWanderPos();
+            SetWanderPos();
 
-            BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
+            waterCollider = water.gameObject.GetComponent<BoxCollider>();
 
-            if (!spawnedByOgo)
-            {
-                transform.position = new Vector3(transform.position.x, collider.bounds.max.y, transform.position.z);
-            }
+            if (!SpawnedByOgo)
+                transform.position = new Vector3(transform.position.x, waterCollider.bounds.max.y, transform.position.z);
         }
         catch (Exception ex)
         {
@@ -115,30 +114,30 @@ internal class VerminAI : BiodiverseAI
         }
     }
 
-    private void spawnVermin()
+    private void SpawnVermin()
     {
-        foreach (var i in Enumerable.Range(0, 3))
+        if (!IsServer) return;
+        foreach (int i in Enumerable.Range(0, 3))
         {
-            GameObject vermin = UnityEngine.Object.Instantiate<GameObject>(OgopogoHandler.Instance.Assets.VerminEnemyType.enemyPrefab, this.transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
+            GameObject vermin = Instantiate(OgopogoHandler.Instance.Assets.VerminEnemyType.enemyPrefab, transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
             vermin.GetComponentInChildren<NetworkObject>().Spawn(true);
-            VerminAI AIscript = vermin.gameObject.GetComponent<VerminAI>();
-            AIscript.setWater = water;
-            AIscript.spawnedByVermin = true;
+            VerminAI aIscript = vermin.gameObject.GetComponent<VerminAI>();
+            aIscript.SetWater = water;
+            aIscript.spawnedByVermin = true;
         }
     }
 
-    private void setWanderPos()
+    private void SetWanderPos()
     {
-        BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
-        wanderPos.x = UnityEngine.Random.Range(collider.bounds.min.x, collider.bounds.max.x);
-        wanderPos.y = UnityEngine.Random.Range(collider.bounds.min.y, collider.bounds.max.y);
-        wanderPos.z = UnityEngine.Random.Range(collider.bounds.min.z, collider.bounds.max.z);
+        wanderPos.x = UnityEngine.Random.Range(waterCollider.bounds.min.x, waterCollider.bounds.max.x);
+        wanderPos.y = UnityEngine.Random.Range(waterCollider.bounds.min.y, waterCollider.bounds.max.y);
+        wanderPos.z = UnityEngine.Random.Range(waterCollider.bounds.min.z, waterCollider.bounds.max.z);
 
         wanderTimer = 0f;
     }
 
     // Get the closest player in 2d space
-    private PlayerControllerB getClosestPlayer()
+    private PlayerControllerB GetClosestPlayer()
     {
         PlayerControllerB ret = null;
         float smallestDistance = 0f;
@@ -164,12 +163,12 @@ internal class VerminAI : BiodiverseAI
     }
 
     // 2d distance formula
-    private float Distance2d(GameObject obj1, GameObject obj2)
+    private static float Distance2d(GameObject obj1, GameObject obj2)
     {
         return Mathf.Sqrt(Mathf.Pow(obj1.transform.position.x - obj2.transform.position.x, 2f) + Mathf.Pow(obj1.transform.position.z - obj2.transform.position.z, 2f));
     }
 
-    private bool Collision(Vector3 pos, BoxCollider col)
+    private static bool Collision(Vector3 pos, Collider col)
     {
         return col.bounds.Contains(pos);
     }
@@ -179,7 +178,7 @@ internal class VerminAI : BiodiverseAI
         transform.LookAt(new Vector3(location.x, location.y, location.z));
     }
 
-    private bool checkForWall()
+    private bool CheckForWall()
     {
         return Physics.Raycast(RaycastPos.position, RaycastPos.forward, 2f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/);
     }
@@ -190,7 +189,7 @@ internal class VerminAI : BiodiverseAI
         foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
         {
             //BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
-            if (Distance2d(player.gameObject, this.gameObject) < range)
+            if (Distance2d(player.gameObject, gameObject) < range)
             {
                 ret = true;
             }
@@ -202,51 +201,47 @@ internal class VerminAI : BiodiverseAI
     {
         base.Update();
 
-        if (StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory)
-        {
-            MapDot.position = transform.position;
-        }
-        else
-        {
-            MapDot.position = new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, this.transform.position.z);
-        }
+        MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position : 
+            new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, transform.position.z);
 
-        if (isEnemyDead && transform.position.y < water.GetComponent<BoxCollider>().bounds.max.y && (IsHost || IsServer))
-        {
+        if (!IsServer) return;
+        if (isEnemyDead && transform.position.y < waterCollider.bounds.max.y && (IsHost || IsServer))
             Rise(0.2f);
-        }
 
         // Step timers
-        if (currentBehaviourStateIndex == (int)State.WANDERING)
+        if (currentBehaviourStateIndex == (int)State.Wandering)
         {
             wanderTimer += Time.deltaTime;
         }
-        if (damageTimer >= 0)
-        {
-            damageTimer -= Time.deltaTime;
-        }
-
+        
+        damageTimer -= Time.deltaTime;
+        damageTimerBelowZero.Value = damageTimer <= 0;
     }
 
-    public void FixedUpdate()
+    private void FixedUpdate()
     {
-        wallInFront = checkForWall();
+        if (!IsServer) return;
+        wallInFront = CheckForWall();
     }
 
     public override void OnCollideWithPlayer(Collider other)
     {
-        if (isEnemyDead || stunNormalizedTimer > 0)
-        {
-            return;
-        }
-        if (damageTimer <= 0)
+        if (isEnemyDead || stunNormalizedTimer > 0) return;
+        
+        if (damageTimerBelowZero.Value)
         {
             other.gameObject.GetComponent<PlayerControllerB>().DamagePlayer(5, false, true, CauseOfDeath.Mauling, 0, false, default);
-            damageTimer = 0.5f;
+            ResetDamageTimerServerRpc();
         }
     }
 
-    private float WaterTop(BoxCollider coll)
+    [ServerRpc(RequireOwnership = false)]
+    private void ResetDamageTimerServerRpc()
+    {
+        damageTimer = 0.5f;
+    }
+
+    private static float WaterTop(BoxCollider coll)
     {
         return coll.transform.localScale.y * coll.size.y / 2 + coll.transform.position.y;
     }
@@ -261,20 +256,17 @@ internal class VerminAI : BiodiverseAI
         }
     }
 
-    private void Rise(float speed)
+    private void Rise(float riseSpeed)
     {
-        transform.Translate(Vector3.up * (speed * Time.deltaTime));
+        transform.Translate(Vector3.up * (riseSpeed * Time.deltaTime));
     }
+    
     public override void DoAIInterval()
     {
         base.DoAIInterval();
 
-        BoxCollider coll = water.gameObject.GetComponent<BoxCollider>();
-
-        if (WaterTop(coll) < transform.position.y)
-        {
-            transform.position = new Vector3(transform.position.x, WaterTop(coll), transform.position.z);
-        }
+        if (IsServer && WaterTop(waterCollider) < transform.position.y)
+            transform.position = new Vector3(transform.position.x, WaterTop(waterCollider), transform.position.z);
 
         if (stunNormalizedTimer > 0)
         {
@@ -285,14 +277,16 @@ internal class VerminAI : BiodiverseAI
         {
             creatureAnimator.SetBool(Stun, false);
         }
+        
+        if (!IsServer) return;
 
         switch (currentBehaviourStateIndex)
         {
-            case (int)State.WANDERING:
-                float step1 = speed * Time.deltaTime;
+            case (int)State.Wandering:
+                float step1 = Speed * Time.deltaTime;
                 if (wanderTimer >= 5)
                 {
-                    setWanderPos();
+                    SetWanderPos();
                 }
 
                 Vector3 wanderLocation = Vector3.MoveTowards(transform.position, wanderPos, step1);
@@ -300,39 +294,37 @@ internal class VerminAI : BiodiverseAI
                 TurnTowardsLocation3d(wanderPos);
 
 
-                if (wallInFront || !Collision(wanderLocation, coll))
+                if (wallInFront || !Collision(wanderLocation, waterCollider))
                 {
                     // BiodiversityPlugin.Logger.LogInfo("Found wall while wandering (vermin)");
-                    setWanderPos();
+                    SetWanderPos();
                 }
                 else
                 {
                     transform.position = wanderLocation;
                 }
 
-                if (PlayerCheck(detectionRange))
+                if (PlayerCheck(DetectionRange))
                 {
-                    SwitchToBehaviourClientRpc((int)State.CHASING);
+                    SwitchToBehaviourClientRpc((int)State.Chasing);
                 }
                 break;
-            case (int)State.CHASING:
-                float step2 = speed * Time.deltaTime;
-                PlayerControllerB player = getClosestPlayer();
+            case (int)State.Chasing:
+                float step2 = Speed * Time.deltaTime;
+                PlayerControllerB player = GetClosestPlayer();
 
                 Vector3 newLocation = Vector3.MoveTowards(transform.position, player.gameObject.transform.position, step2);
 
-                BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
-
                 TurnTowardsLocation3d(player.gameObject.transform.position);
 
-                if (Collision(newLocation, collider) && !wallInFront)
+                if (Collision(newLocation, waterCollider) && !wallInFront)
                 {
                     transform.position = newLocation;
                 }
 
-                if (!PlayerCheck(loseRange))
+                if (!PlayerCheck(LoseRange))
                 {
-                    SwitchToBehaviourClientRpc((int)State.WANDERING);
+                    SwitchToBehaviourClientRpc((int)State.Wandering);
                 }
                 break;
         }
