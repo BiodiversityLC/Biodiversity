@@ -63,25 +63,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
-
-        Logger.LogInfo("Setting up custom log file.");
-        if (Utility.TryOpenFileStream(Path.Combine(Paths.BepInExRootPath, "Biodiversity.log"), FileMode.Create, out FileStream stream))
-        {
-            LogFile = TextWriter.Synchronized(new StreamWriter(stream, Utility.UTF8NoBom));
-            Logger.LogEvent += (logger, logEvent) =>
-            {
-                LogFile.WriteLine(logEvent.ToString());
-            };
-            new Timer(o => { LogFile.Flush(); }, null, 2000, 2000);
-        }
-        else
-        {
-            Logger.LogError("Failed to open custom log.");
-        }
-
         Logger.LogInfo("Running Harmony patches...");
-        if (LogFile != null)
-            Logger.LogInfo("(Biodiversity logs will now be routed to Biodiversity.log)");
         Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
 
         Logger.LogInfo("Creating base biodiversity config.");
