@@ -17,6 +17,7 @@ public class LeafyBoiAI : BiodiverseAI {
     private static readonly int _AnimationIdHash = Animator.StringToHash("AnimationId");
 
     private float timeUntilNextBarkSFX = 5;
+    float timeUntilNextStepAudibleSound = 3;
     
     [Header("Audio")]
     [SerializeField]
@@ -48,7 +49,7 @@ public class LeafyBoiAI : BiodiverseAI {
         base.DoAIInterval();
 
         CheckAnimations();
-
+        
         if (!IsHost) return;
 
         if (!agent.isOnNavMesh) return;
@@ -89,6 +90,7 @@ public class LeafyBoiAI : BiodiverseAI {
             AudioClip clip = randomBarkSFX[Random.Range(0, randomBarkSFX.Length)];
             creatureSFX.PlayOneShot(clip);
             WalkieTalkie.TransmitOneShotAudio(creatureSFX, clip);
+            RoundManager.Instance.PlayAudibleNoise(transform.position);
         }
     }
 
@@ -115,6 +117,7 @@ public class LeafyBoiAI : BiodiverseAI {
                 LogVerbose($"playing scared clip: {clip.name}");
                 creatureSFX.PlayOneShot(clip);
                 WalkieTalkie.TransmitOneShotAudio(creatureSFX, clip);
+                RoundManager.Instance.PlayAudibleNoise(transform.position);
             }
             
             State = AIState.RUNNING;

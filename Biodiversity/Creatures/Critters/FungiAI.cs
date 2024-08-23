@@ -82,6 +82,7 @@ public class FungiAI : BiodiverseAI {
 		GameObject spores = Instantiate(sporeCloudPrefab, sporeCloudOrigin.position, Quaternion.identity, RoundManager.Instance.mapPropsContainer.transform);
 		spores.GetComponent<DamageTrigger>().enemiesToIgnore.Add(this);
 		spores.GetComponent<Animation>().Play(); // this is fucked
+		RoundManager.Instance.PlayAudibleNoise(transform.position);
 	}
     
 	[ClientRpc]
