@@ -5,7 +5,6 @@ using System.Text;
 using UnityEngine;
 using LethalLib.Modules;
 
-
 namespace Biodiversity.Items.RubberDuck
 {
     internal class RubberDuckAssets(string Bundle) : BiodiverseAssetBundle<RubberDuckAssets>(Bundle)
