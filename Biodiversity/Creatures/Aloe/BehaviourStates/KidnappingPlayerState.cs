@@ -21,8 +21,8 @@ public class KidnappingPlayerState : BehaviourState
     public override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
-        AloeServerInstance.agentMaxSpeed = 6f;
+
+        AloeServerInstance.agentMaxSpeed = AloeHandler.Instance.Config.KidnappingPlayerMaxSpeed;
         AloeServerInstance.agentMaxAcceleration = 8f;
         AloeServerInstance.openDoorSpeedMultiplier = 20f;
         AloeServerInstance.moveTowardsDestination = true;

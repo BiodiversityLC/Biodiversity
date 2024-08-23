@@ -20,6 +20,10 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Tooltip("The damage that the Aloe's slap does to enemies.")]
     [field: Range(0, 10)]
     public int SlapDamageEnemies { get; private set; } = 2;
+
+    [field: Tooltip("The max speed of the Aloe when she's kidnapping a player.")]
+    [field: Range(1f, 50f)]
+    public float KidnappingPlayerMaxSpeed { get; private set; } = 6f;
     
     [field: Tooltip("The radius in meters the Aloe is allowed roam from her favourite spot.")]
     [field: Range(45f, 500f)]
