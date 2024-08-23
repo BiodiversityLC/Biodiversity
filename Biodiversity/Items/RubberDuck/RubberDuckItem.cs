@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Biodiversity.Items.RubberDuck
 {
-    public class RubberDuckItem : Item
+    public class RubberDuckItem  : PhysicsProp
     {
         public Material[] Materials;
     }
