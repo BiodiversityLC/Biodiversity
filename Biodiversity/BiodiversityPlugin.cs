@@ -184,4 +184,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
         return bundle;
     }
+
+    public static void AddBioScrap(Item item,int rarity, LevelTypes moon)
+    {
+        LethalLib.Modules.Items.RegisterScrap(item, rarity, moon);
+    }
 }
