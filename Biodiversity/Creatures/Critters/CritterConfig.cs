@@ -44,6 +44,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
 	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:100,March:80,Artifice:100,Solace:80,Fray:100,Seichi:16,Hydro:50,Collateral:8,Corrosion:5,Icebound:45";
 
+	[field: Header("Leaf Boy")]
 	[field: Tooltip("Whether the Leaf Boy will spawn in games.")]
 	public bool LeafBoyEnabled { get; private set; } = true;
 	
