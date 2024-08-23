@@ -5,13 +5,28 @@
     </PropertyGroup>
 
     <!-- Copy to Plugin Directory for Quicker Testing -->
-    <Target Name="CopyFiles" AfterTargets="NetcodePatch">
-	    <Message Importance="high" Text="Copying to local lethal company install" />
+    <Target Name="CopyFiles" AfterTargets="BuildLangFiles">
+		<ItemGroup>
+			<AssetBundles Include="$(ProjectDir)AssetBundles/*.*">
+				<!-- Adjust the path as per your folder structure -->
+				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			</AssetBundles>
+
+            <LangFiles Include="$(TargetDir)lang/*.json">
+				<!-- Adjust the path as per your folder structure -->
+				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			</LangFiles>
+		</ItemGroup>
+
+		<Message Importance="high" Text="Copying to local lethal company install" />
+        <MakeDir Directories="$(PluginDirectory)" Condition="!Exists('$(PluginDirectory)')"  />
+
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginDirectory)"/>
-    </Target>
-    
-    <Target Name="LaunchGame" AfterTargets="CopyFiles" Condition=" '$(Configuration)' == 'Debug' ">
-        <Exec Command='taskkill /f /fi "pid gt 0" /im xdesproc.exe'/>
-        <Exec Command='start cmd /k "C:\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company.exe"'/>
+
+        <MakeDir Directories="$(PluginDirectory)assets" Condition="!Exists('$(PluginDirectory)assets')"  />
+        <Copy SourceFiles="@(AssetBundles)" DestinationFolder="$(PluginDirectory)\assets\"/>
+
+        <MakeDir Directories="$(PluginDirectory)lang" Condition="!Exists('$(PluginDirectory)lang')"  />
+        <Copy SourceFiles="@(LangFiles)" DestinationFolder="$(PluginDirectory)lang\"/>
     </Target>
 </Project>
