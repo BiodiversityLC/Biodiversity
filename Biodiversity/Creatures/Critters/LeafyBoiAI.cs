@@ -92,6 +92,12 @@ public class LeafyBoiAI : BiodiverseAI {
             WalkieTalkie.TransmitOneShotAudio(creatureSFX, clip);
             RoundManager.Instance.PlayAudibleNoise(transform.position);
         }
+
+        timeUntilNextStepAudibleSound -= Time.deltaTime;
+        if (timeUntilNextStepAudibleSound < 0) {
+            timeUntilNextStepAudibleSound = Random.Range(3f, 6f);
+            RoundManager.Instance.PlayAudibleNoise(transform.position);
+        }
     }
 
     private void CheckAnimations() {
