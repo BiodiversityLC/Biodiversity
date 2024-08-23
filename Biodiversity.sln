@@ -5,8 +5,6 @@ VisualStudioVersion = 17.9.34616.47
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Biodiversity", "Biodiversity\Biodiversity.csproj", "{B1E4BB8D-D164-4BF3-8444-B27441B3E894}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiodiversityToolkit", "BiodiversityToolkit\BiodiversityToolkit.csproj", "{6C8C72EA-9B13-4978-B817-FD622894BCED}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{B1E4BB8D-D164-4BF3-8444-B27441B3E894}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1E4BB8D-D164-4BF3-8444-B27441B3E894}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1E4BB8D-D164-4BF3-8444-B27441B3E894}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6C8C72EA-9B13-4978-B817-FD622894BCED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6C8C72EA-9B13-4978-B817-FD622894BCED}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6C8C72EA-9B13-4978-B817-FD622894BCED}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6C8C72EA-9B13-4978-B817-FD622894BCED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
