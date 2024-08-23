@@ -36,8 +36,6 @@ public class BiodiversityPlugin : BaseUnityPlugin
     public static BiodiversityPlugin Instance { get; private set; }
     internal new static ManualLogSource Logger { get; private set; }
 
-    internal TextWriter LogFile { get; private set; }
-
     internal new static BiodiversityConfig Config { get; private set; }
 
     static readonly (string, string)[] silly_quotes = [
