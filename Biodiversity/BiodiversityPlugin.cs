@@ -43,7 +43,8 @@ public class BiodiversityPlugin : BaseUnityPlugin
         ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
         ("thumpy wumpy", "monty"),
         ("Your body should get split in two", "wesley"),
-        ("death for you and your bloodline", "monty")
+        ("death for you and your bloodline", "monty"),
+        ("the fiend is watching... NOT VERY SIGMA!!", "rolevote"),
     ];
 
     private void Awake()
