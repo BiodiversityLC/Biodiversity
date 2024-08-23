@@ -638,8 +638,7 @@ public class AloeClient : MonoBehaviour
 
         if (setToInCaptivity)
         {
-            if (_targetPlayer.Value.inSpecialInteractAnimation &&
-                _targetPlayer.Value.currentTriggerInAnimationWith != null)
+            if (_targetPlayer.Value.inSpecialInteractAnimation && _targetPlayer.Value.currentTriggerInAnimationWith != null)
                 _targetPlayer.Value.currentTriggerInAnimationWith.CancelAnimationExternally();
 
             HandleMuffleTargetPlayerVoice(_aloeId);

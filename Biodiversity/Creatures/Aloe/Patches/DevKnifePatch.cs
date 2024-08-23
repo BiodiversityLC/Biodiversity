@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using HarmonyLib;
+using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
 
@@ -11,7 +12,9 @@ internal static class DevKnifePatch
     [HarmonyPostfix]
     private static void DealDamageToSelf(GrabbableObject __instance)
     {
+        #if DEBUG
         if (__instance.playerHeldBy == null) return;
         __instance.playerHeldBy.DamagePlayer(5);
+        #endif
     }
 }

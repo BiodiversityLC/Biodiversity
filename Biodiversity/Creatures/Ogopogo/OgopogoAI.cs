@@ -6,13 +6,12 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using Biodiversity.General;
-using Biodiversity.Util;
 
 namespace Biodiversity.Creatures.Ogopogo
 {
     internal class OgopogoAI : BiodiverseAI
     {
-        public enum State
+        private enum State
         {
             WANDERING,
             CHASING,
@@ -22,38 +21,38 @@ namespace Biodiversity.Creatures.Ogopogo
         }
 
         // Variables related to water
-        QuicksandTrigger water;
-        QuicksandTrigger[] sandAndWater = GameObject.FindObjectsOfType<QuicksandTrigger>();
-        List<QuicksandTrigger> waters = new List<QuicksandTrigger>();
+        private QuicksandTrigger water;
+        private readonly QuicksandTrigger[] sandAndWater = FindObjectsOfType<QuicksandTrigger>();
+        private readonly List<QuicksandTrigger> waters = [];
 
         // Movement
-        float wanderSpeed = 3.5f;
-        float chaseSpeed = 4f;
-        float detectionRange;
-        float loseRange;
-        float attackDistance;
-        float riseSpeed = 75f;
-        float riseHeight = 100f;
+        private const float wanderSpeed = 3.5f;
+        private const float chaseSpeed = 4f;
+        private float detectionRange;
+        private float loseRange;
+        private float attackDistance;
+        private const float riseSpeed = 75f;
+        private const float riseHeight = 100f;
         [SerializeField] private Transform RaycastPos;
-        bool wallInFront = false;
-        float attackTimer = 0f;
-        bool dropRaycast = false;
+        private bool wallInFront = false;
+        private float attackTimer = 0f;
+        private bool dropRaycast = false;
 
         // Wander vars
-        float wanderTimer = 0f;
-        Vector3 wanderPos = Vector3.zero;
+        private float wanderTimer = 0f;
+        private Vector3 wanderPos = Vector3.zero;
 
         // Spline control
         [SerializeField] private Transform SplineEnd;
         [SerializeField] private SplineObject splineObject;
         [NonSerialized] private bool splineDone = false;
-        float splineSpeed = 0.7f;
-        bool playerHasBeenGrabbed = false;
+        private const float splineSpeed = 0.7f;
+        private bool playerHasBeenGrabbed = false;
         [SerializeField] private Transform GrabPos;
 
         // Player references
-        PlayerControllerB playerGrabbed = null;
-        PlayerControllerB chasedPlayer;
+        private PlayerControllerB playerGrabbed = null;
+        private PlayerControllerB chasedPlayer;
         float[] PlayerDistances = null;
 
         // Audio
@@ -63,17 +62,19 @@ namespace Biodiversity.Creatures.Ogopogo
         [SerializeField] private KeepY normalAudio;
 
         // Timer for reset state
-        float resetTimer = 0f;
+        private float resetTimer = 0f;
 
         // Default position of this.eye (needed for water stun to work)
-        [SerializeField]Transform defaultEye;
+        [SerializeField] private Transform defaultEye;
 
-        bool stunnedLastFrame = false;
+        private bool stunnedLastFrame = false;
 
         // Mapping
         public Transform MapDot;
 
         public EasyIK IK;
+        private static readonly int AnimID = Animator.StringToHash("AnimID");
+        private static readonly int Stun = Animator.StringToHash("Stun");
 
         public override void Start()
         {
@@ -100,9 +101,9 @@ namespace Biodiversity.Creatures.Ogopogo
             {
                 foreach (QuicksandTrigger maybeWater in sandAndWater)
                 {
-                    BiodiversityPlugin.Logger.LogInfo(maybeWater);
-                    BiodiversityPlugin.Logger.LogInfo(maybeWater.isWater);
-                    BiodiversityPlugin.Logger.LogInfo(maybeWater.gameObject.CompareTag("SpawnDenialPoint"));
+                    // BiodiversityPlugin.Logger.LogInfo(maybeWater);
+                    // BiodiversityPlugin.Logger.LogInfo(maybeWater.isWater);
+                    // BiodiversityPlugin.Logger.LogInfo(maybeWater.gameObject.CompareTag("SpawnDenialPoint"));
                     if (maybeWater.isWater && !maybeWater.gameObject.CompareTag("SpawnDenialPoint"))
                     {
                         waters.Add(maybeWater);
@@ -111,8 +112,8 @@ namespace Biodiversity.Creatures.Ogopogo
 
                 if (waters.Count == 0 || TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Flooded)
                 {
-                    BiodiversityPlugin.Logger.LogInfo("Despawning because no water exists that is spawnable or there is a flood.");
-                    RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(this.gameObject.GetComponent<NetworkObject>()));
+                    BiodiversityPlugin.Logger.LogWarning("Despawning because no water exists that is spawnable or there is a flood.");
+                    RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(gameObject.GetComponent<NetworkObject>()));
                     return;
                 }
 
@@ -181,10 +182,10 @@ namespace Biodiversity.Creatures.Ogopogo
 
             if (StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory)
             {
-                MapDot.position = this.transform.position;
+                MapDot.position = transform.position;
             } else
             {
-                MapDot.position = new Vector3(this.transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, this.transform.position.z);
+                MapDot.position = new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, transform.position.z);
             }
 
             if (GameNetworkManager.Instance.localPlayerController.isInsideFactory)
@@ -212,12 +213,12 @@ namespace Biodiversity.Creatures.Ogopogo
             // Set eye position to handle stun. (Calculated on both client and server)
             if (currentBehaviourStateIndex == (int)State.WANDERING || currentBehaviourStateIndex == (int)State.CHASING)
             {
-                this.eye.position = defaultEye.transform.position;
-                this.eye.rotation = defaultEye.transform.rotation;
+                eye.position = defaultEye.transform.position;
+                eye.rotation = defaultEye.transform.rotation;
             } else
             {
-                this.eye.position = chasedPlayer.transform.position + chasedPlayer.transform.forward * 1;
-                TurnObjectTowardsLocation(chasedPlayer.transform.position, this.eye);
+                eye.position = chasedPlayer.transform.position + chasedPlayer.transform.forward * 1;
+                TurnObjectTowardsLocation(chasedPlayer.transform.position, eye);
             }
         }
 
@@ -259,7 +260,7 @@ namespace Biodiversity.Creatures.Ogopogo
         }
 
         // Set wander position. (Only matters when run on server)
-        void setWanderPos()
+        private void setWanderPos()
         {
             BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
             wanderPos.x = UnityEngine.Random.Range(collider.bounds.min.x, collider.bounds.max.x);
@@ -270,26 +271,26 @@ namespace Biodiversity.Creatures.Ogopogo
         }
 
         // Get the closest player in 2d space
-        PlayerControllerB getClosestPlayer()
+        private PlayerControllerB getClosestPlayer()
         {
             PlayerControllerB ret = null;
             float smallestDistance = 0f;
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                if (player.transform.position.y >= this.transform.position.y || currentBehaviourStateIndex == (int)State.RISING)
+                if (player.transform.position.y >= transform.position.y || currentBehaviourStateIndex == (int)State.RISING)
                 {
                     if (smallestDistance == 0f)
                     {
-                        smallestDistance = Distance2d(player.gameObject, this.gameObject);
+                        smallestDistance = Distance2d(player.gameObject, gameObject);
                         ret = player;
                     }
                     else
                     {
-                        float Distance = Distance2d(player.gameObject, this.gameObject);
+                        float distance = Distance2d(player.gameObject, gameObject);
 
-                        if (Distance < smallestDistance)
+                        if (distance < smallestDistance)
                         {
-                            smallestDistance = Distance;
+                            smallestDistance = distance;
                             ret = player;
                         }
                     }
@@ -299,13 +300,13 @@ namespace Biodiversity.Creatures.Ogopogo
         }
 
         // Check if players are within a certain range
-        bool PlayerCheck(float range)
+        private bool PlayerCheck(float range)
         {
             bool ret = false;
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
                 //BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
-                if (Distance2d(player.gameObject, this.gameObject) < range && (player.transform.position.y >= this.transform.position.y || currentBehaviourStateIndex == (int)State.RISING) && PlayerDistances[player.playerClientId] > 15)
+                if (Distance2d(player.gameObject, gameObject) < range && (player.transform.position.y >= transform.position.y || currentBehaviourStateIndex == (int)State.RISING) && PlayerDistances[player.playerClientId] > 15)
                 {
                     ret = true;
                 }
@@ -314,39 +315,39 @@ namespace Biodiversity.Creatures.Ogopogo
         }
 
         // 2d distance formula
-        float Distance2d(GameObject obj1, GameObject obj2)
+        private static float Distance2d(GameObject obj1, GameObject obj2)
         {
             return Mathf.Sqrt(Mathf.Pow(obj1.transform.position.x - obj2.transform.position.x, 2f) + Mathf.Pow(obj1.transform.position.z - obj2.transform.position.z, 2f));
         }
 
         // Check if a position is in a collider's 2d space
-        bool Collision2d(Vector3 pos, BoxCollider col)
+        private bool Collision2d(Vector3 pos, Collider col)
         {
             return col.bounds.Contains(new Vector3(pos.x, water.transform.position.y, pos.z));
         }
 
         // Turn towards position
-        void TurnTowardsLocation(Vector3 location)
+        private void TurnTowardsLocation(Vector3 location)
         {
-            this.transform.LookAt(new Vector3(location.x, this.transform.position.y, location.z));
+            transform.LookAt(new Vector3(location.x, transform.position.y, location.z));
         }
 
         // Turn object toward position
-        void TurnObjectTowardsLocation(Vector3 location, Transform objectRef)
+        private static void TurnObjectTowardsLocation(Vector3 location, Transform objectRef)
         {
             objectRef.LookAt(new Vector3(location.x, objectRef.transform.position.y, location.z));
         }
 
         // Rise at given speed. Enemy AI already updates position across client so no need for RPC
-        void Rise(float speed)
+        private void Rise(float speed)
         {
-            this.transform.Translate(Vector3.up * speed * Time.deltaTime);
+            transform.Translate(Vector3.up * speed * Time.deltaTime);
         }
 
         // Go down at given speed. Same as above
-        void GoDown(float speed)
+        private void GoDown(float speed)
         {
-            this.transform.Translate(Vector3.down * speed * Time.deltaTime);
+            transform.Translate(Vector3.down * speed * Time.deltaTime);
         }
 
         // Update the IK object forward along the spline.
@@ -393,7 +394,10 @@ namespace Biodiversity.Creatures.Ogopogo
                     inSpecialAnimationWithPlayer.inSpecialInteractAnimation = false;
                 }
             }
-            catch (Exception e) { }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
 
         // Play sounds
@@ -419,16 +423,16 @@ namespace Biodiversity.Creatures.Ogopogo
                 audio = warning;
             }
 
-            this.creatureVoice.PlayOneShot(audio);
+            creatureVoice.PlayOneShot(audio);
         }
 
-        bool checkForWall()
+        private bool checkForWall()
         {
             return Physics.Raycast(RaycastPos.position, RaycastPos.forward, 7.5f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/);
         }
 
         // Reset enemy variables
-        void resetEnemy()
+        private void resetEnemy()
         {
             playerGrabbed = null;
             chasedPlayer = null;
@@ -439,14 +443,14 @@ namespace Biodiversity.Creatures.Ogopogo
             resetTimer = 0f;
             SwitchToBehaviourClientRpc((int)State.WANDERING);
             SetPlayerGrabbedClientRpc(0, true);
-            this.creatureAnimator.SetInteger("AnimID", 1);
+            creatureAnimator.SetInteger(AnimID, 1);
         }
 
-        void spawnVermin()
+        private void spawnVermin()
         {
             foreach (var i in Enumerable.Range(0, 4))
             {
-                GameObject vermin = UnityEngine.Object.Instantiate<GameObject>(OgopogoHandler.Instance.Assets.VerminEnemyType.enemyPrefab, this.transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
+                GameObject vermin = Instantiate<GameObject>(OgopogoHandler.Instance.Assets.VerminEnemyType.enemyPrefab, transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
                 vermin.GetComponentInChildren<NetworkObject>().Spawn(true);
                 VerminAI AIscript = vermin.gameObject.GetComponent<VerminAI>();
                 AIscript.setWater = water;
@@ -476,7 +480,7 @@ namespace Biodiversity.Creatures.Ogopogo
         }
 
         // Handle grabbing
-        public override void OnCollideWithPlayer(UnityEngine.Collider other)
+        public override void OnCollideWithPlayer(Collider other)
         {
             if (isEnemyDead) { 
                 return;
@@ -491,7 +495,7 @@ namespace Biodiversity.Creatures.Ogopogo
 
                 TakeOutOfTruckClientRpc();
                 SetPlayerGrabbedClientRpc((int)player.playerClientId, false, false);
-                this.creatureAnimator.SetInteger("AnimID", 3);
+                creatureAnimator.SetInteger(AnimID, 3);
             }
         }
 
@@ -504,7 +508,7 @@ namespace Biodiversity.Creatures.Ogopogo
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
         {
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-            BiodiversityPlugin.Logger.LogInfo("It's running");
+            // BiodiversityPlugin.Logger.LogInfo("It's running");
             enemyHP -= force;
             if (enemyHP <= 0)
             {
@@ -532,12 +536,12 @@ namespace Biodiversity.Creatures.Ogopogo
             if (stunNormalizedTimer > 0)
             {
                 SetPlayerGrabbedClientRpc(0, true);
-                creatureAnimator.SetBool("Stun", true);
+                creatureAnimator.SetBool(Stun, true);
                 return;
             }
             else
             {
-                creatureAnimator.SetBool("Stun", false);
+                creatureAnimator.SetBool(Stun, false);
             }
 
             switch (currentBehaviourStateIndex)
@@ -554,7 +558,7 @@ namespace Biodiversity.Creatures.Ogopogo
                     // I doubt this works with flooding.
                     if (wallInFront)
                     {
-                        BiodiversityPlugin.Logger.LogInfo("Found wall while wandering");
+                        // BiodiversityPlugin.Logger.LogInfo("Found wall while wandering");
                         setWanderPos();
                     } else
                     {
@@ -591,11 +595,11 @@ namespace Biodiversity.Creatures.Ogopogo
                     {
                         transform.position = newLocation;
                     }
-                    if (Distance2d(this.gameObject, player.gameObject) <= attackDistance && attackTimer < 0)
+                    if (Distance2d(gameObject, player.gameObject) <= attackDistance && attackTimer < 0)
                     {
                         SwitchToBehaviourClientRpc((int)State.RISING);
                         PlayVoiceClientRpc(1);
-                        this.creatureAnimator.SetInteger("AnimID", 2);
+                        creatureAnimator.SetInteger(AnimID, 2);
                         spawnVermin();
                     }
                     if (!PlayerCheck(loseRange))
@@ -604,7 +608,7 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                     break;
                 case (int)State.RISING:
-                    if (this.transform.position.y - water.gameObject.transform.position.y < riseHeight)
+                    if (transform.position.y - water.gameObject.transform.position.y < riseHeight)
                     {
                         Rise(riseSpeed);
                         TurnTowardsLocation(getClosestPlayer().gameObject.transform.position);
@@ -615,7 +619,7 @@ namespace Biodiversity.Creatures.Ogopogo
                         splineDone = true;
                     }
 
-                    if (!splineDone && this.transform.position.y - water.gameObject.transform.position.y > 0.75f * riseHeight)
+                    if (!splineDone && transform.position.y - water.gameObject.transform.position.y > 0.75f * riseHeight)
                     {
                         UpdateForwardClientRpc(Time.deltaTime);
                     }
@@ -627,9 +631,9 @@ namespace Biodiversity.Creatures.Ogopogo
                         splineDone = false;
                     }
 
-                    if ((!(this.transform.position.y - water.gameObject.transform.position.y < riseHeight)) && splineDone)
+                    if ((!(transform.position.y - water.gameObject.transform.position.y < riseHeight)) && splineDone)
                     {
-                        this.transform.position = new Vector3(this.transform.position.x, water.transform.position.y + riseHeight, this.transform.position.z);
+                        transform.position = new Vector3(transform.position.x, water.transform.position.y + riseHeight, transform.position.z);
                         SwitchToBehaviourClientRpc((int)State.GOINGDOWN);
                         PlayVoiceClientRpc(2);
                         splineDone = false;
@@ -641,23 +645,23 @@ namespace Biodiversity.Creatures.Ogopogo
                         UpdateBackwardClientRpc(Time.deltaTime);
                     }
 
-                    if (this.transform.position.y - water.gameObject.transform.position.y > 0f && splineDone)
+                    if (transform.position.y - water.gameObject.transform.position.y > 0f && splineDone)
                     {
                         GoDown(riseSpeed);
                     }
                     
                     if (playerGrabbed != null && dropRaycast && splineDone)
                     {
-                        BiodiversityPlugin.Logger.LogInfo("dropping player");
+                        // BiodiversityPlugin.Logger.LogInfo("dropping player");
                         playerGrabbed.fallValue = 0f;
                         playerGrabbed.fallValueUncapped = 0f;
                         SetPlayerGrabbedClientRpc(0, true);
                         inSpecialAnimationWithPlayer = null;
                     }
 
-                    if (!(this.transform.position.y - water.gameObject.transform.position.y > 0f) && splineDone)
+                    if (!(transform.position.y - water.gameObject.transform.position.y > 0f) && splineDone)
                     {
-                        this.transform.position = new Vector3(this.transform.position.x, water.transform.position.y, this.transform.position.z);
+                        transform.position = new Vector3(transform.position.x, water.transform.position.y, transform.position.z);
                         SwitchToBehaviourClientRpc((int)State.RESET);
                         SetPlayerGrabbedClientRpc(0, true);
                     }
