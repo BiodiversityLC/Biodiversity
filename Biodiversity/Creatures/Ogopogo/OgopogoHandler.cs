@@ -31,10 +31,14 @@ internal class OgopogoHandler : BiodiverseAIHandler<OgopogoHandler> {
 			
 			// Enemies.RegisterEnemy(Assets.OgopogoEnemyType, Enemies.SpawnType.Daytime, Config.OgopogoRarity.VanillaRarities, Config.OgopogoRarity.ModdedRarities, Assets.OgopogoTerminalNode, Assets.OgopogoTerminalKeyword);
 		}
-
-		if (Config.EnableVermin) {
-			TranslateTerminalNode(Assets.VerminTerminalNode);
-			Enemies.RegisterEnemy(Assets.VerminEnemyType, Enemies.SpawnType.Outside, Config.VerminRarity.VanillaRarities, Config.VerminRarity.ModdedRarities, Assets.VerminTerminalNode, Assets.VerminTerminalKeyword);
-		}
+		
+		TranslateTerminalNode(Assets.VerminTerminalNode);
+		RegisterEnemyWithConfig(
+			Config.EnableVermin,
+			Config.VerminRarity,
+			Assets.VerminEnemyType,
+			Assets.VerminTerminalNode,
+			Assets.VerminTerminalKeyword);
+		// Enemies.RegisterEnemy(Assets.VerminEnemyType, Enemies.SpawnType.Outside, Config.VerminRarity.VanillaRarities, Config.VerminRarity.ModdedRarities, Assets.VerminTerminalNode, Assets.VerminTerminalKeyword);
 	}
 }
