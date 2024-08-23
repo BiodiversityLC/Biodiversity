@@ -6,7 +6,9 @@ using System.Reflection.Emit;
 using System.Text;
 
 namespace Biodiversity.Patches;
-[HarmonyPatch(typeof(RoundManager))]
+
+// FIXME: This patch is currently broken and like yeah... dont
+//[HarmonyPatch(typeof(RoundManager))]
 internal static class RoundManagerPatch {
     internal static Dictionary<EnemyType, Func<bool>> spawnRequirements = [];
 
