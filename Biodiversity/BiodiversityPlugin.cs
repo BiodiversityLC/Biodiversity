@@ -47,15 +47,6 @@ public class BiodiversityPlugin : BaseUnityPlugin
         ("Your body should get split in two", "wesley"),
         ("death for you and your bloodline", "monty")
     ];
-    bool OgoEnabledValue;
-
-    static ConfigEntry<bool> OgoEnabled;
-    static ConfigEntry<bool> VerminEnabled;
-    static ConfigEntry<string> levelsOgo;
-    static ConfigEntry<string> levelsVermin;
-    public static ConfigEntry<float> OgoDetectionRange;
-    public static ConfigEntry<float> OgoLoseRange;
-    public static ConfigEntry<float> OgoAttackDistance;
 
     private void Awake()
     {
