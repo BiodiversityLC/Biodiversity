@@ -23,6 +23,8 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
             try {
                 FieldInfo backingField = property.DeclaringType.GetField($"<{property.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
 
+                if(backingField.GetCustomAttribute(typeof(NonSerializedAttribute)) != null) continue;
+                
                 HeaderAttribute headerAttribute = (HeaderAttribute)backingField.GetCustomAttribute(typeof(HeaderAttribute));
                 if (headerAttribute != null) {
                     CurrentHeader = headerAttribute.header.Replace(" ", "");

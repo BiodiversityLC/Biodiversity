@@ -55,6 +55,8 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger.LogInfo("Running Harmony patches...");
         Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
 
+        LangParser.Init();
+        
         Logger.LogInfo("Creating base biodiversity config.");
         Config = new BiodiversityConfig(base.Config);
 
@@ -62,8 +64,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         NetcodePatcher();
 
         Logger.LogInfo("Doing language stuff");
-        LangParser.Init();
-        LangParser.SetLanguage("en");
+        LangParser.SetLanguage(Config.Language);
 
         Logger.LogInfo(LangParser.GetTranslation("lang.test"));
 
