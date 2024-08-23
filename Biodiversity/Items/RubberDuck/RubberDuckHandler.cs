@@ -16,7 +16,7 @@ namespace Biodiversity.Items.RubberDuck
 
         public RubberDuckHandler() 
         {
-            Assets = new RubberDuckAssets("devitems/rubberduck");
+            Assets = new RubberDuckAssets("developeritems/rubberduck");
             api.AddBioScrap(Assets.DuckAsset, new int[] { 1 }, new Levels.LevelTypes[] { Levels.LevelTypes.All });
             LethalLib.Modules.Items.RegisterScrap(Assets.DuckAsset, 100, Levels.LevelTypes.All);
         }
