@@ -1,6 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe;
 using Biodiversity.Creatures;
-using BiodiversityAPI;
 using LethalLib.Modules;
 using System;
 using System.Collections.Generic;
@@ -18,8 +17,12 @@ namespace Biodiversity.Items.Developeritems
         public DeveloperScarpHandler()
         {
             Assets = new DeveloperScarpAssets("devitems");
-            LethalLib.Modules.Utilities.FixMixerGroups(Assets.DuckAsset.spawnPrefab);
-            LethalLib.Modules.Items.RegisterScrap(Assets.DuckAsset, 100, Levels.LevelTypes.All);
+            Item[] items = {Assets.DuckAsset};
+            for (int i = 0; i < items.Length; i++)
+            {
+                LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(items[i].spawnPrefab);
+                LethalLib.Modules.Items.RegisterScrap(items[i], 1, Levels.LevelTypes.All);
+            }
         }
     }
 }
