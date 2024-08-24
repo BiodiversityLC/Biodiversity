@@ -28,7 +28,7 @@ namespace Biodiversity.Items.RubberDuck
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            animator.Play("Squeeze",-1,0f);
+            animator.Play("Squeeze",-1,0);
             Source.Play();
             foreach (MouthDogAI mouthDog in FindObjectsOfType<MouthDogAI>())
             {
