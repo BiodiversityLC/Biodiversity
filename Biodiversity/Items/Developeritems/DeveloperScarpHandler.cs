@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Assertions;
 using Steamworks.Ugc;
+using static LethalLib.Modules.ContentLoader;
 
 namespace Biodiversity.Items.Developeritems
 {
@@ -17,7 +18,7 @@ namespace Biodiversity.Items.Developeritems
         public DeveloperScarpHandler()
         {
             Assets = new DeveloperScarpAssets("devitems");
-
+            LethalLib.Modules.Utilities.FixMixerGroups(Assets.DuckAsset.spawnPrefab);
             LethalLib.Modules.Items.RegisterScrap(Assets.DuckAsset, 100, Levels.LevelTypes.All);
         }
     }
