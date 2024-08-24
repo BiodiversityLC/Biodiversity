@@ -16,7 +16,10 @@ namespace Biodiversity.Items.RubberDuck
         private Animator animator;
         void Awake()
         {
-            var scripttexture = gameObject.AddComponent<SetRandomTextureClass>();
+
+            var scripttexture = GetComponent<SetRandomTextureClass>();
+            if (scripttexture == null)
+                scripttexture = gameObject.AddComponent<SetRandomTextureClass>();
             scripttexture.Materials = Materials;
             animator = GetComponent<Animator>();
             Source = GetComponent<AudioSource>();
@@ -27,6 +30,10 @@ namespace Biodiversity.Items.RubberDuck
             base.ItemActivate(used, buttonDown);
             animator.Play("Squeeze",-1,0f);
             Source.Play();
+            foreach (MouthDogAI mouthDog in FindObjectsOfType<MouthDogAI>())
+            {
+                mouthDog.DetectNoise(gameObject.transform.position, .5f);
+            }
         }
     }
 
