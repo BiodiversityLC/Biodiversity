@@ -303,16 +303,17 @@ namespace Biodiversity.Creatures.Ogopogo
         // Check if players are within a certain range
         private bool PlayerCheck(float range)
         {
-            bool ret = false;
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                //BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
-                if (Distance2d(player.gameObject, gameObject) < range && (player.transform.position.y >= transform.position.y || currentBehaviourStateIndex == (int)State.Rising) && _playerDistances[player.playerClientId] > 15)
-                {
-                    ret = true;
-                }
+                // BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
+                if (player.isInsideFactory) continue;
+                if (Distance2d(player.gameObject, gameObject) < range &&
+                    (player.transform.position.y >= transform.position.y ||
+                     currentBehaviourStateIndex == (int)State.Rising) && _playerDistances[player.playerClientId] > 15)
+                    return true;
             }
-            return ret;
+
+            return false;
         }
 
         // 2d distance formula
