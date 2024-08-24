@@ -7,7 +7,7 @@ namespace Biodiversity.Creatures.Ogopogo;
 public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<OgopogoConfig>(configFile) {
 	[field: Header("Vermin")]
 	[field: Tooltip("Turn to false to disable Vermin spawning")]
-	public bool EnableVermin { get; private set; } = true;
+	public bool EnableVermin { get; private set; } = false;
 
 	[field: Tooltip("The range that Ogopogo will detect you at")]
 	public float DetectionRange { get; private set; } = 45f;
