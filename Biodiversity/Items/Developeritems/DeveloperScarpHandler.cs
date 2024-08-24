@@ -21,7 +21,7 @@ namespace Biodiversity.Items.Developeritems
             for (int i = 0; i < items.Length; i++)
             {
                 LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(items[i].spawnPrefab);
-                LethalLib.Modules.Items.RegisterScrap(items[i], 3, Levels.LevelTypes.All);
+                LethalLib.Modules.Items.RegisterScrap(items[i], 5, Levels.LevelTypes.All);
             }
         }
     }
