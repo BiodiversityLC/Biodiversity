@@ -25,7 +25,7 @@ namespace Biodiversity.Items.RubberDuck
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            animator.Play("Squeeze");
+            animator.Play("Squeeze",-1,0f);
             Source.Play();
         }
     }
