@@ -12,10 +12,21 @@ namespace Biodiversity.Items.RubberDuck
     {
         public MeshRenderer m;
         public Material[] Materials;
+        private AudioSource Source;
+        private Animator animator;
         void Awake()
         {
             var scripttexture = gameObject.AddComponent<SetRandomTextureClass>();
             scripttexture.Materials = Materials;
+            animator = GetComponent<Animator>();
+            Source = GetComponent<AudioSource>();
+        }
+
+        public override void ItemActivate(bool used, bool buttonDown = true)
+        {
+            base.ItemActivate(used, buttonDown);
+            animator.Play("Squeeze");
+            Source.Play();
         }
     }
 
@@ -39,4 +50,5 @@ namespace Biodiversity.Items.RubberDuck
         }
        
     }
+
 }
