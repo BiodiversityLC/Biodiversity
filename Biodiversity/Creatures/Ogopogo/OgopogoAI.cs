@@ -1,4 +1,5 @@
-﻿using Biodiversity.General;
+﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.General;
 using Biodiversity.Util.Scripts;
 using GameNetcodeStuff;
 using System;
@@ -52,8 +53,9 @@ namespace Biodiversity.Creatures.Ogopogo
         [SerializeField] private Transform GrabPos;
 
         // Player references
-        private PlayerControllerB playerGrabbed;
-        private PlayerControllerB chasedPlayer;
+        private readonly NullableObject<PlayerControllerB> playerGrabbed = new();
+        private readonly NullableObject<PlayerControllerB> chasedPlayer = new();
+        private CachedDictionary<ulong, MeshRenderer> playerVisorRenderers;
         private float[] _playerDistances;
 
         // Audio
@@ -172,8 +174,6 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                 }
 
-
-
                 SetWanderPos();
             }
             catch (Exception ex)
@@ -183,6 +183,10 @@ namespace Biodiversity.Creatures.Ogopogo
 
             // Set default y pos of audio
             normalAudio.Init();
+
+            playerVisorRenderers = new CachedDictionary<ulong, MeshRenderer>(playerId =>
+                StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
+                    .GetComponentsInChildren<MeshRenderer>()[0]);
         }
 
         public override void Update()
@@ -214,10 +218,11 @@ namespace Biodiversity.Creatures.Ogopogo
             {
                 eye.position = defaultEye.transform.position;
                 eye.rotation = defaultEye.transform.rotation;
-            } else
+            } 
+            else if (chasedPlayer.IsNotNull)
             {
-                eye.position = chasedPlayer.transform.position + chasedPlayer.transform.forward * 1;
-                TurnObjectTowardsLocation(chasedPlayer.transform.position, eye);
+                eye.position = chasedPlayer.Value.transform.position + chasedPlayer.Value.transform.forward * 1;
+                TurnObjectTowardsLocation(chasedPlayer.Value.transform.position, eye);
             }
         }
 
@@ -235,26 +240,23 @@ namespace Biodiversity.Creatures.Ogopogo
         {
             wallInFront = CheckForWall();
             dropRaycast = Physics.Raycast(GrabPos.position, Vector3.down, 20f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/);
+            
             // Move the grabbed player
-            if (playerGrabbed != null)
+            if (playerGrabbed.IsNotNull)
             {
-                playerGrabbed.transform.position = GrabPos.position;
-                playerGrabbed.transform.rotation = GrabPos.rotation;
-            }
-            try
-            {
-                if (playerGrabbed.playerClientId == GameNetworkManager.Instance.localPlayerController.playerClientId)
+                playerGrabbed.Value.transform.position = GrabPos.position;
+                playerGrabbed.Value.transform.rotation = GrabPos.rotation;
+                
+                if (playerGrabbed.Value.playerClientId == GameNetworkManager.Instance.localPlayerController.playerClientId)
                 {
-                    playerGrabbed.thisPlayerModelArms.enabled = false;
-                    playerGrabbed.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = false;
+                    playerGrabbed.Value.thisPlayerModelArms.enabled = false;
+                    playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = false;
                 }
-            } catch (Exception e) 
-            {
+        
+        
                 if (!GameNetworkManager.Instance.localPlayerController.isPlayerDead)
-                {
                     GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
-                }
-                GameNetworkManager.Instance.localPlayerController.localVisor.gameObject.GetComponentsInChildren<MeshRenderer>()[0].enabled = true;
+                playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = true;
             }
         }
 
@@ -353,7 +355,7 @@ namespace Biodiversity.Creatures.Ogopogo
         [ClientRpc]
         public void UpdateForwardClientRpc(float hostDelta)
         {
-            SplineEnd.position = chasedPlayer.transform.position;
+            SplineEnd.position = chasedPlayer.Value.transform.position;
             splineDone = splineObject.UpdateForward(SplineSpeed, hostDelta);
         }
 
@@ -368,7 +370,7 @@ namespace Biodiversity.Creatures.Ogopogo
         [ClientRpc]
         public void SetPlayerChasedClientRpc(int playerID)
         {
-            chasedPlayer = StartOfRound.Instance.allPlayerScripts[playerID];
+            chasedPlayer.Value = StartOfRound.Instance.allPlayerScripts[playerID];
         }
 
         // Set the grabbed player or set as null
@@ -377,12 +379,12 @@ namespace Biodiversity.Creatures.Ogopogo
         {
             if (!setNull)
             {
-                playerGrabbed = StartOfRound.Instance.allPlayerScripts[playerID];
+                playerGrabbed.Value = StartOfRound.Instance.allPlayerScripts[playerID];
                 playerHasBeenGrabbed = true;
             }
             else
             {
-                playerGrabbed = null;
+                playerGrabbed.Value = null;
                 playerHasBeenGrabbed = false;
             }
             try
@@ -422,8 +424,8 @@ namespace Biodiversity.Creatures.Ogopogo
         // Reset enemy variables
         private void ResetEnemy()
         {
-            playerGrabbed = null;
-            chasedPlayer = null;
+            playerGrabbed.Value = null;
+            chasedPlayer.Value = null;
             splineDone = false;
             wanderTimer = 0f;
             wanderPos = Vector3.zero;
@@ -562,7 +564,7 @@ namespace Biodiversity.Creatures.Ogopogo
                     PlayerControllerB player = GetClosestPlayer();
 
                     SetPlayerChasedClientRpc((int)player.playerClientId);
-                    chasedPlayer = player;
+                    chasedPlayer.Value = player;
 
                     Vector3 newLocation = Vector3.MoveTowards(transform.position, new Vector3(player.gameObject.transform.position.x, water.transform.position.y, player.gameObject.transform.position.z), step2);
 
@@ -595,6 +597,7 @@ namespace Biodiversity.Creatures.Ogopogo
                     }
                     
                     break;
+                
                 case (int)State.Rising:
                     if (transform.position.y - water.gameObject.transform.position.y < RiseHeight)
                     {
@@ -619,7 +622,7 @@ namespace Biodiversity.Creatures.Ogopogo
                         splineDone = false;
                     }
 
-                    if ((!(transform.position.y - water.gameObject.transform.position.y < RiseHeight)) && splineDone)
+                    if (!(transform.position.y - water.gameObject.transform.position.y < RiseHeight) && splineDone)
                     {
                         transform.position = new Vector3(transform.position.x, water.transform.position.y + RiseHeight, transform.position.z);
                         SwitchToBehaviourClientRpc((int)State.Goingdown);
@@ -627,6 +630,7 @@ namespace Biodiversity.Creatures.Ogopogo
                         splineDone = false;
                     }
                     break;
+                
                 case (int)State.Goingdown:
                     if (!splineDone)
                     {
@@ -638,11 +642,11 @@ namespace Biodiversity.Creatures.Ogopogo
                         GoDown(RiseSpeed);
                     }
                     
-                    if (playerGrabbed != null && dropRaycast && splineDone)
+                    if (playerGrabbed.IsNotNull && dropRaycast && splineDone)
                     {
                         // BiodiversityPlugin.Logger.LogInfo("dropping player");
-                        playerGrabbed.fallValue = 0f;
-                        playerGrabbed.fallValueUncapped = 0f;
+                        playerGrabbed.Value.fallValue = 0f;
+                        playerGrabbed.Value.fallValueUncapped = 0f;
                         SetPlayerGrabbedClientRpc(0, true);
                         inSpecialAnimationWithPlayer = null;
                     }
@@ -654,6 +658,7 @@ namespace Biodiversity.Creatures.Ogopogo
                         SetPlayerGrabbedClientRpc(0, true);
                     }
                     break;
+                
                 case (int)State.Reset:
                     if (resetTimer >= 12)
                     {
