@@ -5,11 +5,11 @@ using System.Text;
 using UnityEngine;
 using LethalLib.Modules;
 
-namespace Biodiversity.Items.RubberDuck
+namespace Biodiversity.Items.Developeritems
 {
-    internal class RubberDuckAssets(string Bundle) : BiodiverseAssetBundle<RubberDuckAssets>(Bundle)
+    internal class DeveloperScarpAssets(string Bundle) : BiodiverseAssetBundle<DeveloperScarpAssets>(Bundle)
     {
-        [LoadFromBundle("RubberDuckAsset")] 
+        [LoadFromBundle("RubberDuckAsset")]
         public Item DuckAsset;
     }
 }
