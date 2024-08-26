@@ -18,12 +18,13 @@ namespace Biodiversity.Creatures.WaxSoldier
         public Quaternion StartRotation;
         private AudioSource Theme;
         public NavMeshPath path;
-        void Awake()
+        public override void Start()
         {
             path = new NavMeshPath();
             Theme = GetComponent<AudioSource>();
             StartPosition = transform.position;
             StartRotation = transform.rotation;
+            NetworkBehaviour.Destroy(gameObject);
         }
         public override void DoAIInterval()
         {
