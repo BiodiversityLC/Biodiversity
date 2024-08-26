@@ -13,8 +13,8 @@ internal static class DevKnifePatch
     private static void DealDamageToSelf(GrabbableObject __instance)
     {
         #if DEBUG
-        if (__instance.playerHeldBy == null) return;
-        __instance.playerHeldBy.DamagePlayer(5);
+        // if (__instance.playerHeldBy == null) return;
+        // __instance.playerHeldBy.DamagePlayer(5);
         #endif
     }
 }

@@ -97,7 +97,7 @@ namespace Biodiversity.Creatures.Ogopogo
                 }
             }
             */
-            
+
             _playerDistances = new float[StartOfRound.Instance.allPlayerScripts.Length];
 
             // Loop through all triggers and get all the water
@@ -108,7 +108,8 @@ namespace Biodiversity.Creatures.Ogopogo
                     // BiodiversityPlugin.Logger.LogInfo(maybeWater);
                     // BiodiversityPlugin.Logger.LogInfo(maybeWater.isWater);
                     // BiodiversityPlugin.Logger.LogInfo(maybeWater.gameObject.CompareTag("SpawnDenialPoint"));
-                    if (maybeWater.isWater && !maybeWater.gameObject.CompareTag("SpawnDenialPoint"))
+                    //BiodiversityPlugin.Logger.LogInfo(maybeWater.transform.root.gameObject.name);
+                    if (maybeWater.isWater && !maybeWater.gameObject.CompareTag("SpawnDenialPoint") && maybeWater.transform.root.gameObject.name != "Systems")
                     {
                         waters.Add(maybeWater);
                     }
@@ -306,7 +307,6 @@ namespace Biodiversity.Creatures.Ogopogo
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
                 // BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
-                if (player.isInsideFactory) continue;
                 if (Distance2d(player.gameObject, gameObject) < range &&
                     (player.transform.position.y >= transform.position.y ||
                      currentBehaviourStateIndex == (int)State.Rising) && _playerDistances[player.playerClientId] > 15)
