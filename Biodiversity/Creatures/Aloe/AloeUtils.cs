@@ -70,6 +70,12 @@ public static class AloeUtils
                     return PathStatus.ValidButInLos;
                 }
             }
+
+            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            {
+                if (IsPlayerDead(player)) continue;
+                if (player.HasLineOfSightToPosition(position, 70f, 80, 1)) return PathStatus.ValidButInLos;
+            }
         }
 
         return PathStatus.Valid;
@@ -228,7 +234,7 @@ public static class AloeUtils
     /// <param name="eye">The eye transform of the AI.</param>
     /// <param name="width">The AI's view width in degrees.</param>
     /// <param name="range">The AI's view range in units.</param>
-    /// <param name="inputProximityAwareness">The proximity awareness range of the AI.</param>
+    /// <param name="proximityAwareness">The proximity awareness range of the AI.</param>
     /// <param name="logSource">The logger to use for debug logs, can be null.</param>
     /// <returns>Returns true if the AI has line of sight to the given position; otherwise, false.</returns>
     public static bool DoesEyeHaveLineOfSightToPosition(
@@ -236,10 +242,10 @@ public static class AloeUtils
         Transform eye,
         float width = 45f,
         int range = 60,
-        float inputProximityAwareness = -1f,
+        float proximityAwareness = -1f,
         ManualLogSource logSource = null)
     {
-        return Vector3.Distance(eye.position, pos) < range && !Physics.Linecast(eye.position, pos, StartOfRound.Instance.collidersAndRoomMaskAndDefault) && (Vector3.Angle(eye.forward, pos - eye.position) < width || Vector3.Distance(eye.position, pos) < inputProximityAwareness);
+        return Vector3.Distance(eye.position, pos) < range && !Physics.Linecast(eye.position, pos, StartOfRound.Instance.collidersAndRoomMaskAndDefault) && (Vector3.Angle(eye.forward, pos - eye.position) < width || Vector3.Distance(eye.position, pos) < proximityAwareness);
     }
 
     /// <summary>

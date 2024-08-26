@@ -564,9 +564,14 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         if (!_targetPlayer.IsNotNull) return;
+        
         _targetPlayer.Value.health += healAmount;
         if (HUDManager.Instance.localPlayer == _targetPlayer.Value)
+        {
             HUDManager.Instance.UpdateHealthUI(GameNetworkManager.Instance.localPlayerController.health, false);
+            _targetPlayer.Value.MakeCriticallyInjured(false);
+        }
+            
         LogDebug($"Target player health after last heal: {_targetPlayer.Value.health}");
     }
 

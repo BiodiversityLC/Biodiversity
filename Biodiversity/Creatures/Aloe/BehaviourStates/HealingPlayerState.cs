@@ -34,7 +34,8 @@ public class HealingPlayerState : BehaviourState
         
         AloeServerInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(AloeServerInstance.aloeId, true);
         AloeServerInstance.netcodeController.UnMuffleTargetPlayerVoiceClientRpc(AloeServerInstance.aloeId);
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.8f, 1f);
+        // AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.8f, 1f);
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.0f, 0.5f);
 
         int playerMaxHealth = AloeSharedData.Instance.GetPlayerMaxHealth(AloeServerInstance.ActualTargetPlayer.Value);
         if (AloeServerInstance.ActualTargetPlayer.Value.health == playerMaxHealth)
