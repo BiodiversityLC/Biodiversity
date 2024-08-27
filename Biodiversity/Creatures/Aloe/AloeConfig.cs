@@ -43,7 +43,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     
     [field: Tooltip("The required health a player needs to be or lower for the Aloe to kidnap and heal them.")]
     [field: Range(1, 100)]
-    public int PlayerHealthThresholdForHealing { get; private set; } = 45;
+    public int PlayerHealthThresholdForHealing { get; private set; } = 60;
 
     [field: Tooltip("The distance from the player the Aloe will stop and stare at the player from.")]
     [field: Range(0.5f, 100f)]
