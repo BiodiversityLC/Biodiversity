@@ -38,14 +38,18 @@ internal class DungeonGenPatch
 
     private static void CreateBrackenRoomAINodes(Transform brackenRoomTransform)
     {
+        Vector3 localPosition1 = new(-4.97f, 0f, -13.83f);
+        Vector3 localPosition2 = new(1.27f, 0f, -10.89f);
+        Vector3 localPosition3 = new(-3.76f, 0f, 1.92f);
+        
         GameObject node1 = new() { name = "AINode", tag = "AINode" };
         GameObject node2 = new() { name = "AINode1", tag = "AINode" };
         GameObject node3 = new() { name = "AINode2", tag = "AINode" };
         
-        node1.transform.position = brackenRoomTransform.position + new Vector3(-4.97f, 0f, -13.83f);
-        node2.transform.position = brackenRoomTransform.position + new Vector3(1.27f, 0f, -10.89f);
-        node3.transform.position = brackenRoomTransform.position + new Vector3(-3.76f, 0f, 1.92f);
-
+        node1.transform.position = brackenRoomTransform.TransformPoint(localPosition1);
+        node2.transform.position = brackenRoomTransform.TransformPoint(localPosition2);
+        node3.transform.position = brackenRoomTransform.TransformPoint(localPosition3);
+        
         List<GameObject> nodes = [node1, node2, node3];
         nodes.ForEach(node =>
         {
