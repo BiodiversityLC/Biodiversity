@@ -101,9 +101,11 @@ internal class VerminAI : BiodiverseAI
             if (SetWater != null) water = SetWater;
 
             transform.position = water.transform.position;
-            SetWanderPos();
 
             waterCollider = water.gameObject.GetComponent<BoxCollider>();
+
+            SetWanderPos();
+
 
             if (!SpawnedByOgo)
                 transform.position = new Vector3(transform.position.x, waterCollider.bounds.max.y, transform.position.z);

@@ -473,7 +473,7 @@ namespace Biodiversity.Creatures.Ogopogo
         // Handle grabbing
         public override void OnCollideWithPlayer(Collider other)
         {
-            if (isEnemyDead) return;
+            if (isEnemyDead || !IsServer) return;
             
             PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
             if (currentBehaviourStateIndex != (int)State.Reset && currentBehaviourStateIndex != (int)State.Goingdown)
@@ -489,8 +489,8 @@ namespace Biodiversity.Creatures.Ogopogo
             }
         }
 
-        [ClientRpc]
-        public void DisableIKClientRpc()
+        
+        public void DisableIK()
         {
             IK.enabled = false;
         }
@@ -504,7 +504,7 @@ namespace Biodiversity.Creatures.Ogopogo
             {
                 KillEnemyOnOwnerClient();
                 if (IsServer)
-                    DisableIKClientRpc();
+                    DisableIK();
             }
         }
 
