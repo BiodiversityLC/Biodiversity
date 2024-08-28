@@ -7,9 +7,10 @@ name = "Biodiversity"
 description = "Expanding the fauna of Lethal Company!"
 websiteUrl = "https://github.com/BiodiversityLC"
 containsNsfwContent = false
+
 [package.dependencies]
 BepInEx-BepInExPack = "5.4.2100"
-Evaisa-LethalLib = "0.15.1"
+Evaisa-LethalLib = "0.16.1"
 
 [build]
 icon = "./icon.png"
@@ -28,10 +29,15 @@ target = "./BepInEx/plugins/Biodiversity/assets"
 source = "../bin/Release/netstandard2.1/com.github.biodiversitylc.Biodiversity.dll"
 target = "./BepInEx/plugins/Biodiversity/"
 
+[[build.copy]]
+source = "./CHANGELOG.md"
+target = "./CHANGELOG.md"
+
 [publish]
 repository = "https://thunderstore.io"
-communities = [ "riskofrain2", ]
+communities = [ "lethal-company", ]
+
 [publish.categories]
-riskofrain2 = [ "items", "skills", ]
+lethal-company = [ "mods", "items", "monsters", ]
 
 

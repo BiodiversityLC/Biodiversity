@@ -38,6 +38,8 @@ public class AloeClient : MonoBehaviour
     public static readonly int KidnapRun = Animator.StringToHash("KidnapRun");
     public static readonly int Slap = Animator.StringToHash("Slap");
     private static readonly int Crush = Animator.StringToHash("Crush");
+    
+    private static readonly int PlayerCrouching = Animator.StringToHash("crouching");
 
     public const float SnatchAndGrabAudioLength = 2.019f;
 
@@ -383,7 +385,6 @@ public class AloeClient : MonoBehaviour
     {
         // Make the look target aim at a player
         {
-            
             float timeSinceLastUpdate = Time.time - _lastReceivedNewLookTargetPositionTime;
             float t = timeSinceLastUpdate / LookTargetPositionLerpTime;
 
@@ -424,6 +425,10 @@ public class AloeClient : MonoBehaviour
         if (player.inSpecialInteractAnimation &&
             player.currentTriggerInAnimationWith != null)
             player.currentTriggerInAnimationWith.CancelAnimationExternally();
+
+        player.isCrouching = false;
+        player.playerBodyAnimator.SetBool(PlayerCrouching, false);
+        yield return null;
         
         player.inSpecialInteractAnimation = true;
         player.inAnimationWithEnemy = _aloeServer.Value;
@@ -435,6 +440,7 @@ public class AloeClient : MonoBehaviour
         player.transform.LookAt(transform.position);
         animator.SetTrigger(Crush);
         yield return new WaitForSeconds(0.3f);
+        
         player.KillPlayer(Vector3.zero, true, CauseOfDeath.Crushing, 1);
     }
 
@@ -658,6 +664,8 @@ public class AloeClient : MonoBehaviour
             if (_targetPlayer.Value.inSpecialInteractAnimation && _targetPlayer.Value.currentTriggerInAnimationWith != null)
                 _targetPlayer.Value.currentTriggerInAnimationWith.CancelAnimationExternally();
 
+            _targetPlayer.Value.isCrouching = false;
+            _targetPlayer.Value.playerBodyAnimator.SetBool(PlayerCrouching, false);
             HandleMuffleTargetPlayerVoice(_aloeId);
             _targetPlayer.Value.inSpecialInteractAnimation = true;
             _targetPlayer.Value.inAnimationWithEnemy = _aloeServer.Value;
@@ -726,8 +734,8 @@ public class AloeClient : MonoBehaviour
 
         if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer.Value)
             HUDManager.Instance.DisplayTip(
-                LangParser.GetTranslation("You can escape!"), 
-                LangParser.GetTranslation("Mash the spacebar to escape from The Aloe!"),
+                LangParser.GetTranslation("tooltip.header.aloe.escape"), 
+                LangParser.GetTranslation("tooltip.body.aloe.escape"),
                 false,
                 true,
                 "LC_AloeGrabTip");
