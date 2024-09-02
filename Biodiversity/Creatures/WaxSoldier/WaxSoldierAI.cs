@@ -96,7 +96,7 @@ namespace Biodiversity.Creatures.WaxSoldier
             creatureAnimator.speed = 1f;
             creatureAnimator.SetInteger("state", 0);
             yield return new WaitForSeconds(0.1f);
-            State.Value = 1;
+            State.Value = 0;
         }
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
         {
