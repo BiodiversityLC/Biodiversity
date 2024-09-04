@@ -39,6 +39,7 @@ namespace Biodiversity.Creatures.Ogopogo
         private bool wallInFront;
         private float attackTimer;
         private bool dropRaycast;
+        private bool wanderOff;
 
         // Wander vars
         private float wanderTimer;
@@ -126,49 +127,39 @@ namespace Biodiversity.Creatures.Ogopogo
                 water = waters[Random.Range(0, waters.Count)];
                 transform.position = water.transform.position;
 
+
+                wanderOff = false;
+                foreach (string levelName in OgopogoHandler.Instance.Config.OgopogoWanderDisable.Split(","))
+                {
+                    if (levelName == StartOfRound.Instance.currentLevel.name)
+                        wanderOff = true;
+                }
+
+
                 bool usedPredefinedPos = false;
 
-                switch (StartOfRound.Instance.currentLevel.sceneName)
+                Dictionary<string, Vector3[]> Levels = new Dictionary<string, Vector3[]> { 
+                    { "VowLevel", new[]{ new Vector3(-104.800003f, -22.0610008f, 110.330002f), new Vector3(27f, -22.0610008f, -61.2000008f) } },
+                    { "AdamanceLevel", new[]{ new Vector3(58.1199989f, -11.04f, -1.85000002f), new Vector3(52.0800018f, -11.04f, -12.5900002f) } }
+                };
+
+                if (Levels.ContainsKey(StartOfRound.Instance.currentLevel.name))
                 {
-                    case "Level3Vow":
-                    {
-                        usedPredefinedPos = true;
+                    //BiodiversityPlugin.Logger.LogInfo("The thing is working");
+                    usedPredefinedPos = true;
+                    Vector3[] PosVectors = Levels[StartOfRound.Instance.currentLevel.name];
+                    int numberOfPos = PosVectors.Count();
 
-                        int vowrand = Random.Range(0, 2);
-                        if (vowrand == 0)
-                        {
-                            transform.position = new Vector3(-104.800003f, -22.0610008f, 110.330002f);
-                        }
-                        else
-                        {
-                            transform.position = new Vector3(27f, -22.0610008f, -61.2000008f);
-                        }
+                    int random = Random.Range(0, numberOfPos);
 
-                        break;
-                    }
-                    case "Level10Adamance":
-                    {
-                        usedPredefinedPos = true;
-
-                        int adarand = Random.Range(0, 2);
-                        if (adarand == 0)
-                        {
-                            transform.position = new Vector3(58.1199989f, -11.04f, -1.85000002f);
-                        }
-                        else
-                        {
-                            transform.position = new Vector3(52.0800018f, -11.04f, -12.5900002f);
-                        }
-
-                        break;
-                    }
+                    transform.position = PosVectors[random];
                 }
 
                 foreach (var waterd in waters)
                 {
                     if (usedPredefinedPos)
                     {
-                        if (Collision2d(transform.position, water.GetComponent<BoxCollider>()))
+                        if (Collision2d(transform.position, waterd.GetComponent<BoxCollider>()))
                         {
                             water = waterd;
                         }
@@ -445,6 +436,7 @@ namespace Biodiversity.Creatures.Ogopogo
                 vermin.GetComponentInChildren<NetworkObject>().Spawn(true);
                 VerminAI aIscript = vermin.gameObject.GetComponent<VerminAI>();
                 aIscript.SetWater = water;
+                aIscript.SetPos = transform.position;
                 aIscript.SpawnedByOgo = true;
             }
         }
@@ -474,6 +466,7 @@ namespace Biodiversity.Creatures.Ogopogo
         public override void OnCollideWithPlayer(Collider other)
         {
             if (isEnemyDead || !IsServer) return;
+            if (inSpecialAnimationWithPlayer != null) return;
             
             PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
             if (currentBehaviourStateIndex != (int)State.Reset && currentBehaviourStateIndex != (int)State.Goingdown)
@@ -546,10 +539,11 @@ namespace Biodiversity.Creatures.Ogopogo
                     {
                         // BiodiversityPlugin.Logger.LogInfo("Found wall while wandering");
                         SetWanderPos();
-                    } 
+                    }
                     else
                     {
-                        transform.position = Vector3.MoveTowards(transform.position, wanderPos, step1);
+                        if (!wanderOff)
+                            transform.position = Vector3.MoveTowards(transform.position, wanderPos, step1);
                     }
 
                     if (PlayerCheck(detectionRange))
@@ -581,7 +575,8 @@ namespace Biodiversity.Creatures.Ogopogo
 
                     if (Collision2d(newLocation, collider) && !wallInFront)
                     {
-                        transform.position = newLocation;
+                        if (!wanderOff)
+                            transform.position = newLocation;
                     }
                     
                     if (Distance2d(gameObject, player.gameObject) <= attackDistance && attackTimer < 0)

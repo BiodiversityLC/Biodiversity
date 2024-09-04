@@ -37,6 +37,7 @@ internal class VerminAI : BiodiverseAI
     private const float DetectionRange = 10f;
 
     [NonSerialized] public QuicksandTrigger SetWater;
+    [NonSerialized] public Vector3 SetPos;
 
     [NonSerialized] public bool SpawnedByOgo = false;
     [NonSerialized] private bool spawnedByVermin;
@@ -100,7 +101,8 @@ internal class VerminAI : BiodiverseAI
             water = waters[UnityEngine.Random.Range(0, waters.Count)];
             if (SetWater != null) water = SetWater;
 
-            transform.position = water.transform.position;
+            if (SetPos != null) { transform.position = SetPos; }
+            else { transform.position = water.transform.position; }
 
             waterCollider = water.gameObject.GetComponent<BoxCollider>();
 
