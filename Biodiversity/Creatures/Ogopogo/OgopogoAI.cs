@@ -469,6 +469,9 @@ namespace Biodiversity.Creatures.Ogopogo
             if (inSpecialAnimationWithPlayer != null) return;
             
             PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
+            if (_playerDistances[player.playerClientId] < 15) return;
+
+
             if (currentBehaviourStateIndex != (int)State.Reset && currentBehaviourStateIndex != (int)State.Goingdown)
             {
                 player.inAnimationWithEnemy = this;
