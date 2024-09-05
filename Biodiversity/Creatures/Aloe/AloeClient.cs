@@ -24,7 +24,7 @@ public class AloeClient : MonoBehaviour
     private string _aloeId;
 
     private static readonly int Metallic = Shader.PropertyToID("_Metallic");
-    private static readonly int BaseColour = Shader.PropertyToID("_BaseColour");
+    private static readonly int BaseColour = Shader.PropertyToID("_BaseColor");
 
     private static readonly int Speed = Animator.StringToHash("Speed");
     private static readonly int Dead = Animator.StringToHash("Dead");
@@ -710,7 +710,7 @@ public class AloeClient : MonoBehaviour
             
             // Make sure the player is on a navmesh
             Vector3 validPosition =
-                RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 1.5f);
+                RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
             _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
             
             HandleUnMuffleTargetPlayerVoice(_aloeId);

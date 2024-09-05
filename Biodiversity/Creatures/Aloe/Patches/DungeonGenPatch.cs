@@ -39,8 +39,8 @@ internal class DungeonGenPatch
     private static void CreateBrackenRoomAINodes(Transform brackenRoomTransform)
     {
         Vector3 localPosition1 = new(-4.97f, 0f, -13.83f);
-        Vector3 localPosition2 = new(1.27f, 0f, -10.89f);
-        Vector3 localPosition3 = new(-3.76f, 0f, 1.92f);
+        Vector3 localPosition2 = new(3.6215f, 0f, -10.8914f);
+        Vector3 localPosition3 = new(-3.7622f, 0f, -1.8452f);
         
         GameObject node1 = new() { name = "AINode", tag = "AINode" };
         GameObject node2 = new() { name = "AINode1", tag = "AINode" };
