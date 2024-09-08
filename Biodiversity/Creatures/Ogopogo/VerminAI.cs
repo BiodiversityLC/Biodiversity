@@ -92,6 +92,17 @@ internal class VerminAI : BiodiverseAI
                 return;
             }
 
+            foreach (string levelName in OgopogoHandler.Instance.Config.VerminDisableLevels.Split(","))
+            {
+                if (levelName == StartOfRound.Instance.currentLevel.name && TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Flooded)
+                {
+                    BiodiversityPlugin.Logger.LogInfo("Despawning Vermin because they are disabled during flooding on this moon.");
+                    SubtractFromPowerLevel();
+                    RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(gameObject.GetComponent<NetworkObject>()));
+                    return;
+                }
+            }
+
             if (!SpawnedByOgo && !spawnedByVermin)
             {
                 SpawnVermin();
