@@ -145,13 +145,12 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float escapeChargeThreshold = 100f;
     [SerializeField] private float lookBlendDuration = 0.5f;
     [SerializeField] private float smoothLookTargetPositionTime = 0.3f;
-    
-    private readonly Dictionary<ulong, List<Component>> _targetPlayersCachedRenderers = new();
 
     private readonly NullableObject<PlayerControllerB> _targetPlayer = new();
 
     private CachedValue<AloeServer> _aloeServer;
 
+    private CachedDictionary<ulong, List<Tuple<Component, bool>>> _targetPlayerCachedRenderers;
     private CachedDictionary<ulong, MeshRenderer> _playerVisorRenderers;
     private CachedDictionary<ulong, AudioLowPassFilter> _playerAudioLowPassFilters;
     private CachedDictionary<ulong, OccludeAudio> _playerOccludeAudios;
@@ -186,6 +185,50 @@ public class AloeClient : MonoBehaviour
         if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
 
         _aloeServer = new CachedValue<AloeServer>(GetComponent<AloeServer>);
+
+        _targetPlayerCachedRenderers = new CachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
+        {
+            List<Tuple<Component, bool>> rendererComponents = [];
+            
+            NullableObject<PlayerControllerB> player = new(StartOfRound.Instance.allPlayerScripts[playerId]);
+            if (!player.IsNotNull)
+            {
+                _mls.LogError("Cannot get target player renderers because the target player variable is null.");
+                return rendererComponents;
+            }
+
+            foreach (Tuple<string, Type> rendererTuple in _playerRendererObjects)
+            {
+                try
+                {
+                    Transform rendererTransform = _targetPlayer.Value.transform.Find(rendererTuple.Item1);
+                    if (rendererTransform == null)
+                    {
+                        _mls.LogWarning($"Transform not found for renderer: {rendererTuple.Item1}");
+                        continue;
+                    }
+
+                    LogDebug($"Found transform for renderer: {rendererTuple.Item1}");
+
+                    if (rendererTransform.GetComponent(rendererTuple.Item2) is Renderer rendererComponent)
+                    {
+                        LogDebug($"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
+                        rendererComponents.Add(new Tuple<Component, bool>(rendererComponent, rendererComponent.enabled));
+                    }
+                    else
+                    {
+                        _mls.LogWarning(
+                            $"Component of type {rendererTuple.Item2} not found or incorrect type for renderer: {rendererTuple.Item1}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _mls.LogError($"Error processing renderer: {rendererTuple.Item1} for player ID {playerId}: {ex.Message}");
+                }
+            }
+
+            return rendererComponents;
+        });
         
         _playerVisorRenderers = new CachedDictionary<ulong, MeshRenderer>(playerId =>
             StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
@@ -804,47 +847,20 @@ public class AloeClient : MonoBehaviour
         }
         
         ulong targetPlayerId = _targetPlayer.Value.actualClientId;
-        if (_targetPlayersCachedRenderers.TryGetValue(targetPlayerId, out List<Component> rendererComponents))
+        List<Tuple<Component, bool>> cachedRenderers = _targetPlayerCachedRenderers[targetPlayerId];
+        
+        if (cachedRenderers == null || cachedRenderers.Count == 0)
         {
-            foreach (Renderer rendererComponent in rendererComponents.Cast<Renderer>())
-            {
-                rendererComponent.enabled = setToEnabled;
-            }
+            _mls.LogWarning($"No renderer components cached for player ID {targetPlayerId}");
+            return;
         }
-        else
+
+        foreach ((Component component, bool isEnabledByDefault) in cachedRenderers)
         {
-            List<Component> newRendererComponents = [];
-            foreach (Tuple<string, Type> rendererTuple in _playerRendererObjects)
+            if (component is Renderer rendererComponent)
             {
-                try
-                {
-                    Transform rendererTransform = _targetPlayer.Value.transform.Find(rendererTuple.Item1);
-                    if (rendererTransform == null)
-                    {
-                        _mls.LogWarning($"Transform not found for renderer: {rendererTuple.Item1}");
-                        continue;
-                    }
-                    LogDebug($"Found transform for renderer: {rendererTuple.Item1}");
-
-                    if (rendererTransform.GetComponent(rendererTuple.Item2) is Renderer rendererComponent)
-                    {
-                        LogDebug($"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
-                        rendererComponent.enabled = setToEnabled;
-                        newRendererComponents.Add(rendererComponent);
-                    }
-                    else
-                    {
-                        _mls.LogWarning($"Component of type {rendererTuple.Item2} not found or incorrect type for renderer: {rendererTuple.Item1}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _mls.LogError($"Error processing renderer: {rendererTuple.Item1} for player ID {targetPlayerId}: {ex.Message}");
-                }
+                rendererComponent.enabled = isEnabledByDefault && setToEnabled;
             }
-
-            if (newRendererComponents.Count > 0)
-                _targetPlayersCachedRenderers[targetPlayerId] = newRendererComponents;
         }
     }
 
