@@ -42,7 +42,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	// );
 	
 	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:100,March:80,Artifice:100,Solace:80,Fray:32,Seichi:16,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8";
+	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:15,March:45,Artifice:95,Solace:80,Fray:32,Seichi:16,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8";
 
 	[field: Header("Leaf Boy")]
 	[field: Tooltip("Whether the Leaf Boy will spawn in games.")]
@@ -64,5 +64,5 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	// );
 	
 	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:60,Experimentation:0,Assurance:85,Offense:30,Artifice:0,Rend:10,Dine:0,Titan:0,Seichi:38,Fray:300,Vertigo:30,Integrity:25,Collateral:40,Hydro:38,USC Vortex:12";
+	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:15,Experimentation:0,Assurance:85,Offense:30,Artifice:0,Rend:0,Dine:0,Titan:0,Seichi:28,Fray:300,Vertigo:12,Integrity:25,Collateral:10,Hydro:38,USC Vortex:12";
 }
