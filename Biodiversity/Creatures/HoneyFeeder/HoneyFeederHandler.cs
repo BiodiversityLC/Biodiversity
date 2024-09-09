@@ -1,10 +1,6 @@
-﻿using Biodiversity.General;
-using LethalLib.Modules;
-using System;
+﻿using LethalLib.Modules;
 using System.Collections.Generic;
-using System.Text;
 using JetBrains.Annotations;
-using UnityEngine.Assertions;
 
 namespace Biodiversity.Creatures.HoneyFeeder;
 [UsedImplicitly]

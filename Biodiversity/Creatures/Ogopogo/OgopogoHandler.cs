@@ -1,5 +1,4 @@
 using JetBrains.Annotations;
-using LethalLib.Modules;
 
 namespace Biodiversity.Creatures.Ogopogo;
 

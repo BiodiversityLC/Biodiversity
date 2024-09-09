@@ -1,12 +1,5 @@
-﻿using Biodiversity.Creatures.Aloe;
-using Biodiversity.Creatures;
+﻿using Biodiversity.Creatures;
 using LethalLib.Modules;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine.Assertions;
-using Steamworks.Ugc;
-using static LethalLib.Modules.ContentLoader;
 
 namespace Biodiversity.Items.Developeritems
 {

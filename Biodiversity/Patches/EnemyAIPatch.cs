@@ -7,7 +7,6 @@ using Biodiversity.General;
 using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Biodiversity.Patches;
 

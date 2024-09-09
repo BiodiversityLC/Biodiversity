@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
-using JetBrains.Annotations;
 using LethalLevelLoader;
 using LethalLib.Modules;
 

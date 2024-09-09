@@ -1,8 +1,4 @@
 ﻿using Biodiversity.General;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
 
 namespace Biodiversity.Creatures.Murkydere;
 public class MurkydereAI : BiodiverseAI {

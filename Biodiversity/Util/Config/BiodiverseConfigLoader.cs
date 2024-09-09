@@ -1,16 +1,7 @@
 ﻿using BepInEx.Configuration;
-using Biodiversity.Patches;
-using Biodiversity.Util.Assetloading;
-using Steamworks;
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
-using UnityEngine.Timeline;
 
 namespace Biodiversity.Util.Config;
 [Serializable]

@@ -1,7 +1,5 @@
-using System.Collections.Generic;
 using BepInEx.Configuration;
 using Biodiversity.Util.Config;
-using LethalLib.Modules;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters;

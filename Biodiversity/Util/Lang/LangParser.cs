@@ -1,12 +1,8 @@
 ﻿using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
-using UnityEngine.UIElements;
 
 namespace Biodiversity.Util.Lang;
 internal class LangParser {
