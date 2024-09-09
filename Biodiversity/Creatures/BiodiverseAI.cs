@@ -1,15 +1,11 @@
 ﻿using GameNetcodeStuff;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.AI;
 
-namespace Biodiversity.General;
+namespace Biodiversity.Creatures;
 public abstract class BiodiverseAI : EnemyAI {
-    public bool ShouldProcessEnemy() {
+    protected bool ShouldProcessEnemy() {
         return isEnemyDead || StartOfRound.Instance.allPlayersDead;
     }
 
@@ -34,9 +30,9 @@ public abstract class BiodiverseAI : EnemyAI {
 
     // https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5
     protected bool HasFinishedAgentPath() {
-        if(!agent.pathPending) {
-            if(agent.remainingDistance <= agent.stoppingDistance) {
-                if(!agent.hasPath || agent.velocity.sqrMagnitude == 0f) {
+        if (!agent.pathPending) {
+            if (agent.remainingDistance <= agent.stoppingDistance) {
+                if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f) {
                     return true;
                 }
             }
@@ -52,10 +48,11 @@ public abstract class BiodiverseAI : EnemyAI {
         return GetRandomPositionOnNavMesh(player.transform.position + (UnityEngine.Random.insideUnitSphere * radius) + (UnityEngine.Random.onUnitSphere * minDistance));
     }
 
-    protected PlayerControllerB GetClosestPlayer(List<PlayerControllerB> players) {
+    protected PlayerControllerB GetClosestPlayer(IEnumerable<PlayerControllerB> players) {
         return GetClosestPlayer(players, transform.position);
     }
-    protected PlayerControllerB GetClosestPlayer(List<PlayerControllerB> players, Vector3 point) {
+
+    private PlayerControllerB GetClosestPlayer(IEnumerable<PlayerControllerB> players, Vector3 point) {
         return players.OrderBy(player => Vector3.Distance(player.transform.position, point)).First();
     }
 

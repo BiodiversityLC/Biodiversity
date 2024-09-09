@@ -1,6 +1,5 @@
 using System.Collections;
 using Biodiversity.Behaviours;
-using Biodiversity.General;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
@@ -22,7 +21,7 @@ public class FungiAI : BiodiverseAI {
 	[SerializeField]
 	private AudioClip[] footstepSFX = [];
 	
-	private AISearchRoutine wanderRoutine = new();
+	private readonly AISearchRoutine wanderRoutine = new();
 
 	private float speedBoostTime;
 	private bool isStunned;

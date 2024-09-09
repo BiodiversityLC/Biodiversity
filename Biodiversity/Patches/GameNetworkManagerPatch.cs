@@ -1,23 +1,21 @@
 ﻿using HarmonyLib;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Patches;
 [HarmonyPatch(typeof(GameNetworkManager))]
 internal static class GameNetworkManagerPatch {
-    internal static List<GameObject> networkPrefabsToRegister = [];
+    internal static readonly List<GameObject> NetworkPrefabsToRegister = [];
 
     [HarmonyPatch(nameof(GameNetworkManager.Start)), HarmonyPrefix]
-    static void AddNetworkPrefabs() {
+    private static void AddNetworkPrefabs() {
         BiodiversityPlugin.Instance.FinishLoading();
         
-        foreach(GameObject prefab in networkPrefabsToRegister) {
+        foreach(GameObject prefab in NetworkPrefabsToRegister) {
             NetworkManager.Singleton.AddNetworkPrefab(prefab);
             BiodiversityPlugin.Logger.LogDebug($"Registered {prefab.name} as a network prefab.");
         }
-        BiodiversityPlugin.Logger.LogInfo($"Succesfully registered {networkPrefabsToRegister.Count} network prefabs.");
+        BiodiversityPlugin.Logger.LogInfo($"Succesfully registered {NetworkPrefabsToRegister.Count} network prefabs.");
     }
 }

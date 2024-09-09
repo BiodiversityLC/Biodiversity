@@ -1,19 +1,14 @@
 ﻿using Biodiversity.Patches;
 using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.IO;
 using System.Reflection;
-using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Video;
 
 namespace Biodiversity.Util.Assetloading;
 internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle<T> {
-
-    public BiodiverseAssetBundle(string filePath) {
-        AssetBundle bundle = BiodiversityPlugin.Instance.LoadBundle(filePath);
+    protected BiodiverseAssetBundle(string filePath) {
+        AssetBundle bundle = BiodiversityPlugin.LoadBundle(filePath);
 
         Type type = typeof(T);
         foreach(FieldInfo field in type.GetFields()) {
@@ -26,11 +21,11 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
         foreach (UnityEngine.Object asset in bundle.LoadAllAssets()) {
             if (asset is GameObject gameObject) {
                 if(gameObject.GetComponent<NetworkObject>() == null) continue;
-                if(GameNetworkManagerPatch.networkPrefabsToRegister.Contains(gameObject)) continue;
-                GameNetworkManagerPatch.networkPrefabsToRegister.Add(gameObject);
+                if(GameNetworkManagerPatch.NetworkPrefabsToRegister.Contains(gameObject)) continue;
+                GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject);
             }
 
-            if (asset is AudioClip clip && !clip.preloadAudioData) {
+            if (asset is AudioClip { preloadAudioData: false } clip) {
                 BiodiversityPlugin.Logger.LogWarning($"Loading Audio data for '{clip.name}' because it does not have preloadAudioData enabled!");
                 clip.LoadAudioData();
             }
@@ -43,7 +38,7 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
         bundle.Unload(false);
     }
 
-    UnityEngine.Object LoadAsset(AssetBundle bundle, string path) {
+    private static UnityEngine.Object LoadAsset(AssetBundle bundle, string path) {
         UnityEngine.Object result = bundle.LoadAsset<UnityEngine.Object>(path);
         if(result == null) throw new ArgumentException(path + " is not valid in the assetbundle!");
 
