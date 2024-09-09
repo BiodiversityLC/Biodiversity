@@ -12,11 +12,11 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 
 	[field: Tooltip("Speed of fungi after being hit")]
 	[field: Range(3, 20)]
-	public float FungiBoostedSpeed { get; private set; } = 4f;
+	public float FungiBoostedSpeed { get; private set; } = 6f;
 	
 	[field: Tooltip("Length of boosted speed after being hit.")]
 	[field: Range(3, 20)]
-	public float FungiBoostTime { get; private set; } = 5f;
+	public float FungiBoostTime { get; private set; } = 6f;
 	
 	[field: Tooltip("Length of stunned time after being hit.")]
 	[field: Range(3, 20)]
@@ -61,6 +61,6 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	// 	}
 	// );
 	
-	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
+	[field: Tooltip("Spawn weight of the Leaf boys on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
 	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:15,Experimentation:0,Assurance:85,Offense:30,Artifice:0,Rend:0,Dine:0,Titan:0,Seichi:28,Fray:300,Vertigo:12,Integrity:25,Collateral:10,Hydro:38,USC Vortex:12";
 }
