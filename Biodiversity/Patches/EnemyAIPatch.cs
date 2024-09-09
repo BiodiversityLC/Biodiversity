@@ -1,23 +1,24 @@
-using Biodiversity.Creatures;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Biodiversity.General;
 using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Biodiversity.Patches;
 
 [HarmonyPatch(typeof(EnemyAI))]
-internal static class EnemyAIPatch {
+static class EnemyAIPatch {
 	
 	// TODO: basically extract most of this into some helper classes that let you patch in a yield return anywhere. i am just too lazy
 	// FIXME: broken
     
 	//[HarmonyPatch(nameof(EnemyAI.CurrentSearchCoroutine), MethodType.Enumerator), HarmonyTranspiler]
-	private static IEnumerable<CodeInstruction> AllowSearchRoutineDelay(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase __originalMethod) {
+	static IEnumerable<CodeInstruction> AllowSearchRoutineDelay(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase __originalMethod) {
 		Type coroutineType = __originalMethod.DeclaringType;
 
 		CodeMatcher matcher = new CodeMatcher(instructions, generator).MatchForward(true, new CodeMatch());

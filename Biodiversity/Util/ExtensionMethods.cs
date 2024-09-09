@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 
 namespace Biodiversity.Util;
@@ -9,9 +10,9 @@ internal static class ExtensionMethods {
     internal static Vector3 Direction(this Vector3 from, Vector3 to) {
         return (to - from).normalized;
     }
-    
+
     internal static (int hours, int minutes) GetCurrentTime(this TimeOfDay timeOfDay) {
-        int totalMinutes = Mathf.FloorToInt(timeOfDay.normalizedTimeOfDay * 60f * timeOfDay.numberOfHours + 360);
+        int totalMinutes = Mathf.FloorToInt((timeOfDay.normalizedTimeOfDay * 60f * timeOfDay.numberOfHours) + 360);
         int hour = Mathf.FloorToInt(totalMinutes / 60);
 
         return (hour, totalMinutes % 60);

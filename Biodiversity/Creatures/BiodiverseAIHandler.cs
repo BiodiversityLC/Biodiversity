@@ -15,7 +15,7 @@ internal abstract class BiodiverseAIHandler<T> where T : BiodiverseAIHandler<T> 
     }
 
     protected void AddSpawnRequirement(EnemyType type, Func<bool> callback) {
-        RoundManagerPatch.SpawnRequirements.Add(type, callback);
+        RoundManagerPatch.spawnRequirements.Add(type, callback);
     }
 
     protected void TranslateTerminalNode(TerminalNode node) {
