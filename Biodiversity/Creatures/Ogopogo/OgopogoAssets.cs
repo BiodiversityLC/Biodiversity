@@ -2,7 +2,8 @@ using Biodiversity.Util.Assetloading;
 
 namespace Biodiversity.Creatures.Ogopogo;
 
-class OgopogoAssets(string filePath) : BiodiverseAssetBundle<OgopogoAssets>(filePath) {
+internal class OgopogoAssets(string filePath) : BiodiverseAssetBundle<OgopogoAssets>(filePath) {
+#pragma	warning disable 0649
 	[LoadFromBundle("Ogopogo.asset")]
 	public EnemyType OgopogoEnemyType;
 
@@ -20,4 +21,5 @@ class OgopogoAssets(string filePath) : BiodiverseAssetBundle<OgopogoAssets>(file
 
 	[LoadFromBundle("VerminKW")]
 	public TerminalKeyword VerminTerminalKeyword;
+#pragma	warning restore 0649	
 }

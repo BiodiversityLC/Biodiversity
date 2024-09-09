@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Biodiversity.Util.Config;
 [Serializable]
 public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader<T> {
-    public BiodiverseConfigLoader(ConfigFile configFile) {
+    protected BiodiverseConfigLoader(ConfigFile configFile) {
         string CurrentHeader = "Misc";
         Type type = typeof(T);
         configFile.SaveOnConfigSet = false;
@@ -28,15 +28,14 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
                 }
 
 
-                ConfigDescription configDescription = new ConfigDescription(description);
+                ConfigDescription configDescription = new(description);
                 RangeAttribute rangeAttribute = (RangeAttribute)backingField.GetCustomAttribute(typeof(RangeAttribute));
-                if (rangeAttribute != null) {
-                    if (property.PropertyType == typeof(int)) {
-                        configDescription = new ConfigDescription(description, new AcceptableValueRange<int>((int)rangeAttribute.min, (int)rangeAttribute.max));
-                    } else {
-                        configDescription = new ConfigDescription(description, new AcceptableValueRange<float>(rangeAttribute.min, rangeAttribute.max));
-                    }
-                } else {
+                if (rangeAttribute != null)
+                {
+                    configDescription = property.PropertyType == typeof(int) ? new ConfigDescription(description, new AcceptableValueRange<int>((int)rangeAttribute.min, (int)rangeAttribute.max)) : new ConfigDescription(description, new AcceptableValueRange<float>(rangeAttribute.min, rangeAttribute.max));
+                } 
+                else 
+                {
                     configDescription = new ConfigDescription(description);
                 }
 

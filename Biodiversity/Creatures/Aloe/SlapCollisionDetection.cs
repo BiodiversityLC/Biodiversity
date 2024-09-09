@@ -8,8 +8,10 @@ namespace Biodiversity.Creatures.Aloe;
 
 public class SlapCollisionDetection : MonoBehaviour
 {
+#pragma warning disable 0649
     [SerializeField] private AudioSource slapAudioSource;
     [SerializeField] private AudioClip slapSfx;
+#pragma warning restore 0649
     
     private readonly HashSet<ulong> _playersAlreadyHitBySlap = [];
     private readonly HashSet<int> _enemiesAlreadyHitBySlap = [];

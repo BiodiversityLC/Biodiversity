@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Biodiversity.General;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.ProBuilder;
@@ -17,14 +16,13 @@ public class LeafyBoiAI : BiodiverseAI {
     private static readonly int _AnimationIdHash = Animator.StringToHash("AnimationId");
 
     private float timeUntilNextBarkSFX = 5;
-    float timeUntilNextStepAudibleSound = 3;
+    private float timeUntilNextStepAudibleSound = 3;
     
-    [Header("Audio")]
-    [SerializeField]
-    private AudioClip[] scaredSFX;
-
-    [SerializeField]
-    private AudioClip[] randomBarkSFX;
+#pragma warning disable 0649
+    [Header("Audio")] 
+    [SerializeField] private AudioClip[] scaredSFX;
+    [SerializeField] private AudioClip[] randomBarkSFX;
+#pragma warning restore 0649
     
     private AISearchRoutine wanderRoutine = new();
 

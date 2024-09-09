@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -10,8 +11,9 @@ internal static class ExtensionMethods {
         return (to - from).normalized;
     }
 
+    [SuppressMessage("ReSharper", "PossibleLossOfFraction")] // Disabled message because Rider was complaining about totalMinutes / 60
     internal static (int hours, int minutes) GetCurrentTime(this TimeOfDay timeOfDay) {
-        int totalMinutes = Mathf.FloorToInt((timeOfDay.normalizedTimeOfDay * 60f * timeOfDay.numberOfHours) + 360);
+        int totalMinutes = Mathf.FloorToInt(timeOfDay.normalizedTimeOfDay * 60f * timeOfDay.numberOfHours + 360);
         int hour = Mathf.FloorToInt(totalMinutes / 60);
 
         return (hour, totalMinutes % 60);

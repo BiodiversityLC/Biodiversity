@@ -1,6 +1,5 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
-using Biodiversity.General;
-using Biodiversity.Util.Scripts;
+﻿using Biodiversity.Util.Scripts;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
 

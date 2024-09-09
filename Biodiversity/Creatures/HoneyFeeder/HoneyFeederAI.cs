@@ -1,5 +1,4 @@
-﻿using Biodiversity.General;
-using Biodiversity.Util;
+﻿using Biodiversity.Util;
 using GameNetcodeStuff;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,21 +22,21 @@ public class HoneyFeederAI : BiodiverseAI {
         PARTLY
     }
 
-    List<GrabbableObject> possibleHives = [];
-    List<RedLocustBees> beesCache = [];
-    GrabbableObject targetHive;
+    private List<GrabbableObject> possibleHives = [];
+    private List<RedLocustBees> beesCache = [];
+    private GrabbableObject targetHive;
 
-    HoneyFeederNest nest;
+    private HoneyFeederNest nest;
     internal static HoneyFeederAI Instance { get; private set; }
 
     [field: SerializeField]
     public HoneyFeederConfig Config { get; private set; } = HoneyFeederHandler.Instance.Config;
 
-    AIStates _state = AIStates.WANDERING;
-    DigestionStates digestion = DigestionStates.NONE;
+    private AIStates _state = AIStates.WANDERING;
+    private DigestionStates digestion = DigestionStates.NONE;
 
-    float beeDigestionTimer = 0;
-    int originalDefenseDistance;
+    private float beeDigestionTimer = 0;
+    private int originalDefenseDistance;
 
     public AIStates State { 
         get => _state;
@@ -52,7 +51,7 @@ public class HoneyFeederAI : BiodiverseAI {
         }
     }
 
-    AISearchRoutine roamingRoutine = new();
+    private AISearchRoutine roamingRoutine = new();
 
     public override void Start() {
         base.Start();
@@ -69,12 +68,12 @@ public class HoneyFeederAI : BiodiverseAI {
         nest.transform.position = transform.position;
     }
 
-    IEnumerator RefreshCollectableHivesDelayed(float delay = 1) {
+    private IEnumerator RefreshCollectableHivesDelayed(float delay = 1) {
         yield return new WaitForSeconds(delay);
         RefreshCollectableHives();
     }
 
-    void OnDisable() {
+    private void OnDisable() {
         if(Instance == this) Instance = null;
     }
 
@@ -213,7 +212,7 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     public RedLocustBees GetBees() {
-        return beesCache.Where(bees => bees.hive == targetHive).First();
+        return beesCache.First(bees => bees.hive == targetHive);
     }
 
     public bool TryGetBees(out RedLocustBees bees) {
@@ -232,7 +231,7 @@ public class HoneyFeederAI : BiodiverseAI {
         }
     }
 
-    void DigestBees() {
+    private void DigestBees() {
         if(!TryGetBees(out var bees)) return;
 
         LogVerbose($"nom timer :3 {beeDigestionTimer}");
@@ -242,7 +241,7 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     // this is cooked :sob::sob:
-    void GrabItem(GrabbableObject item) {
+    private void GrabItem(GrabbableObject item) {
         item.parentObject = transform; // change to hold in hands i think??
         item.hasHitGround = false;
         item.isHeldByEnemy = true;
@@ -250,7 +249,7 @@ public class HoneyFeederAI : BiodiverseAI {
         item.EnablePhysics(false);
     }
 
-    void DropItem(GrabbableObject item) {
+    private void DropItem(GrabbableObject item) {
         item.parentObject = null;
         item.transform.SetParent(StartOfRound.Instance.propsContainer, true);
         item.EnablePhysics(true);
@@ -263,7 +262,7 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     [ClientRpc]
-    void DropItemClientRPC(NetworkObjectReference itemRef) {
+    private void DropItemClientRPC(NetworkObjectReference itemRef) {
         if(IsOwner) return;
         if(itemRef.TryGet(out var networkObject)) {
             DropItem(networkObject.GetComponent<GrabbableObject>());
@@ -272,21 +271,21 @@ public class HoneyFeederAI : BiodiverseAI {
 
 
     [ClientRpc]
-    void GrabItemClientRPC(NetworkObjectReference itemRef) {
+    private void GrabItemClientRPC(NetworkObjectReference itemRef) {
         if(IsOwner) return;
         if(itemRef.TryGet(out var networkObject)) {
             GrabItem(networkObject.GetComponent<GrabbableObject>());
         }
     }
 
-    void RefreshCollectableHives() {
+    private void RefreshCollectableHives() {
         LogVerbose("Refreshing possible hives.");
         beesCache = FindObjectsOfType<RedLocustBees>().ToList();
         possibleHives = beesCache.Select(bees => bees.hive).ToList();
         LogVerbose("Possible hives count: " + possibleHives.Count);
     }
 
-    void StartBackingUp() {
+    private void StartBackingUp() {
         float radius = UnityEngine.Random.Range(Config.MinBackupAmount, Config.MaxBackupAmount);
         Vector3 directionFromPlayer = targetPlayer.transform.position.Direction(transform.position);
         Vector3 backupOrigin = targetPlayer.transform.position + (directionFromPlayer * radius);
@@ -308,7 +307,7 @@ public class HoneyFeederAI : BiodiverseAI {
     }
 
     [ClientRpc]
-    void HitPlayerClientRpc(int playerId) {
+    private void HitPlayerClientRpc(int playerId) {
         if(playerId == (int)GameNetworkManager.Instance.localPlayerController.playerClientId) {
             GameNetworkManager.Instance.localPlayerController.DamagePlayer(Config.ChargeDamage, causeOfDeath: CauseOfDeath.Mauling);
         }

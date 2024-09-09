@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using UnityEngine;
 
@@ -139,7 +140,7 @@ public class AggressiveStalkingState : BehaviourState
     {
         public override bool ShouldTransitionBeTaken()
         {
-            bool isPlayerDead = AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value);
+            bool isPlayerDead = PlayerUtil.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value);
             AloeServerInstance.LogDebug($"Is player dead?: {isPlayerDead}");
             return isPlayerDead || !aggressiveStalkingState._isPlayerReachable;
         }

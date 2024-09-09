@@ -15,11 +15,9 @@ public class EnemyRaritiesPerMoon {
 	public int DefaultRarity { get; private set; }
 	
 	public EnemyRaritiesPerMoon(int defaultRarity, Dictionary<Levels.LevelTypes, int> VanillaRarities = null, Dictionary<string, int> ModdedRarities = null) {
-		this.DefaultRarity = defaultRarity;
-		if (VanillaRarities != null) this.VanillaRarities = VanillaRarities;
-		else this.VanillaRarities = [];
-		if (ModdedRarities != null) this.ModdedRarities = ModdedRarities;
-		else this.ModdedRarities = [];
+		DefaultRarity = defaultRarity;
+		this.VanillaRarities = VanillaRarities ?? [];
+		this.ModdedRarities = ModdedRarities ?? [];
 	}
 
     

@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using UnityEngine;
 
@@ -134,7 +135,7 @@ public class PassiveStalkingState : BehaviourState
     {
         public override bool ShouldTransitionBeTaken()
         {
-            if (AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value))
+            if (PlayerUtil.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value))
             {
                 AloeServerInstance.LogDebug("Player that I was stalking is dead, switching back to passive roaming.");
                 return true;

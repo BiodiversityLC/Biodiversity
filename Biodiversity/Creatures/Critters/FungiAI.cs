@@ -1,6 +1,5 @@
 using System.Collections;
 using Biodiversity.Behaviours;
-using Biodiversity.General;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
@@ -8,16 +7,15 @@ using UnityEngine;
 namespace Biodiversity.Creatures.Critters;
 
 public class FungiAI : BiodiverseAI {
+#pragma warning disable 0649	
 	[Header("Spore")]
-	[SerializeField]
-	private GameObject sporeCloudPrefab;
+	[SerializeField] private GameObject sporeCloudPrefab;
 
-	[SerializeField] 
-	private Transform sporeCloudOrigin;
+	[SerializeField] private Transform sporeCloudOrigin;
 
 	[Header("Footstep Audio")]
-	[SerializeField]
-	private AudioSource footstepSource;
+	[SerializeField] private AudioSource footstepSource;
+#pragma warning restore 0649	
 
 	[SerializeField]
 	private AudioClip[] footstepSFX = [];

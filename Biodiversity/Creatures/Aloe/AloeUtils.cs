@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
@@ -73,7 +74,7 @@ public static class AloeUtils
 
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                if (IsPlayerDead(player)) continue;
+                if (PlayerUtil.IsPlayerDead(player)) continue;
                 if (player.HasLineOfSightToPosition(position, 70f, 80, 1)) return PathStatus.ValidButInLos;
             }
         }
@@ -446,7 +447,7 @@ public static class AloeUtils
         List<PlayerControllerB> players = [];
         bool isThereAPlayerToIgnore = ignorePlayer != null;
 
-        players.AddRange(from player in StartOfRound.Instance.allPlayerScripts where !IsPlayerDead(player) where !isThereAPlayerToIgnore || player != ignorePlayer where player.HasLineOfSightToPosition(transform.position, playerViewWidth, playerViewRange) select player);
+        players.AddRange(from player in StartOfRound.Instance.allPlayerScripts where !PlayerUtil.IsPlayerDead(player) where !isThereAPlayerToIgnore || player != ignorePlayer where player.HasLineOfSightToPosition(transform.position, playerViewWidth, playerViewRange) select player);
 
         return players;
     }
@@ -460,7 +461,7 @@ public static class AloeUtils
     public static bool IsPlayerTargetable(PlayerControllerB player)
     {
         if (player == null) return false;
-        return !IsPlayerDead(player) &&
+        return !PlayerUtil.IsPlayerDead(player) &&
                player.isInsideFactory &&
                !(player.sinkingValue >= 0.7300000190734863) &&
                !AloeSharedData.Instance.IsPlayerKidnapBound(player);
@@ -498,17 +499,6 @@ public static class AloeUtils
         }
         
         return insideNodePositions;
-    }
-    
-    /// <summary>
-    /// Determines whether the specified player is dead.
-    /// </summary>
-    /// <param name="player">The player to check.</param>
-    /// <returns>Returns true if the player is dead or not controlled; otherwise, false.</returns>
-    public static bool IsPlayerDead(PlayerControllerB player)
-    {
-        if (player == null) return true;
-        return player.isPlayerDead || !player.isPlayerControlled;
     }
 
     public static void ChangeNetworkVar<T>(NetworkVariable<T> networkVariable, T newValue) where T : IEquatable<T>

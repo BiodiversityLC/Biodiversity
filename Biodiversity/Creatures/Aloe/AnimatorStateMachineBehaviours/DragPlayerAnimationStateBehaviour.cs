@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Biodiversity.Util;
+using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
@@ -10,7 +11,7 @@ public class DragPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
         if (!AloeServerInstance.IsServer) return;
         
         if (!AloeServerInstance.ActualTargetPlayer.IsNotNull || 
-            AloeUtils.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value) ||
+            PlayerUtil.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value) ||
             !AloeServerInstance.ActualTargetPlayer.Value.isInsideFactory) 
             AloeServerInstance.SwitchBehaviourState(AloeServer.States.Roaming);
         else

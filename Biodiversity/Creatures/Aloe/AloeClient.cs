@@ -5,6 +5,7 @@ using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Util.Lang;
+using Biodiversity.Util.Types;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -121,8 +122,11 @@ public class AloeClient : MonoBehaviour
 
     [Header("Visual Effects")] [Space(5f)] 
     [SerializeField] private Light healingLightEffect;
-    [SerializeField] private VisualEffect healingOrbEffect;
     [SerializeField] private ParticleSystem poofParticleSystem;
+    
+#pragma warning disable CS0169
+    [SerializeField] private VisualEffect healingOrbEffect;
+#pragma warning restore CS0169
 
     [Header("Animation")] [Space(5f)] 
     [SerializeField] private Animator animator;

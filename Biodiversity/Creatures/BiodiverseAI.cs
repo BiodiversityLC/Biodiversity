@@ -2,20 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Random = System.Random;
 
-namespace Biodiversity.General;
+namespace Biodiversity.Creatures;
 public abstract class BiodiverseAI : EnemyAI {
-    public bool ShouldProcessEnemy() {
+    protected bool ShouldProcessEnemy() {
         return isEnemyDead || StartOfRound.Instance.allPlayersDead;
     }
 
     /// <summary>
     /// Checks and outs any players that are nearby.
     /// </summary>
-    /// <param name="radius">unity units of the sphere radius</param>
-    /// <returns>
-    /// A bool on if any players are nearby.
-    /// </returns>
+    /// <param name="radius">Unity units of the sphere radius.</param>
+    /// <param name="players">The list of nearby players.</param>
+    /// <returns>A bool on if any players are nearby.</returns>
     protected bool GetPlayersCloseBy(float radius, out List<PlayerControllerB> players) {
         players = [];
 
@@ -40,18 +40,19 @@ public abstract class BiodiverseAI : EnemyAI {
         return false;
     }
 
-    protected Vector3 GetRandomPositionOnNavMesh(Vector3 position, float radius = 10f) {
-        return RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(position, 10f, layerMask: -1, randomSeed: new System.Random());
+    protected static Vector3 GetRandomPositionOnNavMesh(Vector3 position, float radius = 10f) {
+        return RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(position, 10f, layerMask: -1, randomSeed: new Random());
     }
 
     protected Vector3 GetRandomPositionNearPlayer(PlayerControllerB player, float radius = 15f, float minDistance = 0f) {
-        return GetRandomPositionOnNavMesh(player.transform.position + (UnityEngine.Random.insideUnitSphere * radius) + (UnityEngine.Random.onUnitSphere * minDistance));
+        return GetRandomPositionOnNavMesh(player.transform.position + UnityEngine.Random.insideUnitSphere * radius + UnityEngine.Random.onUnitSphere * minDistance);
     }
 
-    protected PlayerControllerB GetClosestPlayer(List<PlayerControllerB> players) {
+    protected PlayerControllerB GetClosestPlayer(IEnumerable<PlayerControllerB> players) {
         return GetClosestPlayer(players, transform.position);
     }
-    protected PlayerControllerB GetClosestPlayer(List<PlayerControllerB> players, Vector3 point) {
+    
+    protected PlayerControllerB GetClosestPlayer(IEnumerable<PlayerControllerB> players, Vector3 point) {
         return players.OrderBy(player => Vector3.Distance(player.transform.position, point)).First();
     }
 
