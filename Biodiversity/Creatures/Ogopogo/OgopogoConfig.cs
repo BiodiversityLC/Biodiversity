@@ -13,7 +13,7 @@ public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<Ogopo
 	public float DetectionRange { get; private set; } = 45f;
 
 	[field: Tooltip("The range that Ogopogo will lose you at")]
-	public float LoseRange { get; private set; } = 70f;
+	public float LoseRange { get; private set; } = 60f;
 
 	[field: Tooltip("The distance that Ogopogo will attack you at")]
 	public float AttackDistance { get; private set; } = 30f;
