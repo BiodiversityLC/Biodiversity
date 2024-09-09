@@ -1,7 +1,4 @@
 ﻿using Biodiversity.Util.Assetloading;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Biodiversity.Creatures.WaxSoldier
 {

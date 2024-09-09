@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
+﻿using UnityEngine;
 using System.Linq;
 
 // Taken from https://github.com/joaen/EasyIK. Please check this out this is very helpful.

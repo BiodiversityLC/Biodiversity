@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Biodiversity.Creatures.Ogopogo
+namespace Biodiversity.Creatures.Enemy
 {
     public class HeadRotation : MonoBehaviour
     {

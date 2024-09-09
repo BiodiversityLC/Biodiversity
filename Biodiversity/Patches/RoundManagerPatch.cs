@@ -8,24 +8,23 @@ namespace Biodiversity.Patches;
 // FIXME: This patch is currently broken and like yeah... dont
 //[HarmonyPatch(typeof(RoundManager))]
 internal static class RoundManagerPatch {
-    internal static readonly Dictionary<EnemyType, Func<bool>> SpawnRequirements = [];
+    internal static Dictionary<EnemyType, Func<bool>> spawnRequirements = [];
 
-    private static bool CanEnemySpawn(EnemyType type)
-    {
-        if (SpawnRequirements.TryGetValue(type, out Func<bool> callback)) {
+    static bool CanEnemySpawn(EnemyType type) {
+        if(spawnRequirements.TryGetValue(type, out Func<bool> callback)) {
             BiodiversityPlugin.Logger.LogInfo($"doing callback for {type.enemyName}");
             bool result = callback();
-            if (!result)
+            if(!result)
                 BiodiversityPlugin.Logger.LogInfo($"Callback for {type.enemyName} blocked the spawning!");
 
             return result;
+        } else {
+            return true;
         }
-
-        return true;
     }
 
     [HarmonyPatch(nameof(RoundManager.SpawnRandomOutsideEnemy)), HarmonyPatch(nameof(RoundManager.SpawnRandomDaytimeEnemy)), HarmonyTranspiler]
-    private static IEnumerable<CodeInstruction> ComplexSpawningRequirementsOutside(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
+    static IEnumerable<CodeInstruction> ComplexSpawningRequirementsOutside(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         return new CodeMatcher(instructions, generator)
             .MatchForward(true, 
                 new CodeMatch(OpCodes.Ldarg_0),
@@ -53,7 +52,7 @@ internal static class RoundManagerPatch {
     }
 
     [HarmonyPatch(nameof(RoundManager.EnemyCannotBeSpawned)), HarmonyPostfix]
-    private static void ComplexSpawningRequirementsInside(RoundManager __instance, int enemyIndex, ref bool __result) {
+    static void ComplexSpawningRequirementsInside(RoundManager __instance, int enemyIndex, ref bool __result) {
         __result = __result && CanEnemySpawn(__instance.currentLevel.Enemies[enemyIndex].enemyType);
     }
 }

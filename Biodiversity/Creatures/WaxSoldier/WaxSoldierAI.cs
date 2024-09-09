@@ -1,9 +1,5 @@
 ﻿using GameNetcodeStuff;
-using System;
 using System.Collections;
-using System.IO;
-using System.Text;
-using Unity;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;

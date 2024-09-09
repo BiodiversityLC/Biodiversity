@@ -1,10 +1,9 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity.General;
+using Biodiversity.Util;
 using GameNetcodeStuff;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -85,7 +84,7 @@ public class HoneyFeederAI : BiodiverseAI {
 
         switch(State) {
             case AIStates.ASLEEP:
-                if(TimeOfDay.Instance.HasPassedTime(ExtensionMethods.ParseTimeString(Config.WakeUpTime))) {
+                if(TimeOfDay.Instance.HasPassedTime(TimeOfDay.Instance.ParseTimeString(Config.WakeUpTime))) {
                     LogVerbose("Honeyfeeder is waking up!");
                     State = AIStates.WANDERING;
                 }
@@ -188,7 +187,7 @@ public class HoneyFeederAI : BiodiverseAI {
                 }
                 agent.enabled = false;
 
-                LogVerbose($"Current time: {TimeOfDay.Instance.GetCurrentTime()}. Digested time: {ExtensionMethods.ParseTimeString(Config.TimeWhenPartlyDigested)}");
+                LogVerbose($"Current time: {TimeOfDay.Instance.GetCurrentTime()}. Digested time: {TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)}");
 
                 DigestBees();
                 if(targetHive.playerHeldBy != null) {
@@ -198,7 +197,7 @@ public class HoneyFeederAI : BiodiverseAI {
                         bees.defenseDistance = originalDefenseDistance;
                 }
 
-                if(TimeOfDay.Instance.HasPassedTime(ExtensionMethods.ParseTimeString(Config.TimeWhenPartlyDigested)) && digestion != DigestionStates.PARTLY) {
+                if(TimeOfDay.Instance.HasPassedTime(TimeOfDay.Instance.ParseTimeString(Config.TimeWhenPartlyDigested)) && digestion != DigestionStates.PARTLY) {
                     digestion = DigestionStates.PARTLY;
                     LogVerbose("Set digestion status to Partly.");
 

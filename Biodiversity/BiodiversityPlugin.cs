@@ -24,7 +24,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     internal new static BiodiversityConfig Config { get; private set; }
 
-    private static readonly (string, string)[] SillyQuotes = [
+    static readonly (string, string)[] silly_quotes = [
         ("don't get me wrong, I love women", "monty"),
         ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
         ("thumpy wumpy", "monty"),
@@ -70,7 +70,8 @@ public class BiodiversityPlugin : BaseUnityPlugin
         
         Logger.LogInfo("Registering the silly little creatures.");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
-            x.BaseType is { IsGenericType: true }
+            x.BaseType != null
+            && x.BaseType.IsGenericType
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
             && x.Name != "HoneyFeederHandler"
         ).ToList();
@@ -84,22 +85,22 @@ public class BiodiversityPlugin : BaseUnityPlugin
                 continue;
             }
             Logger.LogDebug($"Creating {type.Name}");
-            type.GetConstructor([])?.Invoke([]);
+            type.GetConstructor([]).Invoke([]);
         }
         Logger.LogInfo($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
         
         timer.Stop();
 
-        (string, string) quote = SillyQuotes[UnityEngine.Random.Range(0, SillyQuotes.Length)];
+        (string, string) quote = silly_quotes[UnityEngine.Random.Range(0, silly_quotes.Length)];
         Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
     }
 
     //Totally didn't copy this from sirenhead because I didn't want to write it again
-    private (Dictionary<LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) SolveLevels(string config, bool enemyEnabled)
+    (Dictionary<LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) SolveLevels(string config, bool enabled)
     {
-        Dictionary<LevelTypes, int> spawnRateByLevelType = new();
-        Dictionary<string, int> spawnRateByCustomLevelType = new();
+        Dictionary<LevelTypes, int> spawnRateByLevelType = new Dictionary<LevelTypes, int>();
+        Dictionary<string, int> spawnRateByCustomLevelType = new Dictionary<string, int>();
 
         string[] configSplit = config.Split(',');
 
@@ -112,12 +113,14 @@ public class BiodiversityPlugin : BaseUnityPlugin
                 continue;
             }
 
-            if (!int.TryParse(levelDef[1], out int spawnrate))
+            int spawnrate = 0;
+
+            if (!int.TryParse(levelDef[1], out spawnrate))
             {
                 continue;
             }
 
-            if (Enum.TryParse(levelDef[0], true, out LevelTypes levelType))
+            if (Enum.TryParse<LevelTypes>(levelDef[0], true, out LevelTypes levelType))
             {
                 spawnRateByLevelType[levelType] = spawnrate;
                 Logger.LogInfo($"Registered spawn rate for level type {levelType} to {spawnrate}");
@@ -129,10 +132,17 @@ public class BiodiversityPlugin : BaseUnityPlugin
             }
         }
 
-        return enemyEnabled ? (spawnRateByLevelType, spawnRateByCustomLevelType) : (null, null);
+        if (enabled)
+        {
+            return (spawnRateByLevelType, spawnRateByCustomLevelType);
+        }
+        else
+        {
+            return (null, null);
+        }
     }
 
-    private static void NetcodePatcher()
+    private void NetcodePatcher()
     {
         var types = Assembly.GetExecutingAssembly().GetLoadableTypes();
         foreach (var type in types)
@@ -149,14 +159,14 @@ public class BiodiversityPlugin : BaseUnityPlugin
         }
     }
 
-    internal ConfigFile CreateConfig(string configName)
+    internal ConfigFile CreateConfig(string name)
     {
-        return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + configName + ".cfg"), saveOnInit: false, MetadataHelper.GetMetadata(this));
+        return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + name + ".cfg"), saveOnInit: false, MetadataHelper.GetMetadata(this));
     }
     
-    internal static AssetBundle LoadBundle(string bundleName) {
-        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? throw new InvalidOperationException($"Could not get bundle with name {bundleName}"), "assets", bundleName));
-        Logger.LogDebug($"[AssetBundle Loading] {bundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
+    internal AssetBundle LoadBundle(string name) {
+        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "assets", name));
+        Logger.LogDebug($"[AssetBundle Loading] {name} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
 
         return bundle;
     }

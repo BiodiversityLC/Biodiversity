@@ -5,32 +5,32 @@ using System.IO;
 using System.Reflection;
 
 namespace Biodiversity.Util.Lang;
-internal static class LangParser {
-    internal static Dictionary<string, string> Languages { get; private set; }
-    internal static Dictionary<string, object> LoadedLanguage { get; private set; }
+internal class LangParser {
+    internal static Dictionary<string, string> languages { get; private set; }
+    internal static Dictionary<string, object> loadedLanguage { get; private set; }
 
     internal static void Init() {
         using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Biodiversity.Util.Lang.defs.json");
         using StreamReader reader = new(stream);
         string result = reader.ReadToEnd();
 
-        Languages = JsonConvert.DeserializeObject<Dictionary<string, string>>(result);
+        languages = JsonConvert.DeserializeObject<Dictionary<string, string>>(result);
     }
 
     internal static Dictionary<string, object> LoadLanguage(string id) {
-        using Stream stream = File.Open(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "lang", id + ".json"), FileMode.Open);
-        using StreamReader reader = new(stream);
+        using Stream stream = File.Open(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "lang", id + ".json"), FileMode.Open);
+        using StreamReader reader = new StreamReader(stream);
         string result = reader.ReadToEnd();
         return JsonConvert.DeserializeObject<Dictionary<string, object>>(result);
     }
 
     internal static void SetLanguage(string id) {
-        LoadedLanguage = LoadLanguage(id);
+        loadedLanguage = LoadLanguage(id);
     }
 
     internal static string GetTranslation(string translation) {
 
-        if(LoadedLanguage.TryGetValue(translation, out var result)) {
+        if(loadedLanguage.TryGetValue(translation, out var result)) {
             return (string)result;
         }
 
@@ -44,11 +44,12 @@ internal static class LangParser {
     }
 
     internal static JArray GetTranslationSet(string translation) {
-        if(LoadedLanguage.TryGetValue(translation, out var result)) {
+
+        if(loadedLanguage.TryGetValue(translation, out var result)) {
             BiodiversityPlugin.Logger.LogInfo(result.GetType());
             return result as JArray;
         }
 
-        return [GetTranslation("lang.missing").Replace("<translation_id>", translation)];
+        return new JArray { GetTranslation("lang.missing").Replace("<translation_id>", translation) };
     }
 }

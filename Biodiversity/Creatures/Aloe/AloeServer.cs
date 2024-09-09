@@ -7,6 +7,7 @@ using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.General;
 using GameNetcodeStuff;
 using UnityEngine;
 using Logger = BepInEx.Logging.Logger;

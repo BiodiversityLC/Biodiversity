@@ -1,10 +1,7 @@
 ﻿using BepInEx.Configuration;
 using Biodiversity.Util.Config;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace Biodiversity.Creatures.HoneyFeeder;
 [Serializable]
