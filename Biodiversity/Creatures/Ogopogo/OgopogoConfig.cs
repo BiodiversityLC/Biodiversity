@@ -7,7 +7,7 @@ namespace Biodiversity.Creatures.Ogopogo;
 public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<OgopogoConfig>(configFile) {
 	[field: Header("Vermin")]
 	[field: Tooltip("Turn to false to disable Vermin spawning")]
-	public bool EnableVermin { get; private set; } = false;
+	public bool EnableVermin { get; private set; } = true;
 
 	[field: Tooltip("The range that Ogopogo will detect you at")]
 	public float DetectionRange { get; private set; } = 45f;
@@ -48,5 +48,5 @@ public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<Ogopo
 	public string VerminRarity { get; private set; } = "All:100";
 
 	[field: Tooltip("Moons where Vermin is disabled during flooding.")]
-	public string VerminDisableLevels { get; private set; } = "AdamanceLevel,DineLevel";
+	public string VerminDisableLevels { get; private set; } = "AdamanceLevel,DineLevel,ArtificeLevel,Etern";
 }
