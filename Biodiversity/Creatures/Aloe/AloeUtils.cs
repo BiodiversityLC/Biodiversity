@@ -510,13 +510,13 @@ public static class AloeUtils
     }
     
     /// <summary>
-    /// Smoothly moves the specified transform to the target position.
+    /// Smoothly moves the specified transform position to the target position.
     /// </summary>
     /// <param name="transform">The transform to move.</param>
     /// <param name="targetPosition">The target position to move to.</param>
     /// <param name="smoothTime">The time it takes to smooth to the target position.</param>
     /// <param name="velocity">A reference to the current velocity, this is modified by the function.</param>
-    public static void SmoothMoveTransformTo(Transform transform, Vector3 targetPosition, float smoothTime, ref Vector3 velocity)
+    public static void SmoothMoveTransformPositionTo(Transform transform, Vector3 targetPosition, float smoothTime, ref Vector3 velocity)
     {
         transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothTime);
     }
