@@ -86,7 +86,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("The power level of the Aloe.")]
     [field: Range(0f, 15f)]
-    public float PowerLevel { get; private set; } = 3f;
+    public float PowerLevel { get; private set; } = 1f;
 
     [field: Tooltip("The max amount of Aloes that can spawn in the map.")]
     [field: Range(0, 10)]
