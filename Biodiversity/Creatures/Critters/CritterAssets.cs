@@ -1,4 +1,6 @@
 using Biodiversity.Util.Assetloading;
+using Biodiversity.Util.Attributes;
+
 #pragma warning disable CS0649 // Fields are filled in with reflection.
 
 namespace Biodiversity.Creatures.Critters;

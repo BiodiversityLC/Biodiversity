@@ -12,8 +12,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// It makes sure the Aloe and the player don't get blown up if the Aloe goes over a seamine while kidnapping.
 /// </summary>
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-[ModConditionalPatch("Surfaced.Seamine", "OnTriggerEnter", false, "PrefixTriggerEntry", HarmonyPatchType.Prefix)]
-[ModConditionalPatch("Surfaced.Seamine", "OnTriggerExit", false, "PrefixTriggerExit", HarmonyPatchType.Prefix)]
+[ModConditionalPatch("Surfaced", "Seamine", "OnTriggerEnter", "PrefixTriggerEntry", HarmonyPatchType.Prefix)]
 internal class SeaminePatches
 {
     [HarmonyPrefix]
@@ -33,26 +32,6 @@ internal class SeaminePatches
             return false;
         }
 
-        return true;
-    }
-    
-    [HarmonyPrefix]
-    private static bool PrefixTriggerExit(object __instance, Collider other)
-    {
-        if (!IsHost(__instance) && !IsServer(__instance)) return true;
-        
-        AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
-        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.aloeId))
-        {
-            return false;
-        }
-
-        PlayerControllerB component = other.gameObject.GetComponent<PlayerControllerB>();
-        if (component != null && AloeSharedData.Instance.IsPlayerKidnapBound(component) && !component.isPlayerDead)
-        {
-            return false;
-        }
-        
         return true;
     }
     

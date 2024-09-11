@@ -8,22 +8,20 @@ using LethalLib.Modules;
 
 namespace Biodiversity.Util.Config;
 
-public class EnemyRaritiesPerMoon {
-	public Dictionary<Levels.LevelTypes, int> VanillaRarities;
-	public Dictionary<string, int> ModdedRarities;
+public class EnemyRaritiesPerMoon(
+	int defaultRarity,
+	Dictionary<Levels.LevelTypes, int> vanillaRarities = null,
+	Dictionary<string, int> moddedRarities = null)
+{
+	public readonly Dictionary<Levels.LevelTypes, int> VanillaRarities = vanillaRarities ?? [];
+	public readonly Dictionary<string, int> ModdedRarities = moddedRarities ?? [];
     
-	public int DefaultRarity { get; private set; }
-	
-	public EnemyRaritiesPerMoon(int defaultRarity, Dictionary<Levels.LevelTypes, int> VanillaRarities = null, Dictionary<string, int> ModdedRarities = null) {
-		DefaultRarity = defaultRarity;
-		this.VanillaRarities = VanillaRarities ?? [];
-		this.ModdedRarities = ModdedRarities ?? [];
-	}
+	public int DefaultRarity { get; private set; } = defaultRarity;
 
-    
+
 	public void Bind(ConfigFile file, string section) {
-		foreach(Levels.LevelTypes vanillaMoon in Enum.GetValues(typeof(Levels.LevelTypes))) {
-			if(vanillaMoon is Levels.LevelTypes.All or Levels.LevelTypes.Modded or Levels.LevelTypes.None or Levels.LevelTypes.Vanilla) continue;
+		foreach (Levels.LevelTypes vanillaMoon in Enum.GetValues(typeof(Levels.LevelTypes))) {
+			if (vanillaMoon is Levels.LevelTypes.All or Levels.LevelTypes.Modded or Levels.LevelTypes.None or Levels.LevelTypes.Vanilla) continue;
 			VanillaRarities[vanillaMoon] = file.Bind(
 				section,
 				vanillaMoon.ToString(),
@@ -39,7 +37,7 @@ public class EnemyRaritiesPerMoon {
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-	void BindLLL(ConfigFile file, string section) {
+	private void BindLLL(ConfigFile file, string section) {
 		BiodiversityPlugin.Logger.LogDebug($"{PatchedContent.ExtendedMods.Count} mods");
 		BiodiversityPlugin.Logger.LogDebug($"{string.Join(", ", PatchedContent.AllLevelSceneNames)}");
 
@@ -48,7 +46,7 @@ public class EnemyRaritiesPerMoon {
 				continue;
 			}
 			
-			foreach(ExtendedLevel level in mod.ExtendedLevels) {
+			foreach (ExtendedLevel level in mod.ExtendedLevels) {
 				string name = level.NumberlessPlanetName;
 				ModdedRarities[name] = file.Bind(
 					section,

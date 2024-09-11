@@ -17,6 +17,7 @@ using UnityEngine;
 using HarmonyPatchType = HarmonyLib.HarmonyPatchType;
 
 namespace Biodiversity;
+
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 [BepInDependency(LethalLib.Plugin.ModGUID)]
 public class BiodiversityPlugin : BaseUnityPlugin
@@ -28,7 +29,8 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     private Harmony harmony;
 
-    private static readonly (string, string)[] silly_quotes = [
+    private static readonly (string, string)[] silly_quotes =
+    [
         ("don't get me wrong, I love women", "monty"),
         ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
         ("thumpy wumpy", "monty"),
@@ -43,39 +45,55 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
-        Logger.LogInfo("Creating Harmony instance...");
+        Logger.LogDebug("Creating Harmony instance...");
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
-        
-        Logger.LogInfo("Running Harmony patches...");
+
+        Logger.LogDebug("Running Harmony patches...");
         ApplyPatches();
 
         LangParser.Init();
-        
-        Logger.LogInfo("Creating base biodiversity config.");
+
+        Logger.LogDebug("Creating base biodiversity config.");
         Config = new BiodiversityConfig(base.Config);
 
-        Logger.LogInfo("Patching netcode.");
+        Logger.LogDebug("Patching netcode.");
         NetcodePatcher();
 
-        Logger.LogInfo("Doing language stuff");
+        Logger.LogDebug("Doing language stuff");
         LangParser.SetLanguage(Config.Language);
 
-        Logger.LogInfo(LangParser.GetTranslation("lang.test"));
+        Logger.LogDebug(LangParser.GetTranslation("lang.test"));
 
         timer.Stop();
-        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has setup. ({timer.ElapsedMilliseconds}ms)");
+        Logger.LogInfo(
+            $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has setup. ({timer.ElapsedMilliseconds}ms)");
     }
 
+    /// <summary>
+    /// Finalizes the loading process for the plugin, initializes enemies, loads assets, and registers creatures.
+    /// Also logs a silly quote and the total time taken for loading.
+    /// </summary>
+    /// <remarks>
+    /// This method:
+    /// <list type="bullet">
+    /// <item>Initializes the <c>VanillaEnemies</c> class.</item>
+    /// <item>Loads a specific asset bundle for video clips.</item>
+    /// <item>Registers AI handlers for creatures in the plugin, excluding the <c>HoneyFeederHandler</c>.</item>
+    /// <item>Logs the registration of each creature handler.</item>
+    /// <item>Logs a silly quote.</item>
+    /// </list>
+    /// The method measures the total loading time using a stopwatch and logs the time taken.
+    /// </remarks>
     internal void FinishLoading()
     {
         Stopwatch timer = Stopwatch.StartNew();
         VanillaEnemies.Init();
 
         // why does unity not let you preload video clips like audio clips.
-        Logger.LogInfo("Loading VideoClip bundle.");
+        Logger.LogDebug("Loading VideoClip bundle.");
         LoadBundle("biodiversity_video_clips");
-        
-        Logger.LogInfo("Registering the silly little creatures.");
+
+        Logger.LogDebug("Registering the silly little creatures.");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType is { IsGenericType: true }
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
@@ -87,66 +105,83 @@ public class BiodiversityPlugin : BaseUnityPlugin
             bool creatureEnabled = base.Config.Bind("Creatures", type.Name, true).Value;
             if (!creatureEnabled)
             {
-                Logger.LogWarning($"{type.Name} was skipped because it's disabled.");
+                Logger.LogDebug($"{type.Name} was skipped because it's disabled.");
                 continue;
             }
+
             Logger.LogDebug($"Creating {type.Name}");
             type.GetConstructor([])?.Invoke([]);
         }
-        
-        Logger.LogInfo($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
+
+        Logger.LogDebug($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
         timer.Stop();
 
         (string, string) quote = silly_quotes[UnityEngine.Random.Range(0, silly_quotes.Length)];
         Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
-        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
+        Logger.LogDebug(
+            $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
     }
 
+    /// <summary>
+    /// Applies Harmony patches dynamically based on attributes found in the current assembly.
+    /// </summary>
+    /// <remarks>
+    /// This method applies patches based on the <see cref="ModConditionalPatch"/> and <see cref="HarmonyPatch"/> attributes. 
+    /// It works by:
+    /// <list type="bullet">
+    /// <item>Checking if a required mod (specified by <c>ModConditionalPatch</c>) is loaded.</item>
+    /// <item>If the mod is loaded, it applies the appropriate patch (prefix, postfix, transpiler, or finalizer).</item>
+    /// <item>If no <c>ModConditionalPatch</c> is found, it falls back to applying patches using the <c>HarmonyPatch</c> attribute.</item>
+    /// </list>
+    /// This method handles patch failures by logging reasons such as missing classes, methods, or patch methods.
+    /// </remarks>
     private void ApplyPatches()
     {
-        //todo: actually make it work
-        CachedDictionary<string, Assembly> cachedModAssemblies = new(className => (from assembly in AppDomain.CurrentDomain.GetAssemblies() let targetType = assembly.GetType(className) where targetType != null select assembly).FirstOrDefault());
+        CachedDictionary<string, Assembly> cachedModAssemblies = new(assemblyName =>
+        {
+            return AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(assembly => assemblyName == assembly.GetName().Name);
+        });
+
         Type[] types = Assembly.GetExecutingAssembly().GetTypes();
 
         foreach (Type type in types)
         {
-            List<ModConditionalPatch> modConditionalAttrs = type.GetCustomAttributes<ModConditionalPatch>(true).ToList();
+            List<ModConditionalPatch> modConditionalAttrs =
+                type.GetCustomAttributes<ModConditionalPatch>(true).ToList();
             if (modConditionalAttrs.Any())
             {
                 foreach (ModConditionalPatch modConditionalAttr in modConditionalAttrs)
                 {
+                    string assemblyName = modConditionalAttr.AssemblyName;
                     string targetClassName = modConditionalAttr.TargetClassName;
                     string targetMethodName = modConditionalAttr.TargetMethodName;
-                    bool isStaticMethod = modConditionalAttr.IsStaticMethod;
                     string localPatchMethodName = modConditionalAttr.LocalPatchMethodName;
                     HarmonyPatchType patchType = modConditionalAttr.PatchType;
-                    
+
                     // Check if the required mod is installed
-                    Assembly otherModAssembly = cachedModAssemblies[targetClassName];
+                    Assembly otherModAssembly = cachedModAssemblies[assemblyName];
                     if (otherModAssembly == null)
                         continue;
-                    
-                    Logger.LogDebug($"Mod {targetClassName} is installed! Patching {targetClassName}.{targetMethodName} with {localPatchMethodName}");
+
+                    Logger.LogDebug($"Mod {assemblyName} is installed! Patching {targetClassName}.{targetMethodName} with {localPatchMethodName}");
+
                     Type targetClass = otherModAssembly.GetType(targetClassName);
-                    
                     if (targetClass == null)
                     {
                         Logger.LogDebug($"Could not patch due to the target class '{targetClassName}' being null.");
                         continue;
                     }
 
-                    BindingFlags flags = isStaticMethod
-                        ? BindingFlags.Public | BindingFlags.Static
-                        : BindingFlags.Public | BindingFlags.Instance;
-                    MethodInfo targetMethod = targetClass.GetMethod(targetMethodName, flags);
+                    const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+                    MethodInfo targetMethod = targetClass.GetMethods(flags).FirstOrDefault(m => m.Name == targetMethodName);
                     if (targetMethod == null)
                     {
                         Logger.LogDebug($"Could not patch due to the target method '{targetMethodName}' being null.");
                         continue;
                     }
 
-                    MethodInfo localPatchMethod = type.GetMethod(localPatchMethodName,
-                        BindingFlags.NonPublic | BindingFlags.Static);
+                    MethodInfo localPatchMethod = type.GetMethod(localPatchMethodName, BindingFlags.NonPublic | BindingFlags.Static);
                     if (localPatchMethod == null)
                     {
                         Logger.LogDebug($"Could not patch due to the local patch method '{localPatchMethodName}' being null.");
@@ -172,7 +207,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
                             Logger.LogError($"Could not patch because patch type '{patchType.ToString()}' is incompatible.");
                             break;
                     }
-                        
+
                     Logger.LogDebug($"Successfully patched {targetClassName}.{targetMethodName} with {localPatchMethodName} as {patchType}");
                 }
             }
@@ -206,7 +241,8 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     internal ConfigFile CreateConfig(string name)
     {
-        return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + name + ".cfg"), saveOnInit: false, MetadataHelper.GetMetadata(this));
+        return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + name + ".cfg"),
+            saveOnInit: false, MetadataHelper.GetMetadata(this));
     }
     
     internal AssetBundle LoadBundle(string name) {
@@ -215,6 +251,4 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
         return bundle;
     }
-    
-    
 }
