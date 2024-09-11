@@ -19,6 +19,7 @@ internal class SeaminePatches
     private static bool PrefixTriggerEntry(object __instance, Collider other)
     {
         if (!IsHost(__instance) && !IsServer(__instance)) return true;
+        if (AloeHandler.Instance.Config.LandminesBlowUpAloe) return true;
 
         AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.aloeId))

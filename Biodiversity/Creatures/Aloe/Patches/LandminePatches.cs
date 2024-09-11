@@ -18,6 +18,7 @@ internal class LandminePatch
     private static bool PrefixTriggerEntry(Landmine __instance, Collider other)
     {
         if (!__instance.IsHost && !__instance.IsServer) return true;
+        if (AloeHandler.Instance.Config.LandminesBlowUpAloe) return true;
 
         AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.aloeId))
@@ -39,6 +40,7 @@ internal class LandminePatch
     private static bool PrefixTriggerExit(Landmine __instance, Collider other)
     {
         if (!__instance.IsHost && !__instance.IsServer) return true;
+        if (AloeHandler.Instance.Config.LandminesBlowUpAloe) return true;
         
         AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.aloeId))

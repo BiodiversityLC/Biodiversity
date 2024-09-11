@@ -6,14 +6,13 @@ using UnityEngine.ProBuilder;
 namespace Biodiversity.Creatures.Critters;
 
 public class LeafyBoiAI : BiodiverseAI {
-    // TODO: Make these config
-	private const int SCARY_PLAYER_DISTANCE = 6;
-    private const float BASE_MOVEMENT_SPEED = 1.5F;
-    private const float SCARED_SPEED_MULTIPLIER = 4F;
-    private const float PLAYER_FORGET_TIME = 3f;
+    private float SCARY_PLAYER_DISTANCE;
+    private float BASE_MOVEMENT_SPEED;
+    private float SCARED_SPEED_MULTIPLIER;
+    private float PLAYER_FORGET_TIME;
 
     private float timeSinceSeenPlayer;
-    private static readonly int _AnimationIdHash = Animator.StringToHash("AnimationId");
+    private static readonly int AnimationIdHash = Animator.StringToHash("AnimationId");
 
     private float timeUntilNextBarkSFX = 5;
     private float timeUntilNextStepAudibleSound = 3;
@@ -31,10 +30,13 @@ public class LeafyBoiAI : BiodiverseAI {
         RUNNING, // actively running
         SCARED // recently ran away.
     }
+    
+    private static CritterConfig Config => CritterHandler.Instance.Config;
 
     private AIState _state = AIState.WANDERING;
     
-    public AIState State {
+    public AIState State 
+    {
         get => _state;
         set {
             if(_state == value) return;
@@ -42,8 +44,20 @@ public class LeafyBoiAI : BiodiverseAI {
             _state = value;
         }
     }
+
+    public override void Start()
+    {
+        base.Start();
+        Random.InitState(StartOfRound.Instance.randomMapSeed + thisEnemyIndex);
+
+        SCARY_PLAYER_DISTANCE = Config.LeafBoyScaryPlayerDistance;
+        BASE_MOVEMENT_SPEED = Config.LeafBoyBaseMovementSpeed;
+        SCARED_SPEED_MULTIPLIER = Config.LeafBoyScaredSpeedMultiplier;
+        PLAYER_FORGET_TIME = Config.LeafBoyPlayerForgetTime;
+    }
     
-    public override void DoAIInterval() {
+    public override void DoAIInterval() 
+    {
         base.DoAIInterval();
 
         CheckAnimations();
@@ -57,7 +71,8 @@ public class LeafyBoiAI : BiodiverseAI {
         
         ScanForPlayers();
         
-        switch (State) {
+        switch (State) 
+        {
             case AIState.WANDERING:
                 agent.speed = BASE_MOVEMENT_SPEED;
                 break;
@@ -70,7 +85,8 @@ public class LeafyBoiAI : BiodiverseAI {
             case AIState.SCARED:
                 agent.speed = BASE_MOVEMENT_SPEED * SCARED_SPEED_MULTIPLIER;
                 
-                if (timeSinceSeenPlayer > PLAYER_FORGET_TIME) {
+                if (timeSinceSeenPlayer > PLAYER_FORGET_TIME) 
+                {
                     State = AIState.WANDERING;
                 }
                 
@@ -78,12 +94,14 @@ public class LeafyBoiAI : BiodiverseAI {
         }
     }
 
-    public override void Update() {
+    public override void Update() 
+    {
         base.Update();
         timeSinceSeenPlayer += Time.deltaTime;
 
         timeUntilNextBarkSFX -= Time.deltaTime;
-        if (timeUntilNextBarkSFX < 0) {
+        if (timeUntilNextBarkSFX < 0) 
+        {
             timeUntilNextBarkSFX = Random.Range(40f, 90f);
             AudioClip clip = randomBarkSFX[Random.Range(0, randomBarkSFX.Length)];
             creatureSFX.PlayOneShot(clip);
@@ -92,28 +110,32 @@ public class LeafyBoiAI : BiodiverseAI {
         }
 
         timeUntilNextStepAudibleSound -= Time.deltaTime;
-        if (timeUntilNextStepAudibleSound < 0) {
+        if (timeUntilNextStepAudibleSound < 0) 
+        {
             timeUntilNextStepAudibleSound = Random.Range(3f, 6f);
             RoundManager.Instance.PlayAudibleNoise(transform.position);
         }
     }
 
-    private void CheckAnimations() {
-        var velocity = agent.velocity;
+    private void CheckAnimations() 
+    {
+        Vector3 velocity = agent.velocity;
 
-        var xVelocity = velocity.x;
-        var zVelocity = velocity.z;
+        float xVelocity = velocity.x;
+        float zVelocity = velocity.z;
 
-        if (xVelocity.Approx(0, 0.1F) && zVelocity.Approx(0, 0.1F)) {
-            creatureAnimator.SetInteger(_AnimationIdHash, 0);
+        if (xVelocity.Approx(0, 0.1F) && zVelocity.Approx(0, 0.1F)) 
+        {
+            creatureAnimator.SetInteger(AnimationIdHash, 0);
             return;
         }
 
-        creatureAnimator.SetInteger(_AnimationIdHash, currentBehaviourStateIndex + 1);
+        creatureAnimator.SetInteger(AnimationIdHash, currentBehaviourStateIndex + 1);
     }
 
     private void ScanForPlayers() {
-        if (GetPlayersCloseBy(SCARY_PLAYER_DISTANCE, out List<PlayerControllerB> players)) { // player nearby
+        if (GetPlayersCloseBy(SCARY_PLAYER_DISTANCE, out List<PlayerControllerB> players)) 
+        {
             timeSinceSeenPlayer = 0;
 
             if (State == AIState.WANDERING) {
@@ -125,7 +147,9 @@ public class LeafyBoiAI : BiodiverseAI {
             }
             
             State = AIState.RUNNING;
-        } else if (State == AIState.RUNNING) {
+        } 
+        else if (State == AIState.RUNNING) 
+        {
             State = AIState.SCARED;
         }
     }
