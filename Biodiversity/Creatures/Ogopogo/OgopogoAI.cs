@@ -79,6 +79,8 @@ namespace Biodiversity.Creatures.Ogopogo
         private static readonly int AnimID = Animator.StringToHash("AnimID");
         private static readonly int Stun = Animator.StringToHash("Stun");
 
+        private Vector3 SavedGrabPos = Vector3.zero;
+
         public override void Start()
         {
             base.Start();
@@ -215,7 +217,11 @@ namespace Biodiversity.Creatures.Ogopogo
                 eye.position = chasedPlayer.Value.transform.position + chasedPlayer.Value.transform.forward * 1;
                 TurnObjectTowardsLocation(chasedPlayer.Value.transform.position, eye);
             }
+
+            SavedGrabPos = GrabPos.position;
         }
+
+        private Vector3 PlayerVelocity = Vector3.zero;
 
         public void LateUpdate()
         {
@@ -224,6 +230,31 @@ namespace Biodiversity.Creatures.Ogopogo
                 _playerDistances[player.playerClientId] = Distance2d(StartOfRound.Instance.shipBounds.gameObject, player.gameObject);
             }
 
+
+            // Move the grabbed player
+            if (playerGrabbed.IsNotNull)
+            {
+                playerGrabbed.Value.transform.position = Vector3.SmoothDamp(playerGrabbed.Value.transform.position, SavedGrabPos, ref PlayerVelocity, 0.1f);
+                playerGrabbed.Value.transform.rotation = Quaternion.Slerp(playerGrabbed.Value.transform.rotation, GrabPos.rotation, Time.deltaTime / 0.1f);
+
+                if (playerGrabbed.Value.playerClientId == GameNetworkManager.Instance.localPlayerController.playerClientId)
+                {
+                    playerGrabbed.Value.thisPlayerModelArms.enabled = false;
+                    playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = false;
+                }
+
+                /*
+                if (!GameNetworkManager.Instance.localPlayerController.isPlayerDead)
+                {
+                    GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
+                    playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = true;
+                }
+                */
+            } else
+            {
+                GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
+                playerVisorRenderers[GameNetworkManager.Instance.localPlayerController.actualClientId].enabled = true;
+            }
         }
 
         // Use Physics.Raycast they said. It would be fun they said.
@@ -231,24 +262,6 @@ namespace Biodiversity.Creatures.Ogopogo
         {
             wallInFront = CheckForWall();
             dropRaycast = Physics.Raycast(GrabPos.position, Vector3.down, 20f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/);
-            
-            // Move the grabbed player
-            if (playerGrabbed.IsNotNull)
-            {
-                playerGrabbed.Value.transform.position = GrabPos.position;
-                playerGrabbed.Value.transform.rotation = GrabPos.rotation;
-                
-                if (playerGrabbed.Value.playerClientId == GameNetworkManager.Instance.localPlayerController.playerClientId)
-                {
-                    playerGrabbed.Value.thisPlayerModelArms.enabled = false;
-                    playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = false;
-                }
-        
-        
-                if (!GameNetworkManager.Instance.localPlayerController.isPlayerDead)
-                    GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
-                playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = true;
-            }
         }
 
         // Set wander position. (Only matters when run on server)
