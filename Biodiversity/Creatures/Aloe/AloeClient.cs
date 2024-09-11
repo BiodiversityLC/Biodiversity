@@ -436,7 +436,7 @@ public class AloeClient : MonoBehaviour
 
             Vector3 newPosition = Vector3.Lerp(transform.position, _lastReceivedLookTargetPosition, t);
 
-            AloeUtils.SmoothMoveTransformTo(lookTarget, newPosition, smoothLookTargetPositionTime,
+            AloeUtils.SmoothMoveTransformPositionTo(lookTarget, newPosition, smoothLookTargetPositionTime,
                 ref _lookTargetVelocity);
         }
 

@@ -11,8 +11,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Biodiversity.Creatures;
+using Biodiversity.Util.Attributes;
+using Biodiversity.Util.Types;
 using UnityEngine;
-using static LethalLib.Modules.Levels;
+using HarmonyPatchType = HarmonyLib.HarmonyPatchType;
 
 namespace Biodiversity;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
@@ -24,7 +26,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     internal new static BiodiversityConfig Config { get; private set; }
 
-    static readonly (string, string)[] silly_quotes = [
+    private Harmony harmony;
+
+    private static readonly (string, string)[] silly_quotes = [
         ("don't get me wrong, I love women", "monty"),
         ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
         ("thumpy wumpy", "monty"),
@@ -39,8 +43,11 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
+        Logger.LogInfo("Creating Harmony instance...");
+        harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+        
         Logger.LogInfo("Running Harmony patches...");
-        Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
+        ApplyPatches();
 
         LangParser.Init();
         
@@ -70,8 +77,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         
         Logger.LogInfo("Registering the silly little creatures.");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
-            x.BaseType != null
-            && x.BaseType.IsGenericType
+            x.BaseType is { IsGenericType: true }
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
             && x.Name != "HoneyFeederHandler"
         ).ToList();
@@ -85,10 +91,10 @@ public class BiodiversityPlugin : BaseUnityPlugin
                 continue;
             }
             Logger.LogDebug($"Creating {type.Name}");
-            type.GetConstructor([]).Invoke([]);
+            type.GetConstructor([])?.Invoke([]);
         }
-        Logger.LogInfo($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
         
+        Logger.LogInfo($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
         timer.Stop();
 
         (string, string) quote = silly_quotes[UnityEngine.Random.Range(0, silly_quotes.Length)];
@@ -96,53 +102,92 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
     }
 
-    //Totally didn't copy this from sirenhead because I didn't want to write it again
-    (Dictionary<LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) SolveLevels(string config, bool enabled)
+    private void ApplyPatches()
     {
-        Dictionary<LevelTypes, int> spawnRateByLevelType = new Dictionary<LevelTypes, int>();
-        Dictionary<string, int> spawnRateByCustomLevelType = new Dictionary<string, int>();
+        //todo: actually make it work
+        CachedDictionary<string, Assembly> cachedModAssemblies = new(className => (from assembly in AppDomain.CurrentDomain.GetAssemblies() let targetType = assembly.GetType(className) where targetType != null select assembly).FirstOrDefault());
+        Type[] types = Assembly.GetExecutingAssembly().GetTypes();
 
-        string[] configSplit = config.Split(',');
-
-        foreach (string entry in configSplit)
+        foreach (Type type in types)
         {
-            string[] levelDef = entry.Trim().Split(':');
-
-            if (levelDef.Length != 2)
+            List<ModConditionalPatch> modConditionalAttrs = type.GetCustomAttributes<ModConditionalPatch>(true).ToList();
+            if (modConditionalAttrs.Any())
             {
-                continue;
-            }
+                foreach (ModConditionalPatch modConditionalAttr in modConditionalAttrs)
+                {
+                    string targetClassName = modConditionalAttr.TargetClassName;
+                    string targetMethodName = modConditionalAttr.TargetMethodName;
+                    bool isStaticMethod = modConditionalAttr.IsStaticMethod;
+                    string localPatchMethodName = modConditionalAttr.LocalPatchMethodName;
+                    HarmonyPatchType patchType = modConditionalAttr.PatchType;
+                    
+                    // Check if the required mod is installed
+                    Assembly otherModAssembly = cachedModAssemblies[targetClassName];
+                    if (otherModAssembly == null)
+                        continue;
+                    
+                    Logger.LogDebug($"Mod {targetClassName} is installed! Patching {targetClassName}.{targetMethodName} with {localPatchMethodName}");
+                    Type targetClass = otherModAssembly.GetType(targetClassName);
+                    
+                    if (targetClass == null)
+                    {
+                        Logger.LogDebug($"Could not patch due to the target class '{targetClassName}' being null.");
+                        continue;
+                    }
 
-            int spawnrate = 0;
+                    BindingFlags flags = isStaticMethod
+                        ? BindingFlags.Public | BindingFlags.Static
+                        : BindingFlags.Public | BindingFlags.Instance;
+                    MethodInfo targetMethod = targetClass.GetMethod(targetMethodName, flags);
+                    if (targetMethod == null)
+                    {
+                        Logger.LogDebug($"Could not patch due to the target method '{targetMethodName}' being null.");
+                        continue;
+                    }
 
-            if (!int.TryParse(levelDef[1], out spawnrate))
-            {
-                continue;
-            }
+                    MethodInfo localPatchMethod = type.GetMethod(localPatchMethodName,
+                        BindingFlags.NonPublic | BindingFlags.Static);
+                    if (localPatchMethod == null)
+                    {
+                        Logger.LogDebug($"Could not patch due to the local patch method '{localPatchMethodName}' being null.");
+                        continue;
+                    }
 
-            if (Enum.TryParse<LevelTypes>(levelDef[0], true, out LevelTypes levelType))
-            {
-                spawnRateByLevelType[levelType] = spawnrate;
-                Logger.LogInfo($"Registered spawn rate for level type {levelType} to {spawnrate}");
+                    HarmonyMethod patchMethod = new(localPatchMethod);
+                    switch (patchType)
+                    {
+                        case HarmonyPatchType.Prefix:
+                            harmony.Patch(targetMethod, prefix: patchMethod);
+                            break;
+                        case HarmonyPatchType.Postfix:
+                            harmony.Patch(targetMethod, postfix: patchMethod);
+                            break;
+                        case HarmonyPatchType.Transpiler:
+                            harmony.Patch(targetMethod, transpiler: patchMethod);
+                            break;
+                        case HarmonyPatchType.Finalizer:
+                            harmony.Patch(targetMethod, finalizer: patchMethod);
+                            break;
+                        default:
+                            Logger.LogError($"Could not patch because patch type '{patchType.ToString()}' is incompatible.");
+                            break;
+                    }
+                        
+                    Logger.LogDebug($"Successfully patched {targetClassName}.{targetMethodName} with {localPatchMethodName} as {patchType}");
+                }
             }
             else
             {
-                spawnRateByCustomLevelType[levelDef[0]] = spawnrate;
-                Logger.LogInfo($"Registered spawn rate for custom level type {levelDef[0]} to {spawnrate}");
+                object[] harmonyPatchAttrs = type.GetCustomAttributes(typeof(HarmonyPatch), false);
+                if (harmonyPatchAttrs.Length > 0)
+                {
+                    harmony.CreateClassProcessor(type).Patch();
+                }
             }
-        }
-
-        if (enabled)
-        {
-            return (spawnRateByLevelType, spawnRateByCustomLevelType);
-        }
-        else
-        {
-            return (null, null);
         }
     }
 
-    private void NetcodePatcher()
+    private static void NetcodePatcher()
     {
         var types = Assembly.GetExecutingAssembly().GetLoadableTypes();
         foreach (var type in types)
@@ -165,9 +210,11 @@ public class BiodiversityPlugin : BaseUnityPlugin
     }
     
     internal AssetBundle LoadBundle(string name) {
-        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "assets", name));
+        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? throw new InvalidOperationException($"Could not find assetbundle: {name}"), "assets", name));
         Logger.LogDebug($"[AssetBundle Loading] {name} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
 
         return bundle;
     }
+    
+    
 }
