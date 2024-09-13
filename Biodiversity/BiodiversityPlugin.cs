@@ -27,9 +27,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     internal new static BiodiversityConfig Config { get; private set; }
 
-    private Harmony harmony;
+    private Harmony _harmony;
 
-    private static readonly (string, string)[] silly_quotes =
+    private static readonly (string, string)[] SillyQuotes =
     [
         ("don't get me wrong, I love women", "monty"),
         ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
@@ -46,7 +46,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Instance = this;
 
         Logger.LogDebug("Creating Harmony instance...");
-        harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+        _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
         Logger.LogDebug("Running Harmony patches...");
         ApplyPatches();
@@ -116,7 +116,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger.LogDebug($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
         timer.Stop();
 
-        (string, string) quote = silly_quotes[UnityEngine.Random.Range(0, silly_quotes.Length)];
+        (string, string) quote = SillyQuotes[UnityEngine.Random.Range(0, SillyQuotes.Length)];
         Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
         Logger.LogDebug(
             $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
@@ -192,16 +192,16 @@ public class BiodiversityPlugin : BaseUnityPlugin
                     switch (patchType)
                     {
                         case HarmonyPatchType.Prefix:
-                            harmony.Patch(targetMethod, prefix: patchMethod);
+                            _harmony.Patch(targetMethod, prefix: patchMethod);
                             break;
                         case HarmonyPatchType.Postfix:
-                            harmony.Patch(targetMethod, postfix: patchMethod);
+                            _harmony.Patch(targetMethod, postfix: patchMethod);
                             break;
                         case HarmonyPatchType.Transpiler:
-                            harmony.Patch(targetMethod, transpiler: patchMethod);
+                            _harmony.Patch(targetMethod, transpiler: patchMethod);
                             break;
                         case HarmonyPatchType.Finalizer:
-                            harmony.Patch(targetMethod, finalizer: patchMethod);
+                            _harmony.Patch(targetMethod, finalizer: patchMethod);
                             break;
                         default:
                             Logger.LogError($"Could not patch because patch type '{patchType.ToString()}' is incompatible.");
@@ -216,7 +216,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
                 object[] harmonyPatchAttrs = type.GetCustomAttributes(typeof(HarmonyPatch), false);
                 if (harmonyPatchAttrs.Length > 0)
                 {
-                    harmony.CreateClassProcessor(type).Patch();
+                    _harmony.CreateClassProcessor(type).Patch();
                 }
             }
         }
@@ -245,7 +245,8 @@ public class BiodiversityPlugin : BaseUnityPlugin
             saveOnInit: false, MetadataHelper.GetMetadata(this));
     }
     
-    internal AssetBundle LoadBundle(string name) {
+    internal AssetBundle LoadBundle(string name) 
+    {
         AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? throw new InvalidOperationException($"Could not find assetbundle: {name}"), "assets", name));
         Logger.LogDebug($"[AssetBundle Loading] {name} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
 

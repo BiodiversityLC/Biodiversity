@@ -1,6 +1,8 @@
 ﻿using Biodiversity.Patches;
 using Biodiversity.Util.Attributes;
+using Biodiversity.Util.Types;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,8 +15,10 @@ namespace Biodiversity.Util.Assetloading;
 /// This class is used as a generic base class where <typeparamref name="T"/> is a specific implementation of the asset bundle loader.
 /// </summary>
 /// <typeparam name="T">The derived class that inherits from <see cref="BiodiverseAssetBundle{T}"/>.</typeparam>
-internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle<T> 
+internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle<T>
 {
+    private readonly CachedList<Item> _cachedItems;
+    
     /// <summary>
     /// Initializes a new instance of the <see cref="BiodiverseAssetBundle{T}"/> class and loads the specified asset bundle from the given file path.
     /// </summary>
@@ -32,13 +36,15 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
 
             field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
         }
+        
+        _cachedItems = new CachedList<Item>(() => LoadAllItemsFromBundle(bundle));
 
         foreach (UnityEngine.Object asset in bundle.LoadAllAssets()) 
         {
             if (asset is GameObject gameObject) 
             {
-                if(gameObject.GetComponent<NetworkObject>() == null) continue;
-                if(GameNetworkManagerPatch.NetworkPrefabsToRegister.Contains(gameObject)) continue;
+                if (gameObject.GetComponent<NetworkObject>() == null) continue;
+                if (GameNetworkManagerPatch.NetworkPrefabsToRegister.Contains(gameObject)) continue;
                 GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject);
             }
 
@@ -70,5 +76,34 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
         if (result == null) throw new ArgumentException(path + " is not valid in the assetbundle!");
 
         return result;
+    }
+
+    /// <summary>
+    /// Loads all <see cref="Item"/> objects from the given asset bundle.
+    /// This method is invoked only once to populate the cached list.
+    /// </summary>
+    /// <param name="bundle">The asset bundle from which to load items.</param>
+    /// <returns>A list of loaded <see cref="Item"/> objects.</returns>
+    private static List<Item> LoadAllItemsFromBundle(AssetBundle bundle)
+    {
+        List<Item> items = [];
+
+        foreach (UnityEngine.Object asset in bundle.LoadAllAssets())
+        {
+            if (asset is Item item)
+                items.Add(item);
+        }
+
+        return items;
+    }
+    
+    /// <summary>
+    /// Retrieves all the <see cref="Item"/> objects from the asset bundle.
+    /// The items are lazily loaded and cached for subsequent accesses.
+    /// </summary>
+    /// <returns>A list of all <see cref="Item"/> objects from the asset bundle.</returns>
+    public List<Item> GetAllItems()
+    {
+        return _cachedItems.Value;
     }
 }

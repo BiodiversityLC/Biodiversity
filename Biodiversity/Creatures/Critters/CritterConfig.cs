@@ -1,11 +1,21 @@
 using BepInEx.Configuration;
 using Biodiversity.Util.Config;
+using System;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters;
 
-public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<CritterConfig>(configFile) {
+[Serializable]
+public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<CritterConfig>(configFile) 
+{
 	[field: Header("Fungi")]
+	
+	[field: Tooltip("Whether the Fungi will spawn in games.")]
+	public bool FungiEnabled { get; private set; } = true;
+	
+	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
+	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:15,March:45,Artifice:95,Solace:80,Fray:32,Seichi:16,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8";
+	
 	[field: Tooltip("Normal speed of fungi.")]
 	[field: Range(3f, 20f)]
 	public float FungiNormalSpeed { get; private set; } = 3.5f;
@@ -21,16 +31,9 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	[field: Tooltip("Length of stunned time after being hit.")]
 	[field: Range(3f, 20f)]
 	public float FungiStunTime { get; private set; } = 4f;
-
-	[field: Tooltip("Whether the Fungi will spawn in games.")]
-	public bool FungiEnabled { get; private set; } = true;
-	
-	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:15,March:45,Artifice:95,Solace:80,Fray:32,Seichi:16,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8";
-
-	// Leaf Boy Config:
 	
 	[field: Header("Leaf Boy")]
+	
 	[field: Tooltip("Whether the Leaf Boy will spawn in games.")]
 	public bool LeafBoyEnabled { get; private set; } = true;
 	

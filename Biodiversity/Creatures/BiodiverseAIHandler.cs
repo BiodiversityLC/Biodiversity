@@ -6,19 +6,23 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Biodiversity.Creatures;
-internal abstract class BiodiverseAIHandler<T> where T : BiodiverseAIHandler<T> {
+internal abstract class BiodiverseAIHandler<T> where T : BiodiverseAIHandler<T> 
+{
 
     internal static T Instance { get; private set; }
 
-    internal BiodiverseAIHandler() {
+    internal BiodiverseAIHandler() 
+    {
         Instance = (T)this;
     }
 
-    protected void AddSpawnRequirement(EnemyType type, Func<bool> callback) {
+    protected void AddSpawnRequirement(EnemyType type, Func<bool> callback) 
+    {
         RoundManagerPatch.SpawnRequirements.Add(type, callback);
     }
 
-    protected void TranslateTerminalNode(TerminalNode node) {
+    protected void TranslateTerminalNode(TerminalNode node) 
+    {
         node.displayText = LangParser.GetTranslation(node.displayText);
     }
     
@@ -33,6 +37,18 @@ internal abstract class BiodiverseAIHandler<T> where T : BiodiverseAIHandler<T> 
         {
             Enemies.RegisterEnemy(enemy, 0, Levels.LevelTypes.All, terminalNode, terminalKeyword);
         }
+    }
+    
+    protected static void RegisterScrapWithConfig(string configMoonRarity, Item scrap) 
+    {
+        (Dictionary<Levels.LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) = ConfigParsing(configMoonRarity);
+        LethalLib.Modules.Items.RegisterScrap(scrap, spawnRateByLevelType, spawnRateByCustomLevelType);
+    }
+    
+    protected void RegisterShopItemWithConfig(bool enabledScrap, Item item, TerminalNode terminalNode, int itemCost, string configMoonRarity) 
+    {
+        LethalLib.Modules.Items.RegisterShopItem(item, null!, null!, terminalNode, itemCost);
+        if (enabledScrap) RegisterScrapWithConfig(configMoonRarity, item);
     }
     
     private static (Dictionary<Levels.LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) ConfigParsing(string configMoonRarity) 

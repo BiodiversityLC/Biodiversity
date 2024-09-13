@@ -1,12 +1,15 @@
 ﻿using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.Aloe;
+
 [UsedImplicitly]
-internal class AloeHandler : BiodiverseAIHandler<AloeHandler> {
+internal class AloeHandler : BiodiverseAIHandler<AloeHandler> 
+{
     internal AloeAssets Assets { get; set; }
     internal AloeConfig Config { get; set; }
 
-    public AloeHandler() {
+    public AloeHandler() 
+    {
         Assets = new AloeAssets("aloebracken");
         Config = new AloeConfig(BiodiversityPlugin.Instance.CreateConfig("aloe"));
 
