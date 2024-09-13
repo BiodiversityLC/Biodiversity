@@ -5,7 +5,7 @@
         <AssemblyName>com.github.biodiversitylc.Biodiversity</AssemblyName>
         <Product>Biodiversity</Product>
         <!-- Change to whatever version you're currently on. -->
-        <Version>0.1.3</Version>
+        <Version>0.1.4</Version>
     </PropertyGroup>
 
     <!-- Project Properties -->
@@ -68,10 +68,6 @@
       <Folder Include="3rdParty\" />
       <Folder Include="Patches\" />
       <Folder Include="Util\Scripts\" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Content Include="Util\Lang\defs.json" />
     </ItemGroup>
 
     <!-- Netcode Patcher Post-Build Event -->
