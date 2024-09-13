@@ -7,7 +7,8 @@ using UnityEngine;
 
 namespace Biodiversity;
 
-public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig> {
+public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig> 
+{
     
 	[field: Header("Development")]
 	[field: Tooltip("Whether to log more debug information to the console.")]
@@ -16,7 +17,8 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig> {
 	[field: NonSerialized]
 	public string Language { get; private set; } = "en";
     
-	internal BiodiversityConfig(ConfigFile configFile) : base(configFile) {
+	internal BiodiversityConfig(ConfigFile configFile) : base(configFile) 
+	{
 		Language = configFile.Bind(
 			"General",
 			"Language",

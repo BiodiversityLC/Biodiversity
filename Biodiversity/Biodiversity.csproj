@@ -45,9 +45,6 @@
     <ItemGroup>
       <None Remove="Util\Lang\defs.json" />
     </ItemGroup>
-    <ItemGroup>
-      <EmbeddedResource Include="Util\Lang\defs.json" />
-    </ItemGroup>
 
     <!-- Primary Package References -->
     <ItemGroup>
@@ -71,6 +68,10 @@
       <Folder Include="3rdParty\" />
       <Folder Include="Patches\" />
       <Folder Include="Util\Scripts\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="Util\Lang\defs.json" />
     </ItemGroup>
 
     <!-- Netcode Patcher Post-Build Event -->
