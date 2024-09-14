@@ -51,6 +51,7 @@ namespace Biodiversity.Creatures.MicBird
 
         public override void DoAIInterval()
         {
+            base.DoAIInterval();
             switch (currentBehaviourStateIndex)
             {
                 case (int)State.GOTOSHIP:
@@ -74,7 +75,6 @@ namespace Biodiversity.Creatures.MicBird
                     SwitchToBehaviourClientRpc((int)State.PERCH);
                     break;
             }
-            base.DoAIInterval();
         }
     }
 }
