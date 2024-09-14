@@ -56,7 +56,7 @@ namespace Biodiversity.Creatures.MicBird
             {
                 case (int)State.GOTOSHIP:
                     agent.SetDestination(StartOfRound.Instance.middleOfShipNode.position);
-                    if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 5, 0), transform.position) < 2)
+                    if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position, transform.position) < 5)
                     {
                         BiodiversityPlugin.Logger.LogInfo("Perching");
                         SwitchToBehaviourClientRpc((int)State.PERCH);

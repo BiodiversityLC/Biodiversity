@@ -45,6 +45,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
+        Logger.LogDebug("Creating base biodiversity config.");
+        Config = new BiodiversityConfig(base.Config);
+
         LogVerbose("Creating Harmony instance...");
         _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
@@ -52,9 +55,6 @@ public class BiodiversityPlugin : BaseUnityPlugin
         ApplyPatches();
 
         LangParser.Init();
-
-        LogVerbose("Creating base biodiversity config.");
-        Config = new BiodiversityConfig(base.Config);
 
         LogVerbose("Patching netcode.");
         NetcodePatcher();
