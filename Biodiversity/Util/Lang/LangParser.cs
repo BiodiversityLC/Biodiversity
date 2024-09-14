@@ -6,23 +6,37 @@ using System.IO;
 using System.Reflection;
 
 namespace Biodiversity.Util.Lang;
-internal static class LangParser 
+internal static class LangParser
 {
-    internal static Dictionary<string, string> Languages { get; private set; }
-    internal static NullableObject<Dictionary<string, object>> LoadedLanguage { get; private set; } = new();
+    internal static NullableObject<Dictionary<string, string>> Languages { get; private set; } = new();
+    private static NullableObject<Dictionary<string, object>> LoadedLanguage { get; set; } = new();
 
-    internal static void Init() 
+    internal static void Init()
     {
-        using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Biodiversity.Util.Lang.defs.json");
-        using StreamReader reader = new(stream!);
+        const string defsJsonFilename = "Biodiversity.Util.Lang.defs.json";
+        using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(defsJsonFilename);
+        if (stream == null)
+        {
+            BiodiversityPlugin.Logger.LogWarning($"Could not find {defsJsonFilename}, and therefore cannot do translations.");
+            return;
+        }
+        
+        using StreamReader reader = new(stream);
         string result = reader.ReadToEnd();
 
-        Languages = JsonConvert.DeserializeObject<Dictionary<string, string>>(result);
+        Languages.Value = JsonConvert.DeserializeObject<Dictionary<string, string>>(result);
     }
 
-    internal static Dictionary<string, object> LoadLanguage(string id) 
+    private static Dictionary<string, object> LoadLanguage(string id)
     {
-        using Stream stream = File.Open(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "lang", id + ".json"), FileMode.Open);
+        string directoryPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        if (directoryPath == null)
+        {
+            BiodiversityPlugin.Logger.LogError("Cannot determine the assembly directory path, and therefore cannot do translations.");
+            return null;
+        }
+        
+        using Stream stream = File.Open(Path.Combine(directoryPath, "lang", id + ".json"), FileMode.Open);
         using StreamReader reader = new(stream);
         string result = reader.ReadToEnd();
         return JsonConvert.DeserializeObject<Dictionary<string, object>>(result);
@@ -37,15 +51,13 @@ internal static class LangParser
     {
         if (!LoadedLanguage.IsNotNull)
         {
-            BiodiversityPlugin.Logger.LogWarning("Biodiveristy translations are missing :(");
-            return translation;
+            BiodiversityPlugin.Logger.LogDebug($"Cannot translate message due to translations not being loaded: {translation}");
+            return GetTranslation("lang.missing").Replace("<translation_id>", translation);
         }
         
         if (LoadedLanguage.Value.TryGetValue(translation, out object result))  return (string)result;
-
         if (translation == "lang.missing") 
         {
-            // OHNO `lang.missing` is missing!
             BiodiversityPlugin.Logger.LogError("LANG.MISSING IS MISSING!!!!!  THIS IS BAD!! VERY BAD!!");
             return "lang.missing; <translation_id>";
         }
@@ -55,6 +67,12 @@ internal static class LangParser
 
     internal static JArray GetTranslationSet(string translation) 
     {
+        if (!LoadedLanguage.IsNotNull)
+        {
+            BiodiversityPlugin.Logger.LogDebug($"Cannot translate message due to translations not being loaded: {translation}");
+            return [GetTranslation("lang.missing").Replace("<translation_id>", translation)];
+        }
+        
         if (LoadedLanguage.Value.TryGetValue(translation, out object result)) 
         {
             BiodiversityPlugin.Logger.LogInfo(result.GetType());

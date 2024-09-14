@@ -66,7 +66,7 @@ internal abstract class BiodiverseAIHandler<T> where T : BiodiverseAIHandler<T>
             if (Enum.TryParse(name, true, out Levels.LevelTypes levelType)) 
             {
                 spawnRateByLevelType[levelType] = spawnrate;
-                BiodiversityPlugin.Logger.LogDebug($"Registered spawn rate for level type {levelType} to {spawnrate}");
+                BiodiversityPlugin.LogVerbose($"Registered spawn rate for level type {levelType} to {spawnrate}");
             } 
             else 
             {
@@ -75,12 +75,12 @@ internal abstract class BiodiverseAIHandler<T> where T : BiodiverseAIHandler<T>
                 if (Enum.TryParse(modifiedName, true, out levelType))
                 {
                     spawnRateByLevelType[levelType] = spawnrate;
-                    BiodiversityPlugin.Logger.LogDebug($"Registered spawn rate for level type {levelType} to {spawnrate}");
+                    BiodiversityPlugin.LogVerbose($"Registered spawn rate for level type {levelType} to {spawnrate}");
                 }
                 else
                 {
                     spawnRateByCustomLevelType[name] = spawnrate;
-                    BiodiversityPlugin.Logger.LogDebug($"Registered spawn rate for custom level type {name} to {spawnrate}");
+                    BiodiversityPlugin.LogVerbose($"Registered spawn rate for custom level type {name} to {spawnrate}");
                 }
             }
         }

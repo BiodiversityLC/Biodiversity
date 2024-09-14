@@ -45,24 +45,24 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
-        Logger.LogDebug("Creating Harmony instance...");
+        LogVerbose("Creating Harmony instance...");
         _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
-        Logger.LogDebug("Running Harmony patches...");
+        LogVerbose("Running Harmony patches...");
         ApplyPatches();
 
         LangParser.Init();
 
-        Logger.LogDebug("Creating base biodiversity config.");
+        LogVerbose("Creating base biodiversity config.");
         Config = new BiodiversityConfig(base.Config);
 
-        Logger.LogDebug("Patching netcode.");
+        LogVerbose("Patching netcode.");
         NetcodePatcher();
 
-        Logger.LogDebug("Doing language stuff");
+        LogVerbose("Doing language stuff");
         LangParser.SetLanguage(Config.Language);
 
-        Logger.LogDebug(LangParser.GetTranslation("lang.test"));
+        LogVerbose(LangParser.GetTranslation("lang.test"));
 
         timer.Stop();
         Logger.LogInfo(
@@ -90,10 +90,10 @@ public class BiodiversityPlugin : BaseUnityPlugin
         VanillaEnemies.Init();
 
         // why does unity not let you preload video clips like audio clips.
-        Logger.LogDebug("Loading VideoClip bundle.");
+        LogVerbose("Loading VideoClip bundle.");
         LoadBundle("biodiversity_video_clips");
 
-        Logger.LogDebug("Registering the silly little creatures.");
+        LogVerbose("Registering the silly little creatures.");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType is { IsGenericType: true }
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
@@ -105,15 +105,15 @@ public class BiodiversityPlugin : BaseUnityPlugin
             bool creatureEnabled = base.Config.Bind("Creatures", type.Name, true).Value;
             if (!creatureEnabled)
             {
-                Logger.LogDebug($"{type.Name} was skipped because it's disabled.");
+                LogVerbose($"{type.Name} was skipped because it's disabled.");
                 continue;
             }
 
-            Logger.LogDebug($"Creating {type.Name}");
+            LogVerbose($"Creating {type.Name}");
             type.GetConstructor([])?.Invoke([]);
         }
 
-        Logger.LogDebug($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
+        LogVerbose($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
         timer.Stop();
 
         (string, string) quote = SillyQuotes[UnityEngine.Random.Range(0, SillyQuotes.Length)];
@@ -239,17 +239,23 @@ public class BiodiversityPlugin : BaseUnityPlugin
         }
     }
 
-    internal ConfigFile CreateConfig(string name)
+    internal ConfigFile CreateConfig(string configName)
     {
-        return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + name + ".cfg"),
+        return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + configName + ".cfg"),
             saveOnInit: false, MetadataHelper.GetMetadata(this));
     }
     
-    internal AssetBundle LoadBundle(string name) 
+    internal AssetBundle LoadBundle(string assetBundleName) 
     {
-        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? throw new InvalidOperationException($"Could not find assetbundle: {name}"), "assets", name));
-        Logger.LogDebug($"[AssetBundle Loading] {name} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
+        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "assets", assetBundleName));
+        LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
 
         return bundle;
     }
+    
+    internal static void LogVerbose(object message)
+    {
+        if (Config.VerboseLogging) Logger.LogDebug(message);
+    }
+
 }

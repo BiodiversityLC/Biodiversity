@@ -1,8 +1,10 @@
 ﻿using GameNetcodeStuff;
 
 namespace Biodiversity.Util;
-internal static class PlayerUtil {
-    internal static PlayerControllerB GetPlayerFromClientId(int playerClientId) {
+internal static class PlayerUtil 
+{
+    internal static PlayerControllerB GetPlayerFromClientId(int playerClientId) 
+    {
         return StartOfRound.Instance.allPlayerScripts[playerClientId];
     }
     

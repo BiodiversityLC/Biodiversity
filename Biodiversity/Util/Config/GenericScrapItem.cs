@@ -29,20 +29,20 @@ public struct GenericScrapItem(
 
     public void Bind(ConfigFile file, string section)
     {
-        Rarity = file.Bind(section, ClearConfigString($"{ItemName} Rarity"), Rarity,
+        Rarity = file.Bind(section, CleanConfigString($"{ItemName} Rarity"), Rarity,
             new ConfigDescription(string.Format(RarityTooltip, ItemName))).Value;
 
-        Weight = file.Bind(section, ClearConfigString($"{ItemName} Weight"), Weight,
+        Weight = file.Bind(section, CleanConfigString($"{ItemName} Weight"), Weight,
             new ConfigDescription(string.Format(WeightTooltip, ItemName), WeightRange)).Value;
         
-        MinimumValue = file.Bind(section, ClearConfigString($"{ItemName} Minimum Value"), MinimumValue,
+        MinimumValue = file.Bind(section, CleanConfigString($"{ItemName} Minimum Value"), MinimumValue,
             new ConfigDescription(string.Format(MinimumValueTooltip, ItemName), MinimumValueRange)).Value;
         
-        MaximumValue = file.Bind(section, ClearConfigString($"{ItemName} Maximum Value"), MaximumValue,
+        MaximumValue = file.Bind(section, CleanConfigString($"{ItemName} Maximum Value"), MaximumValue,
             new ConfigDescription(string.Format(MaximumValueTooltip, ItemName), MaximumValueRange)).Value;
     }
 
-    private string ClearConfigString(string str)
+    private static string CleanConfigString(string str)
     {
         const string pattern = @"[\n\t\\\""'\[\]]";
         return Regex.Replace(str, pattern, "");
