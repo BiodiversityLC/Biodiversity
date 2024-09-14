@@ -34,7 +34,7 @@ public class EnemyRaritiesPerMoon(
 
 		if (Chainloader.PluginInfos.ContainsKey("imabatby.lethallevelloader")) 
 		{
-			BiodiversityPlugin.Logger.LogDebug("binding modded moons from lethal level loader.");
+			BiodiversityPlugin.LogVerbose("binding modded moons from lethal level loader.");
 			BindLLL(file, section);
 		}
 	}
@@ -42,8 +42,8 @@ public class EnemyRaritiesPerMoon(
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
 	private void BindLLL(ConfigFile file, string section) 
 	{
-		BiodiversityPlugin.Logger.LogDebug($"{PatchedContent.ExtendedMods.Count} mods");
-		BiodiversityPlugin.Logger.LogDebug($"{string.Join(", ", PatchedContent.AllLevelSceneNames)}");
+		BiodiversityPlugin.LogVerbose($"{PatchedContent.ExtendedMods.Count} mods");
+		BiodiversityPlugin.LogVerbose($"{string.Join(", ", PatchedContent.AllLevelSceneNames)}");
 
 		foreach (ExtendedMod mod in PatchedContent.ExtendedMods) 
 		{

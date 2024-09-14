@@ -15,10 +15,10 @@ internal static class RoundManagerPatch
     private static bool CanEnemySpawn(EnemyType type)
     {
         if (SpawnRequirements.TryGetValue(type, out Func<bool> callback)) {
-            BiodiversityPlugin.Logger.LogDebug($"doing callback for {type.enemyName}");
+            BiodiversityPlugin.LogVerbose($"doing callback for {type.enemyName}");
             bool result = callback();
             if(!result)
-                BiodiversityPlugin.Logger.LogDebug($"Callback for {type.enemyName} blocked the spawning!");
+                BiodiversityPlugin.LogVerbose($"Callback for {type.enemyName} blocked the spawning!");
 
             return result;
         }

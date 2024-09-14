@@ -45,6 +45,9 @@
     <ItemGroup>
       <None Remove="Util\Lang\defs.json" />
     </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Util\Lang\defs.json" />
+    </ItemGroup>
 
     <!-- Primary Package References -->
     <ItemGroup>

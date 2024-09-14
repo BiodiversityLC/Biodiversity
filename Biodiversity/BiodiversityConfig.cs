@@ -7,27 +7,28 @@ using UnityEngine;
 
 namespace Biodiversity;
 
-public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig> 
+public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
 {
-    
-	[field: Header("Development")]
-	[field: Tooltip("Whether to log more debug information to the console.")]
-	public bool VerboseLogging { get; private set; } = false;
+    [field: Header("Development")]
+    [field: Tooltip("Whether to log more debug information to the console.")]
+    public bool VerboseLogging { get; private set; } = false;
 
-	[field: NonSerialized]
-	public string Language { get; private set; } = "en";
-    
-	internal BiodiversityConfig(ConfigFile configFile) : base(configFile) 
-	{
-		Language = configFile.Bind(
-			"General",
-			"Language",
-			Language,
-			new ConfigDescription(
-				"What language should Biodiversity use?\n" +
-				"Some Languages may also need FontPatcher(https://thunderstore.io/c/lethal-company/p/LeKAKiD/FontPatcher/)\\n",
-				new AcceptableValueList<string>(LangParser.Languages.Keys.ToArray())
-			)
-		).Value;
-	}
+    [field: NonSerialized] public string Language { get; private set; } = "en";
+
+    internal BiodiversityConfig(ConfigFile configFile) : base(configFile)
+    {
+        AcceptableValueList<string> acceptableLanguages = LangParser.Languages.IsNotNull
+            ? new AcceptableValueList<string>(LangParser.Languages.Value.Keys.ToArray())
+            : new AcceptableValueList<string>(["en"]);
+
+        Language = configFile.Bind(
+            "General",
+            "Language",
+            Language,
+            new ConfigDescription(
+                "What language should Biodiversity use?\n" +
+                "Some Languages may also need FontPatcher(https://thunderstore.io/c/lethal-company/p/LeKAKiD/FontPatcher/)\\n",
+                acceptableLanguages)
+        ).Value;
+    }
 }

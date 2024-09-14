@@ -5,10 +5,9 @@ using Unity.Netcode;
 
 namespace Biodiversity.Creatures;
 
-[SuppressMessage("ReSharper", "IdentifierTypo")]
-public static class VanillaEnemies {
-	// All these variables are named very specifically, hence why the disabled message.
-	
+[SuppressMessage("ReSharper", "IdentifierTypo", Justification = "All these variables are named very specifically, hence why the disabled message.")]
+public static class VanillaEnemies 
+{
 	public static EnemyType Flowerman { get; private set; }
 	public static EnemyType Centipede { get; private set; }
 	public static EnemyType MouthDog { get; private set; }
@@ -34,22 +33,23 @@ public static class VanillaEnemies {
 	public static EnemyType FlowerSnake { get; private set; }
 	public static EnemyType BushWolf { get; private set; }
 	public static EnemyType ClaySurgeon { get; private set; }
+	public static EnemyType CaveDweller { get; private set; }
 	
-	internal static void Init() {
+	internal static void Init() 
+	{
 		List<string> unknownTypes = [];
-		BiodiversityPlugin.Logger.LogDebug("Getting all vanilla enemy types.");
-		foreach (NetworkPrefab networkPrefab in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs) {
-			if(!networkPrefab.Prefab.TryGetComponent(out EnemyAI enemyAI)) continue;
-			BiodiversityPlugin.Logger.LogDebug($"Found enemy: {enemyAI.enemyType.name}");
+		BiodiversityPlugin.LogVerbose("Getting all vanilla enemy types.");
+		
+		foreach (NetworkPrefab networkPrefab in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs) 
+		{
+			if (!networkPrefab.Prefab.TryGetComponent(out EnemyAI enemyAI)) continue;
+			BiodiversityPlugin.LogVerbose($"Found enemy: {enemyAI.enemyType.name}");
 
 			PropertyInfo property = typeof(VanillaEnemies).GetProperty(enemyAI.enemyType.name);
-			if (property == null) {
-				unknownTypes.Add(enemyAI.enemyType.name);
-			} else {
-				property.SetValue(null, enemyAI.enemyType);
-			}
+			if (property == null) unknownTypes.Add(enemyAI.enemyType.name);
+			else property.SetValue(null, enemyAI.enemyType);
 		}
 		
-		BiodiversityPlugin.Logger.LogDebug($"Unknown enemy types: {string.Join(", ", unknownTypes)}");
+		BiodiversityPlugin.LogVerbose($"Unknown enemy types: {string.Join(", ", unknownTypes)}");
 	}
 }
