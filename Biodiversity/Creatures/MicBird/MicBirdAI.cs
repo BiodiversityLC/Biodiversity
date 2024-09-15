@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using Unity.Netcode;
+using UnityEngine.AI;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -14,17 +16,24 @@ namespace Biodiversity.Creatures.MicBird
             CALL
         }
 
-        private float callTimer = 30;
+        private enum SoundID
+        {
+            CALL
+        }
 
+        [SerializeField] private AudioClip callSound;
+
+        private float callTimer = 30;
+        private bool setDestCalledAlready = false;
 
         public override void Start()
         {
             base.Start();
 
-            agent.Warp(FindFarthestNode().position);
+            agent.Warp(findFarthestNode().position);
         }
 
-        private Transform FindFarthestNode()
+        private Transform findFarthestNode()
         {
             Transform farnode = null;
             float lowestDistance = 0;
@@ -49,14 +58,30 @@ namespace Biodiversity.Creatures.MicBird
             }
         }
 
+        [ClientRpc]
+        public void PlayVoiceClientRpc(int id)
+        {
+            AudioClip audio = id switch
+            {
+                0 => callSound,
+                _ => null
+            };
+
+            creatureVoice.PlayOneShot(audio);
+        }
+
         public override void DoAIInterval()
         {
             base.DoAIInterval();
             switch (currentBehaviourStateIndex)
             {
                 case (int)State.GOTOSHIP:
-                    agent.SetDestination(StartOfRound.Instance.middleOfShipNode.position);
-                    if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position, transform.position) < 5)
+                    if (!setDestCalledAlready)
+                    {
+                        setDestCalledAlready = true;
+                        agent.SetDestination(StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0));
+                    }
+                    if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0), transform.position) < 5)
                     {
                         BiodiversityPlugin.Logger.LogInfo("Perching");
                         SwitchToBehaviourClientRpc((int)State.PERCH);
@@ -70,6 +95,7 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     break;
                 case (int)State.CALL:
+                    PlayVoiceClientRpc((int)SoundID.CALL);
                     BiodiversityPlugin.Logger.LogInfo("Caw I'm a bird!");
                     callTimer = 60;
                     SwitchToBehaviourClientRpc((int)State.PERCH);
