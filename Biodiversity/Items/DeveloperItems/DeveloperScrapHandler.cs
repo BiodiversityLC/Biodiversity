@@ -16,7 +16,7 @@ internal class DeveloperScrapHandler : BiodiverseAIHandler<DeveloperScrapHandler
 
     public DeveloperScrapHandler()
     {
-        Assets = new DeveloperScrapAssets("devitems");
+        Assets = new DeveloperScrapAssets("developer_items");
         Config = new DeveloperScrapConfig(BiodiversityPlugin.Instance.CreateConfig("developer_scrap_items"));
         
         foreach (FieldInfo field in typeof(DeveloperScrapAssets).GetFields())
