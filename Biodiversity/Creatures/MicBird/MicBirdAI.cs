@@ -4,6 +4,7 @@ using System.Text;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.AI;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -21,10 +22,20 @@ namespace Biodiversity.Creatures.MicBird
             CALL
         }
 
+        private enum MalfunctionID
+        {
+            WALKIE,
+            SHIPDOORS,
+            RADARBLINK,
+            LIGHTSOUT
+        }
+
         [SerializeField] private AudioClip callSound;
 
         private float callTimer = 30;
+        private float malfunctionTimer = 0;
         private bool setDestCalledAlready = false;
+        MalfunctionID malfunction;
 
         public override void Start()
         {
@@ -52,6 +63,9 @@ namespace Biodiversity.Creatures.MicBird
         public override void Update()
         {
             base.Update();
+
+            malfunctionTimer -= Time.deltaTime;
+
             if (currentBehaviourStateIndex == (int)State.PERCH)
             {
                 callTimer -= Time.deltaTime;
@@ -70,9 +84,55 @@ namespace Biodiversity.Creatures.MicBird
             creatureVoice.PlayOneShot(audio);
         }
 
+
+        [ClientRpc]
+        public void ToggleAllWalkiesClientRpc()
+        {
+            foreach (WalkieTalkie walkie in WalkieTalkie.allWalkieTalkies)
+            {
+                if (walkie.walkieTalkieLight.enabled == true)
+                {
+                    walkie.SwitchWalkieTalkieOn(false);
+                    continue;
+                }
+                walkie.SwitchWalkieTalkieOn(true);
+            }
+        }
+
+        [ClientRpc]
+        public void ToggleShipDoorsClientRpc()
+        {
+            HangarShipDoor door = FindObjectOfType<HangarShipDoor>();
+            if (door.shipDoorsAnimator.GetBool("Closed"))
+            {
+                door.shipDoorsAnimator.SetBool("Closed", false);
+                return;
+            }
+            door.shipDoorsAnimator.SetBool("Closed", true);
+        }
+
+
         public override void DoAIInterval()
         {
             base.DoAIInterval();
+            if (malfunctionTimer >= 0)
+            {
+                switch (malfunction)
+                {
+                    case MalfunctionID.WALKIE:
+                        ToggleAllWalkiesClientRpc();
+                        break;
+                    case MalfunctionID.SHIPDOORS:
+                        ToggleShipDoorsClientRpc();
+                        break;
+                    case MalfunctionID.RADARBLINK:
+                        StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(false);
+                        break;
+                    case MalfunctionID.LIGHTSOUT:
+                        FindObjectOfType<ShipLights>().SetShipLightsBoolean(false);
+                        break;
+                }
+            }
             switch (currentBehaviourStateIndex)
             {
                 case (int)State.GOTOSHIP:
@@ -97,7 +157,13 @@ namespace Biodiversity.Creatures.MicBird
                 case (int)State.CALL:
                     PlayVoiceClientRpc((int)SoundID.CALL);
                     BiodiversityPlugin.Logger.LogInfo("Caw I'm a bird!");
+
                     callTimer = 60;
+                    malfunctionTimer = 10;
+
+                    malfunction = (MalfunctionID)Random.Range(0, Enum.GetValues(typeof(MalfunctionID)).Length);
+                    BiodiversityPlugin.Logger.LogInfo("Setting malfunction to " + malfunction.ToString());
+
                     SwitchToBehaviourClientRpc((int)State.PERCH);
                     break;
             }
