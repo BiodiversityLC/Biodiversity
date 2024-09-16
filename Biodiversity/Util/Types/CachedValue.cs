@@ -18,12 +18,15 @@ public class CachedValue<T>
     /// <param name="computeValueFunction">
     /// A function that computes the value to be cached. This function is invoked only the first time the value is accessed, or when the cached value is reset.
     /// </param>
+    /// <param name="eager">If true, the value will be computed at the time of construction (eager loading). Defaults to false for lazy loading.</param>
     /// <exception cref="ArgumentNullException">
     /// Thrown if <paramref name="computeValueFunction"/> is <c>null</c>.
     /// </exception>
-    public CachedValue(Func<T> computeValueFunction)
+    public CachedValue(Func<T> computeValueFunction, bool eager = false)
     {
         _computeValueFunction = computeValueFunction ?? throw new ArgumentNullException(nameof(computeValueFunction));
+
+        if (eager) _cachedValue.Value = _computeValueFunction();
     }
 
     /// <summary>
