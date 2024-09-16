@@ -86,10 +86,14 @@ namespace Biodiversity.Creatures.MicBird
 
 
         [ClientRpc]
-        public void ToggleAllWalkiesClientRpc()
+        public void ToggleAllWalkiesOutsideClientRpc()
         {
             foreach (WalkieTalkie walkie in WalkieTalkie.allWalkieTalkies)
             {
+                if (walkie.playerHeldBy.isInsideFactory)
+                {
+                    continue;
+                }
                 if (walkie.walkieTalkieLight.enabled == true)
                 {
                     walkie.SwitchWalkieTalkieOn(false);
@@ -120,13 +124,13 @@ namespace Biodiversity.Creatures.MicBird
                 switch (malfunction)
                 {
                     case MalfunctionID.WALKIE:
-                        ToggleAllWalkiesClientRpc();
+                        ToggleAllWalkiesOutsideClientRpc();
                         break;
                     case MalfunctionID.SHIPDOORS:
                         ToggleShipDoorsClientRpc();
                         break;
                     case MalfunctionID.RADARBLINK:
-                        StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(false);
+                        StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(true);
                         break;
                     case MalfunctionID.LIGHTSOUT:
                         FindObjectOfType<ShipLights>().SetShipLightsBoolean(false);
