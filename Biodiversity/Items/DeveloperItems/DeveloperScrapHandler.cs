@@ -26,21 +26,19 @@ internal class DeveloperScrapHandler : BiodiverseAIHandler<DeveloperScrapHandler
 
             foreach (PropertyInfo property in typeof(DeveloperScrapConfig).GetProperties())
             {
-                if (property.PropertyType == typeof(GenericScrapItem))
-                {
-                    GenericScrapItem scrapItem = (GenericScrapItem)property.GetValue(Config);
-                    if (scrapItem.AssetName == loadFromBundleAttribute.BundleFile)
-                    {
-                        Item item = (Item)field.GetValue(Assets);
+                if (property.PropertyType != typeof(GenericScrapItem)) continue;
+                
+                GenericScrapItem scrapItem = (GenericScrapItem)property.GetValue(Config);
+                if (scrapItem.AssetName != loadFromBundleAttribute.BundleFile) continue;
+                
+                Item item = (Item)field.GetValue(Assets);
 
-                        item.isScrap = true;
-                        item.weight = Mathf.Max(0, Mathf.Ceil(scrapItem.Weight / 105 + 1));
-                        item.minValue = scrapItem.MinimumValue;
-                        item.maxValue = scrapItem.MaximumValue;
+                item.isScrap = true;
+                item.weight = Mathf.Max(0, Mathf.Ceil(scrapItem.Weight / 105 + 1));
+                item.minValue = scrapItem.MinimumValue;
+                item.maxValue = scrapItem.MaximumValue;
                         
-                        RegisterScrapWithConfig(scrapItem.Rarity, item);
-                    }
-                }
+                RegisterScrapWithConfig(scrapItem.Rarity, item);
             }
         }
     }
