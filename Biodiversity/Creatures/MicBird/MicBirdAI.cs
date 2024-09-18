@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 using Unity.Netcode;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
+using Object = UnityEngine.Object;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -36,12 +34,28 @@ namespace Biodiversity.Creatures.MicBird
         private float malfunctionTimer = 0;
         private bool setDestCalledAlready = false;
         MalfunctionID malfunction;
+        Vector3 targetPos = Vector3.zero;
+
+        private static MicBirdAI firstSpawned = null;
 
         public override void Start()
         {
             base.Start();
-
+            if (firstSpawned == null)
+            {
+                firstSpawned = this;
+            }
             agent.Warp(findFarthestNode().position);
+        }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            if (firstSpawned != null)
+            {
+                firstSpawned = null;
+            }
         }
 
         private Transform findFarthestNode()
@@ -115,6 +129,18 @@ namespace Biodiversity.Creatures.MicBird
             door.shipDoorsAnimator.SetBool("Closed", true);
         }
 
+        private int negativeRandom(int min, int maxExclusive)
+        {
+            return Random.Range(min, maxExclusive) * ((Random.Range(0, 2) == 0) ? 1 : -1);
+        }
+
+        private void spawnMicBird()
+        {
+            GameObject bird = Object.Instantiate<GameObject>(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, Vector3.zero, Quaternion.Euler(Vector3.zero));
+            bird.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
+            RoundManager.Instance.SpawnedEnemies.Add(bird.GetComponent<EnemyAI>());
+            bird.GetComponent<EnemyAI>().enemyType.numberSpawned++;
+        }
 
         public override void DoAIInterval()
         {
@@ -142,8 +168,17 @@ namespace Biodiversity.Creatures.MicBird
                 case (int)State.GOTOSHIP:
                     if (!setDestCalledAlready)
                     {
+                        if (firstSpawned == this)
+                        {
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0);
+                            agent.SetDestination(targetPos);
+                        }
+                        else
+                        {
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(negativeRandom(2, 7), 4, negativeRandom(2, 7));
+                            agent.SetDestination(targetPos);
+                        }
                         setDestCalledAlready = true;
-                        agent.SetDestination(StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0));
                     }
                     if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0), transform.position) < 5)
                     {
@@ -161,6 +196,8 @@ namespace Biodiversity.Creatures.MicBird
                 case (int)State.CALL:
                     PlayVoiceClientRpc((int)SoundID.CALL);
                     BiodiversityPlugin.Logger.LogInfo("Caw I'm a bird!");
+
+                    spawnMicBird();
 
                     callTimer = 60;
                     malfunctionTimer = 10;
