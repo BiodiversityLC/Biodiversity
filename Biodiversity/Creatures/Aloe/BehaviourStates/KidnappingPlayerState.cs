@@ -54,10 +54,10 @@ public class KidnappingPlayerState : BehaviourState
         AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId, AloeClient.AudioClipTypes.SnatchAndDrag);
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.25f);
         
-        if (AloeUtils.IsPathValid(
+        if (BiodiverseAI.IsPathValid(
                 agent: AloeServerInstance.agent, 
                 position: AloeServerInstance.favouriteSpot, 
-                logSource: AloeServerInstance.Mls) != AloeUtils.PathStatus.Valid) 
+                logSource: AloeServerInstance.Mls) != BiodiverseAI.PathStatus.Valid) 
         { 
             AloeServerInstance.LogDebug("When initializing kidnapping, no path was found to the Aloe's favourite spot."); 
             AloeServerInstance.SwitchBehaviourState(AloeServer.States.HealingPlayer); 

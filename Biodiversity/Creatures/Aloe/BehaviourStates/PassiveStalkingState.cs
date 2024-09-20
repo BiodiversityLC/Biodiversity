@@ -74,18 +74,17 @@ public class PassiveStalkingState : BehaviourState
                     viewRange: AloeServerInstance.ViewRange, 
                     logSource: AloeServerInstance.Mls))
             {
-                Transform closestNodeToPlayer = AloeUtils.GetClosestValidNodeToPosition(
-                    pathStatus: out AloeUtils.PathStatus pathStatus,
+                Transform closestNodeToPlayer = BiodiverseAI.GetClosestValidNodeToPosition(
+                    pathStatus: out BiodiverseAI.PathStatus pathStatus,
                     agent: AloeServerInstance.agent,
                     position: AloeServerInstance.ActualTargetPlayer.Value.transform.position,
                     allAINodes: AloeServerInstance.allAINodes,
                     ignoredAINodes: null,
                     checkLineOfSight: true,
                     allowFallbackIfBlocked: false,
-                    bufferDistance: 0f,
-                    AloeServerInstance.Mls);
+                    bufferDistance: 0f);
 
-                if (pathStatus == AloeUtils.PathStatus.Invalid) AloeServerInstance.moveTowardsDestination = false;
+                if (pathStatus == BiodiverseAI.PathStatus.Invalid) AloeServerInstance.moveTowardsDestination = false;
                 else AloeServerInstance.SetDestinationToPosition(closestNodeToPlayer.position);
             }
             else

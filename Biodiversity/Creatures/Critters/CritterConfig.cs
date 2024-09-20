@@ -8,29 +8,64 @@ namespace Biodiversity.Creatures.Critters;
 [Serializable]
 public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<CritterConfig>(configFile) 
 {
-	[field: Header("Fungi")]
+	[field: Header("Prototax")]
 	
-	[field: Tooltip("Whether the Fungi will spawn in games.")]
-	public bool FungiEnabled { get; private set; } = true;
+	[field: Tooltip("Whether the Prototax will spawn in games.")]
+	public bool PrototaxEnabled { get; private set; } = true;
 	
-	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:15,March:45,Artifice:95,Solace:80,Fray:32,Seichi:16,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8";
-	
-	[field: Tooltip("Normal speed of fungi.")]
-	[field: Range(3f, 20f)]
-	public float FungiNormalSpeed { get; private set; } = 3.5f;
+	[field: Tooltip("Spawn weight of the Prototax on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
+	public string PrototaxRarity { get; private set; } = "Experimentation:80,Adamance:15,March:45,Artifice:95,Solace:80,Fray:32,Seichi:16,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8";
 
-	[field: Tooltip("Speed of fungi after being hit.")]
-	[field: Range(3f, 20f)]
-	public float FungiBoostedSpeed { get; private set; } = 6f;
+	[field: Tooltip("Prototax power level")] 
+	[field: Range(0f, 5f)] 
+	public float PrototaxPowerLevel { get; private set; } = 0.5f;
+
+	[field: Tooltip("Max amount of Prototaxes that can spawn in a game.")]
+	[field: Range(0, 20)]
+	public int PrototaxMaxAmount { get; private set; } = 2;
 	
-	[field: Tooltip("Length of boosted speed after being hit.")]
-	[field: Range(3f, 20f)]
-	public float FungiBoostTime { get; private set; } = 6f;
+	[field: Tooltip("Normal speed of the Prototax.")]
+	[field: Range(0.1f, 50f)]
+	public float PrototaxNormalSpeed { get; private set; } = 3.5f;
 	
-	[field: Tooltip("Length of stunned time after being hit.")]
+	[field: Tooltip("Normal acceleration of the Prototax.")]
+	[field: Range(0.1f, 200f)]
+	public float PrototaxNormalAcceleration { get; private set; } = 5f;
+
+	[field: Tooltip("Speed of the Prototax after being hit.")]
+	[field: Range(0.1f, 50f)]
+	public float PrototaxBoostedSpeed { get; private set; } = 6f;
+	
+	[field: Tooltip("Acceleration of the Prototax after being hit.")]
+	[field: Range(0.1f, 200f)]
+	public float PrototaxBoostedAcceleration { get; private set; } = 7f;
+	
+	[field: Tooltip("Length of the speed boost after being hit.")]
 	[field: Range(3f, 20f)]
-	public float FungiStunTime { get; private set; } = 4f;
+	public float PrototaxBoostTime { get; private set; } = 6f;
+	
+	[field: Tooltip("Amount of time the Prototax spews the spores for after being hit.")]
+	[field: Range(3f, 20f)]
+	public float PrototaxSpewTime { get; private set; } = 4f;
+
+	[field: Tooltip("When enabled, the Prototax will roam around the area that they spawned in, and not venture out too far.")]
+	public bool PrototaxAnchoredWandering { get; private set; } = false;
+
+	[field: Tooltip("The minimum time that the Prototax will wander for.")]
+	[field: Range(5f, 1000f)]
+	public float PrototaxWanderTimeMin { get; private set; } = 30f;
+
+	[field: Tooltip("The maximum time that the Prototax will wander for.")]
+	[field: Range(6f, 1001f)]
+	public float PrototaxWanderTimeMax { get; private set; } = 240f;
+	
+	[field: Tooltip("The minimum time that the Prototax will idle for.")]
+	[field: Range(1f, 120f)]
+	public float PrototaxIdleTimeMin { get; private set; } = 15f;
+
+	[field: Tooltip("The maximum time that the Prototax will idle for.")]
+	[field: Range(2f, 121f)]
+	public float PrototaxIdleTimeMax { get; private set; } = 35f;
 	
 	[field: Header("Leaf Boy")]
 	

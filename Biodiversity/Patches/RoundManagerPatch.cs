@@ -6,7 +6,7 @@ using System.Reflection.Emit;
 
 namespace Biodiversity.Patches;
 
-// FIXME: This patch is currently broken and like yeah... dont
+// todo FIXME: This patch is currently broken and like yeah... dont
 //[HarmonyPatch(typeof(RoundManager))]
 internal static class RoundManagerPatch 
 {
@@ -14,7 +14,8 @@ internal static class RoundManagerPatch
 
     private static bool CanEnemySpawn(EnemyType type)
     {
-        if (SpawnRequirements.TryGetValue(type, out Func<bool> callback)) {
+        if (SpawnRequirements.TryGetValue(type, out Func<bool> callback)) 
+        {
             BiodiversityPlugin.LogVerbose($"doing callback for {type.enemyName}");
             bool result = callback();
             if(!result)

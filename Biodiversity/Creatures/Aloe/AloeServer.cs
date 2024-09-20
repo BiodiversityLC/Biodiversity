@@ -12,6 +12,7 @@ using GameNetcodeStuff;
 using UnityEngine;
 using Logger = BepInEx.Logging.Logger;
 using Random = UnityEngine.Random;
+
 #pragma warning disable CS0169 // Field is never used
 
 namespace Biodiversity.Creatures.Aloe;
@@ -21,7 +22,6 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public ManualLogSource Mls;
     [HideInInspector] public string aloeId;
     
-    [Header("AI and Pathfinding")] [Space(5f)]
     public AISearchRoutine roamMap;
     
     public int PlayerHealthThresholdForStalking { get; private set; } = 90;
@@ -335,13 +335,12 @@ public class AloeServer : BiodiverseAI
         if (favouriteSpot == Vector3.zero)
         {
             favouriteSpot =
-                AloeUtils.GetFarthestValidNodeFromPosition(
-                        out AloeUtils.PathStatus pathStatus,
+                GetFarthestValidNodeFromPosition(
+                        out PathStatus pathStatus,
                         agent,
                         _mainEntrancePosition != Vector3.zero ? _mainEntrancePosition : transform.position,
                         allAINodes,
-                        bufferDistance: 0f,
-                        logSource: Mls)
+                        bufferDistance: 0f)
                     .position;
         }
         

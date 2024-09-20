@@ -13,6 +13,8 @@ public class AloeNetcodeController : NetworkBehaviour
     private ManualLogSource _mls;
     private string _aloeId;
 
+    [SerializeField] private AloeClient aloeClient;
+
     [HideInInspector] public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
     [HideInInspector] public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
     [HideInInspector] public readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();
@@ -77,17 +79,17 @@ public class AloeNetcodeController : NetworkBehaviour
     {
         OnCrushPlayerNeck?.Invoke(receivedAloeId, playerClientId);
     }
-    
+
     [ServerRpc]
-    public void PlayAudioClipTypeServerRpc(string receivedAloeId, AloeClient.AudioClipTypes audioClipType, bool interrupt = false)
+    public void PlayAudioClipTypeServerRpc(string receivedAloeId, AloeClient.AudioClipTypes audioClipType,
+        bool interrupt = false)
     {
-        AloeClient aloeClient = GetComponent<AloeClient>();
         if (aloeClient == null)
         {
             _mls.LogError("Aloe client was null, cannot play audio clip");
             return;
         }
-        
+
         int numberOfAudioClips = audioClipType switch
         {
             AloeClient.AudioClipTypes.Stun => aloeClient.stunSfx.Length,
@@ -106,11 +108,12 @@ public class AloeNetcodeController : NetworkBehaviour
             case 0:
                 _mls.LogError($"There are no audio clips for audio clip type {audioClipType}.");
                 return;
-            
+
             case -1:
-                _mls.LogError($"Audio Clip Type was not listed, cannot play audio clip. Number of audio clips: {numberOfAudioClips}.");
+                _mls.LogError(
+                    $"Audio Clip Type was not listed, cannot play audio clip. Number of audio clips: {numberOfAudioClips}.");
                 return;
-            
+
             default:
             {
                 int clipIndex = UnityEngine.Random.Range(0, numberOfAudioClips);
@@ -121,7 +124,8 @@ public class AloeNetcodeController : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void PlayAudioClipTypeClientRpc(string receivedAloeId, AloeClient.AudioClipTypes audioClipType, int clipIndex, bool interrupt = false)
+    private void PlayAudioClipTypeClientRpc(string receivedAloeId, AloeClient.AudioClipTypes audioClipType,
+        int clipIndex, bool interrupt = false)
     {
         OnPlayAudioClipType?.Invoke(receivedAloeId, audioClipType, clipIndex, interrupt);
     }
@@ -131,7 +135,7 @@ public class AloeNetcodeController : NetworkBehaviour
     {
         OnPlayHealingVfx?.Invoke(receivedAloeId, totalHealingTime);
     }
-    
+
     [ClientRpc]
     public void SetTargetPlayerAbleToEscapeClientRpc(string receivedAloeId, bool canEscape)
     {
@@ -147,7 +151,7 @@ public class AloeNetcodeController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void TargetPlayerEscapedServerRpc(string receivedAloeId)
     {
-       OnTargetPlayerEscaped?.Invoke(receivedAloeId); 
+        OnTargetPlayerEscaped?.Invoke(receivedAloeId);
     }
 
     [ClientRpc]
@@ -165,7 +169,7 @@ public class AloeNetcodeController : NetworkBehaviour
     [ClientRpc]
     public void MuffleTargetPlayerVoiceClientRpc(string receivedAloeId)
     {
-       OnMuffleTargetPlayerVoice?.Invoke(receivedAloeId); 
+        OnMuffleTargetPlayerVoice?.Invoke(receivedAloeId);
     }
 
     [ClientRpc]
@@ -185,7 +189,7 @@ public class AloeNetcodeController : NetworkBehaviour
     {
         OnSetAnimationTrigger?.Invoke(receivedAloeId, animationId);
     }
-    
+
     /// <summary>
     /// Invokes the initialize config values event
     /// </summary>
@@ -206,10 +210,10 @@ public class AloeNetcodeController : NetworkBehaviour
         _aloeId = receivedAloeId;
         _mls?.Dispose();
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Netcode Controller {_aloeId}");
-        
+
         OnSyncAloeId?.Invoke(receivedAloeId);
     }
-    
+
     /// <summary>
     /// Only logs the given message if the assembly version is in debug, not release
     /// </summary>

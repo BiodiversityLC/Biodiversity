@@ -1,14 +1,13 @@
 ﻿namespace Biodiversity.Creatures.Murkydere;
-public class MurkydereAI : BiodiverseAI {
-
-    public enum States {
+public class MurkydereAI : BiodiverseAI 
+{
+    private enum States 
+    {
 
     }
 
-    public override void DoAIInterval() {
-        if(!ShouldProcessEnemy()) return;
+    public override void DoAIInterval() 
+    {
         base.DoAIInterval();
-        
-
     }
 }

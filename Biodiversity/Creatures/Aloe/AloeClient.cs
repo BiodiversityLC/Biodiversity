@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
-using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Util.Lang;
 using Biodiversity.Util.Types;
 using Unity.Netcode;
@@ -94,12 +93,6 @@ public class AloeClient : MonoBehaviour
         // new Tuple<string, Type>("LineOfSight2", typeof(MeshRenderer)),
     ];
 
-#if !UNITY_EDITOR
-    [field: HideInInspector]
-    [field: SerializeField]
-    public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
-#endif
-
 #pragma warning disable 0649
     [Header("Audio")] [Space(5f)] 
     [SerializeField] private AudioSource aloeVoiceSource;
@@ -188,7 +181,7 @@ public class AloeClient : MonoBehaviour
         if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
 
         _aloeServer = new CachedValue<AloeServer>(GetComponent<AloeServer>);
-
+        
         _targetPlayerCachedRenderers = new CachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
         {
             List<Tuple<Component, bool>> rendererComponents = [];
@@ -1130,10 +1123,10 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         
-        escapeChargePerPress = Config.EscapeChargePerPress;
-        escapeChargeDecayRate = Config.EscapeChargeDecayRate;
-        escapeChargeThreshold = Config.EscapeChargeThreshold;
-        skinMetallicTransitionTime = Config.DarkSkinTransitionTime;
+        escapeChargePerPress = AloeHandler.Instance.Config.EscapeChargePerPress;
+        escapeChargeDecayRate = AloeHandler.Instance.Config.EscapeChargeDecayRate;
+        escapeChargeThreshold = AloeHandler.Instance.Config.EscapeChargeThreshold;
+        skinMetallicTransitionTime = AloeHandler.Instance.Config.DarkSkinTransitionTime;
     }
 
     /// <summary>

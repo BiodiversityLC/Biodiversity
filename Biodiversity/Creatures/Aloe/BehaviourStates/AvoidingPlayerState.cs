@@ -101,9 +101,9 @@ public class AvoidingPlayerState : BehaviourState
         if (_avoidPlayerIntervalTimer > 0) return;
         _shouldTransitionToAttacking = false;
 
-        AloeUtils.PathStatus pathStatus = AloeUtils.PathStatus.Unknown;
+        BiodiverseAI.PathStatus pathStatus = BiodiverseAI.PathStatus.Unknown;
         Transform farAwayNode = AloeServerInstance.AvoidingPlayer.IsNotNull
-            ? AloeUtils.GetFarthestValidNodeFromPosition(
+            ? BiodiverseAI.GetFarthestValidNodeFromPosition(
                 pathStatus: out pathStatus,
                 agent: AloeServerInstance.agent,
                 position: AloeServerInstance.AvoidingPlayer.Value.transform.position,
@@ -111,14 +111,13 @@ public class AvoidingPlayerState : BehaviourState
                 ignoredAINodes: null,
                 checkLineOfSight: true,
                 allowFallbackIfBlocked: true,
-                bufferDistance: 2.5f,
-                logSource: AloeServerInstance.Mls)
+                bufferDistance: 2.5f)
             : null;
         
-        if (farAwayNode != null && pathStatus != AloeUtils.PathStatus.Unknown &&
-            pathStatus != AloeUtils.PathStatus.Invalid)
+        if (farAwayNode != null && pathStatus != BiodiverseAI.PathStatus.Unknown &&
+            pathStatus != BiodiverseAI.PathStatus.Invalid)
         {
-            if (pathStatus == AloeUtils.PathStatus.ValidButInLos)
+            if (pathStatus == BiodiverseAI.PathStatus.ValidButInLos)
             {
                 waitTimer = 2f;
                 AloeServerInstance.LogDebug("Valid escape node found, but was in LOS.");
