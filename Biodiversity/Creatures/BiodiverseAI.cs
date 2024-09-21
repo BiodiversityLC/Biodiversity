@@ -1,16 +1,167 @@
-﻿using BepInEx.Logging;
-using Biodiversity.Util;
+﻿using Biodiversity.Util;
 using GameNetcodeStuff;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
-using Random = System.Random;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures;
 
 public abstract class BiodiverseAI : EnemyAI
 {
+    /// <summary>
+    /// Gets the mapping between audio type identifiers and their corresponding arrays of <see cref="AudioClip"/>s.
+    /// Derived classes must override this property to provide their specific audio clip configurations.
+    /// </summary>
+    protected virtual Dictionary<string, AudioClip[]> AudioClips { get; } = new();
+
+    /// <summary>
+    /// Gets the mapping between audio source identifiers and their corresponding <see cref="AudioSource"/> components.
+    /// Derived classes must override this property to provide their specific audio source configurations.
+    /// </summary>
+    protected virtual Dictionary<string, AudioSource> AudioSources { get; } = new();
+
+    /// <summary>
+    /// Requests the server to play a specific type of audio clip on a designated <see cref="AudioSource"/>.
+    /// This method ensures that the selected audio clip is synchronized across all clients.
+    /// </summary>
+    /// <param name="audioClipType">
+    /// A string identifier representing the type/category of the audio clip to be played 
+    /// (e.g., "Stun", "Laugh", "Ambient").
+    /// </param>
+    /// <param name="audioSourceType">
+    /// A string identifier representing the specific <see cref="AudioSource"/> on which the audio clip should be played 
+    /// (e.g., "CreatureVoice", "CreatureSFX", "Footsteps").
+    /// </param>
+    /// <param name="interrupt">
+    /// Determines whether the current audio playback on the specified <see cref="AudioSource"/> should be interrupted 
+    /// before playing the new audio clip.
+    /// </param>
+    /// <param name="audibleInWalkieTalkie">
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// to players using walkie-talkies.
+    /// </param>
+    /// <param name="audibleByEnemies">
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// actions.
+    /// </param>
+    [ServerRpc]
+    public void PlayAudioClipTypeServerRpc(
+        string audioClipType, 
+        string audioSourceType, 
+        bool interrupt = false,
+        bool audibleInWalkieTalkie = true,
+        bool audibleByEnemies = false)
+    {
+        // Validate audio clip type
+        if (!AudioClips.ContainsKey(audioClipType))
+        {
+            LogError($"Audio Clip Type '{audioClipType}' not defined for {GetType().Name}.");
+            return;
+        }
+
+        int numberOfClips = AudioClips[audioClipType].Length;
+
+        if (numberOfClips == 0)
+        {
+            LogError($"No audio clips available for type '{audioClipType}' in {GetType().Name}.");
+            return;
+        }
+
+        // Validate audio source type
+        if (!AudioSources.ContainsKey(audioSourceType))
+        {
+            LogError($"Audio Source Type '{audioSourceType}' not defined for {GetType().Name}.");
+            return;
+        }
+
+        // Select a random clip index
+        int clipIndex = Random.Range(0, numberOfClips);
+        PlayAudioClipTypeClientRpc(audioClipType, audioSourceType, clipIndex, interrupt, audibleInWalkieTalkie, audibleByEnemies);
+    }
+
+    /// <summary>
+    /// Plays the selected audio clip on the specified <see cref="AudioSource"/> across all clients.
+    /// This method is invoked by the server to ensure synchronized audio playback.
+    /// </summary>
+    /// <param name="audioClipType">
+    /// A string identifier representing the type/category of the audio clip to be played 
+    /// (e.g., "Stun", "Chase", "Ambient").
+    /// </param>
+    /// <param name="audioSourceType">
+    /// A string identifier representing the specific <see cref="AudioSource"/> on which the audio clip should be played 
+    /// (e.g., "Voice", "Footsteps", "Alert").
+    /// </param>
+    /// <param name="clipIndex">
+    /// The index of the <see cref="AudioClip"/> within the array corresponding to <paramref name="audioClipType"/> 
+    /// that should be played.
+    /// </param>
+    /// <param name="interrupt">
+    /// Determines whether the current audio playback on the specified <see cref="AudioSource"/> should be interrupted 
+    /// before playing the new audio clip.
+    /// </param>
+    /// <param name="audibleInWalkieTalkie">
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// to players using walkie-talkies.
+    /// </param>
+    /// <param name="audibleByEnemies">
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// actions.
+    /// </param>
+    [ClientRpc]
+    private void PlayAudioClipTypeClientRpc(
+        string audioClipType, 
+        string audioSourceType, 
+        int clipIndex, 
+        bool interrupt,
+        bool audibleInWalkieTalkie,
+        bool audibleByEnemies)
+    {
+        // Validate audio clip type
+        if (!AudioClips.ContainsKey(audioClipType))
+        {
+            LogError($"Audio Clip Type '{audioClipType}' not defined on client for {GetType().Name}.");
+            return;
+        }
+
+        // Validate audio source type
+        if (!AudioSources.ContainsKey(audioSourceType))
+        {
+            LogError($"Audio Source Type '{audioSourceType}' not defined on client for {GetType().Name}.");
+            return;
+        }
+
+        AudioClip[] clips = AudioClips[audioClipType];
+        if (clipIndex < 0 || clipIndex >= clips.Length)
+        {
+            LogError($"Invalid clip index {clipIndex} for type '{audioClipType}' in {GetType().Name}.");
+            return;
+        }
+
+        AudioClip clipToPlay = clips[clipIndex];
+        if (clipToPlay == null)
+        {
+            LogError($"Audio clip at index {clipIndex} for type '{audioClipType}' is null in {GetType().Name}.");
+            return;
+        }
+
+        AudioSource selectedAudioSource = AudioSources[audioSourceType];
+        if (selectedAudioSource == null)
+        {
+            LogError($"Audio Source '{audioSourceType}' is null in {GetType().Name}.");
+            return;
+        }
+
+        LogVerbose($"Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}' in {GetType().Name}.");
+
+        if (interrupt) selectedAudioSource.Stop();
+        selectedAudioSource.PlayOneShot(clipToPlay);
+        if (audibleInWalkieTalkie) WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
+        if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
+    }
+    
     /// <summary>
     /// Checks and outs any players that are nearby.
     /// </summary>
@@ -42,13 +193,13 @@ public abstract class BiodiverseAI : EnemyAI
     protected static Vector3 GetRandomPositionOnNavMesh(Vector3 position, float radius = 10f)
     {
         return RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(position, radius, layerMask: -1,
-            randomSeed: new Random());
+            randomSeed: new System.Random());
     }
 
     protected Vector3 GetRandomPositionNearPlayer(PlayerControllerB player, float radius = 15f, float minDistance = 0f)
     {
-        return GetRandomPositionOnNavMesh(player.transform.position + UnityEngine.Random.insideUnitSphere * radius +
-                                          UnityEngine.Random.onUnitSphere * minDistance);
+        return GetRandomPositionOnNavMesh(player.transform.position + Random.insideUnitSphere * radius +
+                                          Random.onUnitSphere * minDistance);
     }
     
     /// <summary>
@@ -97,14 +248,12 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="position">The target position to path to.</param>
     /// <param name="checkLineOfSight">Whether to check if any segment of the path is obstructed by line of sight.</param>
     /// <param name="bufferDistance">The buffer distance within which the path is considered valid without further checks.</param>
-    /// <param name="logSource">The logger to use for debug logs, can be null.</param>
     /// <returns>Returns true if the agent can path to the position within the buffer distance or if a valid path exists; otherwise, false.</returns>
     public static PathStatus IsPathValid(
         NavMeshAgent agent, 
         Vector3 position, 
         bool checkLineOfSight = false, 
-        float bufferDistance = 0f, 
-        ManualLogSource logSource = null)
+        float bufferDistance = 0f)
     {
         // Check if the desired location is within the buffer distance
         if (Vector3.Distance(agent.transform.position, position) <= bufferDistance)
@@ -287,8 +436,21 @@ public abstract class BiodiverseAI : EnemyAI
     protected void LogVerbose(object message)
     {
         if (BiodiversityPlugin.Config.VerboseLogging)
-        {
-            BiodiversityPlugin.Logger.LogDebug($"[{enemyType.enemyName}] {message}");
-        }
+            BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
+    }
+
+    protected void LogError(object message)
+    {
+        BiodiversityPlugin.Logger.LogError($"{GetLogPrefix()} {message}");
+    }
+
+    protected void LogWarning(object message)
+    {
+        BiodiversityPlugin.Logger.LogWarning($"{GetLogPrefix()} {message}");
+    }
+
+    private string GetLogPrefix()
+    {
+        return $"[{enemyType.enemyName}]";
     }
 }

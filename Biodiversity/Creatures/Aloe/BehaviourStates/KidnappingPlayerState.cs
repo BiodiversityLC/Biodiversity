@@ -56,8 +56,7 @@ public class KidnappingPlayerState : BehaviourState
         
         if (BiodiverseAI.IsPathValid(
                 agent: AloeServerInstance.agent, 
-                position: AloeServerInstance.favouriteSpot, 
-                logSource: AloeServerInstance.Mls) != BiodiverseAI.PathStatus.Valid) 
+                position: AloeServerInstance.favouriteSpot) != BiodiverseAI.PathStatus.Valid) 
         { 
             AloeServerInstance.LogDebug("When initializing kidnapping, no path was found to the Aloe's favourite spot."); 
             AloeServerInstance.SwitchBehaviourState(AloeServer.States.HealingPlayer); 

@@ -44,9 +44,9 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	[field: Range(3f, 20f)]
 	public float PrototaxBoostTime { get; private set; } = 6f;
 	
-	[field: Tooltip("Amount of time the Prototax spews the spores for after being hit.")]
-	[field: Range(3f, 20f)]
-	public float PrototaxSpewTime { get; private set; } = 4f;
+	// [field: Tooltip("Amount of time the Prototax spews the spores for after being hit.")]
+	// [field: Range(3f, 20f)]
+	// public float PrototaxSpewTime { get; private set; } = 4f;
 
 	[field: Tooltip("When enabled, the Prototax will roam around the area that they spawned in, and not venture out too far.")]
 	public bool PrototaxAnchoredWandering { get; private set; } = false;

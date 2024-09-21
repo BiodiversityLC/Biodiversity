@@ -483,6 +483,7 @@ public class AloeClient : MonoBehaviour
         player.KillPlayer(Vector3.zero, true, CauseOfDeath.Crushing, 1);
     }
 
+    //todo: change this to the new system
     /// <summary>
     /// Plays an audio clip with the given type and index
     /// </summary>

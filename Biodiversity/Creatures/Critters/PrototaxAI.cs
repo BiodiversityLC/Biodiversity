@@ -1,10 +1,12 @@
+using GameNetcodeStuff;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters;
 
 public class PrototaxAI : BiodiverseAI 
 {
-	private static readonly int Spew = Animator.StringToHash("Spew");
+	private static readonly int Spew = Animator.StringToHash("Spewing");
 	
 	private static CritterConfig Config => CritterHandler.Instance.Config;
 	
@@ -12,13 +14,42 @@ public class PrototaxAI : BiodiverseAI
 	[Header("Spore")]
 	[SerializeField] private GameObject sporeCloudPrefab;
 	[SerializeField] private Transform sporeCloudOrigin;
+	[SerializeField] private AudioSource sporeAudioSource;
+	[SerializeField] private AudioClip[] sporeAmbientSfx;
 
 	[Header("Audio")]
 	[SerializeField] private AudioClip[] footstepSfx = [];
+	[SerializeField] private AudioClip[] spewSfx = [];
+	[SerializeField] private AudioClip[] hitSfx = [];
 
 	[Header("AI and Pathfinding")] 
 	[SerializeField] private AISearchRoutine roamSearchRoutine;
 #pragma warning restore 0649
+	
+	private enum States
+	{
+		Roaming,
+		Idle,
+		Spewing,
+		RunningAway,
+	}
+
+	private enum AudioClipTypes
+	{
+		Spew,
+		SporeAmbient,
+		Footsteps,
+		Hit
+	}
+
+	private enum AudioSourceTypes
+	{
+		CreatureVoice,
+		CreatureSfx,
+		Spore
+	}
+
+	protected override Dictionary<string, AudioClip[]> AudioClips { get; } = new();
 
 	private Vector3 _spawnPosition;
 
@@ -32,18 +63,21 @@ public class PrototaxAI : BiodiverseAI
 	private float _roamingTimer;
 	private float _takeDamageCooldown;
 
-	private enum States
+	private void Awake()
 	{
-		Roaming,
-		Idle,
-		Spewing,
-		RunningAway,
+		AudioClips[AudioClipTypes.Spew.ToString()] = spewSfx;
+		AudioClips[AudioClipTypes.Footsteps.ToString()] = footstepSfx;
+		AudioClips[AudioClipTypes.SporeAmbient.ToString()] = sporeAmbientSfx;
+		AudioClips[AudioClipTypes.Hit.ToString()] = hitSfx;
+
+		AudioSources[AudioSourceTypes.CreatureVoice.ToString()] = creatureVoice;
+		AudioSources[AudioSourceTypes.CreatureSfx.ToString()] = creatureSFX;
+		AudioSources[AudioSourceTypes.Spore.ToString()] = sporeAudioSource;
 	}
 
 	public override void Start()
 	{
 		Random.InitState(StartOfRound.Instance.randomMapSeed + thisEnemyIndex);
-		//todo: assign correct ai nodes
 
 		_spawnPosition = transform.position;
 		_roamingTimeRange = new Vector2(Config.PrototaxWanderTimeMin,
@@ -101,6 +135,16 @@ public class PrototaxAI : BiodiverseAI
 			}
 		}
 	}
+
+	public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false,
+		int hitId = -1)
+	{
+		base.HitEnemy(force, playerWhoHit, playHitSFX, hitId);
+		if (!IsServer || _takeDamageCooldown > 0) return;
+		
+		PlayAudioClipTypeServerRpc(AudioClipTypes.Hit.ToString(), AudioSourceTypes.CreatureSfx.ToString());
+		_takeDamageCooldown = 0.03f;
+	}
 	
 	private void InitializeState(States state)
 	{
@@ -141,7 +185,6 @@ public class PrototaxAI : BiodiverseAI
 				_agentMaxSpeed = 0f;
 				_agentMaxAcceleration = Config.PrototaxNormalAcceleration;
 				moveTowardsDestination = false;
-				_idleTimer = Config.PrototaxSpewTime;
 
 				break;
 			}

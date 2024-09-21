@@ -172,7 +172,7 @@ public static class AloeUtils
         float optimalDistance = currentDistance;
         
         if (IsPlayerTargetable(player) && 
-            IsPathValid(agent, player.transform.position, logSource: logSource) == PathStatus.Valid && 
+            IsPathValid(agent, player.transform.position) == PathStatus.Valid && 
             (!requireLineOfSight || DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eye, viewWidth, viewRange, logSource: logSource)))
         {
             if (currentDistance < optimalDistance)
