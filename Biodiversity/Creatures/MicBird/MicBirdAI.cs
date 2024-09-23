@@ -36,6 +36,8 @@ namespace Biodiversity.Creatures.MicBird
         MalfunctionID malfunction;
         Vector3 targetPos = Vector3.zero;
 
+        private int malfunctionTimes = 0;
+
         private static MicBirdAI firstSpawned = null;
 
         public override void Start()
@@ -77,7 +79,6 @@ namespace Biodiversity.Creatures.MicBird
         public override void Update()
         {
             base.Update();
-
             malfunctionTimer -= Time.deltaTime;
 
             if (currentBehaviourStateIndex == (int)State.PERCH)
@@ -102,10 +103,12 @@ namespace Biodiversity.Creatures.MicBird
         [ClientRpc]
         public void ToggleAllWalkiesOutsideClientRpc()
         {
+            BiodiversityPlugin.Logger.LogInfo("Walkie debug 2");
             foreach (WalkieTalkie walkie in WalkieTalkie.allWalkieTalkies)
             {
                 if (walkie.playerHeldBy.isInsideFactory)
                 {
+                    BiodiversityPlugin.Logger.LogInfo("Player is inside.");
                     continue;
                 }
                 if (walkie.walkieTalkieLight.enabled == true)
@@ -120,6 +123,9 @@ namespace Biodiversity.Creatures.MicBird
         [ClientRpc]
         public void ToggleShipDoorsClientRpc()
         {
+            if (StartOfRound.Instance.shipIsLeaving) return;
+
+
             HangarShipDoor door = FindObjectOfType<HangarShipDoor>();
             if (door.shipDoorsAnimator.GetBool("Closed"))
             {
@@ -136,6 +142,9 @@ namespace Biodiversity.Creatures.MicBird
 
         private void spawnMicBird()
         {
+            if (MicBirdHandler.Instance.Assets.MicBirdEnemyType.numberSpawned >= 9) return;
+
+
             GameObject bird = Object.Instantiate<GameObject>(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, Vector3.zero, Quaternion.Euler(Vector3.zero));
             bird.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             RoundManager.Instance.SpawnedEnemies.Add(bird.GetComponent<EnemyAI>());
@@ -150,16 +159,25 @@ namespace Biodiversity.Creatures.MicBird
                 switch (malfunction)
                 {
                     case MalfunctionID.WALKIE:
+                        BiodiversityPlugin.Logger.LogInfo("Walkie debug 1");
                         ToggleAllWalkiesOutsideClientRpc();
                         break;
                     case MalfunctionID.SHIPDOORS:
-                        ToggleShipDoorsClientRpc();
+                        if (malfunctionTimes > 0)
+                        {
+                            ToggleShipDoorsClientRpc();
+                            malfunctionTimes--;
+                        }
                         break;
                     case MalfunctionID.RADARBLINK:
                         StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(true);
                         break;
                     case MalfunctionID.LIGHTSOUT:
-                        FindObjectOfType<ShipLights>().SetShipLightsBoolean(false);
+                        if (malfunctionTimes > 0)
+                        {
+                            FindObjectOfType<ShipLights>().ToggleShipLights();
+                            malfunctionTimes--;
+                        }
                         break;
                 }
             }
@@ -200,11 +218,22 @@ namespace Biodiversity.Creatures.MicBird
                     spawnMicBird();
 
                     callTimer = 60;
-                    malfunctionTimer = 10;
+
 
                     malfunction = (MalfunctionID)Random.Range(0, Enum.GetValues(typeof(MalfunctionID)).Length);
                     BiodiversityPlugin.Logger.LogInfo("Setting malfunction to " + malfunction.ToString());
-
+                    switch (malfunction)
+                    {
+                        case MalfunctionID.SHIPDOORS:
+                            malfunctionTimes = Random.Range(1, 6);
+                            break;
+                        case MalfunctionID.LIGHTSOUT:
+                            malfunctionTimes = 1;
+                            break;
+                        default:
+                            break;
+                    }
+                    malfunctionTimer = 10;
                     SwitchToBehaviourClientRpc((int)State.PERCH);
                     break;
             }
