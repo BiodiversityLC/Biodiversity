@@ -103,14 +103,10 @@ namespace Biodiversity.Creatures.MicBird
         [ClientRpc]
         public void ToggleAllWalkiesOutsideClientRpc()
         {
-            BiodiversityPlugin.Logger.LogInfo("Walkie debug 2");
-            foreach (WalkieTalkie walkie in WalkieTalkie.allWalkieTalkies)
+            WalkieTalkie[] walkies = (WalkieTalkie[])Resources.FindObjectsOfTypeAll(typeof(WalkieTalkie));
+            foreach (WalkieTalkie walkie in walkies)
             {
-                if (walkie.playerHeldBy.isInsideFactory)
-                {
-                    BiodiversityPlugin.Logger.LogInfo("Player is inside.");
-                    continue;
-                }
+                if (walkie.isInFactory) return;
                 if (walkie.walkieTalkieLight.enabled == true)
                 {
                     walkie.SwitchWalkieTalkieOn(false);
@@ -159,7 +155,6 @@ namespace Biodiversity.Creatures.MicBird
                 switch (malfunction)
                 {
                     case MalfunctionID.WALKIE:
-                        BiodiversityPlugin.Logger.LogInfo("Walkie debug 1");
                         ToggleAllWalkiesOutsideClientRpc();
                         break;
                     case MalfunctionID.SHIPDOORS:
