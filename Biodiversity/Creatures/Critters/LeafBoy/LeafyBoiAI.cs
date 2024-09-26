@@ -1,21 +1,14 @@
-using System.Collections.Generic;
 using GameNetcodeStuff;
-using System;
-using Unity.Netcode;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 using Random = UnityEngine.Random;
 
-namespace Biodiversity.Creatures.Critters;
+namespace Biodiversity.Creatures.Critters.LeafBoy;
 
 public class LeafyBoiAI : BiodiverseAI
 {
     private static readonly int AnimationIdHash = Animator.StringToHash("AnimationId");
-
-    private float _scaryPlayerDistance;
-    private float _baseMovementSpeed;
-    private float _scaredSpeedMultiplier;
-    private float _playerForgetTime;
 
 #pragma warning disable 0649
     [Header("Audio")] [Space(5f)] 
@@ -26,22 +19,37 @@ public class LeafyBoiAI : BiodiverseAI
     [SerializeField] private AISearchRoutine wanderRoutine;
 #pragma warning restore 0649
 
-    private enum AudioClipType
+    private enum AudioClipTypes
     {
         Bark,
         Scared
     }
+    
+    private enum AudioSourceTypes
+    {
+        CreatureVoice,
+        CreatureSfx,
+    }
 
     private enum States
     {
-        Wandering, // normal
+        Roaming, // normal
         Running, // actively running
         Scared // recently ran away
     }
 
+    private float _agentMaxSpeed;
+    private float _agentMaxAcceleration;
+    private float _scaryPlayerDistance;
+    private float _baseMovementSpeed;
+    private float _scaredSpeedMultiplier;
+    private float _playerForgetTime;
+    
+    protected override Dictionary<string, AudioClip[]> AudioClips { get; } = new();
+
     private static CritterConfig Config => CritterHandler.Instance.Config;
 
-    private States _state = States.Wandering;
+    private States _state = States.Roaming;
 
     private States State
     {
@@ -56,7 +64,16 @@ public class LeafyBoiAI : BiodiverseAI
 
     private float _timeSinceSeenPlayer;
     private float _timeUntilNextBarkSfx = 5;
-    private float _timeUntilNextStepAudibleSound = 3;
+
+    private void Awake()
+    {
+        // todo: change this to a function and then make AudioClips and AudioSources private in the parent class
+        AudioClips[AudioClipTypes.Bark.ToString()] = barkSfx;
+        AudioClips[AudioClipTypes.Scared.ToString()] = scaredSfx;
+        
+        AudioSources[AudioSourceTypes.CreatureVoice.ToString()] = creatureVoice;
+        AudioSources[AudioSourceTypes.CreatureSfx.ToString()] = creatureSFX;
+    }
 
     public override void Start()
     {
@@ -81,15 +98,8 @@ public class LeafyBoiAI : BiodiverseAI
         if (_timeUntilNextBarkSfx < 0)
         {
             _timeUntilNextBarkSfx = Random.Range(40f, 90f);
-            PlayRandomSfxFromListServerRpc(AudioClipType.Bark);
+            PlayAudioClipTypeServerRpc(AudioClipTypes.Bark.ToString(), AudioSourceTypes.CreatureVoice.ToString(), audibleByEnemies: true);
         }
-
-        // _timeUntilNextStepAudibleSound -= Time.deltaTime;
-        // if (_timeUntilNextStepAudibleSound < 0) 
-        // {
-        //     _timeUntilNextStepAudibleSound = Random.Range(3f, 6f);
-        //     RoundManager.Instance.PlayAudibleNoise(transform.position);
-        // }
     }
 
     public override void DoAIInterval()
@@ -104,21 +114,21 @@ public class LeafyBoiAI : BiodiverseAI
 
         ScanForPlayers();
 
-        switch (State)
+        switch (currentBehaviourStateIndex)
         {
-            case States.Wandering:
+            case (int)States.Roaming:
                 agent.speed = _baseMovementSpeed;
                 break;
 
-            case States.Running:
+            case (int)States.Running:
                 agent.speed = _baseMovementSpeed * _scaredSpeedMultiplier;
                 break;
 
-            case States.Scared:
+            case (int)States.Scared:
                 agent.speed = _baseMovementSpeed * _scaredSpeedMultiplier;
 
                 if (_timeSinceSeenPlayer > _playerForgetTime)
-                    State = States.Wandering;
+                    State = States.Roaming;
 
                 break;
         }
@@ -151,53 +161,29 @@ public class LeafyBoiAI : BiodiverseAI
         {
             _timeSinceSeenPlayer = 0;
 
-            if (State == States.Wandering) PlayRandomSfxFromListServerRpc(AudioClipType.Scared);
-            State = States.Running;
+            if (currentBehaviourStateIndex == (int)States.Roaming) PlayAudioClipTypeServerRpc(AudioClipTypes.Scared.ToString(), AudioSourceTypes.CreatureVoice.ToString(), audibleByEnemies: true);
+            SwitchBehaviourState(States.Running);
         }
-        else if (State == States.Running)
-        {
-            State = States.Scared;
-        }
+        else if (currentBehaviourStateIndex == (int)States.Running) SwitchBehaviourState(States.Scared);
     }
 
-    [ServerRpc]
-    private void PlayRandomSfxFromListServerRpc(AudioClipType audioClipType)
+    private void InitializeState(States state)
     {
-        int randomClipIndex = audioClipType switch
+        switch (state)
         {
-            AudioClipType.Bark => Random.Range(0, barkSfx.Length),
-            AudioClipType.Scared => Random.Range(0, scaredSfx.Length),
-            _ => -1
-        };
-
-        if (randomClipIndex == -1)
-        {
-            BiodiversityPlugin.Logger.LogError($"Invalid audio clip with type: {audioClipType}");
-            return;
+            case States.Roaming:
+            {
+                break;
+            }
         }
-
-        PlaySfxClientRpc(audioClipType, randomClipIndex);
     }
-
-    [ClientRpc]
-    private void PlaySfxClientRpc(AudioClipType audioClipType, int sfxListIndex)
+    
+    private void SwitchBehaviourState(States state)
     {
-        AudioClip audioClipToPlay = audioClipType switch
-        {
-            AudioClipType.Bark => barkSfx[sfxListIndex],
-            AudioClipType.Scared => scaredSfx[sfxListIndex],
-            _ => null
-        };
-
-        if (audioClipToPlay == null)
-        {
-            BiodiversityPlugin.Logger.LogError($"Invalid audio clip with type: {audioClipType}");
-            return;
-        }
-
-        LogVerbose($"Playing audio clip: {audioClipToPlay.name}");
-        creatureVoice.PlayOneShot(audioClipToPlay);
-        WalkieTalkie.TransmitOneShotAudio(creatureVoice, audioClipToPlay);
-        RoundManager.Instance.PlayAudibleNoise(transform.position);
+        int intState = (int)state;
+        if (currentBehaviourStateIndex == intState) return;
+        previousBehaviourStateIndex = currentBehaviourStateIndex;
+        currentBehaviourStateIndex = intState;
+        InitializeState(state);
     }
 }

@@ -1,31 +1,37 @@
+using Biodiversity.Behaviours;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
-namespace Biodiversity.Creatures.Critters;
+namespace Biodiversity.Creatures.Critters.Prototax;
 
-public class PrototaxAI : BiodiverseAI 
+public class PrototaxAI : BiodiverseAI
 {
-	private static readonly int Spew = Animator.StringToHash("Spewing");
-	
-	private static CritterConfig Config => CritterHandler.Instance.Config;
-	
-#pragma warning disable 0649	
-	[Header("Spore")]
-	[SerializeField] private GameObject sporeCloudPrefab;
-	[SerializeField] private Transform sporeCloudOrigin;
-	[SerializeField] private AudioSource sporeAudioSource;
-	[SerializeField] private AudioClip[] sporeAmbientSfx;
+	private static readonly int Spewing = Animator.StringToHash("Spewing");
 
-	[Header("Audio")]
+	private static CritterConfig Config => CritterHandler.Instance.Config;
+
+#pragma warning disable 0649
+	[Header("Spore")] [Space(5f)] [SerializeField] private GameObject sporeCloudObject;
+	[SerializeField] private Transform sporeCloudOrigin;
+
+	[Header("Audio")] [Space(5f)] [SerializeField] private AudioSource sporeAudioSource;
 	[SerializeField] private AudioClip[] footstepSfx = [];
 	[SerializeField] private AudioClip[] spewSfx = [];
 	[SerializeField] private AudioClip[] hitSfx = [];
+	[SerializeField] private AudioClip[] sporeAmbientSfx = [];
 
-	[Header("AI and Pathfinding")] 
-	[SerializeField] private AISearchRoutine roamSearchRoutine;
+	[Header("AI and Pathfinding")] [Space(5f)] [SerializeField] private AISearchRoutine roamSearchRoutine;
 #pragma warning restore 0649
-	
+
+	private readonly NetworkVariable<bool> _spewingAnimationParam = new();
+	private readonly NetworkVariable<bool> _sporeVisible = new();
+
+	private CachedValue<DamageTrigger> _sporeCloudDamageTrigger;
+	private CachedValue<Animation> _sporeCloudAnimation;
+
 	private enum States
 	{
 		Roaming,
@@ -77,6 +83,7 @@ public class PrototaxAI : BiodiverseAI
 
 	public override void Start()
 	{
+		base.Start();
 		Random.InitState(StartOfRound.Instance.randomMapSeed + thisEnemyIndex);
 
 		_spawnPosition = transform.position;
@@ -84,13 +91,24 @@ public class PrototaxAI : BiodiverseAI
 			Mathf.Max(Config.PrototaxWanderTimeMax, Config.PrototaxWanderTimeMin + 1));
 		_idleTimeRange = new Vector2(Config.PrototaxIdleTimeMin,
 			Mathf.Max(Config.PrototaxIdleTimeMax, Config.PrototaxIdleTimeMin + 1));
+
+		_sporeCloudDamageTrigger = new CachedValue<DamageTrigger>(sporeCloudObject.GetComponent<DamageTrigger>);
+		_sporeCloudAnimation = new CachedValue<Animation>(sporeCloudObject.GetComponent<Animation>);
+		
+		sporeCloudObject.SetActive(false);
+		
+		InitializeState(States.Roaming);
 	}
 
 	public override void Update()
 	{
 		base.Update();
+
+		creatureAnimator.SetBool(Spewing, _spewingAnimationParam.Value);
+		sporeCloudObject.SetActive(_sporeVisible.Value);
+
 		if (!IsServer) return;
-		
+
 		_takeDamageCooldown -= Time.deltaTime;
 		MoveWithAcceleration();
 	}
@@ -110,7 +128,7 @@ public class PrototaxAI : BiodiverseAI
 					SwitchBehaviourState(States.Idle);
 					break;
 				}
-				
+
 				break;
 			}
 
@@ -122,7 +140,7 @@ public class PrototaxAI : BiodiverseAI
 					SwitchBehaviourState(States.Roaming);
 					break;
 				}
-				
+
 				break;
 			}
 
@@ -130,7 +148,7 @@ public class PrototaxAI : BiodiverseAI
 			{
 				_speedBoostTimer -= Time.deltaTime;
 				if (_speedBoostTimer <= 0) SwitchBehaviourState(States.Roaming);
-				
+
 				break;
 			}
 		}
@@ -141,11 +159,15 @@ public class PrototaxAI : BiodiverseAI
 	{
 		base.HitEnemy(force, playerWhoHit, playHitSFX, hitId);
 		if (!IsServer || _takeDamageCooldown > 0) return;
-		
-		PlayAudioClipTypeServerRpc(AudioClipTypes.Hit.ToString(), AudioSourceTypes.CreatureSfx.ToString());
 		_takeDamageCooldown = 0.03f;
+
+		if (currentBehaviourStateIndex == (int)States.Spewing)
+		{
+			PlayAudioClipTypeServerRpc(AudioClipTypes.Hit.ToString(), AudioSourceTypes.CreatureSfx.ToString());
+			SwitchBehaviourState(States.Spewing);
+		}
 	}
-	
+
 	private void InitializeState(States state)
 	{
 		switch (state)
@@ -155,17 +177,17 @@ public class PrototaxAI : BiodiverseAI
 				_agentMaxSpeed = Config.PrototaxNormalSpeed;
 				_agentMaxAcceleration = Config.PrototaxNormalAcceleration;
 				_roamingTimer = Random.Range(_roamingTimeRange.x, _roamingTimeRange.y);
-				
+
 				if (previousBehaviourStateIndex == (int)States.RunningAway && roamSearchRoutine.inProgress) break;
 				StartSearch(Config.PrototaxAnchoredWandering ? _spawnPosition : transform.position, roamSearchRoutine);
-				
+
 				break;
 			}
 
 			case States.Idle:
 			{
 				if (roamSearchRoutine.inProgress) StopSearch(roamSearchRoutine);
-				
+
 				agent.speed = 0f;
 				agent.acceleration = 40f;
 				_agentMaxSpeed = 0f;
@@ -179,12 +201,31 @@ public class PrototaxAI : BiodiverseAI
 			case States.Spewing:
 			{
 				if (roamSearchRoutine.inProgress) StopSearch(roamSearchRoutine);
-				
+
 				agent.speed = 0f;
-				agent.acceleration = 40f;
+				agent.acceleration = Config.PrototaxNormalAcceleration + 20f;
 				_agentMaxSpeed = 0f;
-				_agentMaxAcceleration = Config.PrototaxNormalAcceleration;
+				_agentMaxAcceleration = Config.PrototaxNormalAcceleration + 10;
 				moveTowardsDestination = false;
+
+				if (_sporeCloudDamageTrigger.Value == null)
+				{
+					LogError("Spore cloud damage trigger is null, cannot spew the spore.");
+					break;
+				}
+
+				if (_sporeCloudAnimation.Value == null)
+				{
+					LogError("Spore cloud animation is null, cannot spew the spore.");
+					break;
+				}
+
+				_sporeCloudDamageTrigger.Value.EnemiesToIgnore.Clear();
+				_sporeCloudDamageTrigger.Value.EnemiesToIgnore.Add(this);
+
+				sporeCloudObject.transform.SetParent(sporeCloudOrigin, false);
+
+				_spewingAnimationParam.Value = true;
 
 				break;
 			}
@@ -198,16 +239,45 @@ public class PrototaxAI : BiodiverseAI
 				_speedBoostTimer = Config.PrototaxBoostTime;
 
 				if (roamSearchRoutine.inProgress) StopSearch(roamSearchRoutine);
-				
+
 				// todo: add offset for these node functions
 				// todo: make a better system for the input of ai nodes
 				// todo: make it automatically just use your agent
-				StartSearch(GetFarthestValidNodeFromPosition(out PathStatus _, agent, transform.position, allAINodes).position, roamSearchRoutine);
+				StartSearch(
+					GetFarthestValidNodeFromPosition(out PathStatus _, agent, transform.position, allAINodes).position,
+					roamSearchRoutine);
 				break;
 			}
 		}
 	}
-	
+
+	public void DisconnectSporeFromPrototax()
+	{
+		sporeCloudObject.transform.SetParent(null, true);
+	}
+
+	public void OnAnimationEventSpewSpore()
+	{
+		_sporeVisible.Value = true;
+		PlaySporeAnimClientRpc();
+		
+		PlayAudioClipTypeServerRpc(AudioClipTypes.SporeAmbient.ToString(), AudioSourceTypes.Spore.ToString());
+		PlayAudioClipTypeServerRpc(AudioClipTypes.Spew.ToString(), AudioSourceTypes.CreatureVoice.ToString(),
+			audibleByEnemies: true);
+	}
+
+	public void OnAnimationEventDisableSpores()
+	{
+		if (!IsServer) return;
+		_sporeVisible.Value = false;
+	}
+
+	[ClientRpc]
+	private void PlaySporeAnimClientRpc()
+	{
+		_sporeCloudAnimation.Value.Play();
+	}
+
 	private void SwitchBehaviourState(States state)
 	{
 		int intState = (int)state;

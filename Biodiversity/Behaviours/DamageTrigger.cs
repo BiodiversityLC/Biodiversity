@@ -1,65 +1,68 @@
+using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
-using GameNetcodeStuff;
 using UnityEngine;
 
 namespace Biodiversity.Behaviours;
 
-public class DamageTrigger : MonoBehaviour {
-	[SerializeField]
-	int enemyAttackForce = 1;
+public class DamageTrigger : MonoBehaviour
+{
+    [SerializeField] public int enemyAttackForce = 1;
+    [SerializeField] public int playerDamage = 20;
+    [SerializeField] public float damageDelay = 1;
+    [NonSerialized] public readonly List<EnemyAI> EnemiesToIgnore = [];
 
-	[SerializeField]
-	int playerDamage = 20;
+    private readonly List<EnemyAI> _enemiesToHit = [];
 
-	[SerializeField]
-	float damageDelay = 1;
-    
-	[NonSerialized]
-	public List<EnemyAI> enemiesToIgnore = [];
+    private bool _hitLocalPlayer;
 
-	float damageTime = 0;
+    private float _damageTime;
 
-	List<EnemyAI> enemiesToHit = [];
-	bool hitLocalPlayer = false;
-	
-	void Update() {
-		if(enemiesToHit.Count == 0 && !hitLocalPlayer) return;
-		damageTime += Time.deltaTime;
+    private void Update()
+    {
+        if (_enemiesToHit.Count == 0 && !_hitLocalPlayer) return;
+        _damageTime += Time.deltaTime;
 
-		if (damageTime >= damageDelay) {
-			damageTime = 0;
-			if (hitLocalPlayer) {
-				GameNetworkManager.Instance.localPlayerController.DamagePlayer(playerDamage);
-			}
+        if (_damageTime >= damageDelay)
+        {
+            _damageTime = 0;
+            if (_hitLocalPlayer) GameNetworkManager.Instance.localPlayerController.DamagePlayer(playerDamage);
+            if (!GameNetworkManager.Instance.localPlayerController.IsHost) return;
 
-			if(!GameNetworkManager.Instance.localPlayerController.IsHost) return;
-			
-			foreach (EnemyAI enemy in enemiesToHit) {
-				enemy.HitEnemyOnLocalClient(enemyAttackForce);
-			}
-		}
-	}
+            foreach (EnemyAI enemy in _enemiesToHit)
+            {
+                enemy.HitEnemyOnLocalClient(enemyAttackForce);
+            }
+        }
+    }
 
-	void OnTriggerEnter(Collider other) {
-		if (other.TryGetComponent(out EnemyAICollisionDetect enemy) && !enemiesToIgnore.Contains(enemy.mainScript)) {
-			if (!enemiesToHit.Contains(enemy.mainScript))
-				enemiesToHit.Add(enemy.mainScript);
-		}
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.TryGetComponent(out EnemyAICollisionDetect enemy) && !EnemiesToIgnore.Contains(enemy.mainScript))
+        {
+            if (!_enemiesToHit.Contains(enemy.mainScript))
+                _enemiesToHit.Add(enemy.mainScript);
+        }
 
-		if (other.TryGetComponent(out PlayerControllerB player) && GameNetworkManager.Instance.localPlayerController == player) {
-			hitLocalPlayer = true;
-		}
-	}
-	
-	void OnTriggerExit(Collider other) {
-		if (other.TryGetComponent(out EnemyAICollisionDetect enemy) && !enemiesToIgnore.Contains(enemy.mainScript)) {
-			if (enemiesToHit.Contains(enemy.mainScript))
-				enemiesToHit.Remove(enemy.mainScript);
-		}
+        if (other.TryGetComponent(out PlayerControllerB player) &&
+            GameNetworkManager.Instance.localPlayerController == player)
+        {
+            _hitLocalPlayer = true;
+        }
+    }
 
-		if (other.TryGetComponent(out PlayerControllerB player) && GameNetworkManager.Instance.localPlayerController == player) {
-			hitLocalPlayer = false;
-		}
-	}
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.TryGetComponent(out EnemyAICollisionDetect enemy) && !EnemiesToIgnore.Contains(enemy.mainScript))
+        {
+            if (_enemiesToHit.Contains(enemy.mainScript))
+                _enemiesToHit.Remove(enemy.mainScript);
+        }
+
+        if (other.TryGetComponent(out PlayerControllerB player) &&
+            GameNetworkManager.Instance.localPlayerController == player)
+        {
+            _hitLocalPlayer = false;
+        }
+    }
 }
