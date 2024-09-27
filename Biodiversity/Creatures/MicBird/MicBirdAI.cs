@@ -22,16 +22,18 @@ namespace Biodiversity.Creatures.MicBird
 
         private enum MalfunctionID
         {
-            WALKIE,
+            NONE,
             SHIPDOORS,
             RADARBLINK,
-            LIGHTSOUT
+            LIGHTSOUT,
+            WALKIE
         }
 
         [SerializeField] private AudioClip callSound;
 
         private float callTimer = 30;
-        private float malfunctionTimer = 0;
+        private float malfunctionInterval = 0;
+        private float baseMalfunctionInterval = 0;
         private bool setDestCalledAlready = false;
         MalfunctionID malfunction;
         Vector3 targetPos = Vector3.zero;
@@ -79,11 +81,40 @@ namespace Biodiversity.Creatures.MicBird
         public override void Update()
         {
             base.Update();
-            malfunctionTimer -= Time.deltaTime;
+            malfunctionInterval -= Time.deltaTime;
 
             if (currentBehaviourStateIndex == (int)State.PERCH)
             {
                 callTimer -= Time.deltaTime;
+            }
+
+            if (malfunctionInterval < 0)
+            {
+                bool ranMalfunction = true;
+                switch (malfunction)
+                {
+                    case MalfunctionID.WALKIE:
+                        ToggleAllWalkiesOutsideClientRpc();
+                        break;
+                    case MalfunctionID.SHIPDOORS:
+                        ToggleShipDoorsClientRpc();
+                        break;
+                    case MalfunctionID.RADARBLINK:
+                        StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(true);
+                        break;
+                    case MalfunctionID.LIGHTSOUT:
+                        FindObjectOfType<ShipLights>().ToggleShipLights();
+                        break;
+                    case MalfunctionID.NONE:
+                        ranMalfunction = false;
+                        break;
+                }
+                if (ranMalfunction)
+                {
+                    malfunctionTimes--;
+                    if (malfunctionTimes <= 0) malfunction = MalfunctionID.NONE;
+                }
+                malfunctionInterval = baseMalfunctionInterval;
             }
         }
 
@@ -150,32 +181,7 @@ namespace Biodiversity.Creatures.MicBird
         public override void DoAIInterval()
         {
             base.DoAIInterval();
-            if (malfunctionTimer >= 0)
-            {
-                switch (malfunction)
-                {
-                    case MalfunctionID.WALKIE:
-                        ToggleAllWalkiesOutsideClientRpc();
-                        break;
-                    case MalfunctionID.SHIPDOORS:
-                        if (malfunctionTimes > 0)
-                        {
-                            ToggleShipDoorsClientRpc();
-                            malfunctionTimes--;
-                        }
-                        break;
-                    case MalfunctionID.RADARBLINK:
-                        StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(true);
-                        break;
-                    case MalfunctionID.LIGHTSOUT:
-                        if (malfunctionTimes > 0)
-                        {
-                            FindObjectOfType<ShipLights>().ToggleShipLights();
-                            malfunctionTimes--;
-                        }
-                        break;
-                }
-            }
+
             switch (currentBehaviourStateIndex)
             {
                 case (int)State.GOTOSHIP:
@@ -215,20 +221,30 @@ namespace Biodiversity.Creatures.MicBird
                     callTimer = 60;
 
 
-                    malfunction = (MalfunctionID)Random.Range(0, Enum.GetValues(typeof(MalfunctionID)).Length);
+                    malfunction = (MalfunctionID)Random.Range(1, Enum.GetValues(typeof(MalfunctionID)).Length);
                     BiodiversityPlugin.Logger.LogInfo("Setting malfunction to " + malfunction.ToString());
                     switch (malfunction)
                     {
+                        case MalfunctionID.WALKIE:
+                            malfunctionTimes = Random.Range(1, 6);
+                            baseMalfunctionInterval = 0.22f;
+                            break;
                         case MalfunctionID.SHIPDOORS:
                             malfunctionTimes = Random.Range(1, 6);
+                            baseMalfunctionInterval = 0.22f;
+                            break;
+                        case MalfunctionID.RADARBLINK:
+                            malfunctionTimes = Random.Range(1, 8);
+                            baseMalfunctionInterval = 0.5f;
                             break;
                         case MalfunctionID.LIGHTSOUT:
-                            malfunctionTimes = 1;
+                            malfunctionTimes = Random.Range(1, 4);
+                            baseMalfunctionInterval = 0.66f;
                             break;
                         default:
                             break;
                     }
-                    malfunctionTimer = 10;
+                    malfunctionInterval = baseMalfunctionInterval;
                     SwitchToBehaviourClientRpc((int)State.PERCH);
                     break;
             }
