@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Util;
 using GameNetcodeStuff;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
@@ -11,6 +12,8 @@ namespace Biodiversity.Creatures;
 
 public abstract class BiodiverseAI : EnemyAI
 {
+    [HideInInspector] protected readonly string BioId = Guid.NewGuid().ToString();
+    
     /// <summary>
     /// Gets the mapping between audio type identifiers and their corresponding arrays of <see cref="AudioClip"/>s.
     /// Derived classes must override this property to provide their specific audio clip configurations.

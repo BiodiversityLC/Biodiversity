@@ -1,4 +1,5 @@
 using GameNetcodeStuff;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.ProBuilder;
@@ -191,5 +192,18 @@ public class LeafBoyAI : BiodiverseAI
 
         float accelerationAdjustment = Time.deltaTime;
         agent.acceleration = Mathf.Lerp(agent.acceleration, _agentMaxAcceleration, accelerationAdjustment);
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (obj is LeafBoyAI other)
+            return BioId.Equals(other.BioId, StringComparison.Ordinal);
+
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return BioId.GetHashCode();
     }
 }

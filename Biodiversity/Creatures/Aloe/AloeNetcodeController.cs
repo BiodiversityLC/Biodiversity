@@ -12,9 +12,11 @@ public class AloeNetcodeController : NetworkBehaviour
 {
     private ManualLogSource _mls;
     private string _aloeId;
-
+    
+#pragma warning disable 0649
     [SerializeField] private AloeClient aloeClient;
-
+#pragma warning restore 0649
+    
     [HideInInspector] public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
     [HideInInspector] public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
     [HideInInspector] public readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();

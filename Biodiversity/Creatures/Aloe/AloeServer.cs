@@ -797,8 +797,8 @@ public class AloeServer : BiodiverseAI
 
         enemyHP = AloeHandler.Instance.Config.Health;
         roamingRadius = AloeHandler.Instance.Config.RoamingRadius;
-        ViewWidth = AloeHandler.Instance.Config.ViewWidth;
-        ViewRange = AloeHandler.Instance.Config.ViewRange;
+        ViewWidth = 135f;
+        ViewRange = 65;
         PlayerHealthThresholdForStalking = AloeHandler.Instance.Config.PlayerHealthThresholdForStalking;
         PlayerHealthThresholdForHealing = AloeHandler.Instance.Config.PlayerHealthThresholdForHealing;
         TimeItTakesToFullyHealPlayer = AloeHandler.Instance.Config.TimeItTakesToFullyHealPlayer;

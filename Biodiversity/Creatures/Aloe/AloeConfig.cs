@@ -8,6 +8,21 @@ namespace Biodiversity.Creatures.Aloe;
 [Serializable]
 public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg)
 {
+    [field: Header("Spawn Settings.")]
+    [field: Tooltip("Whether the Aloe will spawn in games.")]
+    public bool AloeEnabled { get; private set; } = true;
+    
+    [field: Tooltip("Spawn weight of the Aloe on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
+    public string Rarity { get; private set; } = "Experimentation:28,Assurance:75,Offense:65,March:55,Artifice:95,Aquatis:18,Integrity:21,Vertigo:36,Solace:12,Azure:40,Argent:15,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Atlantica:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Seichi:8,USCVortex:8,Hydro:20,Arcadia:40,Modded:2";
+
+    [field: Tooltip("The power level of the Aloe.")]
+    [field: Range(0f, 15f)]
+    public float PowerLevel { get; private set; } = 1f;
+
+    [field: Tooltip("The max amount of Aloes that can spawn in the map.")]
+    [field: Range(0, 10)]
+    public int MaxAmount { get; private set; } = 1;
+    
     [field: Header("General Settings.")]
     [field: Tooltip("The health of the Aloe upon spawning.")]
     [field: Range(1, 100)]
@@ -28,14 +43,6 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Tooltip("The radius in meters the Aloe is allowed roam from her favourite spot.")]
     [field: Range(45f, 500f)]
     public float RoamingRadius { get; private set; } = 50f;
-    
-    [field: Tooltip("The view width in degrees of the Aloe.")]
-    [field: Range(1f, 360f)]
-    public float ViewWidth { get; private set; } = 135f;
-    
-    [field: Tooltip("The view range in meters of the Aloe.")]
-    [field: Range(1, 200)]
-    public int ViewRange { get; private set; } = 80;
     
     [field: Tooltip("The required health a player needs to be or lower for the Aloe to stalk them.")]
     [field: Range(1, 100)]
@@ -75,20 +82,4 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("Whether landmines and seamines will blow up if the Aloe moves over one while carrying a player.")]
     public bool LandminesBlowUpAloe { get; private set; } = false;
-    
-    [field: Header("Spawn Settings.")]
-
-    [field: Tooltip("Whether the Aloe will spawn in games.")]
-    public bool AloeEnabled { get; private set; } = true;
-    
-    [field: Tooltip("Spawn weight of the Aloe on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-    public string Rarity { get; private set; } = "Experimentation:28,Assurance:75,Offense:65,March:55,Artifice:95,Aquatis:18,Integrity:21,Vertigo:36,Solace:12,Azure:40,Argent:15,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Atlantica:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Seichi:8,USCVortex:8,Hydro:20,Arcadia:40,Modded:2";
-
-    [field: Tooltip("The power level of the Aloe.")]
-    [field: Range(0f, 15f)]
-    public float PowerLevel { get; private set; } = 1f;
-
-    [field: Tooltip("The max amount of Aloes that can spawn in the map.")]
-    [field: Range(0, 10)]
-    public int MaxAmount { get; private set; } = 1;
 }
