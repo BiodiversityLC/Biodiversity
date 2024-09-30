@@ -14,6 +14,6 @@ public class SpewAnimationStateBehaviour : StateMachineBehaviour
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         if (!_prototaxAIInstance.IsServer) return;
-        _prototaxAIInstance.DisconnectSporeFromPrototax();
+        _prototaxAIInstance.SpewAnimationComplete();
     }
 }

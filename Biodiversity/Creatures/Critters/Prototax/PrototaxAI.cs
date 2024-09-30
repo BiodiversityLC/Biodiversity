@@ -14,7 +14,8 @@ public class PrototaxAI : BiodiverseAI
 	private static CritterConfig Config => CritterHandler.Instance.Config;
 
 #pragma warning disable 0649
-	[Header("Spore")] [Space(5f)] [SerializeField] private GameObject sporeCloudObject;
+	[Header("Spore")] [Space(5f)] 
+	[SerializeField] private GameObject sporeCloudObject;
 	[SerializeField] private Transform sporeCloudOrigin;
 
 	[Header("Audio")] [Space(5f)] [SerializeField] private AudioSource sporeAudioSource;
@@ -25,12 +26,6 @@ public class PrototaxAI : BiodiverseAI
 
 	[Header("AI and Pathfinding")] [Space(5f)] [SerializeField] private AISearchRoutine roamSearchRoutine;
 #pragma warning restore 0649
-
-	private readonly NetworkVariable<bool> _spewingAnimationParam = new();
-	private readonly NetworkVariable<bool> _sporeVisible = new();
-
-	private CachedValue<DamageTrigger> _sporeCloudDamageTrigger;
-	private CachedValue<Animation> _sporeCloudAnimation;
 
 	private enum States
 	{
@@ -54,6 +49,12 @@ public class PrototaxAI : BiodiverseAI
 		CreatureSfx,
 		Spore
 	}
+	
+	private readonly NetworkVariable<bool> _spewingAnimationParam = new();
+	private readonly NetworkVariable<bool> _sporeVisible = new();
+
+	private CachedValue<DamageTrigger> _sporeCloudDamageTrigger;
+	private CachedValue<Animation> _sporeCloudAnimation;
 
 	protected override Dictionary<string, AudioClip[]> AudioClips { get; } = new();
 
@@ -68,6 +69,9 @@ public class PrototaxAI : BiodiverseAI
 	private float _idleTimer;
 	private float _roamingTimer;
 	private float _takeDamageCooldown;
+	private float _spewTimer;
+
+	private bool _spewAnimComplete;
 
 	private void Awake()
 	{
@@ -123,11 +127,7 @@ public class PrototaxAI : BiodiverseAI
 			case (int)States.Roaming:
 			{
 				_roamingTimer -= Time.deltaTime;
-				if (_roamingTimer <= 0)
-				{
-					SwitchBehaviourState(States.Idle);
-					break;
-				}
+				if (_roamingTimer <= 0) SwitchBehaviourState(States.Idle);
 
 				break;
 			}
@@ -135,12 +135,16 @@ public class PrototaxAI : BiodiverseAI
 			case (int)States.Idle:
 			{
 				_idleTimer -= Time.deltaTime;
-				if (_idleTimer <= 0)
-				{
-					SwitchBehaviourState(States.Roaming);
-					break;
-				}
+				if (_idleTimer <= 0) SwitchBehaviourState(States.Roaming);
 
+				break;
+			}
+
+			case (int)States.Spewing:
+			{
+				_spewTimer -= Time.deltaTime;
+				if (_spewTimer < 0 && _spewAnimComplete) SwitchBehaviourState(States.RunningAway);
+				
 				break;
 			}
 
@@ -161,7 +165,7 @@ public class PrototaxAI : BiodiverseAI
 		if (!IsServer || _takeDamageCooldown > 0) return;
 		_takeDamageCooldown = 0.03f;
 
-		if (currentBehaviourStateIndex == (int)States.Spewing)
+		if (currentBehaviourStateIndex != (int)States.Spewing)
 		{
 			PlayAudioClipTypeServerRpc(AudioClipTypes.Hit.ToString(), AudioSourceTypes.CreatureSfx.ToString());
 			SwitchBehaviourState(States.Spewing);
@@ -207,6 +211,8 @@ public class PrototaxAI : BiodiverseAI
 				_agentMaxSpeed = 0f;
 				_agentMaxAcceleration = Config.PrototaxNormalAcceleration + 10;
 				moveTowardsDestination = false;
+				_spewAnimComplete = false;
+				_spewTimer = Config.PrototaxSpewTime;
 
 				if (_sporeCloudDamageTrigger.Value == null)
 				{
@@ -251,13 +257,16 @@ public class PrototaxAI : BiodiverseAI
 		}
 	}
 
-	public void DisconnectSporeFromPrototax()
+	public void SpewAnimationComplete()
 	{
+		if (!IsServer) return;
 		sporeCloudObject.transform.SetParent(null, true);
+		_spewAnimComplete = true;
 	}
 
 	public void OnAnimationEventSpewSpore()
 	{
+		if (!IsServer) return;
 		_sporeVisible.Value = true;
 		PlaySporeAnimClientRpc();
 		

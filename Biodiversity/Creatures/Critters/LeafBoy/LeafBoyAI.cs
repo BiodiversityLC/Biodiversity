@@ -6,14 +6,16 @@ using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Critters.LeafBoy;
 
-public class LeafyBoiAI : BiodiverseAI
+public class LeafBoyAI : BiodiverseAI
 {
     private static readonly int AnimationIdHash = Animator.StringToHash("AnimationId");
 
 #pragma warning disable 0649
-    [Header("Audio")] [Space(5f)] 
+    [Header("Audio")] [Space(5f)]
+    [SerializeField] private AudioClip[] happySfx;
     [SerializeField] private AudioClip[] scaredSfx;
-    [SerializeField] private AudioClip[] barkSfx;
+    [SerializeField] private AudioClip[] hitSfx;
+    [SerializeField] private AudioClip[] burySfx;
 
     [Header("AI and Pathfinding")] [Space(5f)] 
     [SerializeField] private AISearchRoutine wanderRoutine;
@@ -21,8 +23,10 @@ public class LeafyBoiAI : BiodiverseAI
 
     private enum AudioClipTypes
     {
-        Bark,
-        Scared
+        Happy,
+        Scared,
+        Hit,
+        Bury
     }
     
     private enum AudioSourceTypes
@@ -33,43 +37,29 @@ public class LeafyBoiAI : BiodiverseAI
 
     private enum States
     {
-        Roaming, // normal
-        Running, // actively running
-        Scared // recently ran away
+        Roaming,
+        Running,
+        Scared
     }
+    
+    protected override Dictionary<string, AudioClip[]> AudioClips { get; } = new();
+    
+    private static CritterConfig Config => CritterHandler.Instance.Config;
 
     private float _agentMaxSpeed;
     private float _agentMaxAcceleration;
     private float _scaryPlayerDistance;
-    private float _baseMovementSpeed;
-    private float _scaredSpeedMultiplier;
     private float _playerForgetTime;
-    
-    protected override Dictionary<string, AudioClip[]> AudioClips { get; } = new();
-
-    private static CritterConfig Config => CritterHandler.Instance.Config;
-
-    private States _state = States.Roaming;
-
-    private States State
-    {
-        get => _state;
-        set
-        {
-            if (_state == value) return;
-            LogVerbose($"Updating state: {_state} -> {value}");
-            _state = value;
-        }
-    }
-
     private float _timeSinceSeenPlayer;
-    private float _timeUntilNextBarkSfx = 5;
+    private float _timeUntilNextLaughSfx = 5;
 
     private void Awake()
     {
         // todo: change this to a function and then make AudioClips and AudioSources private in the parent class
-        AudioClips[AudioClipTypes.Bark.ToString()] = barkSfx;
+        AudioClips[AudioClipTypes.Happy.ToString()] = happySfx;
         AudioClips[AudioClipTypes.Scared.ToString()] = scaredSfx;
+        AudioClips[AudioClipTypes.Hit.ToString()] = hitSfx;
+        AudioClips[AudioClipTypes.Bury.ToString()] = burySfx;
         
         AudioSources[AudioSourceTypes.CreatureVoice.ToString()] = creatureVoice;
         AudioSources[AudioSourceTypes.CreatureSfx.ToString()] = creatureSFX;
@@ -81,8 +71,6 @@ public class LeafyBoiAI : BiodiverseAI
         Random.InitState(StartOfRound.Instance.randomMapSeed + thisEnemyIndex);
 
         _scaryPlayerDistance = Config.LeafBoyScaryPlayerDistance;
-        _baseMovementSpeed = Config.LeafBoyBaseMovementSpeed;
-        _scaredSpeedMultiplier = Config.LeafBoyScaredSpeedMultiplier;
         _playerForgetTime = Config.LeafBoyPlayerForgetTime;
     }
 
@@ -93,13 +81,15 @@ public class LeafyBoiAI : BiodiverseAI
         if (!IsServer) return;
 
         _timeSinceSeenPlayer += Time.deltaTime;
-        _timeUntilNextBarkSfx -= Time.deltaTime;
+        _timeUntilNextLaughSfx -= Time.deltaTime;
 
-        if (_timeUntilNextBarkSfx < 0)
+        if (_timeUntilNextLaughSfx < 0)
         {
-            _timeUntilNextBarkSfx = Random.Range(40f, 90f);
-            PlayAudioClipTypeServerRpc(AudioClipTypes.Bark.ToString(), AudioSourceTypes.CreatureVoice.ToString(), audibleByEnemies: true);
+            _timeUntilNextLaughSfx = Random.Range(20f, 90f);
+            PlayAudioClipTypeServerRpc(AudioClipTypes.Happy.ToString(), AudioSourceTypes.CreatureVoice.ToString(), audibleByEnemies: true);
         }
+        
+        MoveWithAcceleration();
     }
 
     public override void DoAIInterval()
@@ -117,18 +107,14 @@ public class LeafyBoiAI : BiodiverseAI
         switch (currentBehaviourStateIndex)
         {
             case (int)States.Roaming:
-                agent.speed = _baseMovementSpeed;
                 break;
 
             case (int)States.Running:
-                agent.speed = _baseMovementSpeed * _scaredSpeedMultiplier;
                 break;
 
             case (int)States.Scared:
-                agent.speed = _baseMovementSpeed * _scaredSpeedMultiplier;
-
                 if (_timeSinceSeenPlayer > _playerForgetTime)
-                    State = States.Roaming;
+                    SwitchBehaviourState(States.Roaming);
 
                 break;
         }
@@ -157,7 +143,7 @@ public class LeafyBoiAI : BiodiverseAI
 
     private void ScanForPlayers()
     {
-        if (GetPlayersCloseBy(_scaryPlayerDistance, out List<PlayerControllerB> players))
+        if (GetPlayersCloseBy(_scaryPlayerDistance, out List<PlayerControllerB> _))
         {
             _timeSinceSeenPlayer = 0;
 
@@ -173,6 +159,17 @@ public class LeafyBoiAI : BiodiverseAI
         {
             case States.Roaming:
             {
+                _agentMaxSpeed = Config.LeafBoyNormalSpeed;
+                _agentMaxAcceleration = Config.LeafBoyNormalAcceleration;
+                
+                break;
+            }
+
+            case States.Scared:
+            {
+                _agentMaxSpeed = Config.LeafBoyScaredSpeed;
+                _agentMaxAcceleration = Config.LeafBoyScaredAcceleration;
+                
                 break;
             }
         }
@@ -185,5 +182,14 @@ public class LeafyBoiAI : BiodiverseAI
         previousBehaviourStateIndex = currentBehaviourStateIndex;
         currentBehaviourStateIndex = intState;
         InitializeState(state);
+    }
+    
+    private void MoveWithAcceleration()
+    {
+        float speedAdjustment = Time.deltaTime / 2f;
+        agent.speed = Mathf.Lerp(agent.speed, _agentMaxSpeed, speedAdjustment);
+
+        float accelerationAdjustment = Time.deltaTime;
+        agent.acceleration = Mathf.Lerp(agent.acceleration, _agentMaxAcceleration, accelerationAdjustment);
     }
 }

@@ -1,68 +1,90 @@
 using GameNetcodeStuff;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Behaviours;
 
-public class DamageTrigger : MonoBehaviour
+public class DamageTrigger : NetworkBehaviour
 {
     [SerializeField] public int enemyAttackForce = 1;
     [SerializeField] public int playerDamage = 20;
     [SerializeField] public float damageDelay = 1;
-    [NonSerialized] public readonly List<EnemyAI> EnemiesToIgnore = [];
 
-    private readonly List<EnemyAI> _enemiesToHit = [];
+    [NonSerialized] public readonly HashSet<EnemyAI> EnemiesToIgnore = [];
+    [NonSerialized] public readonly HashSet<PlayerControllerB> PlayersToIgnore = [];
 
-    private bool _hitLocalPlayer;
-
-    private float _damageTime;
-
-    private void Update()
-    {
-        if (_enemiesToHit.Count == 0 && !_hitLocalPlayer) return;
-        _damageTime += Time.deltaTime;
-
-        if (_damageTime >= damageDelay)
-        {
-            _damageTime = 0;
-            if (_hitLocalPlayer) GameNetworkManager.Instance.localPlayerController.DamagePlayer(playerDamage);
-            if (!GameNetworkManager.Instance.localPlayerController.IsHost) return;
-
-            foreach (EnemyAI enemy in _enemiesToHit)
-            {
-                enemy.HitEnemyOnLocalClient(enemyAttackForce);
-            }
-        }
-    }
+    private readonly Dictionary<EnemyAI, Coroutine> _enemiesToHit = [];
+    private readonly Dictionary<PlayerControllerB, Coroutine> _playersToHit = [];
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.TryGetComponent(out EnemyAICollisionDetect enemy) && !EnemiesToIgnore.Contains(enemy.mainScript))
-        {
-            if (!_enemiesToHit.Contains(enemy.mainScript))
-                _enemiesToHit.Add(enemy.mainScript);
-        }
+        if (other.TryGetComponent(out EnemyAICollisionDetect enemy) &&
+            !EnemiesToIgnore.Contains(enemy.mainScript) &&
+            !_enemiesToHit.ContainsKey(enemy.mainScript))
+            _enemiesToHit.Add(enemy.mainScript, StartCoroutine(ApplyDamageOverTimeToEnemie(enemy.mainScript)));
 
-        if (other.TryGetComponent(out PlayerControllerB player) &&
-            GameNetworkManager.Instance.localPlayerController == player)
-        {
-            _hitLocalPlayer = true;
-        }
+        else if (other.TryGetComponent(out PlayerControllerB player) &&
+                 !PlayersToIgnore.Contains(player) &&
+                 !_playersToHit.ContainsKey(player))
+            _playersToHit.Add(player, StartCoroutine(ApplyDamageOverTimeToPlayer(player)));
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.TryGetComponent(out EnemyAICollisionDetect enemy) && !EnemiesToIgnore.Contains(enemy.mainScript))
+        if (other.TryGetComponent(out EnemyAICollisionDetect enemy) &&
+            !EnemiesToIgnore.Contains(enemy.mainScript) &&
+            _enemiesToHit.ContainsKey(enemy.mainScript))
         {
-            if (_enemiesToHit.Contains(enemy.mainScript))
-                _enemiesToHit.Remove(enemy.mainScript);
+            EnemyAI enemyMainScript = enemy.mainScript;
+            if (_enemiesToHit.TryGetValue(enemyMainScript, out Coroutine coroutine))
+                StopCoroutine(coroutine);
+
+            _enemiesToHit.Remove(enemyMainScript);
         }
 
-        if (other.TryGetComponent(out PlayerControllerB player) &&
-            GameNetworkManager.Instance.localPlayerController == player)
+        else if (other.TryGetComponent(out PlayerControllerB player) &&
+                 !PlayersToIgnore.Contains(player) &&
+                 _playersToHit.ContainsKey(player))
         {
-            _hitLocalPlayer = false;
+            if (_playersToHit.TryGetValue(player, out Coroutine coroutine))
+                StopCoroutine(coroutine);
+
+            _playersToHit.Remove(player);
+        }
+    }
+
+    private IEnumerator ApplyDamageOverTimeToEnemie(EnemyAI enemy)
+    {
+        if (!IsServer) yield break;
+        while (true)
+        {
+            yield return new WaitForSeconds(damageDelay);
+            if (enemy == null || enemy.isEnemyDead)
+            {
+                _enemiesToHit.Remove(enemy);
+                yield break;
+            }
+
+            enemy.HitEnemyClientRpc(enemyAttackForce, -1, false, 34322);
+        }
+    }
+
+    private IEnumerator ApplyDamageOverTimeToPlayer(PlayerControllerB player)
+    {
+        if (!IsServer) yield break;
+        while (true)
+        {
+            yield return new WaitForSeconds(damageDelay);
+            if (player == null || player.isPlayerDead)
+            {
+                _playersToHit.Remove(player);
+                yield break;
+            }
+
+            player.DamagePlayer(playerDamage, true, true, CauseOfDeath.Suffocation);
         }
     }
 }

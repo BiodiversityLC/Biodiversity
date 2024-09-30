@@ -31,12 +31,13 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     private static readonly (string, string)[] SillyQuotes =
     [
-        ("don't get me wrong, I love women", "monty"),
-        ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
-        ("thumpy wumpy", "monty"),
-        ("Your body should get split in two", "wesley"),
-        ("death for you and your bloodline", "monty"),
-        ("the fiend is watching... NOT VERY SIGMA!!", "rolevote"),
+        ("don't get me wrong, I love women", "Monty"),
+        ("i love MEN with BIG ARMS and STRONGMAN LEGS", "Monty"),
+        ("thumpy wumpy", "Monty"),
+        ("Your body should get split in two", "Wesley"),
+        ("death for you and your bloodline", "Monty"),
+        ("the fiend is watching... NOT VERY SIGMA!!", "Rolevote"),
+        ("we love fat bitches(gender neutral) and body representation for fat bitches(still gender neutral)", "TiltedHat"),
     ];
 
     private void Awake()
