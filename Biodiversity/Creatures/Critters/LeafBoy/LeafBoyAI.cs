@@ -1,9 +1,10 @@
-using GameNetcodeStuff;
+using Biodiversity.Util.Types;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 using Random = UnityEngine.Random;
+using RoleInGroup = Biodiversity.Creatures.Critters.LeafBoy.LeafBoySharedData.RoleInGroup;
 
 namespace Biodiversity.Creatures.Critters.LeafBoy;
 
@@ -17,9 +18,6 @@ public class LeafBoyAI : BiodiverseAI
     [SerializeField] private AudioClip[] scaredSfx;
     [SerializeField] private AudioClip[] hitSfx;
     [SerializeField] private AudioClip[] burySfx;
-
-    [Header("AI and Pathfinding")] [Space(5f)] 
-    [SerializeField] private AISearchRoutine wanderRoutine;
 #pragma warning restore 0649
 
     private enum AudioClipTypes
@@ -38,14 +36,20 @@ public class LeafBoyAI : BiodiverseAI
 
     private enum States
     {
-        Roaming,
-        Running,
-        Scared
+        BeingLeader,
+        FollowingLeader,
+        RunningAway,
+        Buried,
+        Dead,
     }
     
     protected override Dictionary<string, AudioClip[]> AudioClips { get; } = new();
     
     private static CritterConfig Config => CritterHandler.Instance.Config;
+
+    private RoleInGroup _roleInGroup;
+
+    private readonly NullableObject<LeafBoyGroup> _group = new();
 
     private float _agentMaxSpeed;
     private float _agentMaxAcceleration;
@@ -73,6 +77,11 @@ public class LeafBoyAI : BiodiverseAI
 
         _scaryPlayerDistance = Config.LeafBoyScaryPlayerDistance;
         _playerForgetTime = Config.LeafBoyPlayerForgetTime;
+
+        _roleInGroup = LeafBoySharedData.Instance.AssignLeafBoy(this);
+        _group.Value = LeafBoySharedData.Instance.GetGroup(this);
+
+        InitializeState(_roleInGroup == RoleInGroup.Leader ? States.BeingLeader : States.FollowingLeader);
     }
 
     public override void Update()
@@ -96,29 +105,22 @@ public class LeafBoyAI : BiodiverseAI
     public override void DoAIInterval()
     {
         base.DoAIInterval();
-
-        if (!IsServer) return;
-        if (isEnemyDead || !agent.isOnNavMesh) return;
-
-        if (!wanderRoutine.inProgress)
-            StartSearch(transform.position, wanderRoutine);
-
-        ScanForPlayers();
-
+        if (!IsServer || isEnemyDead) return;
+        
         switch (currentBehaviourStateIndex)
         {
-            case (int)States.Roaming:
+            case (int)States.BeingLeader:
+            {
                 break;
-
-            case (int)States.Running:
+            }
+            
+            case (int)States.FollowingLeader:
+            {
                 break;
-
-            case (int)States.Scared:
-                if (_timeSinceSeenPlayer > _playerForgetTime)
-                    SwitchBehaviourState(States.Roaming);
-
-                break;
+            }
         }
+        
+        ScanForPlayers();
     }
 
     private void LateUpdate()
@@ -126,6 +128,13 @@ public class LeafBoyAI : BiodiverseAI
         CheckAnimations();
     }
 
+    private bool IsEnoughSpaceForFormation()
+    {
+        float halfMinimumSpaceNeeded = _group.Value.CurrentFormation.MinimumHorizontalSpaceNeeded / 2;
+        return Physics.Raycast(transform.position, transform.right, halfMinimumSpaceNeeded)
+               || Physics.Raycast(transform.position, -transform.right, halfMinimumSpaceNeeded);
+    }
+    
     private void CheckAnimations()
     {
         Vector3 velocity = agent.velocity;
@@ -141,24 +150,24 @@ public class LeafBoyAI : BiodiverseAI
 
         creatureAnimator.SetInteger(AnimationIdHash, currentBehaviourStateIndex + 1);
     }
-
+    
     private void ScanForPlayers()
     {
-        if (GetPlayersCloseBy(_scaryPlayerDistance, out List<PlayerControllerB> _))
-        {
-            _timeSinceSeenPlayer = 0;
-
-            if (currentBehaviourStateIndex == (int)States.Roaming) PlayAudioClipTypeServerRpc(AudioClipTypes.Scared.ToString(), AudioSourceTypes.CreatureVoice.ToString(), audibleByEnemies: true);
-            SwitchBehaviourState(States.Running);
-        }
-        else if (currentBehaviourStateIndex == (int)States.Running) SwitchBehaviourState(States.Scared);
+        // if (GetPlayersCloseBy(_scaryPlayerDistance, out List<PlayerControllerB> _))
+        // {
+        //     _timeSinceSeenPlayer = 0;
+        //
+        //     if (currentBehaviourStateIndex == (int)States.Roaming) PlayAudioClipTypeServerRpc(AudioClipTypes.Scared.ToString(), AudioSourceTypes.CreatureVoice.ToString(), audibleByEnemies: true);
+        //     SwitchBehaviourState(States.Running);
+        // }
+        // else if (currentBehaviourStateIndex == (int)States.Running) SwitchBehaviourState(States.Scared);
     }
 
     private void InitializeState(States state)
     {
         switch (state)
         {
-            case States.Roaming:
+            case States.BeingLeader or States.FollowingLeader:
             {
                 _agentMaxSpeed = Config.LeafBoyNormalSpeed;
                 _agentMaxAcceleration = Config.LeafBoyNormalAcceleration;
@@ -166,7 +175,7 @@ public class LeafBoyAI : BiodiverseAI
                 break;
             }
 
-            case States.Scared:
+            case States.RunningAway:
             {
                 _agentMaxSpeed = Config.LeafBoyScaredSpeed;
                 _agentMaxAcceleration = Config.LeafBoyScaredAcceleration;

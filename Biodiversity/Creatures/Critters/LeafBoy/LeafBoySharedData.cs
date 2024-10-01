@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Biodiversity.Creatures.Critters.LeafBoy.Formations;
+using System;
 using System.Collections.Concurrent;
 
 namespace Biodiversity.Creatures.Critters.LeafBoy;
@@ -62,6 +63,7 @@ internal class LeafBoySharedData
     private readonly ConcurrentDictionary<LeafBoyAI, LeafBoyGroup> _leaderToGroupMap = new();
     private readonly ConcurrentDictionary<LeafBoyAI, LeafBoyGroup> _memberToGroupMap = new();
 
+    // Todo: minor thing, change the return type to LeafBoyGroup instead
     internal RoleInGroup AssignLeafBoy(LeafBoyAI leafBoyToAssign)
     {
         if (leafBoyToAssign == null)
@@ -79,7 +81,7 @@ internal class LeafBoySharedData
             return RoleInGroup.Follower;
         }
 
-        LeafBoyGroup newGroup = new(leafBoyToAssign);
+        LeafBoyGroup newGroup = new(leafBoyToAssign, FormationType.Triangle);
         
         if (!_leaderToGroupMap.TryAdd(newGroup.Leader, newGroup))
             throw new InvalidOperationException($"Failed to add a new LeafBoy '{nameof(leafBoyToAssign)}' as a leader.");
