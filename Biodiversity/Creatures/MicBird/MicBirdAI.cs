@@ -3,6 +3,7 @@ using UnityEngine;
 using Unity.Netcode;
 using Random = UnityEngine.Random;
 using Object = UnityEngine.Object;
+using GameNetcodeStuff;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -12,7 +13,8 @@ namespace Biodiversity.Creatures.MicBird
         {
             GOTOSHIP,
             PERCH,
-            CALL
+            CALL,
+            RUN
         }
 
         private enum SoundID
@@ -34,6 +36,7 @@ namespace Biodiversity.Creatures.MicBird
         private float callTimer = 30;
         private float malfunctionInterval = 0;
         private float baseMalfunctionInterval = 0;
+        private float runTimer = 0;
         private bool setDestCalledAlready = false;
         MalfunctionID malfunction;
         Vector3 targetPos = Vector3.zero;
@@ -81,7 +84,16 @@ namespace Biodiversity.Creatures.MicBird
         public override void Update()
         {
             base.Update();
+            if (!IsServer) return;
             malfunctionInterval -= Time.deltaTime;
+
+            runTimer -= Time.deltaTime;
+
+            if (runTimer < 0 && currentBehaviourStateIndex == (int)State.RUN)
+            {
+                setDestCalledAlready = false;
+                SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
+            }
 
             if (currentBehaviourStateIndex == (int)State.PERCH)
             {
@@ -176,6 +188,25 @@ namespace Biodiversity.Creatures.MicBird
             bird.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             RoundManager.Instance.SpawnedEnemies.Add(bird.GetComponent<EnemyAI>());
             bird.GetComponent<EnemyAI>().enemyType.numberSpawned++;
+        }
+
+        public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+        {
+            base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
+
+            if (hitID == 1 && IsServer)
+            {
+                BiodiversityPlugin.Logger.LogInfo("Hit by shovel");
+                runTimer = 40;
+                agent.SetDestination(findFarthestNode().position);
+                SwitchToBehaviourClientRpc((int)State.RUN);
+            }
+
+            enemyHP -= force;
+            if (enemyHP <= 0)
+            {
+                KillEnemyOnOwnerClient();
+            }
         }
 
         public override void DoAIInterval()
