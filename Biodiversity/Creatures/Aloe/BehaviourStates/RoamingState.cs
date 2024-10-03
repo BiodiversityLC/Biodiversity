@@ -8,8 +8,9 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 public class RoamingState : BehaviourState
 {
     private bool _reachedFavouriteSpotForRoaming;
-    
-    public RoamingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+
+    public RoamingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
+        stateType)
     {
         Transitions =
         [
@@ -17,19 +18,19 @@ public class RoamingState : BehaviourState
             new TransitionToPassivelyStalkingPlayer(aloeServerInstance)
         ];
     }
-    
+
     public override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
+
         AloeServerInstance.agentMaxSpeed = 2f;
         AloeServerInstance.agentMaxAcceleration = 2f;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
         AloeServerInstance.moveTowardsDestination = true;
         _reachedFavouriteSpotForRoaming = false;
-        
+
         AloeSharedData.Instance.Unbind(AloeServerInstance, BindType.Stalk);
-        
+
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
@@ -37,7 +38,7 @@ public class RoamingState : BehaviourState
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServer.NullPlayerId);
 
         AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 0.5f);
-        
+
         AloeServerInstance.LogDebug("Heading towards favourite position before roaming.");
         AloeServerInstance.SetDestinationToPosition(AloeServerInstance.favouriteSpot);
         if (AloeServerInstance.roamMap.inProgress) AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
@@ -46,7 +47,8 @@ public class RoamingState : BehaviourState
     public override void AIIntervalBehaviour()
     {
         // Check if the aloe has reached her favourite spot, so she can start roaming from that position
-        if (!_reachedFavouriteSpotForRoaming && Vector3.Distance(AloeServerInstance.favouriteSpot, AloeServerInstance.transform.position) <= 4)
+        if (!_reachedFavouriteSpotForRoaming &&
+            Vector3.Distance(AloeServerInstance.favouriteSpot, AloeServerInstance.transform.position) <= 4)
         {
             _reachedFavouriteSpotForRoaming = true;
         }
@@ -63,15 +65,15 @@ public class RoamingState : BehaviourState
     public override void OnStateExit()
     {
         base.OnStateExit();
-        if (AloeServerInstance.roamMap.inProgress) 
+        if (AloeServerInstance.roamMap.inProgress)
             AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
     }
 
-    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance) 
+    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance)
         : StateTransition(aloeServerInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
-        
+
         public override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
@@ -104,7 +106,7 @@ public class RoamingState : BehaviourState
                 if (!AloeUtils.IsPlayerTargetable(player)) continue;
                 if (player.health > AloeServerInstance.PlayerHealthThresholdForStalking) continue;
                 if (AloeSharedData.Instance.IsPlayerStalkBound(player)) continue;
-                
+
                 _stalkablePlayer = player;
                 return true;
             }
@@ -120,7 +122,8 @@ public class RoamingState : BehaviourState
         public override void OnTransition()
         {
             AloeSharedData.Instance.Bind(AloeServerInstance, _stalkablePlayer, BindType.Stalk);
-            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, _stalkablePlayer.actualClientId);
+            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId,
+                _stalkablePlayer.actualClientId);
         }
     }
 }

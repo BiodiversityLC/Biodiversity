@@ -9,15 +9,16 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 public class KidnappingPlayerState : BehaviourState
 {
     private float _dragPlayerTimer;
-    
-    public KidnappingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+
+    public KidnappingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
+        stateType)
     {
         Transitions =
         [
             new TransitionToHealingPlayer(aloeServerInstance),
         ];
     }
-    
+
     public override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
@@ -33,36 +34,39 @@ public class KidnappingPlayerState : BehaviourState
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
-        
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId,
+            AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
+
         // Spawn fake player body ragdoll
-        GameObject fakePlayerBodyRagdollGameObject = 
+        GameObject fakePlayerBodyRagdollGameObject =
             Object.Instantiate(
-                AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab, 
-                AloeServerInstance.ActualTargetPlayer.Value.thisPlayerBody.position + Vector3.up * 1.25f, 
-                AloeServerInstance.ActualTargetPlayer.Value.thisPlayerBody.rotation, 
+                AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab,
+                AloeServerInstance.ActualTargetPlayer.Value.thisPlayerBody.position + Vector3.up * 1.25f,
+                AloeServerInstance.ActualTargetPlayer.Value.thisPlayerBody.rotation,
                 null);
-        
+
         NetworkObject fakePlayerBodyRagdollNetworkObject =
             fakePlayerBodyRagdollGameObject.GetComponent<NetworkObject>();
         fakePlayerBodyRagdollNetworkObject.Spawn();
-        
+
         AloeServerInstance.SetTargetPlayerInCaptivity(true);
         AloeServerInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(AloeServerInstance.aloeId, fakePlayerBodyRagdollNetworkObject);
         AloeServerInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(AloeServerInstance.aloeId, false);
         AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(AloeServerInstance.aloeId, 3f, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
         AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId, AloeClient.AudioClipTypes.SnatchAndDrag);
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.25f);
-        
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f,
+            0.25f);
+
         if (BiodiverseAI.IsPathValid(
-                agent: AloeServerInstance.agent, 
-                position: AloeServerInstance.favouriteSpot) != BiodiverseAI.PathStatus.Valid) 
-        { 
-            AloeServerInstance.LogDebug("When initializing kidnapping, no path was found to the Aloe's favourite spot."); 
-            AloeServerInstance.SwitchBehaviourState(AloeServer.States.HealingPlayer); 
+                agent: AloeServerInstance.agent,
+                position: AloeServerInstance.favouriteSpot) != BiodiverseAI.PathStatus.Valid)
+        {
+            AloeServerInstance.LogDebug(
+                "When initializing kidnapping, no path was found to the Aloe's favourite spot.");
+            AloeServerInstance.SwitchBehaviourState(AloeServer.States.HealingPlayer);
             return;
         }
-                
+
         AloeServerInstance.SetDestinationToPosition(AloeServerInstance.favouriteSpot);
     }
 
@@ -74,14 +78,16 @@ public class KidnappingPlayerState : BehaviourState
             _dragPlayerTimer = float.MaxValue; // Better than adding ANOTHER bool value to this if statement
             AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(
                 AloeServerInstance.aloeId, AloeClient.KidnapRun);
-            
+
             AloeServerInstance.StartCoroutine(AloeServerInstance.TransitionToRunningForwardsAndCarryingPlayer(0.3f));
         }
     }
 
     public override void AIIntervalBehaviour()
     {
-        List<PlayerControllerB> playersLookingAtAloe = AloeUtils.GetAllPlayersLookingAtPosition(AloeServerInstance.eye.transform, playerViewWidth: 40f, playerViewRange: 40);
+        List<PlayerControllerB> playersLookingAtAloe =
+            AloeUtils.GetAllPlayersLookingAtPosition(AloeServerInstance.eye.transform, playerViewWidth: 40f,
+                playerViewRange: 40);
         foreach (PlayerControllerB player in playersLookingAtAloe)
         {
             AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
@@ -89,7 +95,7 @@ public class KidnappingPlayerState : BehaviourState
         }
     }
 
-    private class TransitionToHealingPlayer(AloeServer aloeServerInstance) 
+    private class TransitionToHealingPlayer(AloeServer aloeServerInstance)
         : StateTransition(aloeServerInstance)
     {
         public override bool ShouldTransitionBeTaken()

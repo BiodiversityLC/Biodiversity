@@ -1,27 +1,21 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters.LeafBoy.Formations;
 
+//todo: look into static abstract/parent classes
 internal interface IFormation
 {
     FormationType FormationType { get; }
     
     int MinimumLeafBoysNeeded { get; }
     
-    float MinimumHorizontalSpaceNeeded { get; }
+    float MinimumHorizontalSpaceNeeded { get; } //todo: this is fucked
     
-    /// <summary>
-    /// Calculates the target position for a follower based on its index in the formation.
-    /// </summary>
-    /// <param name="leaderPosition">The current position of the leader.</param>
-    /// <param name="followerIndex">The index of the follower in the formation.</param>
-    /// <param name="leaderSize">The size of the leader to determine spacing.</param>
-    /// <param name="totalFollowers">Total number of followers in the group.</param>
-    /// <returns>The calculated target position for the follower.</returns>
-    Vector3 GetFollowerTargetPosition(Vector3 leaderPosition, int followerIndex, float leaderSize, int totalFollowers);
+    Vector3 GetFollowerTargetPosition(List<Vector3> leaderPathHistory, int followerIndex, float leaderSize);
 }
 
-internal enum FormationType
+public enum FormationType
 {
     Line,
     Triangle,

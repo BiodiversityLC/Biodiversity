@@ -9,10 +9,10 @@ public class DragPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
     {
         LogDebug("Grab player animation complete.");
         if (!AloeServerInstance.IsServer) return;
-        
-        if (!AloeServerInstance.ActualTargetPlayer.IsNotNull || 
+
+        if (!AloeServerInstance.ActualTargetPlayer.IsNotNull ||
             PlayerUtil.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value) ||
-            !AloeServerInstance.ActualTargetPlayer.Value.isInsideFactory) 
+            !AloeServerInstance.ActualTargetPlayer.Value.isInsideFactory)
             AloeServerInstance.SwitchBehaviourState(AloeServer.States.Roaming);
         else
             AloeServerInstance.GrabTargetPlayer();

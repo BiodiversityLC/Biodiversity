@@ -8,8 +8,9 @@ public class ChasingEscapedPlayerState : BehaviourState
     public float WaitBeforeChasingTimer;
 
     private bool _isPlayerTargetable;
-    
-    public ChasingEscapedPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+
+    public ChasingEscapedPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(
+        aloeServerInstance, stateType)
     {
         Transitions =
         [
@@ -21,15 +22,17 @@ public class ChasingEscapedPlayerState : BehaviourState
     public override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
+
         AloeServerInstance.agentMaxSpeed = 6f;
         AloeServerInstance.agentMaxAcceleration = 12f;
         AloeServerInstance.movingTowardsTargetPlayer = false;
         AloeServerInstance.openDoorSpeedMultiplier = 2f;
         AloeServerInstance.inGrabAnimation = false;
-        
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.9f, 0.5f);
-        AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId, AloeClient.AudioClipTypes.Chase, true);
+
+        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.9f,
+            0.5f);
+        AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId,
+            AloeClient.AudioClipTypes.Chase, true);
         AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(AloeServerInstance.aloeId, AloeClient.Stand);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
@@ -51,9 +54,10 @@ public class ChasingEscapedPlayerState : BehaviourState
         {
             if (!AloeServerInstance.movingTowardsTargetPlayer)
             {
-                AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.25f);
+                AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId,
+                    0f, 0.25f);
             }
-            
+
             if (AloeUtils.IsPlayerTargetable(AloeServerInstance.ActualTargetPlayer.Value))
             {
                 AloeServerInstance.movingTowardsTargetPlayer = true;
@@ -63,13 +67,13 @@ public class ChasingEscapedPlayerState : BehaviourState
                 _isPlayerTargetable = false;
             }
         }
-        
+
         if (AloeUtils.DoesEyeHaveLineOfSightToPosition(
-                     pos: AloeServerInstance.ActualTargetPlayer.Value.transform.position, 
-                     eye: AloeServerInstance.eye, 
-                     width: AloeServerInstance.ViewWidth, 
-                     range: AloeServerInstance.ViewRange, 
-                     logSource: AloeServerInstance.Mls))
+                pos: AloeServerInstance.ActualTargetPlayer.Value.transform.position,
+                eye: AloeServerInstance.eye,
+                width: AloeServerInstance.ViewWidth,
+                range: AloeServerInstance.ViewRange,
+                logSource: AloeServerInstance.Mls))
         {
             AloeServerInstance.netcodeController.LookTargetPosition.Value =
                 AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
@@ -82,7 +86,9 @@ public class ChasingEscapedPlayerState : BehaviourState
         }
     }
 
-    private class TransitionToKidnappingPlayer(AloeServer aloeServerInstance, ChasingEscapedPlayerState chasingEscapedPlayerState)
+    private class TransitionToKidnappingPlayer(
+        AloeServer aloeServerInstance,
+        ChasingEscapedPlayerState chasingEscapedPlayerState)
         : StateTransition(aloeServerInstance)
     {
         public override bool ShouldTransitionBeTaken()
@@ -90,13 +96,12 @@ public class ChasingEscapedPlayerState : BehaviourState
             if (chasingEscapedPlayerState.WaitBeforeChasingTimer > 0 ||
                 Vector3.Distance(AloeServerInstance.ActualTargetPlayer.Value.transform.position,
                     AloeServerInstance.transform.position) > 1.5f) return false;
-            
+
             AloeServerInstance.LogDebug("Player is close to aloe! Kidnapping him now.");
             AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(
                 AloeServerInstance.aloeId,
                 AloeClient.Grab);
             return true;
-
         }
 
         public override AloeServer.States NextState()
@@ -105,7 +110,9 @@ public class ChasingEscapedPlayerState : BehaviourState
         }
     }
 
-    private class TransitionToPassiveRoaming(AloeServer aloeServerInstance, ChasingEscapedPlayerState chasingEscapedPlayerState)
+    private class TransitionToPassiveRoaming(
+        AloeServer aloeServerInstance,
+        ChasingEscapedPlayerState chasingEscapedPlayerState)
         : StateTransition(aloeServerInstance)
     {
         public override bool ShouldTransitionBeTaken()

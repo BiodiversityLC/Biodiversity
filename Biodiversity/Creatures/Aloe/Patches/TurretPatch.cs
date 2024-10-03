@@ -12,10 +12,10 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 internal class TurretPatch
 {
-    
     [HarmonyPatch(nameof(Turret.CheckForPlayersInLineOfSight))]
     [HarmonyPostfix]
-    private static void PostfixCheckForPlayersInLineOfSight(Turret __instance, ref PlayerControllerB __result, float radius, bool angleRangeCheck)
+    private static void PostfixCheckForPlayersInLineOfSight(Turret __instance, ref PlayerControllerB __result,
+        float radius, bool angleRangeCheck)
     {
         if (__result != null && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
             __result = null;

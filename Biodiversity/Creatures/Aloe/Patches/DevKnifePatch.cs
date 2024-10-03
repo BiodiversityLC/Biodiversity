@@ -12,9 +12,9 @@ internal static class DevKnifePatch
     // [HarmonyPostfix]
     private static void DealDamageToSelf(GrabbableObject __instance)
     {
-        #if DEBUG
+#if DEBUG
         if (__instance.playerHeldBy == null) return;
         __instance.playerHeldBy.DamagePlayer(5);
-        #endif
+#endif
     }
 }

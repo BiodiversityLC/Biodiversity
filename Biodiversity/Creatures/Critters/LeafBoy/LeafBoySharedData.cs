@@ -108,7 +108,7 @@ internal class LeafBoySharedData
                 _leaderToGroupMap.TryAdd(newLeader, group);
                 _memberToGroupMap[newLeader] = group;
 
-                foreach (LeafBoyAI follower in group.Followers.Keys)
+                foreach (LeafBoyAI follower in group.Followers)
                 {
                     _memberToGroupMap[follower] = group;
                 }

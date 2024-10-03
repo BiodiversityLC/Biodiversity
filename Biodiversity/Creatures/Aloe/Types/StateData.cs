@@ -15,16 +15,17 @@ public class StateData
     {
         return _data.Remove(key);
     }
-    
+
     public T Get<T>(string key)
     {
         if (_data.TryGetValue(key, out object value) && value is T typedValue)
         {
             return typedValue;
         }
+
         return default;
     }
-    
+
     public bool ContainsKey(string key)
     {
         return _data.ContainsKey(key);

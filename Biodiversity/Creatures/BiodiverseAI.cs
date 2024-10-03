@@ -13,7 +13,7 @@ namespace Biodiversity.Creatures;
 public abstract class BiodiverseAI : EnemyAI
 {
     [HideInInspector] protected readonly string BioId = Guid.NewGuid().ToString();
-    
+
     /// <summary>
     /// Gets the mapping between audio type identifiers and their corresponding arrays of <see cref="AudioClip"/>s.
     /// Derived classes must override this property to provide their specific audio clip configurations.
@@ -52,8 +52,8 @@ public abstract class BiodiverseAI : EnemyAI
     /// </param>
     [ServerRpc]
     public void PlayAudioClipTypeServerRpc(
-        string audioClipType, 
-        string audioSourceType, 
+        string audioClipType,
+        string audioSourceType,
         bool interrupt = false,
         bool audibleInWalkieTalkie = true,
         bool audibleByEnemies = false)
@@ -82,7 +82,8 @@ public abstract class BiodiverseAI : EnemyAI
 
         // Select a random clip index
         int clipIndex = Random.Range(0, numberOfClips);
-        PlayAudioClipTypeClientRpc(audioClipType, audioSourceType, clipIndex, interrupt, audibleInWalkieTalkie, audibleByEnemies);
+        PlayAudioClipTypeClientRpc(audioClipType, audioSourceType, clipIndex, interrupt, audibleInWalkieTalkie,
+            audibleByEnemies);
     }
 
     /// <summary>
@@ -115,9 +116,9 @@ public abstract class BiodiverseAI : EnemyAI
     /// </param>
     [ClientRpc]
     private void PlayAudioClipTypeClientRpc(
-        string audioClipType, 
-        string audioSourceType, 
-        int clipIndex, 
+        string audioClipType,
+        string audioSourceType,
+        int clipIndex,
         bool interrupt,
         bool audibleInWalkieTalkie,
         bool audibleByEnemies)
@@ -157,14 +158,16 @@ public abstract class BiodiverseAI : EnemyAI
             return;
         }
 
-        LogVerbose($"Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}' in {GetType().Name}.");
+        LogVerbose(
+            $"Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}' in {GetType().Name}.");
 
         if (interrupt) selectedAudioSource.Stop();
         selectedAudioSource.PlayOneShot(clipToPlay);
-        if (audibleInWalkieTalkie) WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
+        if (audibleInWalkieTalkie)
+            WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
         if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
     }
-    
+
     /// <summary>
     /// Checks and outs any players that are nearby.
     /// </summary>
@@ -204,7 +207,7 @@ public abstract class BiodiverseAI : EnemyAI
         return GetRandomPositionOnNavMesh(player.transform.position + Random.insideUnitSphere * radius +
                                           Random.onUnitSphere * minDistance);
     }
-    
+
     /// <summary>
     /// Represents the status of a path.
     /// </summary>
@@ -243,7 +246,7 @@ public abstract class BiodiverseAI : EnemyAI
     {
         return status is PathStatus.Valid or PathStatus.ValidButInLos;
     }
-    
+
     /// <summary>
     /// Checks if the AI can construct a valid path to the given position.
     /// </summary>
@@ -253,9 +256,9 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="bufferDistance">The buffer distance within which the path is considered valid without further checks.</param>
     /// <returns>Returns true if the agent can path to the position within the buffer distance or if a valid path exists; otherwise, false.</returns>
     public static PathStatus IsPathValid(
-        NavMeshAgent agent, 
-        Vector3 position, 
-        bool checkLineOfSight = false, 
+        NavMeshAgent agent,
+        Vector3 position,
+        bool checkLineOfSight = false,
         float bufferDistance = 0f)
     {
         // Check if the desired location is within the buffer distance
@@ -264,7 +267,7 @@ public abstract class BiodiverseAI : EnemyAI
             //LogDebug(logSource, $"Target position {position} is within buffer distance {bufferDistance}.");
             return PathStatus.Valid;
         }
-        
+
         NavMeshPath path = new();
 
         // Calculate path to the target position
@@ -282,9 +285,10 @@ public abstract class BiodiverseAI : EnemyAI
         // Check if any segment of the path is intersected by line of sight
         if (checkLineOfSight)
         {
-            if (Vector3.Distance(path.corners[^1], RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 2.7f)) > 1.5)
+            if (Vector3.Distance(path.corners[^1],
+                    RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 2.7f)) > 1.5)
                 return PathStatus.ValidButInLos;
-            
+
             for (int i = 1; i < path.corners.Length; ++i)
             {
                 if (Physics.Linecast(path.corners[i - 1], path.corners[i], 262144))
@@ -318,7 +322,7 @@ public abstract class BiodiverseAI : EnemyAI
     public static Transform GetClosestValidNodeToPosition(
         out PathStatus pathStatus,
         NavMeshAgent agent,
-        Vector3 position, 
+        Vector3 position,
         IEnumerable<GameObject> allAINodes,
         IEnumerable<GameObject> ignoredAINodes = null,
         bool checkLineOfSight = false,
@@ -326,14 +330,14 @@ public abstract class BiodiverseAI : EnemyAI
         float bufferDistance = 1f)
     {
         return GetValidNodeFromPosition(
-            findClosest: true, 
-            pathStatus:out pathStatus, 
-            agent: agent, 
-            position: position, 
-            allAINodes: allAINodes, 
-            ignoredAINodes: ignoredAINodes, 
-            checkLineOfSight: checkLineOfSight, 
-            allowFallbackIfBlocked: allowFallbackIfBlocked, 
+            findClosest: true,
+            pathStatus: out pathStatus,
+            agent: agent,
+            position: position,
+            allAINodes: allAINodes,
+            ignoredAINodes: ignoredAINodes,
+            checkLineOfSight: checkLineOfSight,
+            allowFallbackIfBlocked: allowFallbackIfBlocked,
             bufferDistance: bufferDistance);
     }
 
@@ -360,17 +364,17 @@ public abstract class BiodiverseAI : EnemyAI
         float bufferDistance = 1f)
     {
         return GetValidNodeFromPosition(
-            findClosest: false, 
-            pathStatus:out pathStatus, 
-            agent: agent, 
-            position: position, 
-            allAINodes: allAINodes, 
-            ignoredAINodes: ignoredAINodes, 
-            checkLineOfSight: checkLineOfSight, 
-            allowFallbackIfBlocked: allowFallbackIfBlocked, 
+            findClosest: false,
+            pathStatus: out pathStatus,
+            agent: agent,
+            position: position,
+            allAINodes: allAINodes,
+            ignoredAINodes: ignoredAINodes,
+            checkLineOfSight: checkLineOfSight,
+            allowFallbackIfBlocked: allowFallbackIfBlocked,
             bufferDistance: bufferDistance);
     }
-    
+
     /// <summary>
     /// Gets a valid AI node from the specified position that the NavMeshAgent can path to.
     /// </summary>
@@ -396,11 +400,12 @@ public abstract class BiodiverseAI : EnemyAI
         float bufferDistance)
     {
         HashSet<GameObject> ignoredNodesSet = ignoredAINodes == null ? [] : [..ignoredAINodes];
-        
+
         List<GameObject> aiNodes = allAINodes
-            .Where(node => !ignoredNodesSet.Contains(node) && Vector3.Distance(position, node.transform.position) > bufferDistance)
+            .Where(node =>
+                !ignoredNodesSet.Contains(node) && Vector3.Distance(position, node.transform.position) > bufferDistance)
             .ToList();
-        
+
         aiNodes.Sort((a, b) =>
         {
             float distanceA = Vector3.Distance(position, a.transform.position);

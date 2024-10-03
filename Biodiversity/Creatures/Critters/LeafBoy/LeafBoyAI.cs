@@ -49,7 +49,7 @@ public class LeafBoyAI : BiodiverseAI
 
     private RoleInGroup _roleInGroup;
 
-    private readonly NullableObject<LeafBoyGroup> _group = new();
+    internal readonly NullableObject<LeafBoyGroup> Group = new();
 
     private float _agentMaxSpeed;
     private float _agentMaxAcceleration;
@@ -79,7 +79,7 @@ public class LeafBoyAI : BiodiverseAI
         _playerForgetTime = Config.LeafBoyPlayerForgetTime;
 
         _roleInGroup = LeafBoySharedData.Instance.AssignLeafBoy(this);
-        _group.Value = LeafBoySharedData.Instance.GetGroup(this);
+        Group.Value = LeafBoySharedData.Instance.GetGroup(this);
 
         InitializeState(_roleInGroup == RoleInGroup.Leader ? States.BeingLeader : States.FollowingLeader);
     }
@@ -128,11 +128,16 @@ public class LeafBoyAI : BiodiverseAI
         CheckAnimations();
     }
 
-    private bool IsEnoughSpaceForFormation()
+    public bool IsNarrowPath()
     {
-        float halfMinimumSpaceNeeded = _group.Value.CurrentFormation.MinimumHorizontalSpaceNeeded / 2;
+        float halfMinimumSpaceNeeded = Group.Value.CurrentFormation.Value.MinimumHorizontalSpaceNeeded / 2;
         return Physics.Raycast(transform.position, transform.right, halfMinimumSpaceNeeded)
                || Physics.Raycast(transform.position, -transform.right, halfMinimumSpaceNeeded);
+    }
+
+    private void UpdateLeaderPathHistory()
+    {
+        
     }
     
     private void CheckAnimations()

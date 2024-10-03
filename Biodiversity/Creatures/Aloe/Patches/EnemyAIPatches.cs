@@ -30,7 +30,7 @@ internal static class EnemyAIPatches
         if (__result != null && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
             __result = null;
     }
-    
+
     [HarmonyPatch(nameof(EnemyAI.CheckLineOfSightForClosestPlayer))]
     [HarmonyPostfix]
     private static void OverrideCheckLineOfSightForClosestPlayer(

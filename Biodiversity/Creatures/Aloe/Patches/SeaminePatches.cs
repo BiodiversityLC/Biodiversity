@@ -35,7 +35,7 @@ internal class SeaminePatches
 
         return true;
     }
-    
+
     // Reflection-based method to check if `__instance.IsHost` is true
     private static bool IsHost(object instance)
     {

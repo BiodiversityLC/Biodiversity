@@ -10,7 +10,7 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
 {
     protected ManualLogSource Mls;
     protected string AloeId;
-    
+
     protected AloeNetcodeController NetcodeController;
     protected AloeServer AloeServerInstance;
     protected AloeClient AloeClientInstance;
@@ -28,7 +28,7 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
     }
 
     public void Initialize(
-        AloeNetcodeController receivedNetcodeController, 
+        AloeNetcodeController receivedNetcodeController,
         AloeServer receivedAloeServer,
         AloeClient receivedAloeClient)
     {
@@ -58,10 +58,10 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
         Mls?.Dispose();
         Mls = Logger.CreateLogSource(
             $"Aloe Animation State Machine Behaviour {AloeId}");
-        
+
         LogDebug("Successfully synced aloe identifier");
     }
-    
+
     protected void LogDebug(string msg)
     {
 #if DEBUG

@@ -12,13 +12,13 @@ public class SlapCollisionDetection : MonoBehaviour
     [SerializeField] private AudioSource slapAudioSource;
     [SerializeField] private AudioClip slapSfx;
 #pragma warning restore 0649
-    
+
     private readonly HashSet<ulong> _playersAlreadyHitBySlap = [];
     private readonly HashSet<int> _enemiesAlreadyHitBySlap = [];
 
     private bool _playedSlapSfx;
     private bool _canBeSlapped;
-    
+
     private void OnTriggerStay(Collider other)
     {
         if (!_canBeSlapped) return;
@@ -27,7 +27,7 @@ public class SlapCollisionDetection : MonoBehaviour
             PlayerControllerB player = other.GetComponent<PlayerControllerB>();
             if (player == null) return;
             if (_playersAlreadyHitBySlap.Contains(player.actualClientId)) return;
-            
+
             SlapPlayerServerRpc(player.actualClientId);
         }
         else if (other.CompareTag("Enemy"))
@@ -37,7 +37,7 @@ public class SlapCollisionDetection : MonoBehaviour
             EnemyAI enemy = enemyAICollisionDetect.mainScript;
             if (enemy == null) return;
             if (_enemiesAlreadyHitBySlap.Contains(enemy.thisEnemyIndex)) return;
-            
+
             SlapEnemyServerRpc(enemy.thisEnemyIndex);
         }
     }
@@ -47,8 +47,9 @@ public class SlapCollisionDetection : MonoBehaviour
     {
         EnemyAI enemyToDamage =
             RoundManager.Instance.SpawnedEnemies.FirstOrDefault(enemy => enemy.thisEnemyIndex == enemyIndex);
-        enemyToDamage?.HitEnemy(AloeHandler.Instance.Config.SlapDamageEnemies, hitID: 998); // 998 is the Aloe's bestiary ID
-        
+        enemyToDamage?.HitEnemy(AloeHandler.Instance.Config.SlapDamageEnemies,
+            hitID: 998); // 998 is the Aloe's bestiary ID
+
         SlapEnemyClientRpc(enemyIndex);
     }
 
@@ -62,8 +63,9 @@ public class SlapCollisionDetection : MonoBehaviour
     private void SlapPlayerServerRpc(ulong playerId)
     {
         PlayerControllerB playerToDamage = StartOfRound.Instance.allPlayerScripts[playerId];
-        playerToDamage.DamagePlayer(AloeHandler.Instance.Config.SlapDamagePlayers, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.turnCompass.forward * (-1 * 5) + playerToDamage.turnCompass.right * 5);
-        
+        playerToDamage.DamagePlayer(AloeHandler.Instance.Config.SlapDamagePlayers, true, true, CauseOfDeath.Bludgeoning,
+            force: playerToDamage.turnCompass.forward * (-1 * 5) + playerToDamage.turnCompass.right * 5);
+
         SlapPlayerClientRpc(playerId);
     }
 
