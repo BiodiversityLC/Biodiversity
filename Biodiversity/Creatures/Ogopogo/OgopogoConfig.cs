@@ -42,7 +42,7 @@ public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<Ogopo
 	public string OgopogoRarity { get; private set; } = "Vow:10,March:55,Adamance:35,Submersion:15,Seichi:40,Gorgonzola:5,Phaedra:22,Polarus:0,Aquatis:0,Cesspool:0,Gloom:0";
 
 	[field: Tooltip("Moons where Ogopogo's wander is disabled.")]
-	public string OgopogoWanderDisable { get; private set; } = "VowLevel";
+	public string OgopogoWanderDisable { get; private set; } = "VowLevel,Submersion";
 
 	[field: Tooltip("Spawn weight of the Vermin on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
 	public string VerminRarity { get; private set; } = "All:100";
