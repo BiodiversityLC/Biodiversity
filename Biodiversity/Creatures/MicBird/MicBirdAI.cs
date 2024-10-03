@@ -7,14 +7,15 @@ using GameNetcodeStuff;
 
 namespace Biodiversity.Creatures.MicBird
 {
-    internal class MicBirdAI : BiodiverseAI
+    internal class MicBirdAI : BiodiverseAI, INoiseListener
     {
         private enum State
         {
             GOTOSHIP,
             PERCH,
             CALL,
-            RUN
+            RUN,
+            RADARBOOSTER
         }
 
         private enum SoundID
@@ -41,6 +42,9 @@ namespace Biodiversity.Creatures.MicBird
         MalfunctionID malfunction;
         Vector3 targetPos = Vector3.zero;
 
+        RadarBoosterItem distractedRadarBoosterItem = null;
+        float distractionTimer = 0;
+
         private int malfunctionTimes = 0;
 
         private static MicBirdAI firstSpawned = null;
@@ -51,8 +55,11 @@ namespace Biodiversity.Creatures.MicBird
             if (firstSpawned == null)
             {
                 firstSpawned = this;
+                enemyType.numberSpawned = 1;
             }
             agent.Warp(findFarthestNode().position);
+
+            HoarderBugAI.RefreshGrabbableObjectsInMapList();
         }
 
         public override void OnDestroy()
@@ -62,6 +69,7 @@ namespace Biodiversity.Creatures.MicBird
             if (firstSpawned != null)
             {
                 firstSpawned = null;
+                enemyType.numberSpawned = 0;
             }
         }
 
@@ -88,6 +96,11 @@ namespace Biodiversity.Creatures.MicBird
             malfunctionInterval -= Time.deltaTime;
 
             runTimer -= Time.deltaTime;
+
+            if (currentBehaviourStateIndex == (int)State.RADARBOOSTER)
+            {
+                distractionTimer -= Time.deltaTime;
+            }
 
             if (runTimer < 0 && currentBehaviourStateIndex == (int)State.RUN)
             {
@@ -174,6 +187,19 @@ namespace Biodiversity.Creatures.MicBird
             door.shipDoorsAnimator.SetBool("Closed", true);
         }
 
+        [ClientRpc]
+        public void TurnRadarBoosterOnClientRpc()
+        {
+            distractedRadarBoosterItem.EnableRadarBooster(true);
+        }
+
+        [ClientRpc]
+        public void SyncRadarBoosterClientRpc(NetworkObjectReference radarBooster) {
+            NetworkObject obj = null;
+            radarBooster.TryGet(out obj);
+            distractedRadarBoosterItem = obj.gameObject.GetComponent<RadarBoosterItem>();
+        }
+
         private int negativeRandom(int min, int maxExclusive)
         {
             return Random.Range(min, maxExclusive) * ((Random.Range(0, 2) == 0) ? 1 : -1);
@@ -190,6 +216,27 @@ namespace Biodiversity.Creatures.MicBird
             bird.GetComponent<EnemyAI>().enemyType.numberSpawned++;
         }
 
+        private void runAway(float timer)
+        {
+            if (currentBehaviourStateIndex == (int)State.RUN) return;
+            runTimer = timer;
+            agent.SetDestination(findFarthestNode().position);
+            SwitchToBehaviourClientRpc((int)State.RUN);
+        }
+
+        public override void DetectNoise(Vector3 noisePosition, float noiseLoudness, int timesPlayedInOneSpot = 0, int noiseID = 0)
+        {
+            base.DetectNoise(noisePosition, noiseLoudness, timesPlayedInOneSpot, noiseID);
+            if (!IsServer) return;
+            if (currentBehaviourStateIndex == (int)State.RADARBOOSTER) return;
+
+            BiodiversityPlugin.Logger.LogInfo("The bird heard a sound with id " + noiseID + ". And noise Loundness of " + noiseLoudness + ".");
+            if (noiseID == 75 && noiseLoudness >= 0.8 && enemyType.numberSpawned <= 2)
+            {
+                runAway(20);
+            }
+        }
+
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
         {
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
@@ -197,21 +244,30 @@ namespace Biodiversity.Creatures.MicBird
             if (hitID == 1 && IsServer)
             {
                 BiodiversityPlugin.Logger.LogInfo("Hit by shovel");
-                runTimer = 40;
-                agent.SetDestination(findFarthestNode().position);
-                SwitchToBehaviourClientRpc((int)State.RUN);
+                runAway(40);
             }
 
             enemyHP -= force;
             if (enemyHP <= 0)
             {
                 KillEnemyOnOwnerClient();
+                enemyType.numberSpawned--;
             }
         }
 
         public override void DoAIInterval()
         {
             base.DoAIInterval();
+
+            GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 5f, null, null);
+            if (maybeRadar)
+            {
+                if (maybeRadar.GetComponent<GrabbableObject>().GetType() == typeof(RadarBoosterItem))
+                {
+                    SyncRadarBoosterClientRpc(new NetworkObjectReference(maybeRadar.GetComponent<NetworkObject>()));
+                    SwitchToBehaviourClientRpc((int)State.RADARBOOSTER);
+                }
+            }
 
             switch (currentBehaviourStateIndex)
             {
@@ -277,6 +333,29 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     malfunctionInterval = baseMalfunctionInterval;
                     SwitchToBehaviourClientRpc((int)State.PERCH);
+                    break;
+                case (int)State.RUN:
+                    // Fully handled by the run function so no code here. Just wanted to put it here in case it's used in the future.
+                    break;
+                case (int)State.RADARBOOSTER:
+
+                    agent.SetDestination(distractedRadarBoosterItem.transform.position);
+
+                    if (Vector3.Distance(transform.position, distractedRadarBoosterItem.transform.position) <= 2 && distractionTimer <= 0)
+                    {
+                        distractionTimer = Random.Range(1f, 10f);
+
+                        TurnRadarBoosterOnClientRpc();
+
+                        if (Random.Range(0, 2) == 0)
+                        {
+                            distractedRadarBoosterItem.PlayPingAudioAndSync();
+                        }
+                        else
+                        {
+                            distractedRadarBoosterItem.FlashAndSync();
+                        }
+                    }
                     break;
             }
         }
