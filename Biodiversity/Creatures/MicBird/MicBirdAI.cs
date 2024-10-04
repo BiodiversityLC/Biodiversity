@@ -4,6 +4,7 @@ using Unity.Netcode;
 using Random = UnityEngine.Random;
 using Object = UnityEngine.Object;
 using GameNetcodeStuff;
+using UnityEngine.AI;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -11,6 +12,7 @@ namespace Biodiversity.Creatures.MicBird
     {
         private enum State
         {
+            WANDER,
             GOTOSHIP,
             PERCH,
             CALL,
@@ -42,9 +44,14 @@ namespace Biodiversity.Creatures.MicBird
         MalfunctionID malfunction;
         Vector3 targetPos = Vector3.zero;
 
+        private AISearchRoutine wander = new AISearchRoutine();
+        private bool wanderingAlready = false;
+        private float wanderTimer = 1f;
+        private System.Random spawnRandom;
+
         RadarBoosterItem distractedRadarBoosterItem = null;
         float distractionTimer = 0;
-
+        
         private int malfunctionTimes = 0;
 
         private static MicBirdAI firstSpawned = null;
@@ -57,7 +64,8 @@ namespace Biodiversity.Creatures.MicBird
                 firstSpawned = this;
                 enemyType.numberSpawned = 1;
             }
-            agent.Warp(findFarthestNode().position);
+            spawnRandom = new System.Random(StartOfRound.Instance.randomMapSeed + 22);
+            wander.randomized = true;
 
             HoarderBugAI.RefreshGrabbableObjectsInMapList();
         }
@@ -97,6 +105,11 @@ namespace Biodiversity.Creatures.MicBird
 
             runTimer -= Time.deltaTime;
 
+            if (currentBehaviourStateIndex == (int)State.WANDER)
+            {
+                wanderTimer -= Time.deltaTime;
+            }
+
             if (currentBehaviourStateIndex == (int)State.RADARBOOSTER)
             {
                 distractionTimer -= Time.deltaTime;
@@ -104,7 +117,6 @@ namespace Biodiversity.Creatures.MicBird
 
             if (runTimer < 0 && currentBehaviourStateIndex == (int)State.RUN)
             {
-                setDestCalledAlready = false;
                 SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
             }
 
@@ -208,9 +220,14 @@ namespace Biodiversity.Creatures.MicBird
         private void spawnMicBird()
         {
             if (MicBirdHandler.Instance.Assets.MicBirdEnemyType.numberSpawned >= 9) return;
+            GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag("OutsideAINode");
+
+            Vector3 vector = GameObject.FindGameObjectsWithTag("OutsideAINode")[spawnRandom.Next(0, spawnPoints.Length)].transform.position;
+            vector = RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(vector, 10f, default(NavMeshHit), spawnRandom, RoundManager.Instance.GetLayermaskForEnemySizeLimit(enemyType));
+            vector = RoundManager.Instance.PositionWithDenialPointsChecked(vector, spawnPoints, enemyType);
 
 
-            GameObject bird = Object.Instantiate<GameObject>(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, Vector3.zero, Quaternion.Euler(Vector3.zero));
+            GameObject bird = Object.Instantiate<GameObject>(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, vector, Quaternion.Euler(Vector3.zero));
             bird.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             RoundManager.Instance.SpawnedEnemies.Add(bird.GetComponent<EnemyAI>());
             bird.GetComponent<EnemyAI>().enemyType.numberSpawned++;
@@ -219,9 +236,16 @@ namespace Biodiversity.Creatures.MicBird
         private void runAway(float timer)
         {
             if (currentBehaviourStateIndex == (int)State.RUN) return;
+            if (wanderingAlready)
+            {
+                StopSearch(wander);
+                moveTowardsDestination = false;
+                wanderingAlready = false;
+            }
             runTimer = timer;
             agent.SetDestination(findFarthestNode().position);
             SwitchToBehaviourClientRpc((int)State.RUN);
+            setDestCalledAlready = false;
         }
 
         public override void DetectNoise(Vector3 noisePosition, float noiseLoudness, int timesPlayedInOneSpot = 0, int noiseID = 0)
@@ -271,21 +295,54 @@ namespace Biodiversity.Creatures.MicBird
 
             switch (currentBehaviourStateIndex)
             {
+                case (int)State.WANDER:
+                    if (firstSpawned != this)
+                    {
+                        SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
+                        return;
+                    }
+                    if (!wanderingAlready)
+                    {
+                        StartSearch(transform.position, wander);
+                        wanderingAlready = true;
+                    }
+
+                    if (wanderTimer <= 0)
+                    {
+                        if (Random.Range(1, 100) > 95f)
+                        {
+                            SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
+                            return;
+                        }
+                        wanderTimer = 1f;
+                    }
+
+                    break;
                 case (int)State.GOTOSHIP:
+                    if (wanderingAlready)
+                    {
+                        StopSearch(wander);
+                        wanderingAlready = false;
+                        return;
+                    }
+
+                    if (firstSpawned == this)
+                    {
+                        targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0);
+                    }
+                    else
+                    {
+                        targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(negativeRandom(2, 7), 4, negativeRandom(2, 7));
+                    }
+
                     if (!setDestCalledAlready)
                     {
-                        if (firstSpawned == this)
-                        {
-                            targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0);
-                            agent.SetDestination(targetPos);
-                        }
-                        else
-                        {
-                            targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(negativeRandom(2, 7), 4, negativeRandom(2, 7));
-                            agent.SetDestination(targetPos);
-                        }
                         setDestCalledAlready = true;
+                        moveTowardsDestination = false;
+                        agent.SetDestination(targetPos);
                     }
+
+
                     if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0), transform.position) < 5)
                     {
                         BiodiversityPlugin.Logger.LogInfo("Perching");
