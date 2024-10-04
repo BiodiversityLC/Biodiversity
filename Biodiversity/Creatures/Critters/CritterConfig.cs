@@ -30,7 +30,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	
 	[field: Tooltip("Length of stunned time after being hit.")]
 	[field: Range(3f, 20f)]
-	public float FungiStunTime { get; private set; } = 4f;
+	public float FungiStunTime { get; private set; } = 3f;
 	
 	[field: Header("Leaf Boy")]
 	
