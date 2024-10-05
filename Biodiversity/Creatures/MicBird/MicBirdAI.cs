@@ -5,6 +5,7 @@ using Random = UnityEngine.Random;
 using Object = UnityEngine.Object;
 using GameNetcodeStuff;
 using UnityEngine.AI;
+using Biodiversity.Util.SharedVariables;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -363,6 +364,15 @@ namespace Biodiversity.Creatures.MicBird
                     spawnMicBird();
 
                     callTimer = 60;
+
+
+                    if (Random.Range(0, 2) == 0)
+                    {
+                        if (TeleporterStatus.Teleporting)
+                        {
+                            TeleporterStatus.CancelTeleport = true;
+                        }
+                    }
 
 
                     malfunction = (MalfunctionID)Random.Range(1, Enum.GetValues(typeof(MalfunctionID)).Length);
