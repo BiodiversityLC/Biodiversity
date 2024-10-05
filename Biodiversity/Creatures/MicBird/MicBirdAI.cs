@@ -374,6 +374,14 @@ namespace Biodiversity.Creatures.MicBird
                         }
                     }
 
+                    if (Random.Range(1, 101) < 21)
+                    {
+                        if (TeleporterStatus.TeleportingInverse)
+                        {
+                            TeleporterStatus.CancelInverseTeleport = true;
+                        }
+                    }
+
 
                     malfunction = (MalfunctionID)Random.Range(1, Enum.GetValues(typeof(MalfunctionID)).Length);
                     BiodiversityPlugin.Logger.LogInfo("Setting malfunction to " + malfunction.ToString());

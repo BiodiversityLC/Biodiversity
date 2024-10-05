@@ -20,12 +20,45 @@ namespace Biodiversity.Patches
             {
                 cancel = true;
                 TeleporterStatus.CancelTeleport = false;
+
+                __instance.isInElevator = TeleporterStatus.isInElevator.Value;
+                __instance.isInHangarShipRoom = TeleporterStatus.isInHangarShipRoom.Value;
+                __instance.isInsideFactory = TeleporterStatus.isInFactory.Value;
             }
 
-            BiodiversityPlugin.Logger.LogInfo("Clearing teleport data");
-            TeleporterStatus.Teleporting = false;
-            TeleporterStatus.PlayerGettingTeleported = null;
-            TeleporterStatus.currentTeleporter = null;
+            if (TeleporterStatus.CancelInverseTeleport == true && TeleporterStatus.TeleportingInverse && TeleporterStatus.PlayerGettingInverseTeleported == __instance)
+            {
+                cancel = true;
+                TeleporterStatus.CancelInverseTeleport = false;
+
+                __instance.isInElevator = TeleporterStatus.isInElevatorInverse.Value;
+                __instance.isInHangarShipRoom = TeleporterStatus.isInHangarShipRoomInverse.Value;
+                __instance.isInsideFactory = TeleporterStatus.isInFactoryInverse.Value;
+            }
+
+            if (TeleporterStatus.Teleporting && TeleporterStatus.PlayerGettingTeleported == __instance)
+            {
+                BiodiversityPlugin.Logger.LogInfo("Clearing teleport data");
+                TeleporterStatus.Teleporting = false;
+                TeleporterStatus.PlayerGettingTeleported = null;
+                TeleporterStatus.currentTeleporter = null;
+
+                TeleporterStatus.isInElevator = null;
+                TeleporterStatus.isInHangarShipRoom = null;
+                TeleporterStatus.isInFactory = null;
+            }
+
+            if (TeleporterStatus.TeleportingInverse && TeleporterStatus.PlayerGettingInverseTeleported == __instance)
+            {
+                BiodiversityPlugin.Logger.LogInfo("Clearing inverse teleport data");
+                TeleporterStatus.TeleportingInverse = false;
+                TeleporterStatus.PlayerGettingInverseTeleported = null;
+                TeleporterStatus.currentTeleporterInverse = null;
+
+                TeleporterStatus.isInElevatorInverse = null;
+                TeleporterStatus.isInHangarShipRoomInverse = null;
+                TeleporterStatus.isInFactoryInverse = null;
+            }
 
 
             return !cancel;
