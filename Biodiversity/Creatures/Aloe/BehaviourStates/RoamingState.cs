@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
 
@@ -69,8 +70,8 @@ public class RoamingState : BehaviourState
             AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
     }
 
-    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToAvoidingPlayer(AloeServer enemyAIInstance)
+        : StateTransition(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
 
@@ -78,7 +79,7 @@ public class RoamingState : BehaviourState
         {
             // Check if a player sees the aloe
             _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition
-                (AloeServerInstance.eye.transform, logSource: AloeServerInstance.Mls);
+                (EnemyAIInstance.eye.transform, logSource: EnemyAIInstance.Mls);
             return _playerLookingAtAloe != null;
         }
 
@@ -89,12 +90,12 @@ public class RoamingState : BehaviourState
 
         public override void OnTransition()
         {
-            AloeServerInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
+            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
         }
     }
 
-    private class TransitionToPassivelyStalkingPlayer(AloeServer aloeServerInstance)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToPassivelyStalkingPlayer(AloeServer enemyAIInstance)
+        : StateTransition(enemyAIInstance)
     {
         private PlayerControllerB _stalkablePlayer;
 
@@ -104,7 +105,7 @@ public class RoamingState : BehaviourState
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
                 if (!AloeUtils.IsPlayerTargetable(player)) continue;
-                if (player.health > AloeServerInstance.PlayerHealthThresholdForStalking) continue;
+                if (player.health > EnemyAIInstance.PlayerHealthThresholdForStalking) continue;
                 if (AloeSharedData.Instance.IsPlayerStalkBound(player)) continue;
 
                 _stalkablePlayer = player;
@@ -121,8 +122,8 @@ public class RoamingState : BehaviourState
 
         public override void OnTransition()
         {
-            AloeSharedData.Instance.Bind(AloeServerInstance, _stalkablePlayer, BindType.Stalk);
-            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId,
+            AloeSharedData.Instance.Bind(EnemyAIInstance, _stalkablePlayer, BindType.Stalk);
+            AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
                 _stalkablePlayer.actualClientId);
         }
     }

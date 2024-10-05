@@ -1,6 +1,5 @@
 using Biodiversity.Util.Types;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 using Random = UnityEngine.Random;
@@ -43,8 +42,6 @@ public class LeafBoyAI : BiodiverseAI
         Dead,
     }
     
-    protected override Dictionary<string, AudioClip[]> AudioClips { get; } = new();
-    
     private static CritterConfig Config => CritterHandler.Instance.Config;
 
     private RoleInGroup _roleInGroup;
@@ -58,8 +55,9 @@ public class LeafBoyAI : BiodiverseAI
     private float _timeSinceSeenPlayer;
     private float _timeUntilNextLaughSfx = 5;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         // todo: change this to a function and then make AudioClips and AudioSources private in the parent class
         AudioClips[AudioClipTypes.Happy.ToString()] = happySfx;
         AudioClips[AudioClipTypes.Scared.ToString()] = scaredSfx;

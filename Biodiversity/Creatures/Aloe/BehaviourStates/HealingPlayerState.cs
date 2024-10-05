@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Util.Types;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
@@ -96,8 +97,8 @@ public class HealingPlayerState : BehaviourState
         }
     }
 
-    private class TransitionToCuddlingPlayer(AloeServer aloeServerInstance, HealingPlayerState healingPlayerState)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToCuddlingPlayer(AloeServer enemyAIInstance, HealingPlayerState healingPlayerState)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {

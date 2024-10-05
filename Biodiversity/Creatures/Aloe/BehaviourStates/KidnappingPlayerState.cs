@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
@@ -95,12 +96,12 @@ public class KidnappingPlayerState : BehaviourState
         }
     }
 
-    private class TransitionToHealingPlayer(AloeServer aloeServerInstance)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToHealingPlayer(AloeServer enemyAIInstance)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            return Vector3.Distance(AloeServerInstance.transform.position, AloeServerInstance.favouriteSpot) <= 2;
+            return Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.favouriteSpot) <= 2;
         }
 
         public override AloeServer.States NextState()

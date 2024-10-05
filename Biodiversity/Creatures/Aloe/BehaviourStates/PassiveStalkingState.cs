@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Util;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
 
@@ -102,8 +103,8 @@ public class PassiveStalkingState : BehaviourState
         AloeServerInstance.LogDebug($"Is player reachable: {_isPlayerReachable}");
     }
 
-    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance, PassiveStalkingState passiveStalkingState)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToAvoidingPlayer(AloeServer enemyAIInstance, PassiveStalkingState passiveStalkingState)
+        : StateTransition(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
 
@@ -111,7 +112,7 @@ public class PassiveStalkingState : BehaviourState
         {
             // Check if a player sees the aloe
             _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition
-                (AloeServerInstance.eye.transform, logSource: AloeServerInstance.Mls);
+                (EnemyAIInstance.eye.transform, logSource: EnemyAIInstance.Mls);
             return _playerLookingAtAloe != null;
         }
 
@@ -122,33 +123,33 @@ public class PassiveStalkingState : BehaviourState
 
         public override void OnTransition()
         {
-            AloeServerInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
-            AloeServerInstance.timesFoundSneaking++;
+            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
+            EnemyAIInstance.timesFoundSneaking++;
 
             // Greatly increase fear level if the player turns around to see the Aloe starting at them
             if (passiveStalkingState._isStaringAtTargetPlayer &&
-                AloeServerInstance.ActualTargetPlayer.Value == AloeServerInstance.AvoidingPlayer.Value)
-                AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
-                    AloeServerInstance.aloeId, 0.8f, AloeServerInstance.AvoidingPlayer.Value.playerClientId);
+                EnemyAIInstance.ActualTargetPlayer.Value == EnemyAIInstance.AvoidingPlayer.Value)
+                EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
+                    EnemyAIInstance.aloeId, 0.8f, EnemyAIInstance.AvoidingPlayer.Value.playerClientId);
         }
     }
 
     private class TransitionToPassiveRoaming(
-        AloeServer aloeServerInstance,
+        AloeServer enemyAIInstance,
         PassiveStalkingState passiveStalkingState)
-        : StateTransition(aloeServerInstance)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            if (PlayerUtil.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value))
+            if (PlayerUtil.IsPlayerDead(EnemyAIInstance.ActualTargetPlayer.Value))
             {
-                AloeServerInstance.LogDebug("Player that I was stalking is dead, switching back to passive roaming.");
+                EnemyAIInstance.LogDebug("Player that I was stalking is dead, switching back to passive roaming.");
                 return true;
             }
 
             if (!passiveStalkingState._isPlayerReachable)
             {
-                AloeServerInstance.LogDebug(
+                EnemyAIInstance.LogDebug(
                     "Player that I was stalking isn't reachable, switching back to passive roaming.");
                 return true;
             }
@@ -162,13 +163,13 @@ public class PassiveStalkingState : BehaviourState
         }
     }
 
-    private class TransitionToStalkingPlayerToKidnap(AloeServer aloeServerInstance)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToStalkingPlayerToKidnap(AloeServer enemyAIInstance)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            return AloeServerInstance.ActualTargetPlayer.Value.health <=
-                   AloeServerInstance.PlayerHealthThresholdForHealing;
+            return EnemyAIInstance.ActualTargetPlayer.Value.health <=
+                   EnemyAIInstance.PlayerHealthThresholdForHealing;
         }
 
         public override AloeServer.States NextState()

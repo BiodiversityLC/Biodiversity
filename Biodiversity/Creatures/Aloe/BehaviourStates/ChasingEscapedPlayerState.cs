@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Util.Types;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
@@ -87,19 +88,19 @@ public class ChasingEscapedPlayerState : BehaviourState
     }
 
     private class TransitionToKidnappingPlayer(
-        AloeServer aloeServerInstance,
+        AloeServer enemyAIInstance,
         ChasingEscapedPlayerState chasingEscapedPlayerState)
-        : StateTransition(aloeServerInstance)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
             if (chasingEscapedPlayerState.WaitBeforeChasingTimer > 0 ||
-                Vector3.Distance(AloeServerInstance.ActualTargetPlayer.Value.transform.position,
-                    AloeServerInstance.transform.position) > 1.5f) return false;
+                Vector3.Distance(EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
+                    EnemyAIInstance.transform.position) > 1.5f) return false;
 
-            AloeServerInstance.LogDebug("Player is close to aloe! Kidnapping him now.");
-            AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(
-                AloeServerInstance.aloeId,
+            EnemyAIInstance.LogDebug("Player is close to aloe! Kidnapping him now.");
+            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(
+                EnemyAIInstance.aloeId,
                 AloeClient.Grab);
             return true;
         }
@@ -111,9 +112,9 @@ public class ChasingEscapedPlayerState : BehaviourState
     }
 
     private class TransitionToPassiveRoaming(
-        AloeServer aloeServerInstance,
+        AloeServer enemyAIInstance,
         ChasingEscapedPlayerState chasingEscapedPlayerState)
-        : StateTransition(aloeServerInstance)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {

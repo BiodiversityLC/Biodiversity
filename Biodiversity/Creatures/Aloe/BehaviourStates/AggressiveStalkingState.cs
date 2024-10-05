@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Util;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
 
@@ -111,8 +112,8 @@ public class AggressiveStalkingState : BehaviourState
         }
     }
 
-    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToAvoidingPlayer(AloeServer enemyAIInstance)
+        : StateTransition(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
 
@@ -120,7 +121,7 @@ public class AggressiveStalkingState : BehaviourState
         {
             // Check if a player sees the aloe
             _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition
-                (AloeServerInstance.eye.transform, logSource: AloeServerInstance.Mls);
+                (EnemyAIInstance.eye.transform, logSource: EnemyAIInstance.Mls);
             return _playerLookingAtAloe != null;
         }
 
@@ -131,20 +132,20 @@ public class AggressiveStalkingState : BehaviourState
 
         public override void OnTransition()
         {
-            AloeServerInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
-            AloeServerInstance.timesFoundSneaking++;
+            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
+            EnemyAIInstance.timesFoundSneaking++;
         }
     }
 
     private class TransitionToPassiveRoaming(
-        AloeServer aloeServerInstance,
+        AloeServer enemyAIInstance,
         AggressiveStalkingState aggressiveStalkingState)
-        : StateTransition(aloeServerInstance)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            bool isPlayerDead = PlayerUtil.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value);
-            AloeServerInstance.LogDebug($"Is player dead?: {isPlayerDead}");
+            bool isPlayerDead = PlayerUtil.IsPlayerDead(EnemyAIInstance.ActualTargetPlayer.Value);
+            EnemyAIInstance.LogDebug($"Is player dead?: {isPlayerDead}");
             return isPlayerDead || !aggressiveStalkingState._isPlayerReachable;
         }
 

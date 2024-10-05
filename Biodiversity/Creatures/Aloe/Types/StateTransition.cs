@@ -1,8 +1,8 @@
 ﻿namespace Biodiversity.Creatures.Aloe.Types;
 
-public abstract class StateTransition(AloeServer aloeServerInstance)
+public abstract class StateTransition(AloeServer enemyAIInstance)
 {
-    protected readonly AloeServer AloeServerInstance = aloeServerInstance;
+    protected readonly AloeServer EnemyAIInstance = enemyAIInstance;
 
     public abstract bool ShouldTransitionBeTaken();
 

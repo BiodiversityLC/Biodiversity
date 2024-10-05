@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Util.Types;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 

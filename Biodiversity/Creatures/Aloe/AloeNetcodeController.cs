@@ -1,13 +1,12 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using BepInEx.Logging;
+﻿using BepInEx.Logging;
+using System;
 using Unity.Netcode;
 using UnityEngine;
 using Logger = BepInEx.Logging.Logger;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Aloe;
 
-[SuppressMessage("ReSharper", "Unity.RedundantHideInInspectorAttribute")]
 public class AloeNetcodeController : NetworkBehaviour
 {
     private ManualLogSource _mls;
@@ -17,16 +16,16 @@ public class AloeNetcodeController : NetworkBehaviour
     [SerializeField] private AloeClient aloeClient;
 #pragma warning restore 0649
 
-    [HideInInspector] public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
-    [HideInInspector] public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
-    [HideInInspector] public readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();
-    [HideInInspector] public readonly NetworkVariable<bool> ShouldHaveDarkSkin = new();
-    [HideInInspector] public readonly NetworkVariable<Vector3> LookTargetPosition = new();
+    public readonly NetworkVariable<ulong> TargetPlayerClientId = new();
+    public readonly NetworkVariable<int> CurrentBehaviourStateIndex = new();
+    public readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();
+    public readonly NetworkVariable<bool> ShouldHaveDarkSkin = new();
+    public readonly NetworkVariable<Vector3> LookTargetPosition = new();
 
-    [HideInInspector] public readonly NetworkVariable<bool> AnimationParamCrawling = new();
-    [HideInInspector] public readonly NetworkVariable<bool> AnimationParamHealing = new();
-    [HideInInspector] public readonly NetworkVariable<bool> AnimationParamStunned = new();
-    [HideInInspector] public readonly NetworkVariable<bool> AnimationParamDead = new();
+    public readonly NetworkVariable<bool> AnimationParamCrawling = new();
+    public readonly NetworkVariable<bool> AnimationParamHealing = new();
+    public readonly NetworkVariable<bool> AnimationParamStunned = new();
+    public readonly NetworkVariable<bool> AnimationParamDead = new();
 
     public event Action<string> OnSyncAloeId;
     public event Action<string> OnInitializeConfigValues;
@@ -118,7 +117,7 @@ public class AloeNetcodeController : NetworkBehaviour
 
             default:
             {
-                int clipIndex = UnityEngine.Random.Range(0, numberOfAudioClips);
+                int clipIndex = Random.Range(0, numberOfAudioClips);
                 PlayAudioClipTypeClientRpc(receivedAloeId, audioClipType, clipIndex, interrupt);
                 break;
             }

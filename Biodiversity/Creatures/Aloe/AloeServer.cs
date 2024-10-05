@@ -63,10 +63,10 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public BehaviourState PreviousState;
     private Dictionary<States, BehaviourState> _stateDictionary = [];
     private BehaviourState _currentState;
-    
-    [HideInInspector] public readonly NullableObject<PlayerControllerB> ActualTargetPlayer = new();
-    [HideInInspector] public readonly NullableObject<PlayerControllerB> AvoidingPlayer = new();
-    [HideInInspector] public readonly NullableObject<PlayerControllerB> SlappingPlayer = new();
+
+    public readonly NullableObject<PlayerControllerB> ActualTargetPlayer = new();
+    public readonly NullableObject<PlayerControllerB> AvoidingPlayer = new();
+    public readonly NullableObject<PlayerControllerB> SlappingPlayer = new();
     [HideInInspector] public PlayerControllerB backupTargetPlayer;
     
     private static readonly Dictionary<Type, States> StateTypeMapping = new()
@@ -106,8 +106,8 @@ public class AloeServer : BiodiverseAI
     [HideInInspector] public bool inCrushHeadAnimation;
     private bool _networkEventsSubscribed;
     private bool _inStunAnimation;
-    
-    private void Awake()
+
+    protected override void Awake()
     {
         aloeId = Guid.NewGuid().ToString();
         Mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Server {aloeId}");

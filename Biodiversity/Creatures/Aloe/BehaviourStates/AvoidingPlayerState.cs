@@ -144,23 +144,23 @@ public class AvoidingPlayerState : BehaviourState
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, false);
     }
 
-    private class TransitionToPreviousState(AloeServer aloeServerInstance, AvoidingPlayerState avoidingPlayerState)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToPreviousState(AloeServer enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            float avoidTimerCompareValue = AloeServerInstance.timesFoundSneaking % 3 != 0 ? 11f : 21f; // todo: make this less dumb
+            float avoidTimerCompareValue = EnemyAIInstance.timesFoundSneaking % 3 != 0 ? 11f : 21f; // todo: make this less dumb
             if (avoidingPlayerState._avoidPlayerTimerTotal > avoidTimerCompareValue) return true;
-            if (!AloeServerInstance.netcodeController.HasFinishedSpottedAnimation.Value) return false;
+            if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value) return false;
 
             Vector3 closestPlayerPosition = AloeUtils.GetClosestPlayerFromList(
                 players: StartOfRound.Instance.allPlayerScripts.ToList(),
-                transform: AloeServerInstance.transform,
+                transform: EnemyAIInstance.transform,
                 inputPlayer: null,
-                logSource: AloeServerInstance.Mls).transform.position;
+                logSource: EnemyAIInstance.Mls).transform.position;
 
             float distanceToClosestPlayer =
-                Vector3.Distance(AloeServerInstance.transform.position, closestPlayerPosition);
+                Vector3.Distance(EnemyAIInstance.transform.position, closestPlayerPosition);
             return distanceToClosestPlayer > 35f &&
                    avoidingPlayerState._avoidPlayerTimerTotal >= 5f &&
                    !avoidingPlayerState._playerLookingAtAloe.IsNotNull;
@@ -168,16 +168,16 @@ public class AvoidingPlayerState : BehaviourState
 
         public override AloeServer.States NextState()
         {
-            return AloeServerInstance.PreviousState.GetStateType();
+            return EnemyAIInstance.PreviousState.GetStateType();
         }
     }
 
-    private class TransitionToAttackingState(AloeServer aloeServerInstance, AvoidingPlayerState avoidingPlayerState)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToAttackingState(AloeServer enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            return AloeServerInstance.netcodeController.HasFinishedSpottedAnimation.Value &&
+            return EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value &&
                    avoidingPlayerState._shouldTransitionToAttacking;
         }
 

@@ -1,7 +1,6 @@
 using Biodiversity.Behaviours;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
-using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -18,13 +17,15 @@ public class PrototaxAI : BiodiverseAI
 	[SerializeField] private GameObject sporeCloudObject;
 	[SerializeField] private Transform sporeCloudOrigin;
 
-	[Header("Audio")] [Space(5f)] [SerializeField] private AudioSource sporeAudioSource;
+	[Header("Audio")] [Space(5f)] 
+	[SerializeField] private AudioSource sporeAudioSource;
 	[SerializeField] private AudioClip[] footstepSfx = [];
 	[SerializeField] private AudioClip[] spewSfx = [];
 	[SerializeField] private AudioClip[] hitSfx = [];
 	[SerializeField] private AudioClip[] sporeAmbientSfx = [];
 
-	[Header("AI and Pathfinding")] [Space(5f)] [SerializeField] private AISearchRoutine roamSearchRoutine;
+	[Header("AI and Pathfinding")] [Space(5f)] 
+	[SerializeField] private AISearchRoutine roamSearchRoutine;
 #pragma warning restore 0649
 
 	private enum States
@@ -55,8 +56,6 @@ public class PrototaxAI : BiodiverseAI
 
 	private CachedValue<DamageTrigger> _sporeCloudDamageTrigger;
 	private CachedValue<Animation> _sporeCloudAnimation;
-
-	protected override Dictionary<string, AudioClip[]> AudioClips { get; } = new();
 
 	private Vector3 _spawnPosition;
 

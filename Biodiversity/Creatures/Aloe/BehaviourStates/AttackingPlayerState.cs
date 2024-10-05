@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
+using Biodiversity.Util.Types;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
@@ -53,18 +54,18 @@ public class AttackingPlayerState : BehaviourState
     }
 
     private class TransitionToChasingEscapedPlayer(
-        AloeServer aloeServerInstance,
+        AloeServer enemyAIInstance,
         AttackingPlayerState attackingPlayerState)
-        : StateTransition(aloeServerInstance)
+        : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
         {
-            if (!(Vector3.Distance(AloeServerInstance.ActualTargetPlayer.Value.transform.position,
-                    AloeServerInstance.transform.position) <= 1.5f)) return !attackingPlayerState._isPlayerTargetable;
+            if (!(Vector3.Distance(EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
+                    EnemyAIInstance.transform.position) <= 1.5f)) return !attackingPlayerState._isPlayerTargetable;
 
-            AloeServerInstance.LogDebug("Player is close to aloe! Killing them!");
-            AloeServerInstance.netcodeController.CrushPlayerClientRpc(
-                AloeServerInstance.aloeId, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
+            EnemyAIInstance.LogDebug("Player is close to aloe! Killing them!");
+            EnemyAIInstance.netcodeController.CrushPlayerClientRpc(
+                EnemyAIInstance.aloeId, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
 
             return true;
         }

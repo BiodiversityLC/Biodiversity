@@ -18,13 +18,18 @@ public abstract class BiodiverseAI : EnemyAI
     /// Gets the mapping between audio type identifiers and their corresponding arrays of <see cref="AudioClip"/>s.
     /// Derived classes must override this property to provide their specific audio clip configurations.
     /// </summary>
-    protected virtual Dictionary<string, AudioClip[]> AudioClips { get; } = new();
+    protected Dictionary<string, AudioClip[]> AudioClips { get; } = new();
 
     /// <summary>
     /// Gets the mapping between audio source identifiers and their corresponding <see cref="AudioSource"/> components.
     /// Derived classes must override this property to provide their specific audio source configurations.
     /// </summary>
-    protected virtual Dictionary<string, AudioSource> AudioSources { get; } = new();
+    protected Dictionary<string, AudioSource> AudioSources { get; } = new();
+
+    protected virtual void Awake()
+    {
+        
+    }
 
     /// <summary>
     /// Requests the server to play a specific type of audio clip on a designated <see cref="AudioSource"/>.
@@ -59,13 +64,13 @@ public abstract class BiodiverseAI : EnemyAI
         bool audibleByEnemies = false)
     {
         // Validate audio clip type
-        if (!AudioClips.ContainsKey(audioClipType))
+        if (!AudioClips.TryGetValue(audioClipType, out AudioClip[] clipArr))
         {
             LogError($"Audio Clip Type '{audioClipType}' not defined for {GetType().Name}.");
             return;
         }
 
-        int numberOfClips = AudioClips[audioClipType].Length;
+        int numberOfClips = clipArr.Length;
 
         if (numberOfClips == 0)
         {
@@ -162,7 +167,9 @@ public abstract class BiodiverseAI : EnemyAI
             $"Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}' in {GetType().Name}.");
 
         if (interrupt) selectedAudioSource.Stop();
+        
         selectedAudioSource.PlayOneShot(clipToPlay);
+        
         if (audibleInWalkieTalkie)
             WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
         if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
@@ -457,7 +464,7 @@ public abstract class BiodiverseAI : EnemyAI
         BiodiversityPlugin.Logger.LogWarning($"{GetLogPrefix()} {message}");
     }
 
-    private string GetLogPrefix()
+    protected virtual string GetLogPrefix()
     {
         return $"[{enemyType.enemyName}]";
     }
