@@ -10,9 +10,9 @@ using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures;
 
-public abstract class BiodiverseAI : EnemyAI
+internal abstract class BiodiverseAI : EnemyAI
 {
-    [HideInInspector] protected readonly string BioId = Guid.NewGuid().ToString();
+    public readonly string BioId = Guid.NewGuid().ToString();
 
     /// <summary>
     /// Gets the mapping between audio type identifiers and their corresponding arrays of <see cref="AudioClip"/>s.
@@ -28,7 +28,15 @@ public abstract class BiodiverseAI : EnemyAI
 
     protected virtual void Awake()
     {
+        if (!IsServer) return;
+    }
+
+    public override void Start()
+    {
+        base.Start();
+        if (!IsServer) return;
         
+        Random.InitState(StartOfRound.Instance.randomMapSeed + BioId.GetHashCode() - thisEnemyIndex);
     }
 
     /// <summary>
@@ -56,7 +64,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// actions.
     /// </param>
     [ServerRpc]
-    public void PlayAudioClipTypeServerRpc(
+    internal void PlayAudioClipTypeServerRpc(
         string audioClipType,
         string audioSourceType,
         bool interrupt = false,
@@ -218,7 +226,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <summary>
     /// Represents the status of a path.
     /// </summary>
-    public enum PathStatus
+    internal enum PathStatus
     {
         /// <summary>
         /// Path is invalid or incomplete.
@@ -249,7 +257,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <c>true</c> if the path status is <see cref="PathStatus.Valid"/> or <see cref="PathStatus.ValidButInLos"/>;
     /// otherwise, <c>false</c>.
     /// </returns>
-    public static bool PathStatusToBool(PathStatus status)
+    internal static bool PathStatusToBool(PathStatus status)
     {
         return status is PathStatus.Valid or PathStatus.ValidButInLos;
     }
@@ -262,7 +270,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="checkLineOfSight">Whether to check if any segment of the path is obstructed by line of sight.</param>
     /// <param name="bufferDistance">The buffer distance within which the path is considered valid without further checks.</param>
     /// <returns>Returns true if the agent can path to the position within the buffer distance or if a valid path exists; otherwise, false.</returns>
-    public static PathStatus IsPathValid(
+    internal static PathStatus IsPathValid(
         NavMeshAgent agent,
         Vector3 position,
         bool checkLineOfSight = false,
@@ -326,7 +334,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="allowFallbackIfBlocked">If true, allows finding another node if the first is blocked by line of sight.</param>
     /// <param name="bufferDistance">The minimum distance a node must be from the position to be considered.</param>
     /// <returns>The transform of the closest valid AI node that the agent can path to, or null if no valid node is found.</returns>
-    public static Transform GetClosestValidNodeToPosition(
+    internal static Transform GetClosestValidNodeToPosition(
         out PathStatus pathStatus,
         NavMeshAgent agent,
         Vector3 position,
@@ -360,7 +368,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="allowFallbackIfBlocked">If true, allows finding another node if the first is blocked by line of sight.</param>
     /// <param name="bufferDistance">The minimum distance a node must be from the position to be considered.</param>
     /// <returns>The transform of the farthest valid AI node that the agent can path to, or null if no valid node is found.</returns>
-    public static Transform GetFarthestValidNodeFromPosition(
+    internal static Transform GetFarthestValidNodeFromPosition(
         out PathStatus pathStatus,
         NavMeshAgent agent,
         Vector3 position,
@@ -448,18 +456,18 @@ public abstract class BiodiverseAI : EnemyAI
         return null;
     }
 
-    protected void LogVerbose(object message)
+    internal void LogVerbose(object message)
     {
         if (BiodiversityPlugin.Config.VerboseLogging)
             BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
     }
 
-    protected void LogError(object message)
+    internal void LogError(object message)
     {
         BiodiversityPlugin.Logger.LogError($"{GetLogPrefix()} {message}");
     }
 
-    protected void LogWarning(object message)
+    internal void LogWarning(object message)
     {
         BiodiversityPlugin.Logger.LogWarning($"{GetLogPrefix()} {message}");
     }

@@ -17,11 +17,8 @@ using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Aloe;
 
-public class AloeServer : BiodiverseAI
+internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI>
 {
-    [HideInInspector] public ManualLogSource Mls;
-    [HideInInspector] public string aloeId;
-    
     public AISearchRoutine roamMap;
     
     public int PlayerHealthThresholdForStalking { get; private set; } = 90;
@@ -45,7 +42,7 @@ public class AloeServer : BiodiverseAI
     public AloeNetcodeController netcodeController;
 #pragma warning restore 0649
     
-    public enum States
+    public enum AloeStates
     {
         Spawning,
         Roaming,
@@ -60,29 +57,10 @@ public class AloeServer : BiodiverseAI
         Dead,
     }
 
-    [HideInInspector] public BehaviourState PreviousState;
-    private Dictionary<States, BehaviourState> _stateDictionary = [];
-    private BehaviourState _currentState;
-
     public readonly NullableObject<PlayerControllerB> ActualTargetPlayer = new();
     public readonly NullableObject<PlayerControllerB> AvoidingPlayer = new();
     public readonly NullableObject<PlayerControllerB> SlappingPlayer = new();
     [HideInInspector] public PlayerControllerB backupTargetPlayer;
-    
-    private static readonly Dictionary<Type, States> StateTypeMapping = new()
-    {
-        { typeof(SpawningState), States.Spawning },
-        { typeof(RoamingState), States.Roaming },
-        { typeof(AvoidingPlayerState), States.AvoidingPlayer },
-        { typeof(PassiveStalkingState), States.PassiveStalking },
-        { typeof(AggressiveStalkingState), States.AggressiveStalking },
-        { typeof(KidnappingPlayerState), States.KidnappingPlayer },
-        { typeof(HealingPlayerState), States.HealingPlayer },
-        { typeof(CuddlingPlayerState), States.CuddlingPlayer },
-        { typeof(ChasingEscapedPlayerState), States.ChasingEscapedPlayer },
-        { typeof(AttackingPlayerState), States.AttackingPlayer },
-        { typeof(DeadState), States.Dead },
-    };
     
     [HideInInspector] public Vector3 favouriteSpot;
     private Vector3 _mainEntrancePosition;
@@ -109,17 +87,16 @@ public class AloeServer : BiodiverseAI
 
     protected override void Awake()
     {
-        aloeId = Guid.NewGuid().ToString();
-        Mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Server {aloeId}");
+        base.Awake();
         
         if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
         if (netcodeController == null)
         {
-            Mls.LogError("Netcode Controller is null, aborting spawn");
+            LogError("Netcode Controller is null, aborting spawn");
             Destroy(gameObject);
         }
     }
-    
+
     private void OnEnable()
     {
         if (!IsServer) return;
@@ -142,21 +119,13 @@ public class AloeServer : BiodiverseAI
     {
         base.Start();
         if (!IsServer) return;
-
-        // Ensure SubscribeToNetworkEvents is called again in Start to handle network initialization timing
-        SubscribeToNetworkEvents();
-
-        Random.InitState(StartOfRound.Instance.randomMapSeed + aloeId.GetHashCode() - thisEnemyIndex);
-        netcodeController.SyncAloeIdClientRpc(aloeId);
-        agent.updateRotation = false;
-
-        ConstructStateDictionary();
-
-        StateData tempStateData = new();
-        _currentState = _stateDictionary[States.Spawning];
-        _currentState.OnStateEnter(ref tempStateData);
         
-        LogDebug("Aloe Spawned!");
+        SubscribeToNetworkEvents();
+        
+        netcodeController.SyncAloeIdClientRpc(BioId);
+        agent.updateRotation = false;
+        
+        LogVerbose("Aloe Spawned!");
     }
 
     /// <summary>
@@ -221,11 +190,11 @@ public class AloeServer : BiodiverseAI
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="newState"></param>
+    /// <param name="newAloeState"></param>
     /// <param name="stateTransition">Used to call an OnTransition() function in the state class.</param>
     /// <param name="initData">Used to provide optional additional data to the new state.</param>
     public void SwitchBehaviourState(
-        States newState, 
+        AloeStates newAloeState, 
         StateTransition stateTransition = null,
         StateData initData = null)
     {
@@ -244,35 +213,35 @@ public class AloeServer : BiodiverseAI
             LogDebug("Could not exit current state, because it is null.");
         }
 
-        if (_stateDictionary.TryGetValue(newState, out BehaviourState newStateInstance))
+        if (_stateDictionary.TryGetValue(newAloeState, out BehaviourState newStateInstance))
         {
             _currentState = newStateInstance;
-            currentBehaviourStateIndex = (int)newState;
-            LogDebug($"Entering state {newState}.");
+            currentBehaviourStateIndex = (int)newAloeState;
+            LogDebug($"Entering state {newAloeState}.");
             
             _currentState.OnStateEnter(ref initData);
             
             netcodeController.CurrentBehaviourStateIndex.Value = currentBehaviourStateIndex;
             
-            LogDebug($"Successfully switched behaviour state to {newState}.");
+            LogDebug($"Successfully switched behaviour state to {newAloeState}.");
         }
         else
         {
-            Mls.LogError($"State {newState} not found in StateDictionary.");
+            Mls.LogError($"State {newAloeState} not found in StateDictionary.");
         }
     }
     
     private void ConstructStateDictionary()
     {
         if (!IsServer) return;
-        _stateDictionary = new Dictionary<States, BehaviourState>();
+        _stateDictionary = new Dictionary<AloeStates, BehaviourState>();
 
-        foreach ((Type stateType, States stateEnum) in StateTypeMapping)
+        foreach ((Type stateType, AloeStates stateEnum) in StateTypeMapping)
         {
             try
             {
                 // Use reflection to find the constructor that takes AloeServerInstance and States as parameters
-                ConstructorInfo constructor = stateType.GetConstructor([typeof(AloeServer), typeof(States)]);
+                ConstructorInfo constructor = stateType.GetConstructor([typeof(AloeServerAI), typeof(AloeStates)]);
                 if (constructor != null)
                 {
                     // Create an instance of the state type using the constructor
@@ -362,14 +331,14 @@ public class AloeServer : BiodiverseAI
 
         switch (_currentState.GetStateType())
         {
-            case States.Dead or States.HealingPlayer or States.CuddlingPlayer:
+            case AloeStates.Dead or AloeStates.HealingPlayer or AloeStates.CuddlingPlayer:
                 break;
             
             default:
             {
                 if (!(agent.velocity.sqrMagnitude > 0.01f)) break;
                 Vector3 targetDirection = !hasTransitionedToRunningForwardsAndCarryingPlayer &&
-                                          currentBehaviourStateIndex == (int)States.KidnappingPlayer
+                                          currentBehaviourStateIndex == (int)AloeStates.KidnappingPlayer
                     ? -agent.velocity.normalized
                     : agent.velocity.normalized;
         
@@ -407,21 +376,21 @@ public class AloeServer : BiodiverseAI
         if (!IsServer) return;
         switch (_currentState.GetStateType())
         {
-            case States.ChasingEscapedPlayer:
+            case AloeStates.ChasingEscapedPlayer:
             {
                 if (((ChasingEscapedPlayerState)_currentState).WaitBeforeChasingTimer > 0) break;
                 
                 LogDebug("Player is touching the aloe! Kidnapping him now.");
                 netcodeController.SetAnimationTriggerClientRpc(aloeId, AloeClient.Grab);
-                SwitchBehaviourState(States.KidnappingPlayer);
+                SwitchBehaviourState(AloeStates.KidnappingPlayer);
                 break;
             }
 
-            case States.AttackingPlayer:
+            case AloeStates.AttackingPlayer:
             {
                 LogDebug("Player is touching the aloe! Killing them!");
                 netcodeController.CrushPlayerClientRpc(aloeId, ActualTargetPlayer.Value.actualClientId);
-                SwitchBehaviourState(States.ChasingEscapedPlayer);
+                SwitchBehaviourState(AloeStates.ChasingEscapedPlayer);
                 break;
             }
         }
@@ -441,8 +410,8 @@ public class AloeServer : BiodiverseAI
         if (!IsServer) return;
         if (isEnemyDead) return;
         
-        States currentStateType = _currentState.GetStateType();
-        if (currentStateType is States.Dead || _takeDamageCooldown > 0) return;
+        AloeStates currentAloeStateType = _currentState.GetStateType();
+        if (currentAloeStateType is AloeStates.Dead || _takeDamageCooldown > 0) return;
 
         netcodeController.PlayAudioClipTypeServerRpc(aloeId, AloeClient.AudioClipTypes.Hit);
         enemyHP -= force;
@@ -450,20 +419,20 @@ public class AloeServer : BiodiverseAI
         
         if (enemyHP > 0)
         {
-            if (currentStateType is States.Spawning) return;
+            if (currentAloeStateType is AloeStates.Spawning) return;
 
             NullableObject<PlayerControllerB> playerWhoHitMe = new(playerWhoHit);
             
             StateData stateData = new();
             stateData.Add("overridePlaySpottedAnimation", true);
             
-            switch (currentStateType)
+            switch (currentAloeStateType)
             {
-                case States.Roaming or States.AvoidingPlayer or States.PassiveStalking or States.AggressiveStalking:
+                case AloeStates.Roaming or AloeStates.AvoidingPlayer or AloeStates.PassiveStalking or AloeStates.AggressiveStalking:
                 {
                     if (playerWhoHitMe.IsNotNull)
                     {
-                        if (currentStateType is not (States.Roaming or States.AvoidingPlayer) || enemyHP <= AloeHandler.Instance.Config.Health / 2)
+                        if (currentAloeStateType is not (AloeStates.Roaming or AloeStates.AvoidingPlayer) || enemyHP <= AloeHandler.Instance.Config.Health / 2)
                         {
                             LogDebug("Triggering bitch slap.");
                             SlappingPlayer.Value = playerWhoHitMe.Value;
@@ -481,19 +450,19 @@ public class AloeServer : BiodiverseAI
                         stateData.Add("hitByEnemy", true);
                     }
                     
-                    if (currentStateType is not States.AvoidingPlayer) SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
+                    if (currentAloeStateType is not AloeStates.AvoidingPlayer) SwitchBehaviourState(AloeStates.AvoidingPlayer, initData: stateData);
                     
                     break;
                 }
                 
-                case States.KidnappingPlayer or States.HealingPlayer or States.CuddlingPlayer:
+                case AloeStates.KidnappingPlayer or AloeStates.HealingPlayer or AloeStates.CuddlingPlayer:
                 {
                     if (playerWhoHitMe.IsNotNull)
                     {
                         SetTargetPlayerInCaptivity(false);
                         backupTargetPlayer = ActualTargetPlayer.Value;
                         netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
-                        SwitchBehaviourState(States.AttackingPlayer);
+                        SwitchBehaviourState(AloeStates.AttackingPlayer);
                     }
                     else
                     {
@@ -501,32 +470,32 @@ public class AloeServer : BiodiverseAI
                         
                         SetTargetPlayerInCaptivity(false);
                         stateData.Add("hitByEnemy", true);
-                        SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
+                        SwitchBehaviourState(AloeStates.AvoidingPlayer, initData: stateData);
                     }
                 
                     break;
                 }
 
-                case States.ChasingEscapedPlayer:
+                case AloeStates.ChasingEscapedPlayer:
                 {
                     if (playerWhoHitMe.IsNotNull)
                     {
                         backupTargetPlayer = ActualTargetPlayer.Value;
                         netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
-                        SwitchBehaviourState(States.AttackingPlayer);
+                        SwitchBehaviourState(AloeStates.AttackingPlayer);
                     }
                     else
                     {
                         if (force <= 0) return;
                         
                         stateData.Add("hitByEnemy", true);
-                        SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
+                        SwitchBehaviourState(AloeStates.AvoidingPlayer, initData: stateData);
                     }
                     
                     break;
                 }
                 
-                case States.AttackingPlayer:
+                case AloeStates.AttackingPlayer:
                 {
                     if (playerWhoHitMe.IsNotNull && ActualTargetPlayer.Value != playerWhoHitMe.Value)
                     {
@@ -537,7 +506,7 @@ public class AloeServer : BiodiverseAI
                         if (force <= 0) return;
                         
                         stateData.Add("hitByEnemy", true);
-                        SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
+                        SwitchBehaviourState(AloeStates.AvoidingPlayer, initData: stateData);
                     }
                 
                     break;
@@ -546,7 +515,7 @@ public class AloeServer : BiodiverseAI
         }
         else
         {
-            SwitchBehaviourState(States.Dead);
+            SwitchBehaviourState(AloeStates.Dead);
         }
     }
 
@@ -566,8 +535,8 @@ public class AloeServer : BiodiverseAI
         if (!IsServer) return;
         if (isEnemyDead) return;
         
-        States currentState = _currentState.GetStateType();
-        if (currentState is States.Dead) return;
+        AloeStates currentAloeState = _currentState.GetStateType();
+        if (currentAloeState is AloeStates.Dead) return;
 
         _inStunAnimation = true;
         netcodeController.PlayAudioClipTypeServerRpc(aloeId, AloeClient.AudioClipTypes.Stun, true);
@@ -579,35 +548,35 @@ public class AloeServer : BiodiverseAI
         stateData.Add("overridePlaySpottedAnimation", true);
         
         NullableObject<PlayerControllerB> stunnedByPlayer2 = new(setStunnedByPlayer);
-        switch (currentState)
+        switch (currentAloeState)
         { 
-            case States.Spawning or States.Roaming or States.PassiveStalking or States.AggressiveStalking:
+            case AloeStates.Spawning or AloeStates.Roaming or AloeStates.PassiveStalking or AloeStates.AggressiveStalking:
             {
                 if (stunnedByPlayer2.IsNotNull) AvoidingPlayer.Value = stunnedByPlayer2.Value;
                 
-                SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
+                SwitchBehaviourState(AloeStates.AvoidingPlayer, initData: stateData);
                 break;
             }
             
-            case States.KidnappingPlayer or States.HealingPlayer or States.CuddlingPlayer:
+            case AloeStates.KidnappingPlayer or AloeStates.HealingPlayer or AloeStates.CuddlingPlayer:
             {
                 SetTargetPlayerInCaptivity(false);
                 if (stunnedByPlayer2.IsNotNull)
                 {
                     backupTargetPlayer = ActualTargetPlayer.Value;
                     netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
-                    SwitchBehaviourState(States.AttackingPlayer);
+                    SwitchBehaviourState(AloeStates.AttackingPlayer);
                 }
                 else
                 {
                     AvoidingPlayer.Value = null;
-                    SwitchBehaviourState(States.AvoidingPlayer, initData: stateData);
+                    SwitchBehaviourState(AloeStates.AvoidingPlayer, initData: stateData);
                 }
                 
                 break;
             }
             
-            case States.AttackingPlayer:
+            case AloeStates.AttackingPlayer:
             {
                 if (!stunnedByPlayer2.IsNotNull) break;
 
@@ -653,8 +622,8 @@ public class AloeServer : BiodiverseAI
             return;
         }
         
-        States localCurrentState = _currentState.GetStateType();
-        if (localCurrentState is not (States.KidnappingPlayer or States.CuddlingPlayer or States.HealingPlayer)) return;
+        AloeStates localCurrentAloeState = _currentState.GetStateType();
+        if (localCurrentAloeState is not (AloeStates.KidnappingPlayer or AloeStates.CuddlingPlayer or AloeStates.HealingPlayer)) return;
         
         LogDebug("Target player escaped by teleportation!");
         if (AloeSharedData.Instance.IsPlayerStalkBound(ActualTargetPlayer.Value))
@@ -662,7 +631,7 @@ public class AloeServer : BiodiverseAI
         SetTargetPlayerInCaptivity(false);
             
         netcodeController.TargetPlayerClientId.Value = NullPlayerId;
-        SwitchBehaviourState(States.Roaming);
+        SwitchBehaviourState(AloeStates.Roaming);
     }
 
     /// <summary>
@@ -675,7 +644,7 @@ public class AloeServer : BiodiverseAI
         
         LogDebug("Target player escaped by force!");
         SetTargetPlayerInCaptivity(false);
-        SwitchBehaviourState(States.ChasingEscapedPlayer);
+        SwitchBehaviourState(AloeStates.ChasingEscapedPlayer);
     }
     
     /// <summary>
@@ -685,10 +654,10 @@ public class AloeServer : BiodiverseAI
     public void GrabTargetPlayer()
     {
         if (!IsServer) return;
-        if (currentBehaviourStateIndex != (int)States.AggressiveStalking) return;
+        if (currentBehaviourStateIndex != (int)AloeStates.AggressiveStalking) return;
         
         LogDebug("Handling grab target player event.");
-        SwitchBehaviourState(States.KidnappingPlayer);
+        SwitchBehaviourState(AloeStates.KidnappingPlayer);
     }
     
     /// <summary>
@@ -718,9 +687,9 @@ public class AloeServer : BiodiverseAI
         if (stunNormalizedTimer > 0 || 
             isStaringAtTargetPlayer ||
             inSlapAnimation || inCrushHeadAnimation ||
-            (_currentState.GetStateType() == States.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
-            _currentState.GetStateType() == States.Dead ||
-            _currentState.GetStateType() == States.Spawning)
+            (_currentState.GetStateType() == AloeStates.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
+            _currentState.GetStateType() == AloeStates.Dead ||
+            _currentState.GetStateType() == AloeStates.Spawning)
         {
             agent.speed = 0;
             agent.acceleration = agentMaxAcceleration;

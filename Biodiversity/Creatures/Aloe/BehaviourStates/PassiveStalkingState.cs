@@ -11,14 +11,14 @@ public class PassiveStalkingState : BehaviourState
     private bool _isStaringAtTargetPlayer;
     private bool _isPlayerReachable;
 
-    public PassiveStalkingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
-        stateType)
+    public PassiveStalkingState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
+        aloeStateType)
     {
         Transitions =
         [
-            new TransitionToAvoidingPlayer(aloeServerInstance, this),
-            new TransitionToPassiveRoaming(aloeServerInstance, this),
-            new TransitionToStalkingPlayerToKidnap(aloeServerInstance),
+            new TransitionToAvoidingPlayer(aloeServerAIInstance, this),
+            new TransitionToPassiveRoaming(aloeServerAIInstance, this),
+            new TransitionToStalkingPlayerToKidnap(aloeServerAIInstance),
         ];
     }
 
@@ -103,7 +103,7 @@ public class PassiveStalkingState : BehaviourState
         AloeServerInstance.LogDebug($"Is player reachable: {_isPlayerReachable}");
     }
 
-    private class TransitionToAvoidingPlayer(AloeServer enemyAIInstance, PassiveStalkingState passiveStalkingState)
+    private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance, PassiveStalkingState passiveStalkingState)
         : StateTransition(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
@@ -116,9 +116,9 @@ public class PassiveStalkingState : BehaviourState
             return _playerLookingAtAloe != null;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.AvoidingPlayer;
+            return AloeServerAI.AloeStates.AvoidingPlayer;
         }
 
         public override void OnTransition()
@@ -135,7 +135,7 @@ public class PassiveStalkingState : BehaviourState
     }
 
     private class TransitionToPassiveRoaming(
-        AloeServer enemyAIInstance,
+        AloeServerAI enemyAIInstance,
         PassiveStalkingState passiveStalkingState)
         : StateTransition(enemyAIInstance)
     {
@@ -157,13 +157,13 @@ public class PassiveStalkingState : BehaviourState
             return false;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.Roaming;
+            return AloeServerAI.AloeStates.Roaming;
         }
     }
 
-    private class TransitionToStalkingPlayerToKidnap(AloeServer enemyAIInstance)
+    private class TransitionToStalkingPlayerToKidnap(AloeServerAI enemyAIInstance)
         : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
@@ -172,9 +172,9 @@ public class PassiveStalkingState : BehaviourState
                    EnemyAIInstance.PlayerHealthThresholdForHealing;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.AggressiveStalking;
+            return AloeServerAI.AloeStates.AggressiveStalking;
         }
     }
 }

@@ -55,7 +55,7 @@ namespace Biodiversity.Creatures.Ogopogo
         // Player references
         private readonly NullableObject<PlayerControllerB> playerGrabbed = new();
         private readonly NullableObject<PlayerControllerB> chasedPlayer = new();
-        private CachedDictionary<ulong, MeshRenderer> playerVisorRenderers;
+        private PerKeyCachedDictionary<ulong, MeshRenderer> playerVisorRenderers;
         private float[] _playerDistances;
 
         // Audio
@@ -177,7 +177,7 @@ namespace Biodiversity.Creatures.Ogopogo
             // Set default y pos of audio
             normalAudio.Init();
 
-            playerVisorRenderers = new CachedDictionary<ulong, MeshRenderer>(playerId =>
+            playerVisorRenderers = new PerKeyCachedDictionary<ulong, MeshRenderer>(playerId =>
                 StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
                     .GetComponentsInChildren<MeshRenderer>()[0]);
         }

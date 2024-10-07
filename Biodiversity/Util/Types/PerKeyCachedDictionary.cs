@@ -9,13 +9,13 @@ namespace Biodiversity.Util.Types;
 /// </summary>
 /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
 /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
-public class CachedDictionary<TKey, TValue>
+public class PerKeyCachedDictionary<TKey, TValue>
 {
-    private readonly Dictionary<TKey, NullableObject<TValue>> _cache = new();
+    protected readonly Dictionary<TKey, NullableObject<TValue>> Cache = new();
     private readonly Func<TKey, TValue> _computeValueFunction;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CachedDictionary{TKey, TValue}"/> class with the specified function to compute values.
+    /// Initializes a new instance of the <see cref="PerKeyCachedDictionary{TKey,TValue}"/> class with the specified function to compute values.
     /// </summary>
     /// <param name="computeValueFunction">
     /// A function that computes the value associated with a given key. This function is invoked only when the key is accessed 
@@ -24,7 +24,7 @@ public class CachedDictionary<TKey, TValue>
     /// <exception cref="ArgumentNullException">
     /// Thrown if <paramref name="computeValueFunction"/> is <c>null</c>.
     /// </exception>
-    public CachedDictionary(Func<TKey, TValue> computeValueFunction)
+    public PerKeyCachedDictionary(Func<TKey, TValue> computeValueFunction)
     {
         _computeValueFunction = computeValueFunction ?? throw new ArgumentNullException(nameof(computeValueFunction));
     }
@@ -45,15 +45,15 @@ public class CachedDictionary<TKey, TValue>
     /// The value is computed lazily; that is, it is only computed when accessed for the first time.
     /// After the first access, the computed value is cached and reused for all subsequent accesses, unless reset.
     /// </remarks>
-    public TValue this[TKey key]
+    public virtual TValue this[TKey key]
     {
         get
         {
-            if (_cache.TryGetValue(key, out NullableObject<TValue> cachedValue) && cachedValue.IsNotNull)
+            if (Cache.TryGetValue(key, out NullableObject<TValue> cachedValue) && cachedValue.IsNotNull)
                 return cachedValue.Value;
             
             cachedValue = new NullableObject<TValue>(_computeValueFunction(key));
-            _cache[key] = cachedValue;
+            Cache[key] = cachedValue;
 
             return cachedValue.Value;
         }
@@ -69,7 +69,7 @@ public class CachedDictionary<TKey, TValue>
     /// </remarks>
     public void Reset(TKey key)
     {
-        if (_cache.TryGetValue(key, out NullableObject<TValue> value))
+        if (Cache.TryGetValue(key, out NullableObject<TValue> value))
             value.Value = default;
     }
 
@@ -82,9 +82,9 @@ public class CachedDictionary<TKey, TValue>
     /// </remarks>
     public void ResetAll()
     {
-        foreach (TKey key in _cache.Keys)
+        foreach (TKey key in Cache.Keys)
         {
-            _cache[key].Value = default;
+            Cache[key].Value = default;
         }
     }
 }

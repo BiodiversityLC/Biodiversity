@@ -144,12 +144,12 @@ public class AloeClient : MonoBehaviour
 
     private readonly NullableObject<PlayerControllerB> _targetPlayer = new();
 
-    private CachedValue<AloeServer> _aloeServer;
+    private CachedValue<AloeServerAI> _aloeServer;
 
-    private CachedDictionary<ulong, List<Tuple<Component, bool>>> _targetPlayerCachedRenderers;
-    private CachedDictionary<ulong, MeshRenderer> _playerVisorRenderers;
-    private CachedDictionary<ulong, AudioLowPassFilter> _playerAudioLowPassFilters;
-    private CachedDictionary<ulong, OccludeAudio> _playerOccludeAudios;
+    private PerKeyCachedDictionary<ulong, List<Tuple<Component, bool>>> _targetPlayerPerKeyCachedRenderers;
+    private PerKeyCachedDictionary<ulong, MeshRenderer> _playerVisorRenderers;
+    private PerKeyCachedDictionary<ulong, AudioLowPassFilter> _playerAudioLowPassFilters;
+    private PerKeyCachedDictionary<ulong, OccludeAudio> _playerOccludeAudios;
     
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
 
@@ -180,9 +180,9 @@ public class AloeClient : MonoBehaviour
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client");
         if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
 
-        _aloeServer = new CachedValue<AloeServer>(GetComponent<AloeServer>);
+        _aloeServer = new CachedValue<AloeServerAI>(GetComponent<AloeServerAI>);
         
-        _targetPlayerCachedRenderers = new CachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
+        _targetPlayerPerKeyCachedRenderers = new PerKeyCachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
         {
             List<Tuple<Component, bool>> rendererComponents = [];
             
@@ -226,15 +226,15 @@ public class AloeClient : MonoBehaviour
             return rendererComponents;
         });
         
-        _playerVisorRenderers = new CachedDictionary<ulong, MeshRenderer>(playerId =>
+        _playerVisorRenderers = new PerKeyCachedDictionary<ulong, MeshRenderer>(playerId =>
             StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
                 .GetComponentsInChildren<MeshRenderer>()[0]);
 
-        _playerAudioLowPassFilters = new CachedDictionary<ulong, AudioLowPassFilter>(playerId =>
+        _playerAudioLowPassFilters = new PerKeyCachedDictionary<ulong, AudioLowPassFilter>(playerId =>
             StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource
                 .GetComponent<AudioLowPassFilter>());
 
-        _playerOccludeAudios = new CachedDictionary<ulong, OccludeAudio>(playerId =>
+        _playerOccludeAudios = new PerKeyCachedDictionary<ulong, OccludeAudio>(playerId =>
             StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource.GetComponent<OccludeAudio>());
     }
 
@@ -386,7 +386,7 @@ public class AloeClient : MonoBehaviour
         {
             switch (_currentBehaviourStateIndex)
             {
-                case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer:
+                case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer:
                 {
                     if (!_targetPlayer.IsNotNull) break;
                     if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
@@ -434,8 +434,8 @@ public class AloeClient : MonoBehaviour
         }
 
         // Animate the real target player's body
-        if (netcodeController.CurrentBehaviourStateIndex.Value is (int)AloeServer.States.KidnappingPlayer
-                or (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer &&
+        if (netcodeController.CurrentBehaviourStateIndex.Value is (int)AloeServerAI.AloeStates.KidnappingPlayer
+                or (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer &&
             _targetPlayer.IsNotNull && _targetPlayerInCaptivity && _targetPlayer.Value.inSpecialInteractAnimation)
         {
             _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
@@ -844,7 +844,7 @@ public class AloeClient : MonoBehaviour
         }
         
         ulong targetPlayerId = _targetPlayer.Value.actualClientId;
-        List<Tuple<Component, bool>> cachedRenderers = _targetPlayerCachedRenderers[targetPlayerId];
+        List<Tuple<Component, bool>> cachedRenderers = _targetPlayerPerKeyCachedRenderers[targetPlayerId];
         
         if (cachedRenderers == null || cachedRenderers.Count == 0)
         {
@@ -929,7 +929,7 @@ public class AloeClient : MonoBehaviour
 
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        _targetPlayer.Value = newValue == AloeServer.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
+        _targetPlayer.Value = newValue == AloeServerAI.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
         LogDebug(_targetPlayer.IsNotNull
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
             : "Changed target player to null.");
@@ -943,13 +943,13 @@ public class AloeClient : MonoBehaviour
 
     private void HandleBehaviourStateChanged(int oldValue, int newValue)
     {
-        petalsRenderer.enabled = newValue is (int)AloeServer.States.HealingPlayer
-            or (int)AloeServer.States.CuddlingPlayer or (int)AloeServer.States.ChasingEscapedPlayer
-            or (int)AloeServer.States.AttackingPlayer;
+        petalsRenderer.enabled = newValue is (int)AloeServerAI.AloeStates.HealingPlayer
+            or (int)AloeServerAI.AloeStates.CuddlingPlayer or (int)AloeServerAI.AloeStates.ChasingEscapedPlayer
+            or (int)AloeServerAI.AloeStates.AttackingPlayer;
         
         switch (newValue)
         {
-            case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer when oldValue is not ((int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer):
+            case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer when oldValue is not ((int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer):
             {
                 LogDebug("Switching target player offset to cuddled.");
                 if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
@@ -957,8 +957,8 @@ public class AloeClient : MonoBehaviour
                 break;
             }
             
-            case (int)AloeServer.States.KidnappingPlayer when
-                oldValue is not (int)AloeServer.States.KidnappingPlayer:
+            case (int)AloeServerAI.AloeStates.KidnappingPlayer when
+                oldValue is not (int)AloeServerAI.AloeStates.KidnappingPlayer:
             {
                 _offsetPosition = Vector3.zero;
                 _offsetRotation = Quaternion.identity;
@@ -1005,13 +1005,13 @@ public class AloeClient : MonoBehaviour
 
     private void AddStateMachineBehaviours(Animator receivedAnimator)
     {
-        AloeServer aloeServer = _aloeServer.Value;
+        AloeServerAI aloeServerAI = _aloeServer.Value;
         StateMachineBehaviour[] behaviours = receivedAnimator.GetBehaviours<StateMachineBehaviour>();
         foreach (StateMachineBehaviour behaviour in behaviours)
         {
             if (behaviour is BaseStateMachineBehaviour baseStateMachineBehaviour)
             {
-                baseStateMachineBehaviour.Initialize(netcodeController, aloeServer, this);
+                baseStateMachineBehaviour.Initialize(netcodeController, aloeServerAI, this);
             }
         }
     }

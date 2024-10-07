@@ -10,12 +10,12 @@ public class HealingPlayerState : BehaviourState
 
     private bool _finishedHealing;
 
-    public HealingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
-        stateType)
+    public HealingPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
+        aloeStateType)
     {
         Transitions =
         [
-            new TransitionToCuddlingPlayer(aloeServerInstance, this),
+            new TransitionToCuddlingPlayer(aloeServerAIInstance, this),
         ];
     }
 
@@ -44,7 +44,7 @@ public class HealingPlayerState : BehaviourState
         if (AloeServerInstance.ActualTargetPlayer.Value.health == playerMaxHealth)
         {
             AloeServerInstance.LogDebug("Target player is already at max health, switching to cuddling player.");
-            AloeServerInstance.SwitchBehaviourState(AloeServer.States.CuddlingPlayer);
+            AloeServerInstance.SwitchBehaviourState(AloeServerAI.AloeStates.CuddlingPlayer);
             return;
         }
 
@@ -97,7 +97,7 @@ public class HealingPlayerState : BehaviourState
         }
     }
 
-    private class TransitionToCuddlingPlayer(AloeServer enemyAIInstance, HealingPlayerState healingPlayerState)
+    private class TransitionToCuddlingPlayer(AloeServerAI enemyAIInstance, HealingPlayerState healingPlayerState)
         : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
@@ -105,9 +105,9 @@ public class HealingPlayerState : BehaviourState
             return healingPlayerState._finishedHealing;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.CuddlingPlayer;
+            return AloeServerAI.AloeStates.CuddlingPlayer;
         }
     }
 }

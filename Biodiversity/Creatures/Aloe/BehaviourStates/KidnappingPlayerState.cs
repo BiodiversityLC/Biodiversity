@@ -11,12 +11,12 @@ public class KidnappingPlayerState : BehaviourState
 {
     private float _dragPlayerTimer;
 
-    public KidnappingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
-        stateType)
+    public KidnappingPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
+        aloeStateType)
     {
         Transitions =
         [
-            new TransitionToHealingPlayer(aloeServerInstance),
+            new TransitionToHealingPlayer(aloeServerAIInstance),
         ];
     }
 
@@ -64,7 +64,7 @@ public class KidnappingPlayerState : BehaviourState
         {
             AloeServerInstance.LogDebug(
                 "When initializing kidnapping, no path was found to the Aloe's favourite spot.");
-            AloeServerInstance.SwitchBehaviourState(AloeServer.States.HealingPlayer);
+            AloeServerInstance.SwitchBehaviourState(AloeServerAI.AloeStates.HealingPlayer);
             return;
         }
 
@@ -96,7 +96,7 @@ public class KidnappingPlayerState : BehaviourState
         }
     }
 
-    private class TransitionToHealingPlayer(AloeServer enemyAIInstance)
+    private class TransitionToHealingPlayer(AloeServerAI enemyAIInstance)
         : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
@@ -104,9 +104,9 @@ public class KidnappingPlayerState : BehaviourState
             return Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.favouriteSpot) <= 2;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.HealingPlayer;
+            return AloeServerAI.AloeStates.HealingPlayer;
         }
     }
 }

@@ -10,13 +10,13 @@ public class ChasingEscapedPlayerState : BehaviourState
 
     private bool _isPlayerTargetable;
 
-    public ChasingEscapedPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(
-        aloeServerInstance, stateType)
+    public ChasingEscapedPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(
+        aloeServerAIInstance, aloeStateType)
     {
         Transitions =
         [
-            new TransitionToPassiveRoaming(aloeServerInstance, this),
-            new TransitionToKidnappingPlayer(aloeServerInstance, this)
+            new TransitionToPassiveRoaming(aloeServerAIInstance, this),
+            new TransitionToKidnappingPlayer(aloeServerAIInstance, this)
         ];
     }
 
@@ -88,7 +88,7 @@ public class ChasingEscapedPlayerState : BehaviourState
     }
 
     private class TransitionToKidnappingPlayer(
-        AloeServer enemyAIInstance,
+        AloeServerAI enemyAIInstance,
         ChasingEscapedPlayerState chasingEscapedPlayerState)
         : StateTransition(enemyAIInstance)
     {
@@ -105,14 +105,14 @@ public class ChasingEscapedPlayerState : BehaviourState
             return true;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.KidnappingPlayer;
+            return AloeServerAI.AloeStates.KidnappingPlayer;
         }
     }
 
     private class TransitionToPassiveRoaming(
-        AloeServer enemyAIInstance,
+        AloeServerAI enemyAIInstance,
         ChasingEscapedPlayerState chasingEscapedPlayerState)
         : StateTransition(enemyAIInstance)
     {
@@ -121,9 +121,9 @@ public class ChasingEscapedPlayerState : BehaviourState
             return !chasingEscapedPlayerState._isPlayerTargetable;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.Roaming;
+            return AloeServerAI.AloeStates.Roaming;
         }
     }
 }

@@ -9,13 +9,13 @@ internal class HoneyFeederHandler : BiodiverseAIHandler<HoneyFeederHandler> {
     internal HoneyFeederConfig Config { get; private set; }
 
     public HoneyFeederHandler() {
-        Assets = new HoneyFeederAssets("honeyfeeder");
-        Config = new HoneyFeederConfig(BiodiversityPlugin.Instance.CreateConfig("honeyfeeder"));
-
-        Enemies.RegisterEnemy(Assets.enemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, Config.Rarity } }, []);
-
-        AddSpawnRequirement(Assets.enemyType, () => {
-            return false;
-        });
+        // Assets = new HoneyFeederAssets("honeyfeeder");
+        // Config = new HoneyFeederConfig(BiodiversityPlugin.Instance.CreateConfig("honeyfeeder"));
+        //
+        // Enemies.RegisterEnemy(Assets.enemyType, Enemies.SpawnType.Daytime, new Dictionary<Levels.LevelTypes, int> { { Levels.LevelTypes.All, Config.Rarity } }, []);
+        //
+        // AddSpawnRequirement(Assets.enemyType, () => {
+        //     return false;
+        // });
     }
 }

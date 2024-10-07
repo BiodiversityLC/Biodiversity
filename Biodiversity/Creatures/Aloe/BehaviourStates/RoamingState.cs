@@ -1,105 +1,105 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
-using Biodiversity.Creatures.Aloe.Types.Networking;
+﻿using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class RoamingState : BehaviourState
+[Preserve]
+internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private bool _reachedFavouriteSpotForRoaming;
 
-    public RoamingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
-        stateType)
+    protected RoamingState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
+        enemyAiInstance, stateType)
     {
         Transitions =
         [
-            new TransitionToAvoidingPlayer(aloeServerInstance),
-            new TransitionToPassivelyStalkingPlayer(aloeServerInstance)
+            new TransitionToAvoidingPlayer(EnemyAIInstance),
+            new TransitionToPassivelyStalkingPlayer(EnemyAIInstance)
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
 
-        AloeServerInstance.agentMaxSpeed = 2f;
-        AloeServerInstance.agentMaxAcceleration = 2f;
-        AloeServerInstance.openDoorSpeedMultiplier = 2f;
-        AloeServerInstance.moveTowardsDestination = true;
+        EnemyAIInstance.agentMaxSpeed = 2f;
+        EnemyAIInstance.agentMaxAcceleration = 2f;
+        EnemyAIInstance.openDoorSpeedMultiplier = 2f;
+        EnemyAIInstance.moveTowardsDestination = true;
         _reachedFavouriteSpotForRoaming = false;
 
-        AloeSharedData.Instance.Unbind(AloeServerInstance, BindType.Stalk);
+        AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);
 
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServer.NullPlayerId);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition, EnemyAIInstance.GetLookAheadVector());
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, AloeServerAI.NullPlayerId);
 
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0, 0.5f);
+        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0, 0.5f);
 
-        AloeServerInstance.LogDebug("Heading towards favourite position before roaming.");
-        AloeServerInstance.SetDestinationToPosition(AloeServerInstance.favouriteSpot);
-        if (AloeServerInstance.roamMap.inProgress) AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
+        EnemyAIInstance.LogVerbose("Heading towards favourite position before roaming.");
+        EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.favouriteSpot);
+        if (EnemyAIInstance.roamMap.inProgress) EnemyAIInstance.StopSearch(EnemyAIInstance.roamMap);
     }
 
-    public override void AIIntervalBehaviour()
+    internal override void AIIntervalBehaviour()
     {
         // Check if the aloe has reached her favourite spot, so she can start roaming from that position
         if (!_reachedFavouriteSpotForRoaming &&
-            Vector3.Distance(AloeServerInstance.favouriteSpot, AloeServerInstance.transform.position) <= 4)
+            Vector3.Distance(EnemyAIInstance.favouriteSpot, EnemyAIInstance.transform.position) <= 4)
         {
             _reachedFavouriteSpotForRoaming = true;
         }
         else
         {
-            if (!AloeServerInstance.roamMap.inProgress)
+            if (!EnemyAIInstance.roamMap.inProgress)
             {
-                AloeServerInstance.StartSearch(AloeServerInstance.transform.position, AloeServerInstance.roamMap);
-                AloeServerInstance.LogDebug("Starting to roam map.");
+                EnemyAIInstance.StartSearch(EnemyAIInstance.transform.position, EnemyAIInstance.roamMap);
+                EnemyAIInstance.LogVerbose("Starting to roam map.");
             }
         }
     }
 
-    public override void OnStateExit()
+    internal override void OnStateExit()
     {
         base.OnStateExit();
-        if (AloeServerInstance.roamMap.inProgress)
-            AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
+        if (EnemyAIInstance.roamMap.inProgress)
+            EnemyAIInstance.StopSearch(EnemyAIInstance.roamMap);
     }
 
-    private class TransitionToAvoidingPlayer(AloeServer enemyAIInstance)
-        : StateTransition(enemyAIInstance)
+    private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
 
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
-            _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition
-                (EnemyAIInstance.eye.transform, logSource: EnemyAIInstance.Mls);
+            _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform);
             return _playerLookingAtAloe != null;
         }
 
-        public override AloeServer.States NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.AvoidingPlayer;
+            return AloeServerAI.AloeStates.AvoidingPlayer;
         }
 
-        public override void OnTransition()
+        internal override void OnTransition()
         {
             EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
         }
     }
 
-    private class TransitionToPassivelyStalkingPlayer(AloeServer enemyAIInstance)
-        : StateTransition(enemyAIInstance)
+    private class TransitionToPassivelyStalkingPlayer(AloeServerAI enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
         private PlayerControllerB _stalkablePlayer;
 
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player has below "playerHealthThresholdForStalking" % of health
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
@@ -115,13 +115,13 @@ public class RoamingState : BehaviourState
             return false;
         }
 
-        public override AloeServer.States NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.PassiveStalking;
+            return AloeServerAI.AloeStates.PassiveStalking;
         }
 
-        public override void OnTransition()
-        {
+        internal override void OnTransition()
+        { ;
             AloeSharedData.Instance.Bind(EnemyAIInstance, _stalkablePlayer, BindType.Stalk);
             AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
                 _stalkablePlayer.actualClientId);

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Biodiversity.Creatures.Aloe.Types;
+namespace Biodiversity.Util.Types;
 
 public class StateData
 {

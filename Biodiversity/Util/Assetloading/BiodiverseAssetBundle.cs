@@ -37,6 +37,7 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
             field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
         }
         
+        // todo: fix this; the cachedList isnt being used properly because its just being reset every time this function is called
         _cachedItems = new CachedList<Item>(() => LoadAllItemsFromBundle(bundle));
 
         foreach (UnityEngine.Object asset in bundle.LoadAllAssets()) 

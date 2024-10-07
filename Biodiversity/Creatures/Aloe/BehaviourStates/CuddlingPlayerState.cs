@@ -7,8 +7,8 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 public class CuddlingPlayerState : BehaviourState
 {
-    public CuddlingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
-        stateType)
+    public CuddlingPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
+        aloeStateType)
     {
         Transitions =
         [

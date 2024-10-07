@@ -21,7 +21,7 @@ internal class SeaminePatches
         if (!IsHost(__instance) && !IsServer(__instance)) return true;
         if (AloeHandler.Instance.Config.LandminesBlowUpAloe) return true;
 
-        AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
+        AloeServerAI aloeAI = other.gameObject.GetComponentInParent<AloeServerAI>();
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.aloeId))
         {
             return false;

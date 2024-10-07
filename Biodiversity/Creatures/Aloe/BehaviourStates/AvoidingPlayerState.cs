@@ -16,13 +16,13 @@ public class AvoidingPlayerState : BehaviourState
 
     private bool _shouldTransitionToAttacking;
 
-    public AvoidingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
-        stateType)
+    public AvoidingPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
+        aloeStateType)
     {
         Transitions =
         [
-            new TransitionToPreviousState(aloeServerInstance, this),
-            new TransitionToAttackingState(aloeServerInstance, this)
+            new TransitionToPreviousState(aloeServerAIInstance, this),
+            new TransitionToAttackingState(aloeServerAIInstance, this)
         ];
     }
 
@@ -144,7 +144,7 @@ public class AvoidingPlayerState : BehaviourState
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, false);
     }
 
-    private class TransitionToPreviousState(AloeServer enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
+    private class TransitionToPreviousState(AloeServerAI enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
         : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
@@ -166,13 +166,13 @@ public class AvoidingPlayerState : BehaviourState
                    !avoidingPlayerState._playerLookingAtAloe.IsNotNull;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
             return EnemyAIInstance.PreviousState.GetStateType();
         }
     }
 
-    private class TransitionToAttackingState(AloeServer enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
+    private class TransitionToAttackingState(AloeServerAI enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
         : StateTransition(enemyAIInstance)
     {
         public override bool ShouldTransitionBeTaken()
@@ -181,9 +181,9 @@ public class AvoidingPlayerState : BehaviourState
                    avoidingPlayerState._shouldTransitionToAttacking;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.AttackingPlayer;
+            return AloeServerAI.AloeStates.AttackingPlayer;
         }
     }
 }

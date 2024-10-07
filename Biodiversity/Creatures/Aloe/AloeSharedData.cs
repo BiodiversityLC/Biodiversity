@@ -47,7 +47,7 @@ internal class AloeSharedData
     }
 
     private readonly ConcurrentDictionary<string, ulong> _aloeBoundKidnaps = new();
-    private readonly ConcurrentDictionary<AloeServer, PlayerControllerB> _aloeBoundKidnapsServer = new();
+    private readonly ConcurrentDictionary<AloeServerAI, PlayerControllerB> _aloeBoundKidnapsServer = new();
     private readonly ConcurrentDictionary<string, ulong> _aloeBoundStalks = new();
     private readonly ConcurrentDictionary<ulong, int> _playersMaxHealth = new();
     private readonly List<BrackenRoomAloeNode> _brackenRoomAloeNodes = [];
@@ -71,38 +71,38 @@ internal class AloeSharedData
         }
     }
     
-    public void Bind(AloeServer server, PlayerControllerB player, BindType bindType)
+    public void Bind(AloeServerAI serverAI, PlayerControllerB player, BindType bindType)
     {
         if (NetworkManager.Singleton.IsServer)
         {
-            SendBindToClients(server.aloeId, player.actualClientId, bindType);
-            if (bindType == BindType.Kidnap) _aloeBoundKidnapsServer.TryAdd(server, player);
+            SendBindToClients(serverAI.aloeId, player.actualClientId, bindType);
+            if (bindType == BindType.Kidnap) _aloeBoundKidnapsServer.TryAdd(serverAI, player);
         }
         else
         {
-            SendBindRequestToServer(server.aloeId, player.actualClientId, bindType);
+            SendBindRequestToServer(serverAI.aloeId, player.actualClientId, bindType);
         }
     }
 
-    public void Unbind(AloeServer server, BindType bindType)
+    public void Unbind(AloeServerAI serverAI, BindType bindType)
     {
         if (NetworkManager.Singleton.IsServer)
         {
-            SendUnbindToClients(server.aloeId, bindType);
-            if (bindType == BindType.Kidnap) _aloeBoundKidnapsServer.TryRemove(server, out _);
+            SendUnbindToClients(serverAI.aloeId, bindType);
+            if (bindType == BindType.Kidnap) _aloeBoundKidnapsServer.TryRemove(serverAI, out _);
         }
         
-        else SendUnbindRequestToServer(server.aloeId, bindType);
+        else SendUnbindRequestToServer(serverAI.aloeId, bindType);
     }
 
-    public bool IsAloeKidnapBound(AloeServer server)
+    public bool IsAloeKidnapBound(AloeServerAI serverAI)
     {
-        if (server == null)
+        if (serverAI == null)
         {
-            throw new ArgumentNullException(nameof(server), "The provided aloe server instance is null, cannot determine whether she is kidnap bound.");
+            throw new ArgumentNullException(nameof(serverAI), "The provided aloe server instance is null, cannot determine whether she is kidnap bound.");
         }
 
-        return _aloeBoundKidnaps.ContainsKey(server.aloeId);
+        return _aloeBoundKidnaps.ContainsKey(serverAI.aloeId);
     }
 
     [SuppressMessage("ReSharper", "LoopCanBeConvertedToQuery")]
@@ -227,10 +227,10 @@ internal class AloeSharedData
     {
         reader.ReadNetworkSerializable(out PlayerTeleportedMessage message);
         LogDebug($"Received player teleported message: aloeId: {message.AloeId}, playerId: {message.PlayerId}");
-        AloeServer aloeServer = _aloeBoundKidnapsServer.Keys.FirstOrDefault(aloe => aloe.aloeId == message.AloeId);
+        AloeServerAI aloeServerAI = _aloeBoundKidnapsServer.Keys.FirstOrDefault(aloe => aloe.aloeId == message.AloeId);
         
-        if (aloeServer == null) Mls.LogError($"In {nameof(HandlePlayerTeleportedMessage)}, the given Aloe ID: '{message.AloeId}' does not belong to any Aloe currently in the game.");
-        else aloeServer.SetTargetPlayerEscapedByTeleportation();
+        if (aloeServerAI == null) Mls.LogError($"In {nameof(HandlePlayerTeleportedMessage)}, the given Aloe ID: '{message.AloeId}' does not belong to any Aloe currently in the game.");
+        else aloeServerAI.SetTargetPlayerEscapedByTeleportation();
     }
 
     public void SetPlayerMaxHealth(PlayerControllerB player, int maxHealth)

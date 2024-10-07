@@ -10,6 +10,6 @@ public class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
     {
         animator.SetBool(Spawning, false);
         LogDebug("Spawn animation complete.");
-        if (AloeServerInstance.IsServer) AloeServerInstance.SwitchBehaviourState(AloeServer.States.Roaming);
+        if (AloeServerAIInstance.IsServer) AloeServerAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.Roaming);
     }
 }

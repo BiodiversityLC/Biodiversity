@@ -8,13 +8,13 @@ public class DragPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         LogDebug("Grab player animation complete.");
-        if (!AloeServerInstance.IsServer) return;
+        if (!AloeServerAIInstance.IsServer) return;
 
-        if (!AloeServerInstance.ActualTargetPlayer.IsNotNull ||
-            PlayerUtil.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value) ||
-            !AloeServerInstance.ActualTargetPlayer.Value.isInsideFactory)
-            AloeServerInstance.SwitchBehaviourState(AloeServer.States.Roaming);
+        if (!AloeServerAIInstance.ActualTargetPlayer.IsNotNull ||
+            PlayerUtil.IsPlayerDead(AloeServerAIInstance.ActualTargetPlayer.Value) ||
+            !AloeServerAIInstance.ActualTargetPlayer.Value.isInsideFactory)
+            AloeServerAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.Roaming);
         else
-            AloeServerInstance.GrabTargetPlayer();
+            AloeServerAIInstance.GrabTargetPlayer();
     }
 }

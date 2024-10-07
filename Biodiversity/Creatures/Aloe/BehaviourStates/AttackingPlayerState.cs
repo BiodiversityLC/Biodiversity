@@ -8,12 +8,12 @@ public class AttackingPlayerState : BehaviourState
 {
     private bool _isPlayerTargetable;
 
-    public AttackingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
-        stateType)
+    public AttackingPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
+        aloeStateType)
     {
         Transitions =
         [
-            new TransitionToChasingEscapedPlayer(aloeServerInstance, this)
+            new TransitionToChasingEscapedPlayer(aloeServerAIInstance, this)
         ];
     }
 
@@ -54,7 +54,7 @@ public class AttackingPlayerState : BehaviourState
     }
 
     private class TransitionToChasingEscapedPlayer(
-        AloeServer enemyAIInstance,
+        AloeServerAI enemyAIInstance,
         AttackingPlayerState attackingPlayerState)
         : StateTransition(enemyAIInstance)
     {
@@ -70,9 +70,9 @@ public class AttackingPlayerState : BehaviourState
             return true;
         }
 
-        public override AloeServer.States NextState()
+        public override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.ChasingEscapedPlayer;
+            return AloeServerAI.AloeStates.ChasingEscapedPlayer;
         }
     }
 }

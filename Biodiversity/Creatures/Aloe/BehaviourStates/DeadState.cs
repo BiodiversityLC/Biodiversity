@@ -6,7 +6,7 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 public class DeadState : BehaviourState
 {
-    public DeadState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+    public DeadState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance, aloeStateType)
     {
         Transitions =
         [
@@ -34,7 +34,7 @@ public class DeadState : BehaviourState
 
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
         AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServer.NullPlayerId);
+        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServerAI.NullPlayerId);
 
         AloeSharedData.Instance.Unbind(AloeServerInstance, BindType.Stalk);
 

@@ -1,29 +1,29 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
-using Biodiversity.Util.Types;
+﻿using Biodiversity.Util.Types;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class SpawningState : BehaviourState
+[Preserve]
+internal class SpawningState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
-    public SpawningState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance,
-        stateType)
+    protected SpawningState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(enemyAiInstance, stateType)
     {
         Transitions =
         [
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
 
-        AloeServerInstance.agentMaxSpeed = 0f;
-        AloeServerInstance.agentMaxAcceleration = 50f;
+        EnemyAIInstance.agentMaxSpeed = 0f;
+        EnemyAIInstance.agentMaxAcceleration = 50f;
 
-        AloeServerInstance.netcodeController.TargetPlayerClientId.Value = AloeServer.NullPlayerId;
-        AloeServerInstance.netcodeController.ShouldHaveDarkSkin.Value = false;
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.Value = AloeServerAI.NullPlayerId;
+        EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.Value = false;
 
-        AloeServerInstance.InitializeConfigValues();
-        AloeServerInstance.PickFavouriteSpot();
+        EnemyAIInstance.InitializeConfigValues();
+        EnemyAIInstance.PickFavouriteSpot();
     }
 }

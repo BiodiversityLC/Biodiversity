@@ -8,16 +8,16 @@ public class SlapAnimationStateBehaviour : BaseStateMachineBehaviour
     {
         LogDebug("Started slap animation.");
         AloeClientInstance.slapCollisionDetection.EnableSlap();
-        if (!AloeServerInstance.IsServer) return;
-        AloeServerInstance.inSlapAnimation = true;
+        if (!AloeServerAIInstance.IsServer) return;
+        AloeServerAIInstance.inSlapAnimation = true;
     }
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         LogDebug("Finished slap animation.");
         AloeClientInstance.slapCollisionDetection.DisableSlap();
-        if (!AloeServerInstance.IsServer) return;
-        AloeServerInstance.inSlapAnimation = false;
-        AloeServerInstance.SlappingPlayer.Value = null;
+        if (!AloeServerAIInstance.IsServer) return;
+        AloeServerAIInstance.inSlapAnimation = false;
+        AloeServerAIInstance.SlappingPlayer.Value = null;
     }
 }
