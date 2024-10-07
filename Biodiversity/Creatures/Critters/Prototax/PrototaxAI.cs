@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters.Prototax;
 
-public class PrototaxAI : BiodiverseAI
+internal class PrototaxAI : BiodiverseAI
 {
 	private static readonly int Spewing = Animator.StringToHash("Spewing");
 
@@ -72,8 +72,9 @@ public class PrototaxAI : BiodiverseAI
 
 	private bool _spewAnimComplete;
 
-	private void Awake()
+	protected override void Awake()
 	{
+		base.Awake();
 		AudioClips[AudioClipTypes.Spew.ToString()] = spewSfx;
 		AudioClips[AudioClipTypes.Footsteps.ToString()] = footstepSfx;
 		AudioClips[AudioClipTypes.SporeAmbient.ToString()] = sporeAmbientSfx;
@@ -256,7 +257,7 @@ public class PrototaxAI : BiodiverseAI
 		}
 	}
 
-	public void SpewAnimationComplete()
+	internal void SpewAnimationComplete()
 	{
 		if (!IsServer) return;
 		sporeCloudObject.transform.SetParent(null, true);

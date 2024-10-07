@@ -2,7 +2,7 @@
 
 namespace Biodiversity.Creatures.Critters.Prototax;
 
-public class SpewAnimationStateBehaviour : StateMachineBehaviour
+internal class SpewAnimationStateBehaviour : StateMachineBehaviour
 {
     private PrototaxAI _prototaxAIInstance;
     

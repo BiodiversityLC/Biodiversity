@@ -1,13 +1,14 @@
 ﻿using System.Linq;
-using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class AvoidingPlayerState : BehaviourState
+[Preserve]
+internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private readonly NullableObject<PlayerControllerB> _playerLookingAtAloe = new();
 
@@ -16,87 +17,87 @@ public class AvoidingPlayerState : BehaviourState
 
     private bool _shouldTransitionToAttacking;
 
-    public AvoidingPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
-        aloeStateType)
+    protected AvoidingPlayerState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
+        enemyAiInstance, stateType)
     {
         Transitions =
         [
-            new TransitionToPreviousState(aloeServerAIInstance, this),
-            new TransitionToAttackingState(aloeServerAIInstance, this)
+            new TransitionToPreviousState(EnemyAIInstance, this),
+            new TransitionToAttackingState(EnemyAIInstance, this)
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
 
-        AloeServerInstance.agentMaxSpeed = 9f;
-        AloeServerInstance.agentMaxAcceleration = 50f;
-        AloeServerInstance.agent.acceleration = 50f;
-        AloeServerInstance.openDoorSpeedMultiplier = 20f;
+        EnemyAIInstance.agentMaxSpeed = 9f;
+        EnemyAIInstance.agentMaxAcceleration = 50f;
+        EnemyAIInstance.agent.acceleration = 50f;
+        EnemyAIInstance.openDoorSpeedMultiplier = 20f;
 
         _avoidPlayerIntervalTimer = 0f;
         _avoidPlayerTimerTotal = 0f;
 
-        AloeSharedData.Instance.Unbind(AloeServerInstance, BindType.Stalk);
+        AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);
 
         if (initData.ContainsKey("overridePlaySpottedAnimation") && initData.Get<bool>("overridePlaySpottedAnimation"))
         {
-            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, true);
+            AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, true);
         }
         else
         {
-            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, false);
-            AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(AloeServerInstance.aloeId,
+            AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
+            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId,
                 AloeClient.Spotted);
         }
 
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
-            AloeServerInstance.aloeId,
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
+            EnemyAIInstance.BioId,
             0.9f,
             0.5f);
     }
 
-    public override void UpdateBehaviour()
+    internal override void UpdateBehaviour()
     {
         // Make the Aloe stay still until the spotted animation is finished
-        if (!AloeServerInstance.netcodeController.HasFinishedSpottedAnimation.Value)
+        if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
         {
-            if (AloeServerInstance.AvoidingPlayer.IsNotNull)
+            if (EnemyAIInstance.AvoidingPlayer.IsNotNull)
             {
-                AloeServerInstance.LookAtPosition(AloeServerInstance.AvoidingPlayer.Value.transform.position);
-                AloeServerInstance.netcodeController.LookTargetPosition.Value =
-                    AloeServerInstance.AvoidingPlayer.Value.gameplayCamera.transform.position;
+                EnemyAIInstance.LookAtPosition(EnemyAIInstance.AvoidingPlayer.Value.transform.position);
+                EnemyAIInstance.netcodeController.LookTargetPosition.Value =
+                    EnemyAIInstance.AvoidingPlayer.Value.gameplayCamera.transform.position;
             }
 
-            AloeServerInstance.moveTowardsDestination = false;
+            EnemyAIInstance.moveTowardsDestination = false;
             return;
         }
 
         // This only triggers on the first frame after the spotted animation has been completed
-        if (!AloeServerInstance.moveTowardsDestination)
+        if (!EnemyAIInstance.moveTowardsDestination)
         {
-            AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition,
-                AloeServerInstance.GetLookAheadVector());
-            AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0,
+            AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition,
+                EnemyAIInstance.GetLookAheadVector());
+            EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0,
                 1f);
         }
 
-        AloeServerInstance.moveTowardsDestination = true;
+        EnemyAIInstance.moveTowardsDestination = true;
         _avoidPlayerTimerTotal += Time.deltaTime;
     }
 
-    public override void AIIntervalBehaviour()
+    internal override void AIIntervalBehaviour()
     {
-        if (!AloeServerInstance.netcodeController.HasFinishedSpottedAnimation.Value)
+        if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
             return;
 
         _playerLookingAtAloe.Value = AloeUtils.GetClosestPlayerLookingAtPosition(
-            AloeServerInstance.eye.transform, logSource: AloeServerInstance.Mls);
+            EnemyAIInstance.eye.transform);
         if (_playerLookingAtAloe.IsNotNull)
         {
-            AloeServerInstance.AvoidingPlayer.Value = _playerLookingAtAloe.Value;
+            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe.Value;
         }
 
         float waitTimer = 5f;
@@ -105,12 +106,12 @@ public class AvoidingPlayerState : BehaviourState
         _shouldTransitionToAttacking = false;
 
         BiodiverseAI.PathStatus pathStatus = BiodiverseAI.PathStatus.Unknown;
-        Transform farAwayNode = AloeServerInstance.AvoidingPlayer.IsNotNull
+        Transform farAwayNode = EnemyAIInstance.AvoidingPlayer.IsNotNull
             ? BiodiverseAI.GetFarthestValidNodeFromPosition(
                 pathStatus: out pathStatus,
-                agent: AloeServerInstance.agent,
-                position: AloeServerInstance.AvoidingPlayer.Value.transform.position,
-                allAINodes: AloeServerInstance.allAINodes,
+                agent: EnemyAIInstance.agent,
+                position: EnemyAIInstance.AvoidingPlayer.Value.transform.position,
+                allAINodes: EnemyAIInstance.allAINodes,
                 ignoredAINodes: null,
                 checkLineOfSight: true,
                 allowFallbackIfBlocked: true,
@@ -123,31 +124,31 @@ public class AvoidingPlayerState : BehaviourState
             if (pathStatus == BiodiverseAI.PathStatus.ValidButInLos)
             {
                 waitTimer = 2f;
-                AloeServerInstance.LogDebug("Valid escape node found, but was in LOS.");
+                EnemyAIInstance.LogVerbose("Valid escape node found, but was in LOS.");
             }
 
-            AloeServerInstance.LogDebug($"Setting escape node to {farAwayNode.position}.");
-            AloeServerInstance.SetDestinationToPosition(farAwayNode.position);
+            EnemyAIInstance.LogVerbose($"Setting escape node to {farAwayNode.position}.");
+            EnemyAIInstance.SetDestinationToPosition(farAwayNode.position);
         }
         else
         {
-            if (AloeServerInstance.AvoidingPlayer.IsNotNull) _shouldTransitionToAttacking = true;
+            if (EnemyAIInstance.AvoidingPlayer.IsNotNull) _shouldTransitionToAttacking = true;
         }
 
         _avoidPlayerIntervalTimer = waitTimer;
     }
 
-    public override void OnStateExit()
+    internal override void OnStateExit()
     {
         base.OnStateExit();
-        AloeServerInstance.AvoidingPlayer.Value = null;
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.HasFinishedSpottedAnimation, false);
+        EnemyAIInstance.AvoidingPlayer.Value = null;
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
     }
 
     private class TransitionToPreviousState(AloeServerAI enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
-        : StateTransition(enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             float avoidTimerCompareValue = EnemyAIInstance.timesFoundSneaking % 3 != 0 ? 11f : 21f; // todo: make this less dumb
             if (avoidingPlayerState._avoidPlayerTimerTotal > avoidTimerCompareValue) return true;
@@ -156,8 +157,7 @@ public class AvoidingPlayerState : BehaviourState
             Vector3 closestPlayerPosition = AloeUtils.GetClosestPlayerFromList(
                 players: StartOfRound.Instance.allPlayerScripts.ToList(),
                 transform: EnemyAIInstance.transform,
-                inputPlayer: null,
-                logSource: EnemyAIInstance.Mls).transform.position;
+                inputPlayer: null).transform.position;
 
             float distanceToClosestPlayer =
                 Vector3.Distance(EnemyAIInstance.transform.position, closestPlayerPosition);
@@ -166,22 +166,22 @@ public class AvoidingPlayerState : BehaviourState
                    !avoidingPlayerState._playerLookingAtAloe.IsNotNull;
         }
 
-        public override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
             return EnemyAIInstance.PreviousState.GetStateType();
         }
     }
 
     private class TransitionToAttackingState(AloeServerAI enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
-        : StateTransition(enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             return EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value &&
                    avoidingPlayerState._shouldTransitionToAttacking;
         }
 
-        public override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
             return AloeServerAI.AloeStates.AttackingPlayer;
         }

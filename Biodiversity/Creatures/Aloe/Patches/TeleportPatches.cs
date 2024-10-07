@@ -26,7 +26,7 @@ internal class TeleportPatches
         string aloeId = AloeSharedData.Instance.AloeBoundKidnaps
             .FirstOrDefault(x => x.Value == __instance.actualClientId).Key;
 
-        PlayerTeleportedMessage networkMessage = new() { AloeId = aloeId, PlayerId = __instance.actualClientId };
+        PlayerTeleportedMessage networkMessage = new() { BioId = aloeId, PlayerId = __instance.actualClientId };
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
         NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("Aloe_PlayerTeleportedMessage",

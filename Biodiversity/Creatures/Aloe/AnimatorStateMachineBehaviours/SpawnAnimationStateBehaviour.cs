@@ -2,7 +2,7 @@
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
-public class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
+internal class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
 {
     private static readonly int Spawning = Animator.StringToHash("Spawning");
 

@@ -2,7 +2,7 @@
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
-public class CrushPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
+internal class CrushPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {

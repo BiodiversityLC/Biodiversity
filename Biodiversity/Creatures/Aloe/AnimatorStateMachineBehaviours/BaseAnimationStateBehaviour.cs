@@ -6,7 +6,7 @@ using Logger = BepInEx.Logging.Logger;
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-public class BaseStateMachineBehaviour : StateMachineBehaviour
+internal class BaseStateMachineBehaviour : StateMachineBehaviour
 {
     protected ManualLogSource Mls;
     protected string AloeId;
@@ -27,7 +27,7 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
         UnsubscribeToNetworkEvents();
     }
 
-    public void Initialize(
+    internal void Initialize(
         AloeNetcodeController receivedNetcodeController,
         AloeServerAI receivedAloeServerAI,
         AloeClient receivedAloeClient)

@@ -1,98 +1,98 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
-using Biodiversity.Util;
+﻿using Biodiversity.Util;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class PassiveStalkingState : BehaviourState
+[Preserve]
+internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private bool _isStaringAtTargetPlayer;
     private bool _isPlayerReachable;
 
-    public PassiveStalkingState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
-        aloeStateType)
+    protected PassiveStalkingState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
+        enemyAiInstance, stateType)
     {
         Transitions =
         [
-            new TransitionToAvoidingPlayer(aloeServerAIInstance, this),
-            new TransitionToPassiveRoaming(aloeServerAIInstance, this),
-            new TransitionToStalkingPlayerToKidnap(aloeServerAIInstance),
+            new TransitionToAvoidingPlayer(EnemyAIInstance, this),
+            new TransitionToPassiveRoaming(EnemyAIInstance, this),
+            new TransitionToStalkingPlayerToKidnap(EnemyAIInstance),
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
 
-        AloeServerInstance.agentMaxSpeed = 5f;
-        AloeServerInstance.agentMaxAcceleration = 70f;
-        AloeServerInstance.movingTowardsTargetPlayer = false;
-        AloeServerInstance.moveTowardsDestination = true;
-        AloeServerInstance.openDoorSpeedMultiplier = 4f;
+        EnemyAIInstance.agentMaxSpeed = 5f;
+        EnemyAIInstance.agentMaxAcceleration = 70f;
+        EnemyAIInstance.movingTowardsTargetPlayer = false;
+        EnemyAIInstance.moveTowardsDestination = true;
+        EnemyAIInstance.openDoorSpeedMultiplier = 4f;
 
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, true);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);
 
         _isPlayerReachable = true;
         _isStaringAtTargetPlayer = false;
 
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
-            AloeServerInstance.aloeId, 0f);
+        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
+            EnemyAIInstance.BioId, 0f);
     }
 
-    public override void AIIntervalBehaviour()
+    internal override void AIIntervalBehaviour()
     {
         _isPlayerReachable = true;
-        if (!AloeServerInstance.ActualTargetPlayer.IsNotNull) return;
+        if (!EnemyAIInstance.ActualTargetPlayer.IsNotNull) return;
 
         // See if the aloe can stare at the player
-        if (Vector3.Distance(AloeServerInstance.transform.position,
-                AloeServerInstance.ActualTargetPlayer.Value.transform.position) <=
-            AloeServerInstance.PassiveStalkStaredownDistance &&
-            !Physics.Linecast(AloeServerInstance.eye.position,
-                AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position,
+        if (Vector3.Distance(EnemyAIInstance.transform.position,
+                EnemyAIInstance.ActualTargetPlayer.Value.transform.position) <=
+            EnemyAIInstance.PassiveStalkStaredownDistance &&
+            !Physics.Linecast(EnemyAIInstance.eye.position,
+                EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position,
                 StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
         {
-            AloeServerInstance.LogDebug("Aloe is staring at player");
+            EnemyAIInstance.LogVerbose("Aloe is staring at player");
             if (!_isStaringAtTargetPlayer)
-                AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
-                    AloeServerInstance.aloeId, 0.8f);
+                EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
+                    EnemyAIInstance.BioId, 0.8f);
 
-            AloeServerInstance.moveTowardsDestination = false;
-            AloeServerInstance.movingTowardsTargetPlayer = false;
+            EnemyAIInstance.moveTowardsDestination = false;
+            EnemyAIInstance.movingTowardsTargetPlayer = false;
             _isStaringAtTargetPlayer = true;
         }
         // If she cant stare, then go and find the player
         else
         {
             if (_isStaringAtTargetPlayer)
-                AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
-                    AloeServerInstance.aloeId, 0, 0.1f);
+                EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
+                    EnemyAIInstance.BioId, 0, 0.1f);
             _isStaringAtTargetPlayer = false;
 
             if (AloeUtils.IsPlayerReachable(
-                    agent: AloeServerInstance.agent,
-                    player: AloeServerInstance.ActualTargetPlayer.Value,
-                    transform: AloeServerInstance.transform,
-                    eye: AloeServerInstance.eye,
-                    viewWidth: AloeServerInstance.ViewWidth,
-                    viewRange: AloeServerInstance.ViewRange,
-                    logSource: AloeServerInstance.Mls))
+                    agent: EnemyAIInstance.agent,
+                    player: EnemyAIInstance.ActualTargetPlayer.Value,
+                    transform: EnemyAIInstance.transform,
+                    eye: EnemyAIInstance.eye,
+                    viewWidth: EnemyAIInstance.ViewWidth,
+                    viewRange: EnemyAIInstance.ViewRange))
             {
                 Transform closestNodeToPlayer = BiodiverseAI.GetClosestValidNodeToPosition(
                     pathStatus: out BiodiverseAI.PathStatus pathStatus,
-                    agent: AloeServerInstance.agent,
-                    position: AloeServerInstance.ActualTargetPlayer.Value.transform.position,
-                    allAINodes: AloeServerInstance.allAINodes,
+                    agent: EnemyAIInstance.agent,
+                    position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
+                    allAINodes: EnemyAIInstance.allAINodes,
                     ignoredAINodes: null,
                     checkLineOfSight: true,
                     allowFallbackIfBlocked: false,
                     bufferDistance: 0f);
 
-                if (pathStatus == BiodiverseAI.PathStatus.Invalid) AloeServerInstance.moveTowardsDestination = false;
-                else AloeServerInstance.SetDestinationToPosition(closestNodeToPlayer.position);
+                if (pathStatus == BiodiverseAI.PathStatus.Invalid) EnemyAIInstance.moveTowardsDestination = false;
+                else EnemyAIInstance.SetDestinationToPosition(closestNodeToPlayer.position);
             }
             else
             {
@@ -100,28 +100,27 @@ public class PassiveStalkingState : BehaviourState
             }
         }
 
-        AloeServerInstance.LogDebug($"Is player reachable: {_isPlayerReachable}");
+        EnemyAIInstance.LogVerbose($"Is player reachable: {_isPlayerReachable}");
     }
 
     private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance, PassiveStalkingState passiveStalkingState)
-        : StateTransition(enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
 
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
-            _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition
-                (EnemyAIInstance.eye.transform, logSource: EnemyAIInstance.Mls);
+            _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform);
             return _playerLookingAtAloe != null;
         }
 
-        public override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
             return AloeServerAI.AloeStates.AvoidingPlayer;
         }
 
-        public override void OnTransition()
+        internal override void OnTransition()
         {
             EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
             EnemyAIInstance.timesFoundSneaking++;
@@ -130,26 +129,24 @@ public class PassiveStalkingState : BehaviourState
             if (passiveStalkingState._isStaringAtTargetPlayer &&
                 EnemyAIInstance.ActualTargetPlayer.Value == EnemyAIInstance.AvoidingPlayer.Value)
                 EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
-                    EnemyAIInstance.aloeId, 0.8f, EnemyAIInstance.AvoidingPlayer.Value.playerClientId);
+                    EnemyAIInstance.BioId, 0.8f, EnemyAIInstance.AvoidingPlayer.Value.playerClientId);
         }
     }
 
-    private class TransitionToPassiveRoaming(
-        AloeServerAI enemyAIInstance,
-        PassiveStalkingState passiveStalkingState)
-        : StateTransition(enemyAIInstance)
+    private class TransitionToPassiveRoaming(AloeServerAI enemyAIInstance, PassiveStalkingState passiveStalkingState)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             if (PlayerUtil.IsPlayerDead(EnemyAIInstance.ActualTargetPlayer.Value))
             {
-                EnemyAIInstance.LogDebug("Player that I was stalking is dead, switching back to passive roaming.");
+                EnemyAIInstance.LogVerbose("Player that I was stalking is dead, switching back to passive roaming.");
                 return true;
             }
 
             if (!passiveStalkingState._isPlayerReachable)
             {
-                EnemyAIInstance.LogDebug(
+                EnemyAIInstance.LogVerbose(
                     "Player that I was stalking isn't reachable, switching back to passive roaming.");
                 return true;
             }
@@ -157,22 +154,22 @@ public class PassiveStalkingState : BehaviourState
             return false;
         }
 
-        public override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
             return AloeServerAI.AloeStates.Roaming;
         }
     }
 
     private class TransitionToStalkingPlayerToKidnap(AloeServerAI enemyAIInstance)
-        : StateTransition(enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             return EnemyAIInstance.ActualTargetPlayer.Value.health <=
                    EnemyAIInstance.PlayerHealthThresholdForHealing;
         }
 
-        public override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
             return AloeServerAI.AloeStates.AggressiveStalking;
         }

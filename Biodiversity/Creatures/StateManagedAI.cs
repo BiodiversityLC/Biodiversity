@@ -11,7 +11,7 @@ internal abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     where TEnemyAI : StateManagedAI<TState, TEnemyAI>
 {
     protected BehaviourState<TState, TEnemyAI> CurrentState;
-    protected BehaviourState<TState, TEnemyAI> PreviousState;
+    protected internal BehaviourState<TState, TEnemyAI> PreviousState;
 
     private readonly Dictionary<TState, BehaviourState<TState, TEnemyAI>> _stateDictionary = new();
     
@@ -106,7 +106,7 @@ internal abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     public override void Update()
     {
         base.Update();
-        if (!ShouldRunUpdateLoop()) return;
+        if (!ShouldRunUpdate()) return;
         
         CurrentState?.UpdateBehaviour();
     }
@@ -114,7 +114,7 @@ internal abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     public override void DoAIInterval()
     {
         base.DoAIInterval();
-        if (!ShouldRunUpdateLoop()) return;
+        if (!ShouldRunAiInterval()) return;
         
         CurrentState?.AIIntervalBehaviour();
 
@@ -129,8 +129,7 @@ internal abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
 
     private void LateUpdate()
     {
-        if (!ShouldRunUpdateLoop()) return;
-        
+        if (!ShouldRunLateUpdate()) return;
         CurrentState?.LateUpdateBehaviour();
     }
 
@@ -173,7 +172,17 @@ internal abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         }
     }
 
-    protected virtual bool ShouldRunUpdateLoop()
+    protected virtual bool ShouldRunUpdate()
+    {
+        return IsServer && !isEnemyDead;
+    }
+
+    protected virtual bool ShouldRunAiInterval()
+    {
+        return IsServer && !isEnemyDead;
+    }
+
+    protected virtual bool ShouldRunLateUpdate()
     {
         return IsServer && !isEnemyDead;
     }

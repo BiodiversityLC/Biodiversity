@@ -1,76 +1,77 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
-using Biodiversity.Util.Types;
+﻿using Biodiversity.Util.Types;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class AttackingPlayerState : BehaviourState
+[Preserve]
+internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private bool _isPlayerTargetable;
 
-    public AttackingPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
-        aloeStateType)
+    protected AttackingPlayerState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
+        enemyAiInstance, stateType)
     {
         Transitions =
         [
-            new TransitionToChasingEscapedPlayer(aloeServerAIInstance, this)
+            new TransitionToChasingEscapedPlayer(EnemyAIInstance, this)
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
 
-        AloeServerInstance.agentMaxSpeed = 5f;
-        AloeServerInstance.agentMaxAcceleration = 50f;
-        AloeServerInstance.openDoorSpeedMultiplier = 2f;
+        EnemyAIInstance.agentMaxSpeed = 5f;
+        EnemyAIInstance.agentMaxAcceleration = 50f;
+        EnemyAIInstance.openDoorSpeedMultiplier = 2f;
 
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f,
+        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f,
             0.5f);
 
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
 
         _isPlayerTargetable = true;
     }
 
-    public override void AIIntervalBehaviour()
+    internal override void AIIntervalBehaviour()
     {
-        if (AloeUtils.IsPlayerTargetable(AloeServerInstance.ActualTargetPlayer.Value))
+        if (AloeUtils.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
         {
-            AloeServerInstance.movingTowardsTargetPlayer = true;
+            EnemyAIInstance.movingTowardsTargetPlayer = true;
             _isPlayerTargetable = true;
         }
         else _isPlayerTargetable = false;
     }
 
-    public override void OnStateExit()
+    internal override void OnStateExit()
     {
         base.OnStateExit();
-        AloeServerInstance.netcodeController.TargetPlayerClientId.Value =
-            AloeServerInstance.backupTargetPlayer.actualClientId;
-        AloeServerInstance.backupTargetPlayer = null;
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.Value =
+            EnemyAIInstance.backupTargetPlayer.actualClientId;
+        EnemyAIInstance.backupTargetPlayer = null;
     }
 
     private class TransitionToChasingEscapedPlayer(
         AloeServerAI enemyAIInstance,
         AttackingPlayerState attackingPlayerState)
-        : StateTransition(enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             if (!(Vector3.Distance(EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
                     EnemyAIInstance.transform.position) <= 1.5f)) return !attackingPlayerState._isPlayerTargetable;
 
-            EnemyAIInstance.LogDebug("Player is close to aloe! Killing them!");
+            EnemyAIInstance.LogVerbose("Player is close to aloe! Killing them!");
             EnemyAIInstance.netcodeController.CrushPlayerClientRpc(
-                EnemyAIInstance.aloeId, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+                EnemyAIInstance.BioId, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
 
             return true;
         }
 
-        public override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
             return AloeServerAI.AloeStates.ChasingEscapedPlayer;
         }

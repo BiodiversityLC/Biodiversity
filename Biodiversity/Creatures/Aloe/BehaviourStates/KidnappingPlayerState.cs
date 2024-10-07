@@ -1,110 +1,110 @@
 ﻿using System.Collections.Generic;
-using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class KidnappingPlayerState : BehaviourState
+[Preserve]
+internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private float _dragPlayerTimer;
 
-    public KidnappingPlayerState(AloeServerAI aloeServerAIInstance, AloeServerAI.AloeStates aloeStateType) : base(aloeServerAIInstance,
-        aloeStateType)
+    protected KidnappingPlayerState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
+        enemyAiInstance, stateType)
     {
         Transitions =
         [
-            new TransitionToHealingPlayer(aloeServerAIInstance),
+            new TransitionToHealingPlayer(EnemyAIInstance),
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
 
-        AloeServerInstance.agentMaxSpeed = AloeHandler.Instance.Config.KidnappingPlayerMaxSpeed;
-        AloeServerInstance.agentMaxAcceleration = 8f;
-        AloeServerInstance.openDoorSpeedMultiplier = 20f;
-        AloeServerInstance.moveTowardsDestination = true;
-        AloeServerInstance.movingTowardsTargetPlayer = false;
-        AloeServerInstance.hasTransitionedToRunningForwardsAndCarryingPlayer = false;
+        EnemyAIInstance.agentMaxSpeed = AloeHandler.Instance.Config.KidnappingPlayerMaxSpeed;
+        EnemyAIInstance.agentMaxAcceleration = 8f;
+        EnemyAIInstance.openDoorSpeedMultiplier = 20f;
+        EnemyAIInstance.moveTowardsDestination = true;
+        EnemyAIInstance.movingTowardsTargetPlayer = false;
+        EnemyAIInstance.hasTransitionedToRunningForwardsAndCarryingPlayer = false;
         _dragPlayerTimer = AloeClient.SnatchAndGrabAudioLength;
 
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId,
-            AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
+        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
+            EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
 
         // Spawn fake player body ragdoll
         GameObject fakePlayerBodyRagdollGameObject =
             Object.Instantiate(
                 AloeHandler.Instance.Assets.FakePlayerBodyRagdollPrefab,
-                AloeServerInstance.ActualTargetPlayer.Value.thisPlayerBody.position + Vector3.up * 1.25f,
-                AloeServerInstance.ActualTargetPlayer.Value.thisPlayerBody.rotation,
+                EnemyAIInstance.ActualTargetPlayer.Value.thisPlayerBody.position + Vector3.up * 1.25f,
+                EnemyAIInstance.ActualTargetPlayer.Value.thisPlayerBody.rotation,
                 null);
 
         NetworkObject fakePlayerBodyRagdollNetworkObject =
             fakePlayerBodyRagdollGameObject.GetComponent<NetworkObject>();
         fakePlayerBodyRagdollNetworkObject.Spawn();
 
-        AloeServerInstance.SetTargetPlayerInCaptivity(true);
-        AloeServerInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(AloeServerInstance.aloeId, fakePlayerBodyRagdollNetworkObject);
-        AloeServerInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(AloeServerInstance.aloeId, false);
-        AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(AloeServerInstance.aloeId, 3f, AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
-        AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId, AloeClient.AudioClipTypes.SnatchAndDrag);
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f,
+        EnemyAIInstance.SetTargetPlayerInCaptivity(true);
+        EnemyAIInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(EnemyAIInstance.BioId, fakePlayerBodyRagdollNetworkObject);
+        EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(EnemyAIInstance.BioId, false);
+        EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(EnemyAIInstance.BioId, 3f, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+        EnemyAIInstance.netcodeController.PlayAudioClipTypeServerRpc(EnemyAIInstance.BioId, AloeClient.AudioClipTypes.SnatchAndDrag);
+        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f,
             0.25f);
 
         if (BiodiverseAI.IsPathValid(
-                agent: AloeServerInstance.agent,
-                position: AloeServerInstance.favouriteSpot) != BiodiverseAI.PathStatus.Valid)
+                agent: EnemyAIInstance.agent,
+                position: EnemyAIInstance.favouriteSpot) != BiodiverseAI.PathStatus.Valid)
         {
-            AloeServerInstance.LogDebug(
-                "When initializing kidnapping, no path was found to the Aloe's favourite spot.");
-            AloeServerInstance.SwitchBehaviourState(AloeServerAI.AloeStates.HealingPlayer);
+            EnemyAIInstance.LogVerbose("When initializing kidnapping, no path was found to the Aloe's favourite spot.");
+            EnemyAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.HealingPlayer);
             return;
         }
 
-        AloeServerInstance.SetDestinationToPosition(AloeServerInstance.favouriteSpot);
+        EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.favouriteSpot);
     }
 
-    public override void UpdateBehaviour()
+    internal override void UpdateBehaviour()
     {
         _dragPlayerTimer -= Time.deltaTime;
-        if (_dragPlayerTimer <= 0 && !AloeServerInstance.hasTransitionedToRunningForwardsAndCarryingPlayer)
+        if (_dragPlayerTimer <= 0 && !EnemyAIInstance.hasTransitionedToRunningForwardsAndCarryingPlayer)
         {
             _dragPlayerTimer = float.MaxValue; // Better than adding ANOTHER bool value to this if statement
-            AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(
-                AloeServerInstance.aloeId, AloeClient.KidnapRun);
+            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(
+                EnemyAIInstance.BioId, AloeClient.KidnapRun);
 
-            AloeServerInstance.StartCoroutine(AloeServerInstance.TransitionToRunningForwardsAndCarryingPlayer(0.3f));
+            EnemyAIInstance.StartCoroutine(EnemyAIInstance.TransitionToRunningForwardsAndCarryingPlayer(0.3f));
         }
     }
 
-    public override void AIIntervalBehaviour()
+    internal override void AIIntervalBehaviour()
     {
         List<PlayerControllerB> playersLookingAtAloe =
-            AloeUtils.GetAllPlayersLookingAtPosition(AloeServerInstance.eye.transform, playerViewWidth: 40f,
+            AloeUtils.GetAllPlayersLookingAtPosition(EnemyAIInstance.eye.transform, playerViewWidth: 40f,
                 playerViewRange: 40);
         foreach (PlayerControllerB player in playersLookingAtAloe)
         {
-            AloeServerInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
-                AloeServerInstance.aloeId, 0.4f, player.actualClientId);
+            EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
+                EnemyAIInstance.BioId, 0.4f, player.actualClientId);
         }
     }
 
     private class TransitionToHealingPlayer(AloeServerAI enemyAIInstance)
-        : StateTransition(enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             return Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.favouriteSpot) <= 2;
         }
 
-        public override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
             return AloeServerAI.AloeStates.HealingPlayer;
         }

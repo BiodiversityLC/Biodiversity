@@ -2,12 +2,12 @@
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
-public class SpottedAnimationStateBehaviour : BaseStateMachineBehaviour
+internal class SpottedAnimationStateBehaviour : BaseStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         if (AloeServerAIInstance.IsServer)
-            AloeServerAIInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerAIInstance.aloeId,
+            AloeServerAIInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerAIInstance.BioId,
                 AloeClient.AudioClipTypes.InterruptedHealing);
     }
 

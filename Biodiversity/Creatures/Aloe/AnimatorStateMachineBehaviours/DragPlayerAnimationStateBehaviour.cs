@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
-public class DragPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
+internal class DragPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {

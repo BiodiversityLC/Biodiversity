@@ -4,11 +4,10 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier;
 
-public class WaxSoldierServer : BiodiverseAI
+internal class WaxSoldierServer : BiodiverseAI
 {
 #pragma warning disable 0649
-    [Header("Controller")] [Space(5f)] 
-    [SerializeField] private WaxSoldierClient waxSoldierClient;
+    [Header("Controller")] [Space(5f)] [SerializeField] private WaxSoldierClient waxSoldierClient;
 #pragma warning restore 0649
 
     private readonly NullableObject<PlayerControllerB> _actualTargetPlayer = new();

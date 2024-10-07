@@ -7,7 +7,7 @@ using RoleInGroup = Biodiversity.Creatures.Critters.LeafBoy.LeafBoySharedData.Ro
 
 namespace Biodiversity.Creatures.Critters.LeafBoy;
 
-public class LeafBoyAI : BiodiverseAI
+internal class LeafBoyAI : BiodiverseAI
 {
     private static readonly int AnimationIdHash = Animator.StringToHash("AnimationId");
 
