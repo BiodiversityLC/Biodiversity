@@ -13,7 +13,7 @@ namespace Biodiversity.Creatures.MicBird
 
             RegisterEnemyWithConfig(
                 true,
-                "",
+                "All:20",
                 Assets.MicBirdEnemyType,
                 Assets.MicBirdTerminalNode,
                 Assets.MicBirdTerminalKeyword);
