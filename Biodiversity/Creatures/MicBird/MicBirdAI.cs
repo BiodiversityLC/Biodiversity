@@ -63,7 +63,7 @@ namespace Biodiversity.Creatures.MicBird
             if (firstSpawned == null)
             {
                 firstSpawned = this;
-                enemyType.numberSpawned = 1;
+                UpdateNumberSpawnedClientRpc(1);
             }
             spawnRandom = new System.Random(StartOfRound.Instance.randomMapSeed + 22);
             wander.randomized = true;
@@ -78,7 +78,7 @@ namespace Biodiversity.Creatures.MicBird
             if (firstSpawned != null)
             {
                 firstSpawned = null;
-                enemyType.numberSpawned = 0;
+                UpdateNumberSpawnedClientRpc(0);
             }
         }
 
@@ -231,7 +231,7 @@ namespace Biodiversity.Creatures.MicBird
             GameObject bird = Object.Instantiate<GameObject>(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, vector, Quaternion.Euler(Vector3.zero));
             bird.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             RoundManager.Instance.SpawnedEnemies.Add(bird.GetComponent<EnemyAI>());
-            bird.GetComponent<EnemyAI>().enemyType.numberSpawned++;
+            UpdateNumberSpawnedClientRpc(enemyType.numberSpawned + 1);
         }
 
         private void runAway(float timer)
@@ -249,16 +249,27 @@ namespace Biodiversity.Creatures.MicBird
             setDestCalledAlready = false;
         }
 
+        [ServerRpc(RequireOwnership = false)]
+        public void StartRunOnServerServerRpc(float timer)
+        {
+            runAway(timer);
+        }
+
+        [ClientRpc]
+        public void UpdateNumberSpawnedClientRpc(int number)
+        {
+            enemyType.numberSpawned = number;
+        }
+
         public override void DetectNoise(Vector3 noisePosition, float noiseLoudness, int timesPlayedInOneSpot = 0, int noiseID = 0)
         {
             base.DetectNoise(noisePosition, noiseLoudness, timesPlayedInOneSpot, noiseID);
-            if (!IsServer) return;
             if (currentBehaviourStateIndex == (int)State.RADARBOOSTER) return;
 
             BiodiversityPlugin.Logger.LogInfo("The bird heard a sound with id " + noiseID + ". And noise Loundness of " + noiseLoudness + ".");
             if (noiseID == 75 && noiseLoudness >= 0.8 && enemyType.numberSpawned <= 2)
             {
-                runAway(20);
+                StartRunOnServerServerRpc(20);
             }
         }
 
