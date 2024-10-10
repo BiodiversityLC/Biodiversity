@@ -929,7 +929,7 @@ public class AloeClient : MonoBehaviour
 
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        _targetPlayer.Value = newValue == AloeServerAI.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
+        _targetPlayer.Value = newValue == BiodiverseAI.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
         LogDebug(_targetPlayer.IsNotNull
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
             : "Changed target player to null.");

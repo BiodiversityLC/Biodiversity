@@ -17,8 +17,8 @@ internal class SpawningState : BehaviourState<AloeServerAI.AloeStates, AloeServe
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.agentMaxSpeed = 0f;
-        EnemyAIInstance.agentMaxAcceleration = 50f;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
+        EnemyAIInstance.AgentMaxAcceleration = 50f;
 
         EnemyAIInstance.netcodeController.TargetPlayerClientId.Value = AloeServerAI.NullPlayerId;
         EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.Value = false;

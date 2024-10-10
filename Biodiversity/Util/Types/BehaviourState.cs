@@ -10,7 +10,7 @@ namespace Biodiversity.Util.Types;
 /// </summary>
 /// <typeparam name="TState">The type of the state, typically an enum representing different AI states.</typeparam>
 /// <typeparam name="TEnemyAI">The type of the AI that manages the states, typically a subclass of <see cref="StateManagedAI{TState, TEnemyAI}"/>.</typeparam>
-internal abstract class BehaviourState<TState, TEnemyAI>
+public abstract class BehaviourState<TState, TEnemyAI>
     where TState : Enum
     where TEnemyAI : StateManagedAI<TState, TEnemyAI>
 {
@@ -23,7 +23,7 @@ internal abstract class BehaviourState<TState, TEnemyAI>
     /// <summary>
     /// The current state type, typically an enum value representing a specific state.
     /// </summary>
-    protected readonly TState StateType;
+    private readonly TState _stateType;
 
     /// <summary>
     /// A list of transitions from this state to other states.
@@ -39,7 +39,7 @@ internal abstract class BehaviourState<TState, TEnemyAI>
     protected BehaviourState(TEnemyAI enemyAiInstance, TState stateType)
     {
         EnemyAIInstance = enemyAiInstance ?? throw new ArgumentNullException(nameof(enemyAiInstance));
-        StateType = stateType;
+        _stateType = stateType;
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ internal abstract class BehaviourState<TState, TEnemyAI>
     /// <param name="initData">The initialization data that can be passed to the state when it is entered.</param>
     internal virtual void OnStateEnter(ref StateData initData)
     {
-        EnemyAIInstance.LogEnemyError($"OnStateEnter called for {StateType}.");
+        EnemyAIInstance.LogEnemyError($"OnStateEnter called for {_stateType}.");
         initData ??= new StateData();
     }
 
@@ -83,15 +83,15 @@ internal abstract class BehaviourState<TState, TEnemyAI>
     /// </summary>
     internal virtual void OnStateExit()
     {
-        EnemyAIInstance.LogVerbose($"OnStateExit called for {StateType}.");
+        EnemyAIInstance.LogVerbose($"OnStateExit called for {_stateType}.");
     }
 
     /// <summary>
     /// Gets the current state type.
     /// </summary>
-    /// <returns>The state type represented by this state instance, typically an enum value.</returns>
+    /// <returns>The state type represented by this state instance, an enum value.</returns>
     internal TState GetStateType()
     {
-        return StateType;
+        return _stateType;
     }
 }

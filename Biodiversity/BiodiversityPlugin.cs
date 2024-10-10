@@ -29,7 +29,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     private Harmony _harmony;
 
-    public static CachedList<Assembly> cachedAssemblies;
+    internal static CachedList<Assembly> cachedAssemblies;
 
     private static readonly (string, string)[] SillyQuotes =
     [

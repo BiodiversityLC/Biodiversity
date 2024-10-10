@@ -3,6 +3,8 @@ using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
@@ -10,37 +12,89 @@ using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures;
 
-internal abstract class BiodiverseAI : EnemyAI
+public abstract class BiodiverseAI : EnemyAI
 {
-    public readonly string BioId = Guid.NewGuid().ToString();
-
     /// <summary>
-    /// Gets the mapping between audio type identifiers and their corresponding arrays of <see cref="AudioClip"/>s.
-    /// Derived classes must override this property to provide their specific audio clip configurations.
+    /// A unique identifier for the object, stored as a networked fixed-size string.
+    /// This ID is generated as a GUID on the server and synchronized to all clients.
     /// </summary>
-    protected Dictionary<string, AudioClip[]> AudioClips { get; } = new();
-
+    private readonly NetworkVariable<FixedString64Bytes> _networkBioId = new();
+    
     /// <summary>
-    /// Gets the mapping between audio source identifiers and their corresponding <see cref="AudioSource"/> components.
-    /// Derived classes must override this property to provide their specific audio source configurations.
+    /// Gets the unique identifier (BioId) for this object as a string.
     /// </summary>
-    protected Dictionary<string, AudioSource> AudioSources { get; } = new();
+    public string BioId => _networkBioId.Value.ToString();
+    
+    /// <summary>
+    /// A constant representing a null or unassigned player ID.
+    /// </summary>
+    internal const ulong NullPlayerId = 69420;
+    
+    /// <summary>
+    /// A dictionary containing arrays of <see cref="AudioClip"/>s, indexed by category name.
+    /// </summary>
+    private Dictionary<string, AudioClip[]> AudioClips { get; set; } = new();
+    
+    /// <summary>
+    /// A dictionary containing <see cref="AudioSource"/> components, indexed by category name.
+    /// </summary>
+    private Dictionary<string, AudioSource> AudioSources { get; set; } = new();
 
     protected virtual void Awake()
     {
+        CollectAudioClipsAndSources();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
         if (!IsServer) return;
+        _networkBioId.Value = new FixedString64Bytes(Guid.NewGuid().ToString());
     }
 
     public override void Start()
     {
         base.Start();
-        if (!IsServer) return;
-        
         Random.InitState(StartOfRound.Instance.randomMapSeed + BioId.GetHashCode() - thisEnemyIndex);
     }
 
     /// <summary>
-    /// Requests the server to play a specific type of audio clip on a designated <see cref="AudioSource"/>.
+    /// Collects all <see cref="AudioClip"/> and <see cref="AudioSource"/> fields defined on the object.
+    /// Then it populates the <see cref="AudioClips"/> and <see cref="AudioSources"/> dictionaries based on field names and values.
+    /// </summary>
+    private void CollectAudioClipsAndSources()
+    {
+        AudioClips = new Dictionary<string, AudioClip[]>();
+        AudioSources = new Dictionary<string, AudioSource>();
+
+        foreach (FieldInfo field in GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+        {
+            string key = field.Name;
+            Type fieldType = field.FieldType;
+
+            // This code looks ugly because there are null checks inside each if statement.
+            // Its better this way though because we only null check if we find a type that we actually want first.
+            if (fieldType == typeof(AudioClip[]))
+            {
+                AudioClip[] value = (AudioClip[])field.GetValue(this);
+                if (value is { Length: > 0 }) AudioClips[key] = value;
+            }
+            else if (fieldType == typeof(AudioClip))
+            {
+                AudioClip value = (AudioClip)field.GetValue(this);
+                if (value != null) AudioClips[key] = [value];
+            }
+            else if (fieldType == typeof(AudioSource))
+            {
+                AudioSource value = (AudioSource)field.GetValue(this);
+                if (value != null) AudioSources[key] = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Requests the server to play a specific category of audio clip on a designated <see cref="AudioSource"/>.
+    /// It will randomly select an audio clip from the array of clips assigned to that particular audio  .
     /// This method ensures that the selected audio clip is synchronized across all clients.
     /// </summary>
     /// <param name="audioClipType">
@@ -64,7 +118,7 @@ internal abstract class BiodiverseAI : EnemyAI
     /// actions.
     /// </param>
     [ServerRpc]
-    internal void PlayAudioClipTypeServerRpc(
+    internal void PlayRandomAudioClipTypeServerRpc(
         string audioClipType,
         string audioSourceType,
         bool interrupt = false,
@@ -109,7 +163,7 @@ internal abstract class BiodiverseAI : EnemyAI
     /// </param>
     /// <param name="audioSourceType">
     /// A string identifier representing the specific <see cref="AudioSource"/> on which the audio clip should be played 
-    /// (e.g., "Voice", "Footsteps", "Alert").
+    /// (e.g., "CreatureVoice", "CreatureSfx", "Footsteps").
     /// </param>
     /// <param name="clipIndex">
     /// The index of the <see cref="AudioClip"/> within the array corresponding to <paramref name="audioClipType"/> 

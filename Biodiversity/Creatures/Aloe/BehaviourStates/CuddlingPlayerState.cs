@@ -21,8 +21,8 @@ internal class CuddlingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         base.OnStateEnter(ref initData);
 
         EnemyAIInstance.agent.speed = 0;
-        EnemyAIInstance.agentMaxSpeed = 0f;
-        EnemyAIInstance.agentMaxAcceleration = 50f;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
+        EnemyAIInstance.AgentMaxAcceleration = 50f;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.openDoorSpeedMultiplier = 4f;
 

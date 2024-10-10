@@ -25,8 +25,8 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.agentMaxSpeed = 2f;
-        EnemyAIInstance.agentMaxAcceleration = 2f;
+        EnemyAIInstance.AgentMaxSpeed = 2f;
+        EnemyAIInstance.AgentMaxAcceleration = 2f;
         EnemyAIInstance.openDoorSpeedMultiplier = 2f;
         EnemyAIInstance.moveTowardsDestination = true;
         _reachedFavouriteSpotForRoaming = false;
@@ -42,7 +42,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0, 0.5f);
 
         EnemyAIInstance.LogVerbose("Heading towards favourite position before roaming.");
-        EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.favouriteSpot);
+        EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.FavouriteSpot);
         if (EnemyAIInstance.roamMap.inProgress) EnemyAIInstance.StopSearch(EnemyAIInstance.roamMap);
     }
 
@@ -50,7 +50,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
     {
         // Check if the aloe has reached her favourite spot, so she can start roaming from that position
         if (!_reachedFavouriteSpotForRoaming &&
-            Vector3.Distance(EnemyAIInstance.favouriteSpot, EnemyAIInstance.transform.position) <= 4)
+            Vector3.Distance(EnemyAIInstance.FavouriteSpot, EnemyAIInstance.transform.position) <= 4)
         {
             _reachedFavouriteSpotForRoaming = true;
         }

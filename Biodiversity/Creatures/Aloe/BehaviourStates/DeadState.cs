@@ -21,8 +21,8 @@ internal class DeadState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 
         EnemyAIInstance.agent.speed *= 0.1f;
         EnemyAIInstance.agent.acceleration = 200f;
-        EnemyAIInstance.agentMaxSpeed = 0f;
-        EnemyAIInstance.agentMaxAcceleration = 200f;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
+        EnemyAIInstance.AgentMaxAcceleration = 200f;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.moveTowardsDestination = false;
         EnemyAIInstance.openDoorSpeedMultiplier = 0f;

@@ -7,7 +7,7 @@ using RoleInGroup = Biodiversity.Creatures.Critters.LeafBoy.LeafBoySharedData.Ro
 
 namespace Biodiversity.Creatures.Critters.LeafBoy;
 
-internal class LeafBoyAI : BiodiverseAI
+public class LeafBoyAI : BiodiverseAI
 {
     private static readonly int AnimationIdHash = Animator.StringToHash("AnimationId");
 
@@ -18,20 +18,6 @@ internal class LeafBoyAI : BiodiverseAI
     [SerializeField] private AudioClip[] hitSfx;
     [SerializeField] private AudioClip[] burySfx;
 #pragma warning restore 0649
-
-    private enum AudioClipTypes
-    {
-        Happy,
-        Scared,
-        Hit,
-        Bury
-    }
-    
-    private enum AudioSourceTypes
-    {
-        CreatureVoice,
-        CreatureSfx,
-    }
 
     private enum States
     {
@@ -55,23 +41,9 @@ internal class LeafBoyAI : BiodiverseAI
     private float _timeSinceSeenPlayer;
     private float _timeUntilNextLaughSfx = 5;
 
-    protected override void Awake()
-    {
-        base.Awake();
-        // todo: change this to a function and then make AudioClips and AudioSources private in the parent class
-        AudioClips[AudioClipTypes.Happy.ToString()] = happySfx;
-        AudioClips[AudioClipTypes.Scared.ToString()] = scaredSfx;
-        AudioClips[AudioClipTypes.Hit.ToString()] = hitSfx;
-        AudioClips[AudioClipTypes.Bury.ToString()] = burySfx;
-        
-        AudioSources[AudioSourceTypes.CreatureVoice.ToString()] = creatureVoice;
-        AudioSources[AudioSourceTypes.CreatureSfx.ToString()] = creatureSFX;
-    }
-
     public override void Start()
     {
         base.Start();
-        Random.InitState(StartOfRound.Instance.randomMapSeed + thisEnemyIndex);
 
         _scaryPlayerDistance = Config.LeafBoyScaryPlayerDistance;
         _playerForgetTime = Config.LeafBoyPlayerForgetTime;
@@ -94,7 +66,7 @@ internal class LeafBoyAI : BiodiverseAI
         if (_timeUntilNextLaughSfx < 0)
         {
             _timeUntilNextLaughSfx = Random.Range(20f, 90f);
-            PlayAudioClipTypeServerRpc(AudioClipTypes.Happy.ToString(), AudioSourceTypes.CreatureVoice.ToString(), audibleByEnemies: true);
+            PlayRandomAudioClipTypeServerRpc(happySfx.ToString(), creatureVoice.ToString(), audibleByEnemies: true);
         }
         
         MoveWithAcceleration();

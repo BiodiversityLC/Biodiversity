@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe;
 
-internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI>
+public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI>
 {
     public AISearchRoutine roamMap;
     
@@ -48,31 +48,26 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
         Dead,
     }
 
-    public readonly NullableObject<PlayerControllerB> ActualTargetPlayer = new();
-    public readonly NullableObject<PlayerControllerB> AvoidingPlayer = new();
-    public readonly NullableObject<PlayerControllerB> SlappingPlayer = new();
-    [HideInInspector] public PlayerControllerB backupTargetPlayer;
+    internal readonly NullableObject<PlayerControllerB> ActualTargetPlayer = new();
+    internal readonly NullableObject<PlayerControllerB> AvoidingPlayer = new();
+    internal readonly NullableObject<PlayerControllerB> SlappingPlayer = new();
+    internal PlayerControllerB BackupTargetPlayer;
     
-    [HideInInspector] public Vector3 favouriteSpot;
+    internal Vector3 FavouriteSpot;
     private Vector3 _mainEntrancePosition;
-    private Vector3 _agentLastPosition;
     
-    [HideInInspector] public float agentMaxAcceleration;
-    [HideInInspector] public float agentMaxSpeed;
-    [SerializeField] private float roamingRadius = 50f;
     [SerializeField] private float lookAheadDistance = 200f;
-    private float _agentCurrentSpeed;
+    internal float AgentMaxAcceleration;
+    internal float AgentMaxSpeed;
     private float _takeDamageCooldown;
 
-    [HideInInspector] public int timesFoundSneaking;
+    internal int TimesFoundSneaking;
 
-    public const ulong NullPlayerId = 69420;
-
-    [HideInInspector] public bool hasTransitionedToRunningForwardsAndCarryingPlayer;
-    [HideInInspector] public bool isStaringAtTargetPlayer;
-    [HideInInspector] public bool inGrabAnimation;
-    [HideInInspector] public bool inSlapAnimation;
-    [HideInInspector] public bool inCrushHeadAnimation;
+    internal bool HasTransitionedToRunningForwardsAndCarryingPlayer;
+    internal bool IsStaringAtTargetPlayer;
+    internal bool InGrabAnimation;
+    internal bool InSlapAnimation;
+    [HideInInspector] public bool inCrushHeadAnimation; //todo use this
     private bool _networkEventsSubscribed;
     private bool _inStunAnimation;
 
@@ -102,7 +97,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
 
         if (!IsServer) return;
         
-        AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(favouriteSpot);
+        AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(FavouriteSpot);
         UnsubscribeFromNetworkEvents();
     }
 
@@ -129,7 +124,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
         CalculateAgentSpeed();
         CalculateRotation();
         
-        if (_inStunAnimation || inSlapAnimation || inCrushHeadAnimation)
+        if (_inStunAnimation || InSlapAnimation || inCrushHeadAnimation)
             return false;
         
         if (stunNormalizedTimer <= 0.0 && _inStunAnimation)
@@ -143,7 +138,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
 
     protected override bool ShouldRunAiInterval()
     {
-        return IsServer && !isEnemyDead && StartOfRound.Instance.livingPlayers != 0 && !_inStunAnimation && !inSlapAnimation;
+        return IsServer && !isEnemyDead && StartOfRound.Instance.livingPlayers != 0 && !_inStunAnimation && !InSlapAnimation;
     }
 
     protected override bool ShouldRunLateUpdate()
@@ -190,10 +185,10 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
         }
 
         //_favouriteSpot = brackenRoomAloeNode;
-        favouriteSpot = Vector3.zero;
-        if (favouriteSpot == Vector3.zero)
+        FavouriteSpot = Vector3.zero;
+        if (FavouriteSpot == Vector3.zero)
         {
-            favouriteSpot =
+            FavouriteSpot =
                 GetFarthestValidNodeFromPosition(
                         out PathStatus pathStatus,
                         agent,
@@ -203,7 +198,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
                     .position;
         }
         
-        LogVerbose($"Found a favourite spot: {favouriteSpot}");
+        LogVerbose($"Found a favourite spot: {FavouriteSpot}");
     }
     
     /// <summary>
@@ -214,7 +209,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
         const float turnSpeed = 5f;
 
         if (inCrushHeadAnimation) return;
-        if (inSlapAnimation && SlappingPlayer.IsNotNull)
+        if (InSlapAnimation && SlappingPlayer.IsNotNull)
         {
             LookAtPosition(SlappingPlayer.Value.transform.position, 30f);
         }
@@ -227,7 +222,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
             default:
             {
                 if (!(agent.velocity.sqrMagnitude > 0.01f)) break;
-                Vector3 targetDirection = !hasTransitionedToRunningForwardsAndCarryingPlayer &&
+                Vector3 targetDirection = !HasTransitionedToRunningForwardsAndCarryingPlayer &&
                                           CurrentState.GetStateType() == AloeStates.KidnappingPlayer
                     ? -agent.velocity.normalized
                     : agent.velocity.normalized;
@@ -255,9 +250,9 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
         }
 
         transform.rotation = targetRotation;
-        hasTransitionedToRunningForwardsAndCarryingPlayer = true;
-        agentMaxAcceleration = 20f;
-        agentMaxSpeed = 10f;
+        HasTransitionedToRunningForwardsAndCarryingPlayer = true;
+        AgentMaxAcceleration = 20f;
+        AgentMaxSpeed = 10f;
     }
 
     public override void OnCollideWithPlayer(Collider other)
@@ -350,7 +345,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
                     if (playerWhoHitMe.IsNotNull)
                     {
                         SetTargetPlayerInCaptivity(false);
-                        backupTargetPlayer = ActualTargetPlayer.Value;
+                        BackupTargetPlayer = ActualTargetPlayer.Value;
                         netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
                         SwitchBehaviourState(AloeStates.AttackingPlayer);
                     }
@@ -370,7 +365,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
                 {
                     if (playerWhoHitMe.IsNotNull)
                     {
-                        backupTargetPlayer = ActualTargetPlayer.Value;
+                        BackupTargetPlayer = ActualTargetPlayer.Value;
                         netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
                         SwitchBehaviourState(AloeStates.AttackingPlayer);
                     }
@@ -453,7 +448,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
                 SetTargetPlayerInCaptivity(false);
                 if (stunnedByPlayer2.IsNotNull)
                 {
-                    backupTargetPlayer = ActualTargetPlayer.Value;
+                    BackupTargetPlayer = ActualTargetPlayer.Value;
                     netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
                     SwitchBehaviourState(AloeStates.AttackingPlayer);
                 }
@@ -570,19 +565,15 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
     {
         if (!IsServer) return;
         
-        Vector3 position = transform.position;
-        _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime, 0.75f);
-        _agentLastPosition = position;
-        
         if (stunNormalizedTimer > 0 || 
-            isStaringAtTargetPlayer ||
-            inSlapAnimation || inCrushHeadAnimation ||
+            IsStaringAtTargetPlayer ||
+            InSlapAnimation || inCrushHeadAnimation ||
             (CurrentState.GetStateType() == AloeStates.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
             CurrentState.GetStateType() == AloeStates.Dead ||
             CurrentState.GetStateType() == AloeStates.Spawning)
         {
             agent.speed = 0;
-            agent.acceleration = agentMaxAcceleration;
+            agent.acceleration = AgentMaxAcceleration;
         }
         else
         {
@@ -598,10 +589,10 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
         if (!IsServer) return;
         
         float speedAdjustment = Time.deltaTime / 2f;
-        agent.speed = Mathf.Lerp(agent.speed, agentMaxSpeed, speedAdjustment);
+        agent.speed = Mathf.Lerp(agent.speed, AgentMaxSpeed, speedAdjustment);
         
         float accelerationAdjustment = Time.deltaTime;
-        agent.acceleration = Mathf.Lerp(agent.acceleration, agentMaxAcceleration, accelerationAdjustment);
+        agent.acceleration = Mathf.Lerp(agent.acceleration, AgentMaxAcceleration, accelerationAdjustment);
     }
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
@@ -650,12 +641,11 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
     /// Gets the config values and assigns them to their respective [SerializeField] variables.
     /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
     /// </summary>
-    public void InitializeConfigValues()
+    internal void InitializeConfigValues()
     {
         if (!IsServer) return;
 
         enemyHP = AloeHandler.Instance.Config.Health;
-        roamingRadius = AloeHandler.Instance.Config.RoamingRadius;
         ViewWidth = 135f;
         ViewRange = 65;
         PlayerHealthThresholdForStalking = AloeHandler.Instance.Config.PlayerHealthThresholdForStalking;
@@ -664,7 +654,7 @@ internal class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServer
         PassiveStalkStaredownDistance = AloeHandler.Instance.Config.PassiveStalkStaredownDistance;
         WaitBeforeChasingEscapedPlayerTime = AloeHandler.Instance.Config.WaitBeforeChasingEscapedPlayerTime;
 
-        roamMap.searchWidth = roamingRadius;
+        roamMap.searchWidth = AloeHandler.Instance.Config.RoamingRadius;
         
         netcodeController.InitializeConfigValuesClientRpc(BioId);
     }

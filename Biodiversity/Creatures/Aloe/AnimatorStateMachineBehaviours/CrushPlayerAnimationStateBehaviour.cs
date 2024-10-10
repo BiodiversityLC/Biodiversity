@@ -6,6 +6,7 @@ internal class CrushPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        // todo: use the crush player neck bool in the server class
         LogDebug("Crush player animation complete.");
         // if (AloeServerInstance.IsServer) 
         

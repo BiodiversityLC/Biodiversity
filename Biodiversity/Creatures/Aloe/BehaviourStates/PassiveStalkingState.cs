@@ -9,7 +9,6 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 [Preserve]
 internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
-    private bool _isStaringAtTargetPlayer;
     private bool _isPlayerReachable;
 
     protected PassiveStalkingState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
@@ -17,7 +16,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
     {
         Transitions =
         [
-            new TransitionToAvoidingPlayer(EnemyAIInstance, this),
+            new TransitionToAvoidingPlayer(EnemyAIInstance),
             new TransitionToPassiveRoaming(EnemyAIInstance, this),
             new TransitionToStalkingPlayerToKidnap(EnemyAIInstance),
         ];
@@ -27,8 +26,8 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.agentMaxSpeed = 5f;
-        EnemyAIInstance.agentMaxAcceleration = 70f;
+        EnemyAIInstance.AgentMaxSpeed = 5f;
+        EnemyAIInstance.AgentMaxAcceleration = 70f;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.moveTowardsDestination = true;
         EnemyAIInstance.openDoorSpeedMultiplier = 4f;
@@ -37,7 +36,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
         AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);
 
         _isPlayerReachable = true;
-        _isStaringAtTargetPlayer = false;
+        EnemyAIInstance.IsStaringAtTargetPlayer = false;
 
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
             EnemyAIInstance.BioId, 0f);
@@ -57,21 +56,21 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
                 StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
         {
             EnemyAIInstance.LogVerbose("Aloe is staring at player");
-            if (!_isStaringAtTargetPlayer)
+            if (!EnemyAIInstance.IsStaringAtTargetPlayer)
                 EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
                     EnemyAIInstance.BioId, 0.8f);
 
             EnemyAIInstance.moveTowardsDestination = false;
             EnemyAIInstance.movingTowardsTargetPlayer = false;
-            _isStaringAtTargetPlayer = true;
+            EnemyAIInstance.IsStaringAtTargetPlayer = true;
         }
         // If she cant stare, then go and find the player
         else
         {
-            if (_isStaringAtTargetPlayer)
+            if (EnemyAIInstance.IsStaringAtTargetPlayer)
                 EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
                     EnemyAIInstance.BioId, 0, 0.1f);
-            _isStaringAtTargetPlayer = false;
+            EnemyAIInstance.IsStaringAtTargetPlayer = false;
 
             if (AloeUtils.IsPlayerReachable(
                     agent: EnemyAIInstance.agent,
@@ -103,7 +102,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
         EnemyAIInstance.LogVerbose($"Is player reachable: {_isPlayerReachable}");
     }
 
-    private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance, PassiveStalkingState passiveStalkingState)
+    private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance)
         : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
@@ -123,10 +122,10 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
         internal override void OnTransition()
         {
             EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
-            EnemyAIInstance.timesFoundSneaking++;
+            EnemyAIInstance.TimesFoundSneaking++;
 
             // Greatly increase fear level if the player turns around to see the Aloe starting at them
-            if (passiveStalkingState._isStaringAtTargetPlayer &&
+            if (EnemyAIInstance.IsStaringAtTargetPlayer &&
                 EnemyAIInstance.ActualTargetPlayer.Value == EnemyAIInstance.AvoidingPlayer.Value)
                 EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
                     EnemyAIInstance.BioId, 0.8f, EnemyAIInstance.AvoidingPlayer.Value.playerClientId);

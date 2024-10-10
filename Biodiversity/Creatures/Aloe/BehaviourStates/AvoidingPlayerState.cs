@@ -31,8 +31,8 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.agentMaxSpeed = 9f;
-        EnemyAIInstance.agentMaxAcceleration = 50f;
+        EnemyAIInstance.AgentMaxSpeed = 9f;
+        EnemyAIInstance.AgentMaxAcceleration = 50f;
         EnemyAIInstance.agent.acceleration = 50f;
         EnemyAIInstance.openDoorSpeedMultiplier = 20f;
 
@@ -150,7 +150,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
     {
         internal override bool ShouldTransitionBeTaken()
         {
-            float avoidTimerCompareValue = EnemyAIInstance.timesFoundSneaking % 3 != 0 ? 11f : 21f; // todo: make this less dumb
+            float avoidTimerCompareValue = EnemyAIInstance.TimesFoundSneaking % 3 != 0 ? 11f : 21f; // todo: make this less dumb
             if (avoidingPlayerState._avoidPlayerTimerTotal > avoidTimerCompareValue) return true;
             if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value) return false;
 

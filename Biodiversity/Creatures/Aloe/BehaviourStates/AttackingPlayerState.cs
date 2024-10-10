@@ -22,8 +22,8 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, Al
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.agentMaxSpeed = 5f;
-        EnemyAIInstance.agentMaxAcceleration = 50f;
+        EnemyAIInstance.AgentMaxSpeed = 5f;
+        EnemyAIInstance.AgentMaxAcceleration = 50f;
         EnemyAIInstance.openDoorSpeedMultiplier = 2f;
 
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f,
@@ -50,8 +50,8 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, Al
     {
         base.OnStateExit();
         EnemyAIInstance.netcodeController.TargetPlayerClientId.Value =
-            EnemyAIInstance.backupTargetPlayer.actualClientId;
-        EnemyAIInstance.backupTargetPlayer = null;
+            EnemyAIInstance.BackupTargetPlayer.actualClientId;
+        EnemyAIInstance.BackupTargetPlayer = null;
     }
 
     private class TransitionToChasingEscapedPlayer(

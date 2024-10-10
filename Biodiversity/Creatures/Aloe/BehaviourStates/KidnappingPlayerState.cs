@@ -25,12 +25,12 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.agentMaxSpeed = AloeHandler.Instance.Config.KidnappingPlayerMaxSpeed;
-        EnemyAIInstance.agentMaxAcceleration = 8f;
+        EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.KidnappingPlayerMaxSpeed;
+        EnemyAIInstance.AgentMaxAcceleration = 8f;
         EnemyAIInstance.openDoorSpeedMultiplier = 20f;
         EnemyAIInstance.moveTowardsDestination = true;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
-        EnemyAIInstance.hasTransitionedToRunningForwardsAndCarryingPlayer = false;
+        EnemyAIInstance.HasTransitionedToRunningForwardsAndCarryingPlayer = false;
         _dragPlayerTimer = AloeClient.SnatchAndGrabAudioLength;
 
         AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
@@ -61,20 +61,20 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
 
         if (BiodiverseAI.IsPathValid(
                 agent: EnemyAIInstance.agent,
-                position: EnemyAIInstance.favouriteSpot) != BiodiverseAI.PathStatus.Valid)
+                position: EnemyAIInstance.FavouriteSpot) != BiodiverseAI.PathStatus.Valid)
         {
             EnemyAIInstance.LogVerbose("When initializing kidnapping, no path was found to the Aloe's favourite spot.");
             EnemyAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.HealingPlayer);
             return;
         }
 
-        EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.favouriteSpot);
+        EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.FavouriteSpot);
     }
 
     internal override void UpdateBehaviour()
     {
         _dragPlayerTimer -= Time.deltaTime;
-        if (_dragPlayerTimer <= 0 && !EnemyAIInstance.hasTransitionedToRunningForwardsAndCarryingPlayer)
+        if (_dragPlayerTimer <= 0 && !EnemyAIInstance.HasTransitionedToRunningForwardsAndCarryingPlayer)
         {
             _dragPlayerTimer = float.MaxValue; // Better than adding ANOTHER bool value to this if statement
             EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(
@@ -101,7 +101,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
     {
         internal override bool ShouldTransitionBeTaken()
         {
-            return Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.favouriteSpot) <= 2;
+            return Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.FavouriteSpot) <= 2;
         }
 
         internal override AloeServerAI.AloeStates NextState()

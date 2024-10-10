@@ -9,7 +9,7 @@ internal class SlapAnimationStateBehaviour : BaseStateMachineBehaviour
         LogDebug("Started slap animation.");
         AloeClientInstance.slapCollisionDetection.EnableSlap();
         if (!AloeServerAIInstance.IsServer) return;
-        AloeServerAIInstance.inSlapAnimation = true;
+        AloeServerAIInstance.InSlapAnimation = true;
     }
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
@@ -17,7 +17,7 @@ internal class SlapAnimationStateBehaviour : BaseStateMachineBehaviour
         LogDebug("Finished slap animation.");
         AloeClientInstance.slapCollisionDetection.DisableSlap();
         if (!AloeServerAIInstance.IsServer) return;
-        AloeServerAIInstance.inSlapAnimation = false;
+        AloeServerAIInstance.InSlapAnimation = false;
         AloeServerAIInstance.SlappingPlayer.Value = null;
     }
 }

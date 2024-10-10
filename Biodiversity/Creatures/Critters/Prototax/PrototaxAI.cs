@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Critters.Prototax;
 
-internal class PrototaxAI : BiodiverseAI
+public class PrototaxAI : BiodiverseAI
 {
 	private static readonly int Spewing = Animator.StringToHash("Spewing");
 
@@ -35,21 +35,6 @@ internal class PrototaxAI : BiodiverseAI
 		Spewing,
 		RunningAway,
 	}
-
-	private enum AudioClipTypes
-	{
-		Spew,
-		SporeAmbient,
-		Footsteps,
-		Hit
-	}
-
-	private enum AudioSourceTypes
-	{
-		CreatureVoice,
-		CreatureSfx,
-		Spore
-	}
 	
 	private readonly NetworkVariable<bool> _spewingAnimationParam = new();
 	private readonly NetworkVariable<bool> _sporeVisible = new();
@@ -72,23 +57,9 @@ internal class PrototaxAI : BiodiverseAI
 
 	private bool _spewAnimComplete;
 
-	protected override void Awake()
-	{
-		base.Awake();
-		AudioClips[AudioClipTypes.Spew.ToString()] = spewSfx;
-		AudioClips[AudioClipTypes.Footsteps.ToString()] = footstepSfx;
-		AudioClips[AudioClipTypes.SporeAmbient.ToString()] = sporeAmbientSfx;
-		AudioClips[AudioClipTypes.Hit.ToString()] = hitSfx;
-
-		AudioSources[AudioSourceTypes.CreatureVoice.ToString()] = creatureVoice;
-		AudioSources[AudioSourceTypes.CreatureSfx.ToString()] = creatureSFX;
-		AudioSources[AudioSourceTypes.Spore.ToString()] = sporeAudioSource;
-	}
-
 	public override void Start()
 	{
 		base.Start();
-		Random.InitState(StartOfRound.Instance.randomMapSeed + thisEnemyIndex);
 
 		_spawnPosition = transform.position;
 		_roamingTimeRange = new Vector2(Config.PrototaxWanderTimeMin,
@@ -167,7 +138,7 @@ internal class PrototaxAI : BiodiverseAI
 
 		if (currentBehaviourStateIndex != (int)States.Spewing)
 		{
-			PlayAudioClipTypeServerRpc(AudioClipTypes.Hit.ToString(), AudioSourceTypes.CreatureSfx.ToString());
+			PlayRandomAudioClipTypeServerRpc(hitSfx.ToString(), creatureSFX.ToString());
 			SwitchBehaviourState(States.Spewing);
 		}
 	}
@@ -270,8 +241,8 @@ internal class PrototaxAI : BiodiverseAI
 		_sporeVisible.Value = true;
 		PlaySporeAnimClientRpc();
 		
-		PlayAudioClipTypeServerRpc(AudioClipTypes.SporeAmbient.ToString(), AudioSourceTypes.Spore.ToString());
-		PlayAudioClipTypeServerRpc(AudioClipTypes.Spew.ToString(), AudioSourceTypes.CreatureVoice.ToString(),
+		PlayRandomAudioClipTypeServerRpc(sporeAmbientSfx.ToString(), sporeAudioSource.ToString());
+		PlayRandomAudioClipTypeServerRpc(spewSfx.ToString(), creatureVoice.ToString(),
 			audibleByEnemies: true);
 	}
 

@@ -9,7 +9,7 @@ namespace Biodiversity.Util.Types;
 /// </summary>
 /// <typeparam name="TState">The type of the state, typically an enum representing different AI states.</typeparam>
 /// <typeparam name="TEnemyAI">The type of the AI that manages the states, typically a subclass of <see cref="StateManagedAI{TState, TEnemyAI}"/>.</typeparam>
-internal abstract class StateTransition<TState, TEnemyAI>
+public abstract class StateTransition<TState, TEnemyAI>
     where TState : Enum
     where TEnemyAI : StateManagedAI<TState, TEnemyAI>
 {

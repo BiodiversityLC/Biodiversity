@@ -25,11 +25,11 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.agentMaxSpeed = 6f;
-        EnemyAIInstance.agentMaxAcceleration = 12f;
+        EnemyAIInstance.AgentMaxSpeed = 6f;
+        EnemyAIInstance.AgentMaxAcceleration = 12f;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.openDoorSpeedMultiplier = 2f;
-        EnemyAIInstance.inGrabAnimation = false;
+        EnemyAIInstance.InGrabAnimation = false;
 
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.9f, 0.5f);
         EnemyAIInstance.netcodeController.PlayAudioClipTypeServerRpc(EnemyAIInstance.BioId, AloeClient.AudioClipTypes.Chase, true);
