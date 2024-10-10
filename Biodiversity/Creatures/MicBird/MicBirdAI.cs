@@ -41,6 +41,7 @@ namespace Biodiversity.Creatures.MicBird
         private float malfunctionInterval = 0;
         private float baseMalfunctionInterval = 0;
         private float runTimer = 0;
+        private Vector3 spawnPosition;
         private bool setDestCalledAlready = false;
         MalfunctionID malfunction;
         Vector3 targetPos = Vector3.zero;
@@ -68,6 +69,8 @@ namespace Biodiversity.Creatures.MicBird
             spawnRandom = new System.Random(StartOfRound.Instance.randomMapSeed + 22);
             wander.randomized = true;
 
+            spawnPosition = transform.position;
+
             HoarderBugAI.RefreshGrabbableObjectsInMapList();
         }
 
@@ -82,21 +85,6 @@ namespace Biodiversity.Creatures.MicBird
             }
         }
 
-        private Transform findFarthestNode()
-        {
-            Transform farnode = null;
-            float lowestDistance = 0;
-            foreach (GameObject node in RoundManager.Instance.outsideAINodes)
-            {
-                float nodeDistance = Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position, node.transform.position);
-                if (nodeDistance > lowestDistance)
-                {
-                    lowestDistance = nodeDistance;
-                    farnode = node.transform;
-                }
-            }
-            return farnode;
-        }
 
         public override void Update()
         {
@@ -244,7 +232,8 @@ namespace Biodiversity.Creatures.MicBird
                 wanderingAlready = false;
             }
             runTimer = timer;
-            agent.SetDestination(findFarthestNode().position);
+            agent.speed = 5.4f;
+            agent.SetDestination(spawnPosition);
             SwitchToBehaviourClientRpc((int)State.RUN);
             setDestCalledAlready = false;
         }
@@ -336,6 +325,11 @@ namespace Biodiversity.Creatures.MicBird
                         StopSearch(wander);
                         wanderingAlready = false;
                         return;
+                    }
+
+                    if (agent.speed != 3)
+                    {
+                        agent.speed = 3;
                     }
 
                     if (firstSpawned == this)
