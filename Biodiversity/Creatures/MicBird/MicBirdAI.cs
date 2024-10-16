@@ -49,7 +49,7 @@ namespace Biodiversity.Creatures.MicBird
         private AISearchRoutine wander = new AISearchRoutine();
         private bool wanderingAlready = false;
         private float wanderTimer = 1f;
-        private System.Random spawnRandom;
+        private static System.Random spawnRandom;
 
         RadarBoosterItem distractedRadarBoosterItem = null;
         float distractionTimer = 0;
@@ -65,11 +65,12 @@ namespace Biodiversity.Creatures.MicBird
             {
                 firstSpawned = this;
                 UpdateNumberSpawnedClientRpc(1);
+                spawnRandom = new System.Random(StartOfRound.Instance.randomMapSeed + 22);
             }
-            spawnRandom = new System.Random(StartOfRound.Instance.randomMapSeed + 22);
             wander.randomized = true;
 
             spawnPosition = transform.position;
+
 
             HoarderBugAI.RefreshGrabbableObjectsInMapList();
         }
@@ -82,6 +83,7 @@ namespace Biodiversity.Creatures.MicBird
             {
                 firstSpawned = null;
                 UpdateNumberSpawnedClientRpc(0);
+                spawnRandom = null;
             }
         }
 
@@ -111,7 +113,7 @@ namespace Biodiversity.Creatures.MicBird
 
             if (currentBehaviourStateIndex == (int)State.PERCH)
             {
-                callTimer -= Time.deltaTime;
+                callTimer -= Time.deltaTime;  
             }
 
             if (malfunctionInterval < 0)
@@ -250,6 +252,18 @@ namespace Biodiversity.Creatures.MicBird
             enemyType.numberSpawned = number;
         }
 
+        [ClientRpc]
+        public void CancelTeleportClientRpc()
+        {
+            TeleporterStatus.CancelTeleport = true;
+        }
+
+        [ClientRpc]
+        public void CancelInverseTeleportClientRpc()
+        {
+            TeleporterStatus.CancelInverseTeleport = true;
+        }
+
         public override void DetectNoise(Vector3 noisePosition, float noiseLoudness, int timesPlayedInOneSpot = 0, int noiseID = 0)
         {
             base.DetectNoise(noisePosition, noiseLoudness, timesPlayedInOneSpot, noiseID);
@@ -375,7 +389,7 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         if (TeleporterStatus.Teleporting)
                         {
-                            TeleporterStatus.CancelTeleport = true;
+                            CancelTeleportClientRpc();
                         }
                     }
 
@@ -383,7 +397,7 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         if (TeleporterStatus.TeleportingInverse)
                         {
-                            TeleporterStatus.CancelInverseTeleport = true;
+                            CancelInverseTeleportClientRpc();
                         }
                     }
 
