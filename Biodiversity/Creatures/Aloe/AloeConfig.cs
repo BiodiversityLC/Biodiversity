@@ -82,7 +82,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     public bool AloeEnabled { get; private set; } = true;
     
     [field: Tooltip("Spawn weight of the Aloe on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-    public string Rarity { get; private set; } = "Experimentation:28,Assurance:75,Offense:65,March:55,Artifice:95,Aquatis:18,Integrity:21,Vertigo:36,Solace:12,Azure:40,Argent:15,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Atlantica:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Seichi:14,USCVortex:8,Hydro:20,Arcadia:40,Modded:2";
+    public string Rarity { get; private set; } = "Experimentation:28,Assurance:75,Offense:65,March:55,Artifice:95,Aquatis:18,Integrity:21,Vertigo:36,Solace:12,Azure:40,Argent:15,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Atlantica:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Seichi:14,USCVortex:8,Hydro:20,Arcadia:40,Olympus:4,Arelion:7,Modded:2";
 
     [field: Tooltip("The power level of the Aloe.")]
     [field: Range(0f, 15f)]
