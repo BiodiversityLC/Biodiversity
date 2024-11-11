@@ -21,9 +21,14 @@ namespace Biodiversity.Creatures.MicBird
             RADARBOOSTER
         }
 
-        private enum SoundID
+        private enum SoundID // run and step are exculded because they will be animation synced
         {
-            CALL
+            CALL,
+            HIT,
+            IDLE,
+            ROAM,
+            SCARED,
+            SPAWN
         }
 
         private enum MalfunctionID
@@ -35,7 +40,37 @@ namespace Biodiversity.Creatures.MicBird
             WALKIE
         }
 
+        // Sound vars start here
+        [Header("Sound variables")]
+
+        // Call sounds
         [SerializeField] private AudioClip callSound;
+        [SerializeField] private AudioClip leaderCallSound;
+
+        // Hit sounds
+        [SerializeField] private AudioClip hitSound;
+        
+        // Idle sounds
+        [SerializeField] private AudioClip[] idleSounds;
+
+        // Roam sounds (only used by leader/first spawned)
+        [SerializeField] private AudioClip[] roamSounds;
+
+        // Run sounds TODO: Implement these when we get anims
+        [SerializeField] private AudioClip[] runSounds;
+
+        // Scared
+        [SerializeField] private AudioClip[] scaredSounds;
+
+        // Spawn sound
+        [SerializeField] private AudioClip spawnSound;
+
+        // Step sounds TODO: Implement these when we get anims
+        [SerializeField] private AudioClip[] stepSounds;
+
+        private float idleTimer = 10;
+        private float roamTimer = 10;
+        // Sound vars stop here
 
         private float callTimer = 30;
         private float malfunctionInterval = 0;
@@ -73,6 +108,9 @@ namespace Biodiversity.Creatures.MicBird
 
 
             HoarderBugAI.RefreshGrabbableObjectsInMapList();
+
+            if (!IsServer) return;
+            PlayVoiceClientRpc((int)SoundID.SPAWN, 0);
         }
 
         public override void OnDestroy()
@@ -99,6 +137,7 @@ namespace Biodiversity.Creatures.MicBird
             if (currentBehaviourStateIndex == (int)State.WANDER)
             {
                 wanderTimer -= Time.deltaTime;
+                roamTimer -= Time.deltaTime;
             }
 
             if (currentBehaviourStateIndex == (int)State.RADARBOOSTER)
@@ -114,6 +153,7 @@ namespace Biodiversity.Creatures.MicBird
             if (currentBehaviourStateIndex == (int)State.PERCH)
             {
                 callTimer -= Time.deltaTime;  
+                idleTimer -= Time.deltaTime;
             }
 
             if (malfunctionInterval < 0)
@@ -147,13 +187,44 @@ namespace Biodiversity.Creatures.MicBird
         }
 
         [ClientRpc]
-        public void PlayVoiceClientRpc(int id)
+        public void PlayVoiceClientRpc(int id, int rand)
         {
-            AudioClip audio = id switch
+            if (enemyHP <= 0)
             {
-                0 => callSound,
-                _ => null
-            };
+                return;
+            }
+
+            AudioClip audio;
+
+            switch (id)
+            {
+                case 0:
+                    if (firstSpawned == this)
+                    {
+                        audio = leaderCallSound;
+                        break;
+                    }
+                    audio = callSound;
+                    break;
+                case 1:
+                    audio = hitSound;
+                    break;
+                case 2:
+                    audio = idleSounds[rand];
+                    break;
+                case 3:
+                    audio = roamSounds[rand];
+                    break;
+                case 4:
+                    audio = scaredSounds[rand];
+                    break;
+                case 5:
+                    audio = spawnSound;
+                    break;
+                default:
+                    audio = null;
+                    break;
+            }
 
             creatureVoice.PlayOneShot(audio);
         }
@@ -226,6 +297,8 @@ namespace Biodiversity.Creatures.MicBird
 
         private void runAway(float timer)
         {
+            PlayVoiceClientRpc((int)SoundID.SCARED, Random.RandomRangeInt(0, scaredSounds.Length));
+
             if (currentBehaviourStateIndex == (int)State.RUN) return;
             if (wanderingAlready)
             {
@@ -292,6 +365,9 @@ namespace Biodiversity.Creatures.MicBird
                 KillEnemyOnOwnerClient();
                 enemyType.numberSpawned--;
             }
+
+            if (!IsServer) return;
+            PlayVoiceClientRpc((int)SoundID.HIT, 0);
         }
 
         public override void DoAIInterval()
@@ -320,6 +396,11 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         StartSearch(transform.position, wander);
                         wanderingAlready = true;
+                    }
+                    if (roamTimer <= 0)
+                    {
+                        PlayVoiceClientRpc((int)SoundID.ROAM, Random.RandomRangeInt(0, roamSounds.Length));
+                        roamTimer = Random.RandomRangeInt(5, 11);
                     }
 
                     if (wanderTimer <= 0)
@@ -375,9 +456,14 @@ namespace Biodiversity.Creatures.MicBird
                         BiodiversityPlugin.Logger.LogInfo("Calling");
                         SwitchToBehaviourClientRpc((int)State.CALL);
                     }
+                    if (idleTimer <= 0)
+                    {
+                        PlayVoiceClientRpc((int)SoundID.IDLE, Random.RandomRangeInt(0, idleSounds.Length));
+                        idleTimer = Random.RandomRangeInt(5, 11);
+                    }
                     break;
                 case (int)State.CALL:
-                    PlayVoiceClientRpc((int)SoundID.CALL);
+                    PlayVoiceClientRpc((int)SoundID.CALL, 0);
                     BiodiversityPlugin.Logger.LogInfo("Caw I'm a bird!");
 
                     spawnMicBird();
