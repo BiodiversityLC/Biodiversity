@@ -394,13 +394,14 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     if (!wanderingAlready)
                     {
+                        BiodiversityPlugin.Logger.LogInfo("Started wandering");
                         StartSearch(transform.position, wander);
                         wanderingAlready = true;
                     }
                     if (roamTimer <= 0)
                     {
                         PlayVoiceClientRpc((int)SoundID.ROAM, Random.RandomRangeInt(0, roamSounds.Length));
-                        roamTimer = Random.RandomRangeInt(5, 11);
+                        roamTimer = Random.RandomRangeInt(MicBirdHandler.Instance.Config.BoomBirdIdleMinTime, MicBirdHandler.Instance.Config.BoomBirdIdleMaxTime + 1);
                     }
 
                     if (wanderTimer <= 0)
@@ -459,7 +460,7 @@ namespace Biodiversity.Creatures.MicBird
                     if (idleTimer <= 0)
                     {
                         PlayVoiceClientRpc((int)SoundID.IDLE, Random.RandomRangeInt(0, idleSounds.Length));
-                        idleTimer = Random.RandomRangeInt(5, 11);
+                        idleTimer = Random.RandomRangeInt(MicBirdHandler.Instance.Config.BoomBirdIdleMinTime, MicBirdHandler.Instance.Config.BoomBirdIdleMaxTime + 1);
                     }
                     break;
                 case (int)State.CALL:
