@@ -15,9 +15,9 @@ namespace Biodiversity.Creatures.MicBird
         public bool EnableBoomBird { get; private set; } = false;
 
         [field: Tooltip("Minimum time between roam/idle sounds")]
-        public int BoomBirdIdleMinTime { get; private set; } = 3;
+        public int BoomBirdIdleMinTime { get; private set; } = 10;
 
         [field: Tooltip("Maximum time between roam/idle sounds")]
-        public int BoomBirdIdleMaxTime { get; private set; } = 7;
+        public int BoomBirdIdleMaxTime { get; private set; } = 25;
     }
 }
