@@ -1103,7 +1103,7 @@ public class AloeClient : MonoBehaviour
         if (!netcodeController.IsOwner)
             netcodeController.LookTargetPosition.OnValueChanged -= HandleLookTargetPositionChanged;
 
-        _networkEventsSubscribed = false;
+        _networkEventsSubscribed = false; 
     }
 
     /// <summary>
