@@ -23,12 +23,20 @@ namespace Biodiversity.Creatures.CoilCrab
         {
             base.Start();
             if (!IsServer) return;
+
+            if (TimeOfDay.Instance.currentLevelWeather != LevelWeatherType.Stormy)
+            {
+                RoundManager.Instance.DespawnEnemyOnServer(gameObject.GetComponent<NetworkObject>());
+            }
+
             GameObject ShellObject = Instantiate(ShellPrefab);
             ShellObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             Shell = ShellObject.GetComponent<GrabbableObject>();
 
+            FindObjectOfType<StormyWeather>().metalObjects.Add(Shell);
 
-            Shell.parentObject = this.transform;
+            Shell.isInFactory = false;
+            Shell.parentObject = transform;
             Shell.SetScrapValue(UnityEngine.Random.RandomRangeInt(Shell.itemProperties.minValue, Shell.itemProperties.maxValue + 1));
             Shell.isHeldByEnemy = true;
             Shell.grabbableToEnemies = false;
@@ -108,9 +116,9 @@ namespace Biodiversity.Creatures.CoilCrab
                         break;
                     }
                      
-                    if (!selectedPlayer.HasLineOfSightToPosition(transform.position))
+                    if (!selectedPlayer.HasLineOfSightToPosition(transform.position) && Vector3.Distance(selectedPlayer.transform.position, transform.position) > 3f)
                     {
-                        agent.speed = 3.5f;
+                        agent.speed = 4.5f;
                         agent.angularSpeed = 120;
                         SetDestinationToPosition(RoundManager.Instance.GetNavMeshPosition(selectedPlayer.transform.position, RoundManager.Instance.navHit, 2.75f));
                     } else
