@@ -11,6 +11,7 @@ public class RubberDuckBehaviour : PhysicsProp
 {
 #pragma warning disable 0649
     [SerializeField] private Material[] materialVariants;
+    [SerializeField] private AudioClip[] audioClipVariants;
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private Animator animator;
 #pragma warning restore 0649
@@ -52,9 +53,25 @@ public class RubberDuckBehaviour : PhysicsProp
     public override void ItemActivate(bool used, bool buttonDown = true)
     {
         base.ItemActivate(used, buttonDown);
+        PlayQuackServerRpc();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void PlayQuackServerRpc()
+    {
+        int clipIndex = Random.Range(0, audioClipVariants.Length);
+        PlayQuackClientRpc(clipIndex);
+    }
+
+    [ClientRpc]
+    private void PlayQuackClientRpc(int clipIndex)
+    {
+        AudioClip clip = audioClipVariants[clipIndex];
         
+        audioSource.Stop(true);
         animator.Play("Squeeze", -1, 0);
-        audioSource.Play();
+        audioSource.PlayOneShot(clip);
+        WalkieTalkie.TransmitOneShotAudio(audioSource, clip, audioSource.volume);
         RoundManager.Instance.PlayAudibleNoise(transform.position, (audioSource.minDistance + audioSource.maxDistance) / 2);
     }
     
