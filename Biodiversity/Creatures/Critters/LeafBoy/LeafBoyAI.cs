@@ -1,9 +1,7 @@
-using Biodiversity.Util.Types;
 using System;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 using Random = UnityEngine.Random;
-using RoleInGroup = Biodiversity.Creatures.Critters.LeafBoy.LeafBoySharedData.RoleInGroup;
 
 namespace Biodiversity.Creatures.Critters.LeafBoy;
 
@@ -21,18 +19,13 @@ public class LeafBoyAI : BiodiverseAI
 
     private enum States
     {
-        BeingLeader,
-        FollowingLeader,
+        Roaming,
         RunningAway,
         Buried,
         Dead,
     }
     
     private static CritterConfig Config => CritterHandler.Instance.Config;
-
-    private RoleInGroup _roleInGroup;
-
-    internal readonly NullableObject<LeafBoyGroup> Group = new();
 
     private float _agentMaxSpeed;
     private float _agentMaxAcceleration;
@@ -47,11 +40,6 @@ public class LeafBoyAI : BiodiverseAI
 
         _scaryPlayerDistance = Config.LeafBoyScaryPlayerDistance;
         _playerForgetTime = Config.LeafBoyPlayerForgetTime;
-
-        _roleInGroup = LeafBoySharedData.Instance.AssignLeafBoy(this);
-        Group.Value = LeafBoySharedData.Instance.GetGroup(this);
-
-        InitializeState(_roleInGroup == RoleInGroup.Leader ? States.BeingLeader : States.FollowingLeader);
     }
 
     public override void Update()
@@ -79,12 +67,12 @@ public class LeafBoyAI : BiodiverseAI
         
         switch (currentBehaviourStateIndex)
         {
-            case (int)States.BeingLeader:
+            case (int)States.Roaming:
             {
                 break;
             }
             
-            case (int)States.FollowingLeader:
+            case (int)States.RunningAway:
             {
                 break;
             }
@@ -96,18 +84,6 @@ public class LeafBoyAI : BiodiverseAI
     private void LateUpdate()
     {
         CheckAnimations();
-    }
-
-    public bool IsNarrowPath()
-    {
-        float halfMinimumSpaceNeeded = Group.Value.CurrentFormation.Value.MinimumHorizontalSpaceNeeded / 2;
-        return Physics.Raycast(transform.position, transform.right, halfMinimumSpaceNeeded)
-               || Physics.Raycast(transform.position, -transform.right, halfMinimumSpaceNeeded);
-    }
-
-    private void UpdateLeaderPathHistory()
-    {
-        
     }
     
     private void CheckAnimations()
@@ -142,7 +118,7 @@ public class LeafBoyAI : BiodiverseAI
     {
         switch (state)
         {
-            case States.BeingLeader or States.FollowingLeader:
+            case States.Roaming:
             {
                 _agentMaxSpeed = Config.LeafBoyNormalSpeed;
                 _agentMaxAcceleration = Config.LeafBoyNormalAcceleration;
