@@ -19,6 +19,8 @@ namespace Biodiversity.Creatures.CoilCrab
         public GameObject ShellPrefab;
         private PlayerControllerB selectedPlayer;
 
+        private float explodeTimer = 0;
+
         public override void Start()
         {
             base.Start();
@@ -41,8 +43,6 @@ namespace Biodiversity.Creatures.CoilCrab
             Shell.isHeldByEnemy = true;
             Shell.grabbableToEnemies = false;
             Shell.grabbable = false;
-
-            selectPlayer();
         }
 
         private void dropShell()
@@ -52,9 +52,21 @@ namespace Biodiversity.Creatures.CoilCrab
             Shell.grabbable = true;
         }
 
-        private void selectPlayer()
+        private PlayerControllerB nearestPlayer()
         {
-            selectedPlayer = StartOfRound.Instance.allPlayerScripts[0];
+            float distance = float.MaxValue;
+            PlayerControllerB nearPlayer = null;
+            foreach(PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            {
+                float distanceTemp = Vector3.Distance(player.transform.position, transform.position);
+                if (distanceTemp < distance)
+                {
+                    distance = distanceTemp;
+                    nearPlayer = player;
+                }
+            }
+
+            return nearPlayer;
         }
 
         public override void Update()
@@ -66,11 +78,12 @@ namespace Biodiversity.Creatures.CoilCrab
             }
 
             if (!IsServer) return;
+            explodeTimer -= Time.deltaTime;
+        }
 
-            if (selectedPlayer.isInsideFactory || !selectedPlayer.IsSpawned || selectedPlayer.isPlayerDead)
-            {
-                selectPlayer();
-            }
+        public void LateUpdate()
+        {
+            selectedPlayer = nearestPlayer();
         }
 
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
@@ -83,6 +96,9 @@ namespace Biodiversity.Creatures.CoilCrab
             {
                 return;
             }
+
+            SwitchToBehaviourClientRpc((int)State.EXPLODE);
+            explodeTimer = UnityEngine.Random.Range(0.4f, 1);
 
             enemyHP -= force;
 
@@ -104,18 +120,24 @@ namespace Biodiversity.Creatures.CoilCrab
             {
                 return;
             }
+            if (selectedPlayer == null)
+            {
+                return;
+            }
+
+
+            //Stop if selected player is inside
+            if (selectedPlayer.isInsideFactory)
+            {
+                agent.speed = 0;
+                agent.angularSpeed = 0;
+                SetDestinationToPosition(transform.position);
+                return;
+            }
 
             switch (currentBehaviourStateIndex)
             {
                 case (int)State.CREEP:
-                    if (selectedPlayer.isInsideFactory)
-                    {
-                        agent.speed = 0;
-                        agent.angularSpeed = 0;
-                        SetDestinationToPosition(transform.position);
-                        break;
-                    }
-                     
                     if (!selectedPlayer.HasLineOfSightToPosition(transform.position) && Vector3.Distance(selectedPlayer.transform.position, transform.position) > 3f)
                     {
                         agent.speed = 4.5f;
@@ -127,10 +149,18 @@ namespace Biodiversity.Creatures.CoilCrab
                         agent.angularSpeed = 0;
                         SetDestinationToPosition(transform.position);
                     }
-
-
                     break;
                 case (int)State.EXPLODE:
+                    agent.speed = 5;
+                    agent.angularSpeed = 120;
+                    SetDestinationToPosition(RoundManager.Instance.GetNavMeshPosition(selectedPlayer.transform.position, RoundManager.Instance.navHit, 2.75f));
+
+                    if (explodeTimer <= 0)
+                    {
+                        SwitchToBehaviourClientRpc((int)State.CREEP);
+                        Landmine.SpawnExplosion(transform.position, true, 3, 6);
+                    }
+
                     break;
             }
         }
