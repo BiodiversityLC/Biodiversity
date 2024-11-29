@@ -140,7 +140,9 @@ namespace Biodiversity.Creatures.CoilCrab
                 case (int)State.CREEP:
                     if (!selectedPlayer.HasLineOfSightToPosition(transform.position) && Vector3.Distance(selectedPlayer.transform.position, transform.position) > 3f)
                     {
-                        agent.speed = 4.5f;
+                        // Do not touch the magic 1.8f
+                        agent.acceleration = CoilCrabHandler.Instance.Config.CreepSpeed * 1.8f;
+                        agent.speed = CoilCrabHandler.Instance.Config.CreepSpeed;
                         agent.angularSpeed = 120;
                         SetDestinationToPosition(RoundManager.Instance.GetNavMeshPosition(selectedPlayer.transform.position, RoundManager.Instance.navHit, 2.75f));
                     } else
@@ -151,14 +153,16 @@ namespace Biodiversity.Creatures.CoilCrab
                     }
                     break;
                 case (int)State.EXPLODE:
-                    agent.speed = 5;
+                    // Do not touch the magic 1.6f
+                    agent.acceleration = CoilCrabHandler.Instance.Config.RunSpeed * 1.6f;
+                    agent.speed = CoilCrabHandler.Instance.Config.RunSpeed;
                     agent.angularSpeed = 120;
                     SetDestinationToPosition(RoundManager.Instance.GetNavMeshPosition(selectedPlayer.transform.position, RoundManager.Instance.navHit, 2.75f));
 
                     if (explodeTimer <= 0)
                     {
                         SwitchToBehaviourClientRpc((int)State.CREEP);
-                        Landmine.SpawnExplosion(transform.position, true, 3, 6);
+                        Landmine.SpawnExplosion(transform.position, true, CoilCrabHandler.Instance.Config.DamageRange / 2, CoilCrabHandler.Instance.Config.DamageRange);
                     }
 
                     break;
