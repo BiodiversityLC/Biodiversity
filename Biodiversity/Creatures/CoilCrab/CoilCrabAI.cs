@@ -104,6 +104,7 @@ namespace Biodiversity.Creatures.CoilCrab
 
             if (enemyHP < 0)
             {
+                creatureAnimator.SetBool("Dead", true);
                 dropShell();
                 KillEnemyOnOwnerClient();
             }
@@ -131,6 +132,7 @@ namespace Biodiversity.Creatures.CoilCrab
             {
                 agent.speed = 0;
                 agent.angularSpeed = 0;
+                creatureAnimator.SetBool("Walking", false);
                 SetDestinationToPosition(transform.position);
                 return;
             }
@@ -144,11 +146,15 @@ namespace Biodiversity.Creatures.CoilCrab
                         agent.acceleration = CoilCrabHandler.Instance.Config.CreepSpeed * 1.8f;
                         agent.speed = CoilCrabHandler.Instance.Config.CreepSpeed;
                         agent.angularSpeed = 120;
+                        creatureAnimator.SetBool("Walking", true);
+                        creatureAnimator.SetBool("Exploding", false);
                         SetDestinationToPosition(RoundManager.Instance.GetNavMeshPosition(selectedPlayer.transform.position, RoundManager.Instance.navHit, 2.75f));
                     } else
                     {
                         agent.speed = 0;
                         agent.angularSpeed = 0;
+                        creatureAnimator.SetBool("Walking", false);
+                        creatureAnimator.SetBool("Exploding", false);
                         SetDestinationToPosition(transform.position);
                     }
                     break;
@@ -157,10 +163,13 @@ namespace Biodiversity.Creatures.CoilCrab
                     agent.acceleration = CoilCrabHandler.Instance.Config.RunSpeed * 1.6f;
                     agent.speed = CoilCrabHandler.Instance.Config.RunSpeed;
                     agent.angularSpeed = 120;
+                    creatureAnimator.SetBool("Walking", true);
                     SetDestinationToPosition(RoundManager.Instance.GetNavMeshPosition(selectedPlayer.transform.position, RoundManager.Instance.navHit, 2.75f));
 
                     if (explodeTimer <= 0)
                     {
+                        creatureAnimator.SetBool("Walking", false);
+                        creatureAnimator.SetBool("Exploding", true);
                         SwitchToBehaviourClientRpc((int)State.CREEP);
                         Landmine.SpawnExplosion(transform.position, true, CoilCrabHandler.Instance.Config.DamageRange / 2, CoilCrabHandler.Instance.Config.DamageRange);
                     }
