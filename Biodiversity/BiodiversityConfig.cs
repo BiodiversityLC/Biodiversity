@@ -26,7 +26,7 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
             "Language",
             Language,
             new ConfigDescription(
-                "What language should Biodiversity use?\n" +
+                "What language should Biodiversity use (en, es, ru, de)?\n" +
                 "Some Languages may also need FontPatcher(https://thunderstore.io/c/lethal-company/p/LeKAKiD/FontPatcher/)\\n",
                 acceptableLanguages)
         ).Value;
