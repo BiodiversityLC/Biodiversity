@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
@@ -39,6 +40,8 @@ public abstract class BiodiverseAI : EnemyAI
     /// A dictionary containing <see cref="AudioSource"/> components, indexed by category name.
     /// </summary>
     private Dictionary<string, AudioSource> AudioSources { get; set; } = new();
+    
+    internal readonly PlayerTargetableConditions PlayerTargetableConditions = new();
 
     protected virtual void Awake()
     {
@@ -238,24 +241,20 @@ public abstract class BiodiverseAI : EnemyAI
     }
 
     /// <summary>
-    /// Checks and outs any players that are nearby.
+    /// Determines whether there is a player within the specified distance to the given position.
+    /// It will return true regardless of whether there are 1 or more players.
     /// </summary>
-    /// <param name="radius">Unity units of the sphere radius.</param>
-    /// <param name="players">The list of nearby players.</param>
-    /// <returns>A bool on if any players are nearby.</returns>
-    protected bool GetPlayersCloseBy(float radius, out List<PlayerControllerB> players)
+    /// <param name="position">The reference position to measure distance from.</param>
+    /// <param name="playerDetectionRange">The maximum distance from the position to search for players in.</param>
+    /// <returns>Returns <c>true</c> if there is at least one player within the specified distance.</returns>
+    protected bool IsPlayerCloseByToPosition(Vector3 position, float playerDetectionRange)
     {
-        players = [];
-
         foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
         {
-            if ((transform.position - player.transform.position).magnitude <= radius)
-            {
-                players.Add(player);
-            }
+            if (Vector3.Distance(player.transform.position, position) <= playerDetectionRange) return true;
         }
 
-        return players.Count != 0;
+        return false;
     }
 
     // https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5
@@ -508,6 +507,213 @@ public abstract class BiodiverseAI : EnemyAI
 
         pathStatus = PathStatus.Invalid;
         return null;
+    }
+    
+    /// <summary>
+    /// Determines the closest player that the eye can see, considering a buffer distance to avoid constant target switching.
+    /// </summary>
+    /// <param name="eyeTransform">The transform representing the eye position and direction.</param>
+    /// <param name="width">The view width of the eye in degrees.</param>
+    /// <param name="range">The view range of the eye in units.</param>
+    /// <param name="currentVisiblePlayer">The currently visible player to compare distances against.</param>
+    /// <param name="bufferDistance">The buffer distance to prevent constant target switching.</param>
+    /// <returns>Returns the closest visible player to the eye, or null if no player is found.</returns>
+    public PlayerControllerB GetClosestVisiblePlayerFromEye(
+        Transform eyeTransform,
+        float width = 45f,
+        int range = 60,
+        PlayerControllerB currentVisiblePlayer = null,
+        float bufferDistance = 1.5f)
+    {
+        PlayerControllerB closestPlayer = null;
+        float closestDistance = float.MaxValue;
+        
+        foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+        {
+            if (!PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
+            if (player == currentVisiblePlayer) continue;
+
+            if (!DoesEyeHaveLineOfSightToPosition(player.transform.position, eyeTransform, width, range)) continue;
+            float distance = Vector3.Distance(eyeTransform.position, player.transform.position);
+            if (!(distance < closestDistance)) continue;
+
+            closestPlayer = player;
+            closestDistance = distance;
+        }
+        
+        // If the current visible player is still within the buffer distance, continue targeting it
+        if (currentVisiblePlayer != null)
+        {
+            float currentTargetDistance = Vector3.Distance(eyeTransform.position, currentVisiblePlayer.transform.position);
+            if (Mathf.Abs(closestDistance - currentTargetDistance) < bufferDistance)
+            {
+                LogVerbose($"Current visible player {currentVisiblePlayer.name} remains within buffer distance");
+                return currentVisiblePlayer;
+            }
+        }
+
+        LogVerbose(closestPlayer != null ? $"New closest player: {closestPlayer.name}" : "No visible player found");
+        return closestPlayer;
+    }
+    
+    /// <summary>
+    /// Determines whether the AI has line of sight to the given position.
+    /// </summary>
+    /// <param name="position">The position to check for line of sight.</param>
+    /// <param name="eyeTransform">The eye transform of the AI.</param>
+    /// <param name="width">The AI's view width in degrees.</param>
+    /// <param name="range">The AI's view range in units.</param>
+    /// <param name="proximityAwareness">The proximity awareness range of the AI.</param>
+    /// <returns>Returns true if the AI has line of sight to the given position; otherwise, false.</returns>
+    internal bool DoesEyeHaveLineOfSightToPosition(
+        Vector3 position,
+        Transform eyeTransform,
+        float width = 45f,
+        int range = 60,
+        float proximityAwareness = -1f)
+    {
+        return Vector3.Distance(eyeTransform.position, position) < range && !Physics.Linecast(eyeTransform.position, position, StartOfRound.Instance.collidersAndRoomMaskAndDefault) && (Vector3.Angle(eyeTransform.forward, position - eyeTransform.position) < width || Vector3.Distance(eyeTransform.position, position) < proximityAwareness);
+    }
+    
+    /// <summary>
+    /// Returns a list of all players that are visible from the eye.
+    /// </summary>
+    /// <param name="eyeTransform">The transform representing the eye position and direction.</param>
+    /// <param name="width">The view width of the eye in degrees.</param>
+    /// <param name="range">The view range of the eye in units.</param>
+    /// <returns>Returns a list of players that are visible from the eye.</returns>
+    internal List<PlayerControllerB> GetAllVisiblePlayersFromEye(
+        Transform eyeTransform,
+        float width = 45f,
+        int range = 60)
+    {
+        List<PlayerControllerB> visiblePlayers = [];
+        visiblePlayers.AddRange(StartOfRound.Instance.allPlayerScripts.Where(PlayerTargetableConditions.IsPlayerTargetable).Where(player => DoesEyeHaveLineOfSightToPosition(player.transform.position, eyeTransform, width, range)));
+
+        LogVerbose($"Number of visible players: {visiblePlayers.Count}");
+        return visiblePlayers;
+    }
+
+    /// <summary>
+    /// Finds and returns the player that is closest to the specified transform, considering a buffer distance.
+    /// </summary>
+    /// <param name="players">The list of players to search through.</param>
+    /// <param name="position">The vector to measure distances from.</param>
+    /// <param name="inputPlayer">The current player being targeted.</param>
+    /// <param name="bufferDistance">The buffer distance to prevent constant target switching.</param>
+    /// <returns>The player that is closest to the specified transform within the buffer distance, or the closest player if none are within the buffer distance.</returns>
+    internal PlayerControllerB GetClosestPlayerFromList(
+        List<PlayerControllerB> players, 
+        Vector3 position,
+        PlayerControllerB inputPlayer, 
+        float bufferDistance = 1.5f)
+    {
+        PlayerControllerB closestPlayer = inputPlayer;
+        float closestDistance = float.MaxValue;
+
+        foreach (PlayerControllerB player in players)
+        {
+            if (player == inputPlayer) continue; // Skip the input player itself
+            float distance = Vector3.Distance(position, player.transform.position);
+            if (!(distance < closestDistance)) continue;
+            closestDistance = distance;
+            closestPlayer = player;
+        }
+
+        if (inputPlayer == null) return closestPlayer;
+        float inputPlayerDistance = Vector3.Distance(position, inputPlayer.transform.position);
+        return Mathf.Abs(closestDistance - inputPlayerDistance) < bufferDistance ? inputPlayer : closestPlayer;
+    }
+    
+    /// <summary>
+    /// Determines the closest player, if any, is looking at the specified position.
+    /// </summary>
+    /// <param name="position">The position to check if a player is looking at.</param>
+    /// <param name="ignorePlayer">An optional player to exclude from the check.</param>
+    /// <returns>Returns the player object that is looking at the specified position, or null if no player is found.</returns>
+    public PlayerControllerB GetClosestPlayerLookingAtPosition(Vector3 position, PlayerControllerB ignorePlayer = null)
+    {
+        PlayerControllerB closestPlayer = null;
+        float closestDistance = float.MaxValue;
+        bool isThereAPlayerToIgnore = ignorePlayer != null;
+
+        foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+        {
+            if (player.isPlayerDead || !player.isInsideFactory) continue;
+            if (isThereAPlayerToIgnore && ignorePlayer == player) continue;
+            
+            if (!player.HasLineOfSightToPosition(position, 60f)) continue;
+            float distance = Vector3.Distance(position, player.transform.position);
+            if (!(distance < closestDistance)) continue;
+            
+            closestPlayer = player;
+            closestDistance = distance;
+        }
+
+        return closestPlayer;
+    }
+    
+    /// <summary>
+    /// Returns a list of all the players who are currently looking at the specified position.
+    /// </summary>
+    /// <param name="position">The position to check if a player is looking at.</param>
+    /// <param name="ignorePlayer">An optional player to exclude from the check.</param>
+    /// <param name="playerViewWidth">The view width of the players in degrees.</param>
+    /// <param name="playerViewRange">The view range of the players in units.</param>
+    /// <returns>A list of players who are looking at the specified position.</returns>
+    public List<PlayerControllerB> GetAllPlayersLookingAtPosition(
+        Vector3 position, 
+        PlayerControllerB ignorePlayer = null,
+        float playerViewWidth = 45f,
+        int playerViewRange = 60)
+    {
+        List<PlayerControllerB> players = [];
+        bool isThereAPlayerToIgnore = ignorePlayer != null;
+
+        players.AddRange(from player in StartOfRound.Instance.allPlayerScripts where !PlayerUtil.IsPlayerDead(player) where !isThereAPlayerToIgnore || player != ignorePlayer where player.HasLineOfSightToPosition(position, playerViewWidth, playerViewRange) select player);
+
+        return players;
+    }
+    
+    /// <summary>
+    /// Detects whether the player is reachable by the AI via a path.
+    /// </summary>
+    /// <param name="player">The target player to check for reachability.</param>
+    /// <param name="eyeTransform">The eye transform of the AI for line of sight calculations.</param>
+    /// <param name="viewWidth">The view width of the AI's field of view in degrees.</param>
+    /// <param name="viewRange">The view range of the AI in units.</param>
+    /// <param name="bufferDistance">The buffer distance within which the player is considered reachable without further checks.</param>
+    /// <param name="requireLineOfSight">Indicates whether a clear line of sight to the player is required.</param>
+    /// <returns>Returns true if the player is reachable by the AI; otherwise, false.</returns>
+    public bool IsPlayerReachable(
+        PlayerControllerB player,
+        Transform eyeTransform,
+        float viewWidth = 45f,
+        int viewRange = 60,
+        float bufferDistance = 1.5f,
+        bool requireLineOfSight = false)
+    {
+        if (player == null)
+        {
+            LogVerbose("Player is not reachable because the player object is null.");
+            return false;
+        }
+        
+        float currentDistance = Vector3.Distance(transform.position, player.transform.position);
+        float optimalDistance = currentDistance;
+        
+        if (PlayerTargetableConditions.IsPlayerTargetable(player) && 
+            IsPathValid(agent, player.transform.position) == PathStatus.Valid && 
+            (!requireLineOfSight || DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eyeTransform, viewWidth, viewRange)))
+        {
+            if (currentDistance < optimalDistance)
+                optimalDistance = currentDistance;
+        }
+        
+        bool isReachable = Mathf.Abs(optimalDistance - currentDistance) < bufferDistance;
+
+        LogVerbose($"Is player reachable: {isReachable}");
+        return isReachable;
     }
 
     internal void LogVerbose(object message)

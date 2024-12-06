@@ -37,8 +37,8 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.openDoorSpeedMultiplier = 4f;
 
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);
 
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f,
             0.3f);
@@ -78,11 +78,9 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
                 EnemyAIInstance.InGrabAnimation = true;
             }
 
-            else if (AloeUtils.IsPlayerReachable(
-                         agent: EnemyAIInstance.agent,
+            else if (EnemyAIInstance.IsPlayerReachable(
                          player: EnemyAIInstance.ActualTargetPlayer.Value,
-                         transform: EnemyAIInstance.transform,
-                         eye: EnemyAIInstance.eye,
+                         eyeTransform: EnemyAIInstance.eye,
                          viewWidth: EnemyAIInstance.ViewWidth,
                          viewRange: EnemyAIInstance.ViewRange))
             {
@@ -124,7 +122,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
         internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
-            _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform);
+            _playerLookingAtAloe = EnemyAIInstance.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
             return _playerLookingAtAloe != null;
         }
 

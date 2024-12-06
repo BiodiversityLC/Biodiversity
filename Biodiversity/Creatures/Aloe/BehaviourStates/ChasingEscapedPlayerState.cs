@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.Types;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.Types;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -34,9 +35,9 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.9f, 0.5f);
         EnemyAIInstance.netcodeController.PlayAudioClipTypeServerRpc(EnemyAIInstance.BioId, AloeClient.AudioClipTypes.Chase, true);
         EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId, AloeClient.Stand);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
 
         WaitBeforeChasingTimer = EnemyAIInstance.WaitBeforeChasingEscapedPlayerTime;
         _isPlayerTargetable = true;
@@ -58,7 +59,7 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
                     0f, 0.25f);
             }
 
-            if (AloeUtils.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
+            if (EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
             {
                 EnemyAIInstance.movingTowardsTargetPlayer = true;
             }
@@ -68,9 +69,9 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
             }
         }
 
-        if (AloeUtils.DoesEyeHaveLineOfSightToPosition(
-                pos: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
-                eye: EnemyAIInstance.eye,
+        if (EnemyAIInstance.DoesEyeHaveLineOfSightToPosition(
+                position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
+                eyeTransform: EnemyAIInstance.eye,
                 width: EnemyAIInstance.ViewWidth,
                 range: EnemyAIInstance.ViewRange))
         {

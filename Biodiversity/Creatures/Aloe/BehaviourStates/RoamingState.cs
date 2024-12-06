@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -33,11 +34,11 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
 
         AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);
 
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition, EnemyAIInstance.GetLookAheadVector());
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, AloeServerAI.NullPlayerId);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition, EnemyAIInstance.GetLookAheadVector());
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
 
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0, 0.5f);
 
@@ -79,7 +80,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
         internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
-            _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform);
+            _playerLookingAtAloe = EnemyAIInstance.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
             return _playerLookingAtAloe != null;
         }
 
@@ -104,7 +105,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
             // Check if a player has below "playerHealthThresholdForStalking" % of health
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                if (!AloeUtils.IsPlayerTargetable(player)) continue;
+                if (!EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
                 if (player.health > EnemyAIInstance.PlayerHealthThresholdForStalking) continue;
                 if (AloeSharedData.Instance.IsPlayerStalkBound(player)) continue;
 
@@ -121,9 +122,9 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
         }
 
         internal override void OnTransition()
-        { ;
+        {
             AloeSharedData.Instance.Bind(EnemyAIInstance, _stalkablePlayer, BindType.Stalk);
-            AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
+            ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
                 _stalkablePlayer.actualClientId);
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -43,16 +44,16 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
 
         if (initData.ContainsKey("overridePlaySpottedAnimation") && initData.Get<bool>("overridePlaySpottedAnimation"))
         {
-            AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, true);
+            ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, true);
         }
         else
         {
-            AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
+            ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
             EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId,
                 AloeClient.Spotted);
         }
 
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
             EnemyAIInstance.BioId,
             0.9f,
@@ -78,7 +79,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         // This only triggers on the first frame after the spotted animation has been completed
         if (!EnemyAIInstance.moveTowardsDestination)
         {
-            AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition,
+            ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition,
                 EnemyAIInstance.GetLookAheadVector());
             EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0,
                 1f);
@@ -93,8 +94,8 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
             return;
 
-        _playerLookingAtAloe.Value = AloeUtils.GetClosestPlayerLookingAtPosition(
-            EnemyAIInstance.eye.transform);
+        _playerLookingAtAloe.Value = EnemyAIInstance.GetClosestPlayerLookingAtPosition(
+            EnemyAIInstance.eye.transform.position);
         if (_playerLookingAtAloe.IsNotNull)
         {
             EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe.Value;
@@ -142,7 +143,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
     {
         base.OnStateExit();
         EnemyAIInstance.AvoidingPlayer.Value = null;
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
     }
 
     private class TransitionToPreviousState(AloeServerAI enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
@@ -154,9 +155,9 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
             if (avoidingPlayerState._avoidPlayerTimerTotal > avoidTimerCompareValue) return true;
             if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value) return false;
 
-            Vector3 closestPlayerPosition = AloeUtils.GetClosestPlayerFromList(
+            Vector3 closestPlayerPosition = EnemyAIInstance.GetClosestPlayerFromList(
                 players: StartOfRound.Instance.allPlayerScripts.ToList(),
-                transform: EnemyAIInstance.transform,
+                position: EnemyAIInstance.transform.position,
                 inputPlayer: null).transform.position;
 
             float distanceToClosestPlayer =

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Util;
@@ -35,6 +36,14 @@ internal static class ExtensionMethods
     internal static bool HasPassedTime(this TimeOfDay timeOfDay, (int, int) current, (int, int) target) 
     {
         return target.Item1 <= current.Item1 && target.Item2 <= current.Item2;
+    }
+    
+    public static void ChangeNetworkVar<T>(NetworkVariable<T> networkVariable, T newValue) where T : IEquatable<T>
+    {
+        if (!EqualityComparer<T>.Default.Equals(networkVariable.Value, newValue))
+        {
+            networkVariable.Value = newValue;
+        }
     }
 
     internal static IEnumerable<Type> GetLoadableTypes(this Assembly assembly) 

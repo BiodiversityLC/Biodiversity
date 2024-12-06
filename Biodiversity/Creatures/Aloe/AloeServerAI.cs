@@ -111,6 +111,10 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         netcodeController.SyncAloeIdClientRpc(BioId);
         agent.updateRotation = false;
         
+        PlayerTargetableConditions.AddCondition(player => player.isInsideFactory);
+        PlayerTargetableConditions.AddCondition(player => !(player.sinkingValue >= 0.7300000190734863));
+        PlayerTargetableConditions.AddCondition(player => !AloeSharedData.Instance.IsPlayerKidnapBound(player));
+        
         LogVerbose("Aloe Spawned!");
     }
 
@@ -190,7 +194,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         {
             FavouriteSpot =
                 GetFarthestValidNodeFromPosition(
-                        out PathStatus pathStatus,
+                        out PathStatus _,
                         agent,
                         _mainEntrancePosition != Vector3.zero ? _mainEntrancePosition : transform.position,
                         allAINodes,

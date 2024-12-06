@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.Types;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.Types;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -29,16 +30,16 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, Al
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f,
             0.5f);
 
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
 
         _isPlayerTargetable = true;
     }
 
     internal override void AIIntervalBehaviour()
     {
-        if (AloeUtils.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
+        if (EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
         {
             EnemyAIInstance.movingTowardsTargetPlayer = true;
             _isPlayerTargetable = true;

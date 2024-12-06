@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.Types;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.Types;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -30,9 +31,9 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.openDoorSpeedMultiplier = 4f;
 
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, true);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
             EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
 
         EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(EnemyAIInstance.BioId, true);

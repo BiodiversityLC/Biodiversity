@@ -106,8 +106,11 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
     [field: Tooltip("The time it takes for a LeafBoy to calm down (stop being scared) when left alone.")]
     [field: Range(1f, 120f)]
     public float LeafBoyPlayerForgetTime { get; private set; } = 3f;
+    
+    [field: Tooltip("When enabled, the LeafBoy will roam around the area that they spawned in, and not venture out too far.")]
+    public bool LeafBoyAnchoredWandering { get; private set; } = false;
 
-    [field: Tooltip("How many LeafBoys there can be in a group")] 
-    [field: Range(1, 1000)]
-    public int LeafBoyGroupSize { get; private set; } = 8;
+    // [field: Tooltip("How many LeafBoys there can be in a group")] 
+    // [field: Range(1, 1000)]
+    // public int LeafBoyGroupSize { get; private set; } = 8;
 }

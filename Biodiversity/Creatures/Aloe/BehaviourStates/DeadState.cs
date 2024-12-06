@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util;
 using Biodiversity.Util.Types;
 using UnityEngine.Scripting;
 
@@ -34,9 +35,9 @@ internal class DeadState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
         EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
             EnemyAIInstance.BioId, 0, 0f);
 
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition, EnemyAIInstance.GetLookAheadVector());
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, AloeServerAI.NullPlayerId);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition, EnemyAIInstance.GetLookAheadVector());
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
 
         AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);
 

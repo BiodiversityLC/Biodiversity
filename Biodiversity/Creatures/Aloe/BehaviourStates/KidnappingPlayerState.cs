@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Biodiversity.Util;
+using System.Collections.Generic;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using Unity.Netcode;
@@ -33,10 +34,10 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
         EnemyAIInstance.HasTransitionedToRunningForwardsAndCarryingPlayer = false;
         _dragPlayerTimer = AloeClient.SnatchAndGrabAudioLength;
 
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
-        AloeUtils.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
             EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
 
         // Spawn fake player body ragdoll
@@ -87,7 +88,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
     internal override void AIIntervalBehaviour()
     {
         List<PlayerControllerB> playersLookingAtAloe =
-            AloeUtils.GetAllPlayersLookingAtPosition(EnemyAIInstance.eye.transform, playerViewWidth: 40f,
+            EnemyAIInstance.GetAllPlayersLookingAtPosition(EnemyAIInstance.eye.transform.position, playerViewWidth: 40f,
                 playerViewRange: 40);
         foreach (PlayerControllerB player in playersLookingAtAloe)
         {

@@ -50,7 +50,7 @@ internal class LeafBoyGroup(LeafBoyAI leader, FormationType defaultFormationType
 
         if (Followers.Count >= MaxFollowers) return false;
         Followers.Add(follower);
-        follower.Group.Value = this;
+        //follower.Group.Value = this;
         return true;
     }
 
@@ -60,7 +60,7 @@ internal class LeafBoyGroup(LeafBoyAI leader, FormationType defaultFormationType
             throw new ArgumentNullException($"The given LeafBoyAI class '{nameof(follower)}' is null.");
         
         if (!Followers.Remove(follower)) return false;
-        follower.Group.Value = null;
+        //follower.Group.Value = null;
         return true;
 
     }

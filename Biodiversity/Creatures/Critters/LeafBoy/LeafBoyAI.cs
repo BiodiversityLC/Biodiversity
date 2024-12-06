@@ -10,6 +10,8 @@ public class LeafBoyAI : BiodiverseAI
     private static readonly int AnimationIdHash = Animator.StringToHash("AnimationId");
 
 #pragma warning disable 0649
+    [SerializeField] private AISearchRoutine roamRoutine;
+    
     [Header("Audio")] [Space(5f)]
     [SerializeField] private AudioClip[] happySfx;
     [SerializeField] private AudioClip[] scaredSfx;
@@ -27,6 +29,9 @@ public class LeafBoyAI : BiodiverseAI
     
     private static CritterConfig Config => CritterHandler.Instance.Config;
 
+    private Vector3 _spawnPosition;
+    private Vector3 _runAwayPosition;
+
     private float _agentMaxSpeed;
     private float _agentMaxAcceleration;
     private float _scaryPlayerDistance;
@@ -40,6 +45,8 @@ public class LeafBoyAI : BiodiverseAI
 
         _scaryPlayerDistance = Config.LeafBoyScaryPlayerDistance;
         _playerForgetTime = Config.LeafBoyPlayerForgetTime;
+
+        _spawnPosition = transform.position;
     }
 
     public override void Update()
@@ -47,8 +54,7 @@ public class LeafBoyAI : BiodiverseAI
         if (isEnemyDead) return;
         base.Update();
         if (!IsServer) return;
-
-        _timeSinceSeenPlayer += Time.deltaTime;
+        
         _timeUntilNextLaughSfx -= Time.deltaTime;
 
         if (_timeUntilNextLaughSfx < 0)
@@ -56,8 +62,22 @@ public class LeafBoyAI : BiodiverseAI
             _timeUntilNextLaughSfx = Random.Range(20f, 90f);
             PlayRandomAudioClipTypeServerRpc(happySfx.ToString(), creatureVoice.ToString(), audibleByEnemies: true);
         }
-        
-        MoveWithAcceleration();
+
+        switch (currentBehaviourStateIndex)
+        {
+            case (int)States.Roaming:
+            {
+                MoveWithAcceleration();
+                break;
+            }
+            
+            case (int)States.RunningAway:
+            {
+                _timeSinceSeenPlayer += Time.deltaTime;
+                MoveWithAcceleration();
+                break;
+            }
+        }
     }
 
     public override void DoAIInterval()
@@ -69,11 +89,14 @@ public class LeafBoyAI : BiodiverseAI
         {
             case (int)States.Roaming:
             {
+                ScanForPlayers();
                 break;
             }
             
             case (int)States.RunningAway:
             {
+                if (_timeSinceSeenPlayer >= _playerForgetTime || Vector3.Distance(transform.position, _runAwayPosition) <= 3)
+                    SwitchBehaviourState(States.Roaming);
                 break;
             }
         }
@@ -104,14 +127,11 @@ public class LeafBoyAI : BiodiverseAI
     
     private void ScanForPlayers()
     {
-        // if (GetPlayersCloseBy(_scaryPlayerDistance, out List<PlayerControllerB> _))
-        // {
-        //     _timeSinceSeenPlayer = 0;
-        //
-        //     if (currentBehaviourStateIndex == (int)States.Roaming) PlayAudioClipTypeServerRpc(AudioClipTypes.Scared.ToString(), AudioSourceTypes.CreatureVoice.ToString(), audibleByEnemies: true);
-        //     SwitchBehaviourState(States.Running);
-        // }
-        // else if (currentBehaviourStateIndex == (int)States.Running) SwitchBehaviourState(States.Scared);
+        if (IsPlayerCloseByToPosition(transform.position, _scaryPlayerDistance))
+        {
+            if (currentBehaviourStateIndex == (int)States.Roaming) PlayRandomAudioClipTypeServerRpc(scaredSfx.ToString(), creatureVoice.ToString(), audibleByEnemies: true);
+            SwitchBehaviourState(States.RunningAway);
+        }
     }
 
     private void InitializeState(States state)
@@ -120,16 +140,31 @@ public class LeafBoyAI : BiodiverseAI
         {
             case States.Roaming:
             {
+                if (roamRoutine.inProgress) StopSearch(roamRoutine);
+                
                 _agentMaxSpeed = Config.LeafBoyNormalSpeed;
                 _agentMaxAcceleration = Config.LeafBoyNormalAcceleration;
+                
+                StartSearch(Config.LeafBoyAnchoredWandering ? _spawnPosition : transform.position, roamRoutine);
                 
                 break;
             }
 
             case States.RunningAway:
             {
+                if (roamRoutine.inProgress) StopSearch(roamRoutine);
+                
+                agent.speed *= 1.25f;
+                agent.acceleration *= 1.25f;
                 _agentMaxSpeed = Config.LeafBoyScaredSpeed;
                 _agentMaxAcceleration = Config.LeafBoyScaredAcceleration;
+                _timeSinceSeenPlayer = 0;
+
+                _runAwayPosition =
+                    GetFarthestValidNodeFromPosition(out PathStatus _, agent, transform.position, allAINodes).position;
+
+                if (PathStatusToBool(PathStatus.Invalid)) SwitchBehaviourState(States.Roaming);
+                else SetDestinationToPosition(_runAwayPosition);
                 
                 break;
             }
