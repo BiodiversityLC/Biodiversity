@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -35,11 +36,33 @@ namespace Biodiversity.Creatures.CoilCrab
             ShellObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             Shell = ShellObject.GetComponent<GrabbableObject>();
 
+            enemyHP = CoilCrabHandler.Instance.Config.Health;
+
             FindObjectOfType<StormyWeather>().metalObjects.Add(Shell);
+
+            Regex rg = new Regex(@"^(Min:[0-9]+,Max:[0-9]+)$");
+            bool validValues = true;
+
+            if (!rg.IsMatch(CoilCrabHandler.Instance.Config.ItemValue))
+            {
+                BiodiversityPlugin.Logger.LogWarning("Item values config is invalid defaulting to default values.");
+                validValues = false;
+            }
+
+            string[] minMax = CoilCrabHandler.Instance.Config.ItemValue.Split(',');
+            int min;
+            int max;
+            if (validValues) {
+                min = int.Parse(minMax[0].Split(':')[1]);
+                max = int.Parse(minMax[1].Split(':')[1]);
+            } else {
+                min = 60;
+                max = 95;
+            }
 
             Shell.isInFactory = false;
             Shell.parentObject = transform;
-            Shell.SetScrapValue(UnityEngine.Random.RandomRangeInt(Shell.itemProperties.minValue, Shell.itemProperties.maxValue + 1));
+            Shell.SetScrapValue(UnityEngine.Random.RandomRangeInt(min, max + 1));
             Shell.isHeldByEnemy = true;
             Shell.grabbableToEnemies = false;
             Shell.grabbable = false;
@@ -102,7 +125,7 @@ namespace Biodiversity.Creatures.CoilCrab
 
             enemyHP -= force;
 
-            if (enemyHP < 0)
+            if (enemyHP <= 0)
             {
                 creatureAnimator.SetBool("Dead", true);
                 dropShell();
@@ -171,7 +194,7 @@ namespace Biodiversity.Creatures.CoilCrab
                         creatureAnimator.SetBool("Walking", false);
                         creatureAnimator.SetBool("Exploding", true);
                         SwitchToBehaviourClientRpc((int)State.CREEP);
-                        Landmine.SpawnExplosion(transform.position, true, CoilCrabHandler.Instance.Config.DamageRange / 2, CoilCrabHandler.Instance.Config.DamageRange);
+                        Landmine.SpawnExplosion(transform.position, true, CoilCrabHandler.Instance.Config.KillRange, CoilCrabHandler.Instance.Config.DamageRange, CoilCrabHandler.Instance.Config.ExplosionDamage);
                     }
 
                     break;
