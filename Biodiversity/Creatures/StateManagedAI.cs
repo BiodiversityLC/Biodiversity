@@ -94,7 +94,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         if (!IsServer) return;
         
         // todo: cache stuff in this function because reflection is bad. Make sure to use a separate class because static thingies in generic classes (in this case) is bad.
-        List<Type> stateTypes = BiodiversityPlugin.cachedAssemblies.Value
+        List<Type> stateTypes = BiodiversityPlugin.CachedAssemblies.Value
             .SelectMany(a => a.GetTypes())
             .Where(t => t.IsSubclassOf(typeof(BehaviourState<TState, TEnemyAI>)) && !t.IsAbstract)
             .ToList();
@@ -117,18 +117,32 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                 continue;
             }
             
-            // Find a public static field matching the TState enum
-            FieldInfo stateField = stateType.GetFields(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(f => f.FieldType == stateEnumType);
+            FieldInfo[] fields = stateType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            LogVerbose($"Inspecting {fields.Length} fields in {stateType.Name}.");
+            
+            // Find a public/internal static field matching the TState enum
+            FieldInfo stateField = fields.FirstOrDefault(f =>
+                f.FieldType == stateEnumType && (f.IsPublic || f.IsAssembly));
 
             if (stateField == null)
             {
-                LogError($"No public static field found in {stateType.Name} that matches the {stateEnumType.Name} enum.");
+                LogError($"No public/internal static field found in {stateType.Name} that matches the {stateEnumType.Name} enum.");
                 continue;
             }
+            
+            LogVerbose($"Found matching field: {stateField.Name} in {stateType.Name}.");
 
             // Get the TState enum value from the static field
-            TState stateValue = (TState)stateField.GetValue(null);
+            TState stateValue;
+            try
+            {
+                stateValue = (TState)stateField.GetValue(null);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Failed to retrieve value from field {stateField.Name}: {ex.Message}");
+                continue;
+            }
             
             // Get the constructor that matches the (TEnemyAI) signature
             ConstructorInfo constructor = stateType.GetConstructor([typeof(TEnemyAI)]);

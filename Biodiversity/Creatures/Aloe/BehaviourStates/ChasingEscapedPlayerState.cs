@@ -32,7 +32,7 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
         EnemyAIInstance.openDoorSpeedMultiplier = 2f;
         EnemyAIInstance.InGrabAnimation = false;
 
-        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.9f, 0.5f);
+        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.9f, 0.5f);
         EnemyAIInstance.netcodeController.PlayAudioClipTypeServerRpc(EnemyAIInstance.BioId, AloeClient.AudioClipTypes.Chase, true);
         EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId, AloeClient.Stand);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
@@ -55,8 +55,7 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
         {
             if (!EnemyAIInstance.movingTowardsTargetPlayer)
             {
-                EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId,
-                    0f, 0.25f);
+                // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f, 0.25f);
             }
 
             if (EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))

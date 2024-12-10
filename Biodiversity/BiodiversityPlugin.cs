@@ -29,7 +29,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     private Harmony _harmony;
 
-    internal static CachedList<Assembly> cachedAssemblies;
+    internal static CachedList<Assembly> CachedAssemblies;
 
     private static readonly (string, string)[] SillyQuotes =
     [
@@ -48,9 +48,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
-        cachedAssemblies = new CachedList<Assembly>(() => AppDomain.CurrentDomain.GetAssemblies().ToList());
+        CachedAssemblies = new CachedList<Assembly>(() => AppDomain.CurrentDomain.GetAssemblies().ToList());
 
-        LogVerbose("Creating base biodiversity config.");
+        Logger.LogDebug("Creating base biodiversity config."); // Can't use LogVerbose here yet because we need the config to tell us whether verbose logging is enabled or not.
         Config = new BiodiversityConfig(base.Config);
 
         LogVerbose("Creating Harmony instance...");
@@ -142,7 +142,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
     private void ApplyPatches()
     {
         Dictionary<string, Assembly> modAssemblies = new();
-        foreach (Assembly assembly in cachedAssemblies)
+        foreach (Assembly assembly in CachedAssemblies)
         {
             modAssemblies.TryAdd(assembly.GetName().Name, assembly);
         }
@@ -164,36 +164,61 @@ public class BiodiversityPlugin : BaseUnityPlugin
                     string localPatchMethodName = modConditionalAttr.LocalPatchMethodName;
                     HarmonyPatchType patchType = modConditionalAttr.PatchType;
 
-                    // Check if the required mod is installed
-                    Assembly otherModAssembly = modAssemblies[assemblyName];
-                    if (otherModAssembly == null)
+                    // Check if the required mod is installed; skip if not found
+                    if (!modAssemblies.TryGetValue(assemblyName, out Assembly otherModAssembly))
                         continue;
 
                     LogVerbose(
                         $"Mod {assemblyName} is installed! Patching {targetClassName}.{targetMethodName} with {localPatchMethodName}");
 
-                    Type targetClass = otherModAssembly.GetType(targetClassName);
-                    if (targetClass == null)
+                    // Get the target class; skip if null
+                    Type targetClass;
+
+                    try
                     {
-                        LogVerbose($"Could not patch due to the target class '{targetClassName}' being null.");
+                        targetClass = otherModAssembly.GetType(targetClassName);
+                    }
+                    catch (Exception e) when (
+                        e is ArgumentException or ArgumentNullException or FileNotFoundException or FileLoadException or BadImageFormatException)
+                    {
+                        LogVerbose($"Could not patch because an exception occurred while getting the target class '{targetClassName}': {e.Message}");
                         continue;
                     }
-
+                    
+                    if (targetClass == null)
+                    {
+                        LogVerbose($"Could not patch because the target class '{targetClassName}' is null.");
+                        continue;
+                    }
+                    
                     const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
                                                BindingFlags.Instance;
                     
+                    // Get the target method; skip if null
                     MethodInfo targetMethod = targetClass.GetMethods(flags).FirstOrDefault(m => m.Name == targetMethodName);
                     if (targetMethod == null)
                     {
-                        LogVerbose($"Could not patch due to the target method '{targetMethodName}' being null.");
+                        LogVerbose($"Could not patch because the target method '{targetMethodName}' is null.");
                         continue;
                     }
 
-                    MethodInfo localPatchMethod = type.GetMethod(localPatchMethodName, BindingFlags.NonPublic | BindingFlags.Static);
+                    // Get the local patch method; skip if null
+                    MethodInfo localPatchMethod;
+                    try 
+                    {
+                        localPatchMethod = type.GetMethod(localPatchMethodName,
+                            BindingFlags.NonPublic | BindingFlags.Static);
+                    }
+                    catch (Exception e) when (e is AmbiguousMatchException or ArgumentException)
+                    {
+                        LogVerbose($"Could not patch because an exception occured while getting the local patch method '{localPatchMethodName}': {e.Message}");
+                        continue;
+                    }
+                    
                     if (localPatchMethod == null)
                     {
                         LogVerbose(
-                            $"Could not patch due to the local patch method '{localPatchMethodName}' being null.");
+                            $"Could not patch because the local patch method '{localPatchMethodName}' is null.");
                         continue;
                     }
 
@@ -260,7 +285,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
     {
         AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
-            throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "assets",
+            throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "AssetBundles",
             assetBundleName));
         
         LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");

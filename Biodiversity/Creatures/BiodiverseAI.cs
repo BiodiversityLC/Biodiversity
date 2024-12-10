@@ -120,13 +120,17 @@ public abstract class BiodiverseAI : EnemyAI
     /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
     /// actions.
     /// </param>
+    /// <param name="slightlyVaryPitch">
+    /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
+    /// </param>
     [ServerRpc]
     internal void PlayRandomAudioClipTypeServerRpc(
         string audioClipType,
         string audioSourceType,
         bool interrupt = false,
         bool audibleInWalkieTalkie = true,
-        bool audibleByEnemies = false)
+        bool audibleByEnemies = false,
+        bool slightlyVaryPitch = false)
     {
         // Validate audio clip type
         if (!AudioClips.TryGetValue(audioClipType, out AudioClip[] clipArr))
@@ -153,7 +157,7 @@ public abstract class BiodiverseAI : EnemyAI
         // Select a random clip index
         int clipIndex = Random.Range(0, numberOfClips);
         PlayAudioClipTypeClientRpc(audioClipType, audioSourceType, clipIndex, interrupt, audibleInWalkieTalkie,
-            audibleByEnemies);
+            audibleByEnemies, slightlyVaryPitch);
     }
 
     /// <summary>
@@ -184,14 +188,18 @@ public abstract class BiodiverseAI : EnemyAI
     /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
     /// actions.
     /// </param>
+    /// <param name="slightlyVaryPitch">
+    /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
+    /// </param>
     [ClientRpc]
     private void PlayAudioClipTypeClientRpc(
         string audioClipType,
         string audioSourceType,
         int clipIndex,
-        bool interrupt,
-        bool audibleInWalkieTalkie,
-        bool audibleByEnemies)
+        bool interrupt = false,
+        bool audibleInWalkieTalkie = true,
+        bool audibleByEnemies = false,
+        bool slightlyVaryPitch = false)
     {
         // Validate audio clip type
         if (!AudioClips.ContainsKey(audioClipType))
@@ -232,6 +240,7 @@ public abstract class BiodiverseAI : EnemyAI
             $"Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}' in {GetType().Name}.");
 
         if (interrupt) selectedAudioSource.Stop();
+        if (slightlyVaryPitch) selectedAudioSource.pitch = Random.Range(0.9f, 1.1f);
         
         selectedAudioSource.PlayOneShot(clipToPlay);
         
@@ -518,7 +527,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="currentVisiblePlayer">The currently visible player to compare distances against.</param>
     /// <param name="bufferDistance">The buffer distance to prevent constant target switching.</param>
     /// <returns>Returns the closest visible player to the eye, or null if no player is found.</returns>
-    public PlayerControllerB GetClosestVisiblePlayerFromEye(
+    internal PlayerControllerB GetClosestVisiblePlayerFromEye(
         Transform eyeTransform,
         float width = 45f,
         int range = 60,
@@ -631,7 +640,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="position">The position to check if a player is looking at.</param>
     /// <param name="ignorePlayer">An optional player to exclude from the check.</param>
     /// <returns>Returns the player object that is looking at the specified position, or null if no player is found.</returns>
-    public PlayerControllerB GetClosestPlayerLookingAtPosition(Vector3 position, PlayerControllerB ignorePlayer = null)
+    internal PlayerControllerB GetClosestPlayerLookingAtPosition(Vector3 position, PlayerControllerB ignorePlayer = null)
     {
         PlayerControllerB closestPlayer = null;
         float closestDistance = float.MaxValue;
@@ -661,7 +670,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="playerViewWidth">The view width of the players in degrees.</param>
     /// <param name="playerViewRange">The view range of the players in units.</param>
     /// <returns>A list of players who are looking at the specified position.</returns>
-    public List<PlayerControllerB> GetAllPlayersLookingAtPosition(
+    internal List<PlayerControllerB> GetAllPlayersLookingAtPosition(
         Vector3 position, 
         PlayerControllerB ignorePlayer = null,
         float playerViewWidth = 45f,
@@ -685,7 +694,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="bufferDistance">The buffer distance within which the player is considered reachable without further checks.</param>
     /// <param name="requireLineOfSight">Indicates whether a clear line of sight to the player is required.</param>
     /// <returns>Returns true if the player is reachable by the AI; otherwise, false.</returns>
-    public bool IsPlayerReachable(
+    internal bool IsPlayerReachable(
         PlayerControllerB player,
         Transform eyeTransform,
         float viewWidth = 45f,
@@ -720,6 +729,11 @@ public abstract class BiodiverseAI : EnemyAI
     {
         if (BiodiversityPlugin.Config.VerboseLogging)
             BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
+    }
+
+    internal void LogDebug(object message)
+    {
+        BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
     }
 
     internal void LogError(object message)
