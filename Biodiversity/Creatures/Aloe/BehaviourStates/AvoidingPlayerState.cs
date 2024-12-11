@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -9,6 +10,7 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.AvoidingPlayer)]
 internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private readonly NullableObject<PlayerControllerB> _playerLookingAtAloe = new();
@@ -18,8 +20,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
 
     private bool _shouldTransitionToAttacking;
 
-    protected AvoidingPlayerState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public AvoidingPlayerState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [

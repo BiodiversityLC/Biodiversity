@@ -117,6 +117,16 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         
         LogVerbose("Aloe Spawned!");
     }
+    
+    protected override AloeStates DetermineInitialState()
+    {
+        return AloeStates.Spawning;
+    }
+
+    protected override string GetLogPrefix()
+    {
+        return $"[AloeServerAI {BioId}]";
+    }
 
     protected override bool ShouldRunUpdate()
     {
@@ -563,7 +573,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     }
     
     /// <summary>
-    /// Calculates the agents speed depending on whether the aloe is stunned/dead/not dead
+    /// Calculates the agents speed depending on whether the Aloe is stunned/dead/not dead
     /// </summary>
     private void CalculateAgentSpeed()
     {
@@ -661,16 +671,5 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         roamMap.searchWidth = AloeHandler.Instance.Config.RoamingRadius;
         
         netcodeController.InitializeConfigValuesClientRpc(BioId);
-    }
-    
-    /// <summary>
-    /// Only logs the given message if the assembly version is in debug, not release
-    /// </summary>
-    /// <param name="msg">The debug message to log.</param>
-    public void LogVerbose(string msg)
-    {
-        #if DEBUG
-        Mls?.LogInfo($"State:{currentBehaviourStateIndex}, {msg}");
-        #endif
     }
 }

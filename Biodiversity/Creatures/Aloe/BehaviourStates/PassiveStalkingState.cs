@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -7,12 +8,12 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.PassiveStalking)]
 internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private bool _isPlayerReachable;
 
-    protected PassiveStalkingState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public PassiveStalkingState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [
@@ -97,7 +98,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
             }
         }
 
-        EnemyAIInstance.LogVerbose($"Is player reachable: {_isPlayerReachable}");
+        // EnemyAIInstance.LogVerbose($"Is player reachable: {_isPlayerReachable}");
     }
 
     private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance)

@@ -721,7 +721,7 @@ public abstract class BiodiverseAI : EnemyAI
         
         bool isReachable = Mathf.Abs(optimalDistance - currentDistance) < bufferDistance;
 
-        LogVerbose($"Is player reachable: {isReachable}");
+        //LogVerbose($"Is player reachable: {isReachable}");
         return isReachable;
     }
 

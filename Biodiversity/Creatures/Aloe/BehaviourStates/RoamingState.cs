@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -8,12 +9,12 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.Roaming)]
 internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private bool _reachedFavouriteSpotForRoaming;
 
-    protected RoamingState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public RoamingState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [

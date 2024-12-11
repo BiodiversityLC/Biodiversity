@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.Types;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -6,14 +7,14 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.ChasingEscapedPlayer)]
 internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     public float WaitBeforeChasingTimer;
 
     private bool _isPlayerTargetable;
 
-    protected ChasingEscapedPlayerState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public ChasingEscapedPlayerState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [

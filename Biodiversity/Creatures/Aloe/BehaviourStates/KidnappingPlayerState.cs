@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using System.Collections.Generic;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
@@ -9,12 +10,12 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.KidnappingPlayer)]
 internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private float _dragPlayerTimer;
 
-    protected KidnappingPlayerState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public KidnappingPlayerState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [

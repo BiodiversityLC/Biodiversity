@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -7,6 +8,7 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.AggressiveStalking)]
 internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private bool _isPlayerReachable;
@@ -17,8 +19,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
     private const float GrabAnimationAgentMaxAcceleration = 200f;
     private const float NormalAgentMaxAcceleration = 50f;
 
-    protected AggressiveStalkingState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public AggressiveStalkingState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [

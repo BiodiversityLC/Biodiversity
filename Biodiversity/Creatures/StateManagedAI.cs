@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.Types;
+﻿using Biodiversity.Util.Attributes;
+using Biodiversity.Util.Types;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +42,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         if (!IsServer) return;
         
         ConstructStateDictionary();
+        SwitchBehaviourState(DetermineInitialState());
     }
 
     /// <summary>
@@ -55,7 +57,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Invoked at AI-defined intervals (defined in the Unity inspector).
+    /// Invoked at AI-defined intervals <see cref="EnemyAI.AIIntervalTime"/>.
     /// Executes the <see cref="BehaviourState{TState, TEnemyAI}.AIIntervalBehaviour"/> for the current state.
     /// Also checks for state transitions by evaluating each transition in the current state's transition list.
     /// </summary>
@@ -85,10 +87,32 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
     
     /// <summary>
-    /// Constructs the state dictionary by discovering all non-abstract subclasses of <see cref="BehaviourState{TState, TEnemyAI}"/>
-    /// and adding them to the dictionary with their respective <typeparamref name="TState"/> keys.
-    /// This method uses reflection to find appropriate types and constructors.
+    /// Constructs the state dictionary by discovering all non-abstract subclasses of 
+    /// <see cref="BehaviourState&lt;TState, TEnemyAI&gt;"/> that are decorated with the <see cref="StateAttribute"/> attribute.
+    /// This method uses reflection to locate these subclasses, retrieve their associated <typeparamref name="TState"/> values,
+    /// and instantiate them using their constructors.
     /// </summary>
+    /// <remarks>
+    /// This method relies on the <see cref="StateAttribute"/> to associate each subclass of 
+    /// <see cref="BehaviourState&lt;TState, TEnemyAI&gt;"/> with a specific <typeparamref name="TState"/> value.
+    /// Classes without the <see cref="StateAttribute"/> are skipped during the discovery process.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if a state subclass is missing a required constructor or if instantiation fails.
+    /// </exception>
+    /// <example>
+    /// Example of a valid subclass:
+    /// <code>
+    /// [State(MyStateEnum.SomeState)]
+    /// public class SomeState : BehaviourState&lt;MyStateEnum, MyEnemyAI&gt;
+    /// {
+    ///     public SomeState(MyEnemyAI enemyAiInstance) : base(enemyAiInstance)
+    ///     {
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
+    /// <seealso cref="StateAttribute"/>
     private void ConstructStateDictionary()
     {
         if (!IsServer) return;
@@ -101,54 +125,36 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
 
         foreach (Type stateType in stateTypes)
         {
-            // Extract the specific TState type from the subclass
-            Type[] genericArgs = stateType.BaseType?.GetGenericArguments();
-            if (genericArgs is not { Length: 2 } || genericArgs[1] != typeof(TEnemyAI))
+
+            StateAttribute attribute = stateType.GetCustomAttribute<StateAttribute>();
+            if (attribute == null)
             {
-                LogError($"Type {stateType.Name} does not match expected BehaviourState<TState, TEnemyAI> signature.");
+                LogVerbose($"State type {stateType.FullName} is missing a StateAttribute");
                 continue;
             }
 
-            // The first generic argument is the TState enum
-            Type stateEnumType = genericArgs[0];
-            if (!stateEnumType.IsEnum)
-            {
-                LogError($"The generic type {stateEnumType.Name} is not an enum.");
-                continue;
-            }
-            
-            FieldInfo[] fields = stateType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            LogVerbose($"Inspecting {fields.Length} fields in {stateType.Name}.");
-            
-            // Find a public/internal static field matching the TState enum
-            FieldInfo stateField = fields.FirstOrDefault(f =>
-                f.FieldType == stateEnumType && (f.IsPublic || f.IsAssembly));
-
-            if (stateField == null)
-            {
-                LogError($"No public/internal static field found in {stateType.Name} that matches the {stateEnumType.Name} enum.");
-                continue;
-            }
-            
-            LogVerbose($"Found matching field: {stateField.Name} in {stateType.Name}.");
-
-            // Get the TState enum value from the static field
             TState stateValue;
             try
             {
-                stateValue = (TState)stateField.GetValue(null);
+                stateValue = (TState)attribute.StateType;
             }
-            catch (Exception ex)
+            catch (InvalidCastException)
             {
-                LogError($"Failed to retrieve value from field {stateField.Name}: {ex.Message}");
+                LogError($"StateAttribute on {stateType.Name} does not match expected type {typeof(TState).Name}.");
                 continue;
             }
             
-            // Get the constructor that matches the (TEnemyAI) signature
+            // Log constructors for debugging
+            // ConstructorInfo[] constructors = stateType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            // foreach (ConstructorInfo ctor in constructors)
+            // {
+            //     LogVerbose($"Constructor found for {stateType.Name}: {ctor}");
+            // }
+            
             ConstructorInfo constructor = stateType.GetConstructor([typeof(TEnemyAI)]);
             if (constructor == null)
             {
-                LogError($"No matching constructor found for {stateType.Name}.");
+                LogError($"No valid matching constructor found for {stateType.Name}.");
                 continue;
             }
 
@@ -158,8 +164,10 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                 BehaviourState<TState, TEnemyAI> stateInstance = (BehaviourState<TState, TEnemyAI>)constructor.Invoke([(TEnemyAI)this]);
 
                 // Add the state to the dictionary if not already present
-                if (!_stateDictionary.TryAdd(stateValue, stateInstance))
+                if (!_stateDictionary.TryAdd(stateValue, stateInstance)) 
                     LogError($"State {stateValue} already exists in the dictionary.");
+                else
+                    LogVerbose($"State {stateValue} was added successfully.");
             }
             catch (Exception ex)
             {
@@ -213,6 +221,29 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             LogError($"State {newState} was not found in the StateDictionary. This should not happen.");
         }
     }
+
+    /// <summary>
+    /// Determines the initial state for the AI when it is initialized.
+    /// This method should be overridden by subclasses to specify the starting state 
+    /// for the AI's behavior state machine.
+    /// </summary>
+    /// <returns>
+    /// The initial state of type <typeparamref name="TState"/> that the AI should enter at the start.
+    /// </returns>
+    /// <remarks>
+    /// The implementation of this method can use various strategies to decide the initial state, 
+    /// such as defaulting to a specific state, basing it on game context, or loading it from saved data.
+    /// </remarks>
+    /// <example>
+    /// An example of an implementation:
+    /// <code>
+    /// protected override TState DetermineInitialState()
+    /// {
+    ///     return MyAIStates.Spawning;
+    /// }
+    /// </code>
+    /// </example>
+    protected abstract TState DetermineInitialState();
 
     /// <summary>
     /// Determines if the <see cref="Update"/> method should execute.

@@ -1,15 +1,16 @@
 ﻿using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.Types;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.Dead)]
 internal class DeadState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
-    protected DeadState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public DeadState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [

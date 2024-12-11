@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.Types;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -6,14 +7,14 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.HealingPlayer)]
 internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private int _healingPerInterval;
 
     private bool _finishedHealing;
 
-    protected HealingPlayerState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public HealingPlayerState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [

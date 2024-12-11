@@ -32,7 +32,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     /// The skinned mesh renderer for the body mesh.
     /// </summary>
     [Tooltip("The SkinnedMeshRenderer component used to render the body mesh.")]
-    public SkinnedMeshRenderer bodyMeshRenderer;
+    [SerializeField] public SkinnedMeshRenderer bodyMeshRenderer;
 #pragma warning restore 0649
 
     /// <summary>
@@ -124,6 +124,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     private void Start()
     {
         SubscribeToNetworkEvents();
+
+        if (bodyMeshRenderer == null) bodyMeshRenderer = GetComponent<SkinnedMeshRenderer>();
     }
     
     /// <summary>

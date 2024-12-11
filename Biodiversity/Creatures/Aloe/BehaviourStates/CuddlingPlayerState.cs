@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.Types;
+﻿using Biodiversity.Util.Attributes;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -6,10 +7,10 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
+[State(AloeServerAI.AloeStates.CuddlingPlayer)]
 internal class CuddlingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
-    protected CuddlingPlayerState(AloeServerAI enemyAiInstance, AloeServerAI.AloeStates stateType) : base(
-        enemyAiInstance, stateType)
+    public CuddlingPlayerState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [
