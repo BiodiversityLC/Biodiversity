@@ -93,6 +93,9 @@ namespace Biodiversity.Creatures.MicBird
 
         private static MicBirdAI firstSpawned = null;
 
+        private float spawnTimer = 2f;
+        private bool spawnDone = false;
+
         public override void Start()
         {
             base.Start();
@@ -129,6 +132,20 @@ namespace Biodiversity.Creatures.MicBird
         public override void Update()
         {
             base.Update();
+
+            if (spawnTimer >= 0)
+            {
+                spawnTimer--;
+                if (spawnTimer <= 0)
+                {
+                    spawnDone = true;
+                }
+            }
+            if (!spawnDone) return;
+
+
+
+            
             if (!IsServer) return;
             malfunctionInterval -= Time.deltaTime;
 
@@ -353,6 +370,8 @@ namespace Biodiversity.Creatures.MicBird
         {
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
 
+            creatureAnimator.SetTrigger("Hurt");
+
             if (hitID == 1 && IsServer)
             {
                 BiodiversityPlugin.Logger.LogInfo("Hit by shovel");
@@ -374,6 +393,8 @@ namespace Biodiversity.Creatures.MicBird
         {
             base.DoAIInterval();
 
+            if (!spawnDone) return;
+
             GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 5f, null, null);
             if (maybeRadar)
             {
@@ -387,6 +408,9 @@ namespace Biodiversity.Creatures.MicBird
             switch (currentBehaviourStateIndex)
             {
                 case (int)State.WANDER:
+                    creatureAnimator.SetInteger("ID", 1);
+
+
                     if (firstSpawned != this)
                     {
                         SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
@@ -416,6 +440,9 @@ namespace Biodiversity.Creatures.MicBird
 
                     break;
                 case (int)State.GOTOSHIP:
+                    creatureAnimator.SetInteger("ID", 1);
+
+
                     if (wanderingAlready)
                     {
                         StopSearch(wander);
@@ -452,6 +479,9 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     break;
                 case (int)State.PERCH:
+                    creatureAnimator.SetInteger("ID", 2);
+
+
                     if (callTimer <= 0)
                     {
                         BiodiversityPlugin.Logger.LogInfo("Calling");
@@ -464,6 +494,10 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     break;
                 case (int)State.CALL:
+                    creatureAnimator.SetInteger("ID", 3);
+                    creatureAnimator.SetInteger("CallID", Random.RandomRangeInt(0, 2));
+
+
                     PlayVoiceClientRpc((int)SoundID.CALL, 0);
                     BiodiversityPlugin.Logger.LogInfo("Caw I'm a bird!");
 
@@ -516,9 +550,11 @@ namespace Biodiversity.Creatures.MicBird
                     SwitchToBehaviourClientRpc((int)State.PERCH);
                     break;
                 case (int)State.RUN:
+                    creatureAnimator.SetInteger("ID", 1);
                     // Fully handled by the run function so no code here. Just wanted to put it here in case it's used in the future.
                     break;
                 case (int)State.RADARBOOSTER:
+                    creatureAnimator.SetInteger("ID", 4);
 
                     agent.SetDestination(distractedRadarBoosterItem.transform.position);
 
