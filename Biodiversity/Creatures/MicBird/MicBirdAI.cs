@@ -550,7 +550,14 @@ namespace Biodiversity.Creatures.MicBird
                     SwitchToBehaviourClientRpc((int)State.PERCH);
                     break;
                 case (int)State.RUN:
-                    creatureAnimator.SetInteger("ID", 1);
+                    if (Mathf.Sqrt(Mathf.Pow(agent.velocity.x, 2) + Mathf.Pow(agent.velocity.z, 2)) < 3f)
+                    {
+                        creatureAnimator.SetInteger("ID", 4);
+                    }
+                    else
+                    {
+                        creatureAnimator.SetInteger("ID", 1);
+                    }
                     // Fully handled by the run function so no code here. Just wanted to put it here in case it's used in the future.
                     break;
                 case (int)State.RADARBOOSTER:
