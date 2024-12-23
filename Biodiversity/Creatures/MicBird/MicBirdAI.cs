@@ -370,7 +370,7 @@ namespace Biodiversity.Creatures.MicBird
         {
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
 
-            creatureAnimator.SetTrigger("Hurt");
+            if (IsServer && enemyHP > 0) creatureAnimator.SetTrigger("Hurt");
 
             if (hitID == 1 && IsServer)
             {
@@ -379,10 +379,16 @@ namespace Biodiversity.Creatures.MicBird
             }
 
             enemyHP -= force;
-            if (enemyHP <= 0)
+            if (enemyHP <= 0 && !isEnemyDead)
             {
+
                 KillEnemyOnOwnerClient();
                 enemyType.numberSpawned--;
+                if (IsServer)
+                {
+                    creatureAnimator.SetTrigger("Die"); 
+                    creatureAnimator.SetBool("DeadAlready", true);
+                }
             }
 
             if (!IsServer) return;
@@ -564,6 +570,11 @@ namespace Biodiversity.Creatures.MicBird
                     creatureAnimator.SetInteger("ID", 4);
 
                     agent.SetDestination(distractedRadarBoosterItem.transform.position);
+
+                    if (!CheckLineOfSightForPosition(distractedRadarBoosterItem.transform.position, 60f, 40, 5f))
+                    {
+                        SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
+                    }
 
                     if (Vector3.Distance(transform.position, distractedRadarBoosterItem.transform.position) <= 2 && distractionTimer <= 0)
                     {
