@@ -20,6 +20,8 @@ namespace Biodiversity.Creatures.CoilCrab
         public GameObject ShellPrefab;
         private PlayerControllerB selectedPlayer;
 
+        public ScanNodeProperties ScanNode;
+
         public AudioClip DeathSound;
 
         private float explodeTimer = 0;
@@ -70,10 +72,11 @@ namespace Biodiversity.Creatures.CoilCrab
             Shell.grabbable = false;
         }
 
-        [ClientRpc]
-        public void DeathSoundClientRpc()
+        public void CustomKillEnemy()
         {
+            KillEnemy();
             creatureVoice.PlayOneShot(DeathSound);
+            ScanNode.gameObject.GetComponent<Collider>().enabled = true;
         }
 
         private void dropShell()
@@ -131,16 +134,15 @@ namespace Biodiversity.Creatures.CoilCrab
             SwitchToBehaviourClientRpc((int)State.EXPLODE);
             explodeTimer = UnityEngine.Random.Range(0.4f, 1);
 
-            bool deadBefore = enemyHP - force >= 0;
+            bool deadBefore = enemyHP - force > 0;
 
             enemyHP -= force;
 
             if (enemyHP <= 0 && !deadBefore)
             {
-                DeathSoundClientRpc();
+                CustomKillEnemy();
                 creatureAnimator.SetBool("Dead", true);
                 dropShell();
-                KillEnemyOnOwnerClient();
             }
         }
 
