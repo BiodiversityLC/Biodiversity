@@ -526,7 +526,14 @@ namespace Biodiversity.Creatures.MicBird
                     break;
                 case (int)State.CALL:
                     creatureAnimator.SetInteger("ID", 3);
-                    creatureAnimator.SetInteger("CallID", Random.RandomRangeInt(0, 2));
+                    if (firstSpawned == this)
+                    {
+                        creatureAnimator.SetInteger("CallID", 2);
+                    }
+                    else
+                    {
+                        creatureAnimator.SetInteger("CallID", Random.RandomRangeInt(0, 2));
+                    }
 
 
                     PlayVoiceClientRpc((int)SoundID.CALL, 0);
