@@ -31,10 +31,10 @@ namespace Biodiversity.Creatures.CoilCrab
             base.Start();
             if (!IsServer) return;
 
-            if (TimeOfDay.Instance.currentLevelWeather != LevelWeatherType.Stormy)
-            {
-                RoundManager.Instance.DespawnEnemyOnServer(gameObject.GetComponent<NetworkObject>());
-            }
+            //if (TimeOfDay.Instance.currentLevelWeather != LevelWeatherType.Stormy)
+            //{
+            //    RoundManager.Instance.DespawnEnemyOnServer(gameObject.GetComponent<NetworkObject>());
+            //}
 
             GameObject ShellObject = Instantiate(ShellPrefab);
             ShellObject.GetComponentInChildren<NetworkObject>().Spawn(true);
@@ -42,7 +42,8 @@ namespace Biodiversity.Creatures.CoilCrab
 
             enemyHP = CoilCrabHandler.Instance.Config.Health;
 
-            FindObjectOfType<StormyWeather>().metalObjects.Add(Shell);
+            if (TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Stormy)
+                FindObjectOfType<StormyWeather>().metalObjects.Add(Shell);
 
             Regex rg = new Regex(@"^(Min:[0-9]+,Max:[0-9]+)$");
             bool validValues = true;

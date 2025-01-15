@@ -10,7 +10,13 @@ namespace Biodiversity.Creatures.CoilCrab
     internal class CoilCrabConfig(ConfigFile configFile) : BiodiverseConfigLoader<CoilCrabConfig>(configFile)
     {
         [field: Tooltip("Whether the Coil-Crab will spawn in games")]
-        public bool EnableCoilCrab { get; private set; } = false;
+        public bool EnableCoilCrab { get; private set; } = true;
+
+        [field: Tooltip("Spawn weight of the Coil Crab on all moons when it is stormy.")]
+        public string CoilCrabRarityStormy { get; private set; } = "ExperimentationLevel:999";
+
+        [field: Tooltip("Spawn weight of the Coil Crab on all moons when it is not stormy.")]
+        public string CoilCrabRarity { get; private set; } = "ExperimentationLevel:0";
 
         [field: Tooltip("Explosion damage range")]
         public float DamageRange { get; private set; } = 6;
