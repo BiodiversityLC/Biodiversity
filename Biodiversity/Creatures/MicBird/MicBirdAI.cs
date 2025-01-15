@@ -56,8 +56,8 @@ namespace Biodiversity.Creatures.MicBird
         // Roam sounds (only used by leader/first spawned)
         [SerializeField] private AudioClip[] roamSounds;
 
-        // Run sounds TODO: Implement these when we get anims
-        [SerializeField] private AudioClip[] runSounds;
+        // Run sounds
+        [SerializeField] public AudioClip[] runSounds;
 
         // Scared
         [SerializeField] private AudioClip[] scaredSounds;
@@ -65,8 +65,11 @@ namespace Biodiversity.Creatures.MicBird
         // Spawn sound
         [SerializeField] private AudioClip spawnSound;
 
-        // Step sounds TODO: Implement these when we get anims
-        [SerializeField] private AudioClip[] stepSounds;
+        // Step sounds
+        [SerializeField] public AudioClip[] stepSounds;
+
+        // Used for checking which step sounds to play depending on if it is running or not.
+        public bool running = false;
 
         private float idleTimer = 10;
         private float roamTimer = 10;
@@ -131,7 +134,7 @@ namespace Biodiversity.Creatures.MicBird
 
 
         public override void Update()
-        {
+        { 
             base.Update();
 
             if (spawnTimer >= 0)
@@ -145,7 +148,14 @@ namespace Biodiversity.Creatures.MicBird
             if (!spawnDone) return;
 
 
-
+            if (currentBehaviourStateIndex == (int)State.RUN)
+            {
+                running = true;
+            }
+            else
+            {
+                running = false;
+            }
             
             if (!IsServer) return;
             malfunctionInterval -= Time.deltaTime;
