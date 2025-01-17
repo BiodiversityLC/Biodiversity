@@ -17,10 +17,16 @@ namespace Biodiversity.Patches
             // assume that the level is vanilla then switch to modded naming if needed
             string levelName = __instance.currentLevel.name;
 
+            // This mess runs on some vanilla level names when they are in the config without "Level" at the end of the weight but it doesn't change anything about them except adding the "Level" back to the end which doesn't effect anything so whatever. It's actually needed for the next line to work also. 
             if (!Enum.IsDefined(typeof(Levels.LevelTypes), levelName))
             {
                 levelName = Levels.Compatibility.GetLLLNameOfLevel(levelName);
             }
+
+            levelName = levelName.Remove(levelName.Length - "Level".Length);
+            // I don't care if I can write a number instead of using the .Length property. I would just rather have it easy to read.
+
+            BiodiversityPlugin.Logger.LogInfo($"The name of the level (For the Coil-Crab debug): {levelName}");
 
 
             SpawnableEnemyWithRarity crab = null;

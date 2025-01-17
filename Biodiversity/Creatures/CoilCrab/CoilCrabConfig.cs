@@ -13,10 +13,10 @@ namespace Biodiversity.Creatures.CoilCrab
         public bool EnableCoilCrab { get; private set; } = true;
 
         [field: Tooltip("Spawn weight of the Coil Crab on all moons when it is stormy.")]
-        public string CoilCrabRarityStormy { get; private set; } = "ExperimentationLevel:999";
+        public string CoilCrabRarityStormy { get; private set; } = "Experimentation:999";
 
         [field: Tooltip("Spawn weight of the Coil Crab on all moons when it is not stormy.")]
-        public string CoilCrabRarity { get; private set; } = "ExperimentationLevel:0";
+        public string CoilCrabRarity { get; private set; } = "Experimentation:0";
 
         [field: Tooltip("Explosion damage range")]
         public float DamageRange { get; private set; } = 6;
