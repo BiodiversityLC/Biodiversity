@@ -12,14 +12,31 @@ namespace Biodiversity.Creatures.MicBird
 
         public AudioSource AudioSource;
 
+        private int stepSoundIndex = 0;
+
+        private int runSoundIndex = 0;
+
+        // Ik it says anim handler but this script is on the right object for sound events.
         public void FootStep()
         {
             if (mainAI.running)
             {
-                AudioSource.PlayOneShot(mainAI.runSounds[Random.RandomRangeInt(0, mainAI.runSounds.Length)]);
+                AudioSource.PlayOneShot(mainAI.runSounds[runSoundIndex]);
+
+                runSoundIndex++;
+                if (runSoundIndex > mainAI.runSounds.Length - 1)
+                {
+                    runSoundIndex = 0;
+                }
             } else
             {
-                AudioSource.PlayOneShot(mainAI.stepSounds[Random.RandomRangeInt(0, mainAI.stepSounds.Length)]);
+                AudioSource.PlayOneShot(mainAI.stepSounds[stepSoundIndex]);
+
+                stepSoundIndex++;
+                if (stepSoundIndex > mainAI.stepSounds.Length - 1)
+                {
+                    stepSoundIndex = 0;
+                }
             }
         }
 
