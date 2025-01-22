@@ -1,5 +1,6 @@
 using Biodiversity.Util.Assetloading;
 using Biodiversity.Util.Attributes;
+using UnityEngine;
 
 namespace Biodiversity.Creatures.Ogopogo;
 
@@ -22,5 +23,8 @@ internal class OgopogoAssets(string filePath) : BiodiverseAssetBundle<OgopogoAss
 
 	[LoadFromBundle("VerminKW")]
 	public TerminalKeyword VerminTerminalKeyword;
+
+	[LoadFromBundle("CheeseOgo")]
+	public Material CheeseOgoMaterial;
 #pragma	warning restore 0649	
 }

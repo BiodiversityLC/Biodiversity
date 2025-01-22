@@ -1,6 +1,7 @@
 ﻿using Biodiversity.Util.Scripts;
 using Biodiversity.Util.Types;
 using GameNetcodeStuff;
+using LethalLib.Modules;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,6 +89,12 @@ namespace Biodiversity.Creatures.Ogopogo
             detectionRange = OgopogoHandler.Instance.Config.DetectionRange;
             loseRange = OgopogoHandler.Instance.Config.LoseRange;
             attackDistance = OgopogoHandler.Instance.Config.AttackDistance;
+
+            //Gorgonzola
+            if (Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name) == "GorgonzolaLevel")
+            {
+                skinnedMeshRenderers[0].material = OgopogoHandler.Instance.Assets.CheeseOgoMaterial;
+            }
 
             /*
             foreach (SelectableLevel level in StartOfRound.Instance.levels)
