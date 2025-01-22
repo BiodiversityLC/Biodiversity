@@ -65,9 +65,21 @@ namespace Biodiversity.Creatures.CoilCrab
                 max = 95;
             }
 
+            HoldItemClientRpc(new NetworkObjectReference(Shell.GetComponent<NetworkObject>()), UnityEngine.Random.Range(min, max));
+        }
+
+        [ClientRpc]
+        public void HoldItemClientRpc(NetworkObjectReference shell, int value)
+        {
+            if (!IsServer)
+            {
+                NetworkObject networkObject;
+                shell.TryGet(out networkObject);
+                Shell = networkObject.GetComponent<GrabbableObject>();
+            }
             Shell.isInFactory = false;
             Shell.parentObject = transform;
-            Shell.SetScrapValue(UnityEngine.Random.RandomRangeInt(min, max + 1));
+            Shell.SetScrapValue(value);
             Shell.isHeldByEnemy = true;
             Shell.grabbableToEnemies = false;
             Shell.grabbable = false;
