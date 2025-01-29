@@ -184,6 +184,12 @@ namespace Biodiversity.Creatures.Ogopogo
             // Set default y pos of audio
             normalAudio.Init();
 
+
+            BoxCollider collider = water.gameObject.GetComponent<BoxCollider>();
+
+            // set raycast pos to top of water
+            RaycastPos.position = new Vector3(transform.position.x, collider.bounds.max.y, transform.position.z);
+
             playerVisorRenderers = new CachedDictionary<ulong, MeshRenderer>(playerId =>
                 StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
                     .GetComponentsInChildren<MeshRenderer>()[0]);
