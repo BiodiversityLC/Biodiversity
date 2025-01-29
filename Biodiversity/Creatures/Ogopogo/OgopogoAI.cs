@@ -65,6 +65,11 @@ namespace Biodiversity.Creatures.Ogopogo
         [SerializeField] private AudioClip returnToWater;
         [SerializeField] private KeepY normalAudio;
 
+        // Inside Audio
+        [SerializeField] private AudioSource insideAudio;
+        [SerializeField] private AudioClip insideWarning;
+        [SerializeField] private AudioClip insideEmerge;
+
         // Timer for reset state
         private float resetTimer;
 
@@ -202,6 +207,16 @@ namespace Biodiversity.Creatures.Ogopogo
             MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position : new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, transform.position.z);
 
             skinnedMeshRenderers[0].enabled = !GameNetworkManager.Instance.localPlayerController.isInsideFactory;
+
+            if (GameNetworkManager.Instance.localPlayerController.isInsideFactory)
+            {
+                creatureVoice.mute = true;
+                insideAudio.mute = false;
+            } else
+            {
+                creatureVoice.mute = false;
+                insideAudio.mute = true;
+            }
 
             switch (currentBehaviourStateIndex)
             {
@@ -429,6 +444,14 @@ namespace Biodiversity.Creatures.Ogopogo
                 2 => returnToWater,
                 _ => warning
             };
+
+            if (id == 0)
+            {
+                insideAudio.PlayOneShot(insideWarning);
+            } else if (id == 1)
+            {
+                insideAudio.PlayOneShot(insideEmerge);
+            }
 
             creatureVoice.PlayOneShot(audio);
         }
