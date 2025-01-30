@@ -69,6 +69,9 @@ namespace Biodiversity.Creatures.Ogopogo
         [SerializeField] private AudioSource insideAudio;
         [SerializeField] private AudioClip insideWarning;
         [SerializeField] private AudioClip insideEmerge;
+        [SerializeField] private AudioClip insideMineshaftSounds;
+
+        private float mineshaftAudioTimer = 30;
 
         // Timer for reset state
         private float resetTimer;
@@ -207,6 +210,8 @@ namespace Biodiversity.Creatures.Ogopogo
             MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position : new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, transform.position.z);
 
             skinnedMeshRenderers[0].enabled = !GameNetworkManager.Instance.localPlayerController.isInsideFactory;
+
+            mineshaftAudioTimer -= Time.deltaTime;
 
             if (GameNetworkManager.Instance.localPlayerController.isInsideFactory)
             {
@@ -442,6 +447,7 @@ namespace Biodiversity.Creatures.Ogopogo
                 0 => warning,
                 1 => emerge,
                 2 => returnToWater,
+                3 => insideMineshaftSounds,
                 _ => warning
             };
 
@@ -453,7 +459,14 @@ namespace Biodiversity.Creatures.Ogopogo
                 insideAudio.PlayOneShot(insideEmerge);
             }
 
-            creatureVoice.PlayOneShot(audio);
+            if (id != 3)
+            {
+                creatureVoice.PlayOneShot(audio);
+            }
+            else
+            {
+                insideAudio.PlayOneShot(audio);
+            }
         }
 
         private bool CheckForWall()
@@ -570,6 +583,13 @@ namespace Biodiversity.Creatures.Ogopogo
                 SetPlayerGrabbedClientRpc(0, true);
                 creatureAnimator.SetBool(Stun, true);
                 return;
+            }
+
+            // mineshaft sounds
+            if (RoundManager.Instance.currentDungeonType == 4 && mineshaftAudioTimer < 0)
+            {
+                PlayVoiceClientRpc(3);
+                mineshaftAudioTimer = Random.Range(25, 36);
             }
 
             creatureAnimator.SetBool(Stun, false);
