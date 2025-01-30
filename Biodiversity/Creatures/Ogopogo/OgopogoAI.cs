@@ -310,7 +310,7 @@ namespace Biodiversity.Creatures.Ogopogo
             float smallestDistance = 0f;
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
-                if (player.transform.position.y >= transform.position.y || currentBehaviourStateIndex == (int)State.Rising)
+                if ((player.transform.position.y >= transform.position.y || currentBehaviourStateIndex == (int)State.Rising) && !player.isInsideFactory)
                 {
                     if (smallestDistance == 0f)
                     {
@@ -340,7 +340,7 @@ namespace Biodiversity.Creatures.Ogopogo
                 // BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
                 if (Distance2d(player.gameObject, gameObject) < range &&
                     (player.transform.position.y >= transform.position.y ||
-                     currentBehaviourStateIndex == (int)State.Rising) && _playerDistances[player.playerClientId] > 15)
+                     currentBehaviourStateIndex == (int)State.Rising) && !player.isInsideFactory && _playerDistances[player.playerClientId] > 15)
                     return true;
             }
 
