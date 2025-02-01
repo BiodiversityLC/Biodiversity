@@ -575,7 +575,11 @@ namespace Biodiversity.Creatures.Ogopogo
 
         public override void DoAIInterval()
         {
-            base.DoAIInterval();
+            // Stupid LC base code disabled here because it was cauing error spam.
+            //base.DoAIInterval();
+
+            // Do this manually because the base code is disabled
+            this.SyncPositionToClients();
 
             // handle stun
             if (stunNormalizedTimer > 0)
