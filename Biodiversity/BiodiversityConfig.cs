@@ -19,15 +19,15 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
     {
         AcceptableValueList<string> acceptableLanguages = LangParser.Languages.IsNotNull
             ? new AcceptableValueList<string>(LangParser.Languages.Value.Keys.ToArray())
-            : new AcceptableValueList<string>(["en"]);
+            : new AcceptableValueList<string>("en", "es", "de", "ru");
 
         Language = configFile.Bind(
             "General",
             "Language",
             Language,
             new ConfigDescription(
-                "What language should Biodiversity use (en, es, ru, de)?\n" +
-                "Some Languages may also need FontPatcher(https://thunderstore.io/c/lethal-company/p/LeKAKiD/FontPatcher/)\\n",
+                "What language should Biodiversity use (en, es, de, ru)?\n" +
+                "Some languages may also need FontPatcher(https://thunderstore.io/c/lethal-company/p/LeKAKiD/FontPatcher/)\\n",
                 acceptableLanguages)
         ).Value;
     }

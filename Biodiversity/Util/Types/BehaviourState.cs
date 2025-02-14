@@ -1,0 +1,139 @@
+﻿using Biodiversity.Creatures;
+using Biodiversity.Util.Attributes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+
+namespace Biodiversity.Util.Types;
+
+/// <summary>
+/// Represents a base state for managing AI behaviors in a state machine.
+/// This is an abstract class that can be inherited to define specific states for an AI.
+/// </summary>
+/// <typeparam name="TState">The type of the state, typically an enum representing different AI states.</typeparam>
+/// <typeparam name="TEnemyAI">The type of the AI that manages the states, typically a subclass of <see cref="StateManagedAI{TState, TEnemyAI}"/>.</typeparam>
+public abstract class BehaviourState<TState, TEnemyAI>
+    where TState : Enum
+    where TEnemyAI : StateManagedAI<TState, TEnemyAI>
+{
+    /// <summary>
+    /// The AI instance that is managed by this state.
+    /// This is used to interact with the AI and update its behavior based on the current state.
+    /// </summary>
+    protected readonly TEnemyAI EnemyAIInstance;
+    
+    /// <summary>
+    /// The current state type, typically an enum value representing a specific state.
+    /// </summary>
+    private readonly TState _stateType;
+
+    /// <summary>
+    /// A list of transitions from this state to other states.
+    /// These transitions define the conditions under which the AI should change to a different state.
+    /// </summary>
+    protected internal List<StateTransition<TState, TEnemyAI>> Transitions { get; protected set; } = [];
+
+    /// <summary>
+    /// A cache for storing the mapping between derived state types and their corresponding state values.
+    /// This improves performance by avoiding repeated reflection to retrieve the state value from the
+    /// <see cref="StateAttribute"/> of each derived class.
+    /// </summary>
+    /// <remarks>
+    /// The cache is keyed by the <see cref="Type"/> of the derived class and stores the associated
+    /// <typeparamref name="TState"/> value specified in the <see cref="StateAttribute"/>.
+    /// </remarks>
+    private static readonly Dictionary<Type, TState> StateTypeCache = new();
+    
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BehaviourState{TState, TEnemyAI}"/> class.
+    /// </summary>
+    /// <param name="enemyAiInstance">The AI instance associated with this state.</param>
+    protected BehaviourState(TEnemyAI enemyAiInstance)
+    {
+        EnemyAIInstance = enemyAiInstance ?? throw new ArgumentNullException(nameof(enemyAiInstance));
+        _stateType = GetStateTypeFromAttribute();
+    }
+
+    /// <summary>
+    /// Retrieves the state type associated with the derived class by inspecting its <see cref="StateAttribute"/>.
+    /// If the state type is already cached, it is returned directly. Otherwise, it is retrieved via reflection,
+    /// cached for future use, and then returned.
+    /// </summary>
+    /// <returns>
+    /// The <typeparamref name="TState"/> value specified in the <see cref="StateAttribute"/> of the derived class.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if the derived class does not have a valid <see cref="StateAttribute"/> or if the
+    /// attribute's state type does not match <typeparamref name="TState"/>.
+    /// </exception>
+    /// <remarks>
+    /// This method ensures that the state type is efficiently retrieved and cached to minimize the
+    /// performance overhead of repeated reflection.
+    /// </remarks>
+    private TState GetStateTypeFromAttribute()
+    {
+        Type derivedType = GetType();
+        if (StateTypeCache.TryGetValue(derivedType, out TState cachedState))
+            return cachedState;
+        
+        StateAttribute attribute = derivedType.GetCustomAttribute<StateAttribute>();
+        if (attribute is not { StateType: TState state })
+            throw new InvalidOperationException($"Class {derivedType.Name} must have a valid StateAttribute.");
+        
+        StateTypeCache[derivedType] = state;
+        return state;
+    }
+
+    /// <summary>
+    /// Called when the AI enters this state.
+    /// Override this method to define behavior that should happen when the AI transitions to this state.
+    /// </summary>
+    /// <param name="initData">The initialization data that can be passed to the state when it is entered.</param>
+    internal virtual void OnStateEnter(ref StateData initData)
+    {
+        EnemyAIInstance.LogVerbose($"OnStateEnter called for {_stateType}.");
+        initData ??= new StateData();
+    }
+
+    /// <summary>
+    /// Performs behavior in the AI's Update cycle while it is in this state.
+    /// Override this method to define continuous behavior for the AI.
+    /// </summary>
+    internal virtual void UpdateBehaviour()
+    {
+    }
+    
+    /// <summary>
+    /// Performs behavior in the AI's DoAIInterval cycle while it is in this state.
+    /// This method can be overridden to define logic that should be executed at regular intervals.
+    /// </summary>
+    internal virtual void AIIntervalBehaviour()
+    {
+    }
+
+    /// <summary>
+    /// Performs behavior in the AI's LateUpdate cycle while it is in this state.
+    /// Override this method to define behavior that should happen at the end of the frame.
+    /// </summary>
+    internal virtual void LateUpdateBehaviour()
+    {
+    }
+
+    /// <summary>
+    /// Called when the AI exits this state.
+    /// Override this method to define behavior that should happen when the AI transitions out of this state.
+    /// </summary>
+    internal virtual void OnStateExit()
+    {
+        EnemyAIInstance.LogVerbose($"OnStateExit called for {_stateType}.");
+    }
+
+    /// <summary>
+    /// Gets the current state type.
+    /// </summary>
+    /// <returns>The state type represented by this state instance, an enum value.</returns>
+    internal TState GetStateType()
+    {
+        return _stateType;
+    }
+}

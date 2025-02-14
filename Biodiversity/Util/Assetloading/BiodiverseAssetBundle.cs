@@ -24,9 +24,9 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
     /// </summary>
     /// <param name="filePath">The file path of the asset bundle to load.</param>
     /// <exception cref="ArgumentException">Thrown if any asset specified in the <see cref="LoadFromBundleAttribute"/> is not found in the bundle.</exception>
-    protected BiodiverseAssetBundle(string filePath) 
+    protected BiodiverseAssetBundle(string filePath)
     {
-        AssetBundle bundle = BiodiversityPlugin.Instance.LoadBundle(filePath);
+        AssetBundle bundle = BiodiversityPlugin.LoadBundle(filePath);
 
         Type type = typeof(T);
         foreach (FieldInfo field in type.GetFields()) 
@@ -37,9 +37,10 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
             field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
         }
         
+        // todo: fix this; the cachedList isnt being used properly because its just being reset every time this function is called
         _cachedItems = new CachedList<Item>(() => LoadAllItemsFromBundle(bundle));
-
-        foreach (UnityEngine.Object asset in bundle.LoadAllAssets()) 
+        
+        foreach (UnityEngine.Object asset in bundle.LoadAllAssets())
         {
             if (asset is GameObject gameObject) 
             {

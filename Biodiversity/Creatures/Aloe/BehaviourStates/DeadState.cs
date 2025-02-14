@@ -1,44 +1,48 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
-using Biodiversity.Creatures.Aloe.Types.Networking;
+﻿using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
+using Biodiversity.Util.Types;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class DeadState : BehaviourState
+[Preserve]
+[State(AloeServerAI.AloeStates.Dead)]
+internal class DeadState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
-    public DeadState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+    public DeadState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [
-            
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
-        AloeServerInstance.agent.speed *= 0.1f;
-        AloeServerInstance.agent.acceleration = 200f;
-        AloeServerInstance.agentMaxSpeed = 0f;
-        AloeServerInstance.agentMaxAcceleration = 200f;
-        AloeServerInstance.movingTowardsTargetPlayer = false;
-        AloeServerInstance.moveTowardsDestination = false;
-        AloeServerInstance.openDoorSpeedMultiplier = 0f;
-        AloeServerInstance.isEnemyDead = true;
 
-        AloeServerInstance.netcodeController.AnimationParamDead.Value = true;
-        
-        AloeServerInstance.SetTargetPlayerInCaptivity(false);
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
-            AloeServerInstance.aloeId, 0, 0f);
-        
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.LookTargetPosition, AloeServerInstance.GetLookAheadVector());
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId, AloeServer.NullPlayerId);
-        
-        AloeSharedData.Instance.Unbind(AloeServerInstance, BindType.Stalk);
-        
-        if (AloeServerInstance.roamMap.inProgress) AloeServerInstance.StopSearch(AloeServerInstance.roamMap);
-        AloeServerInstance.KillEnemyServerRpc(false);
+        EnemyAIInstance.agent.speed *= 0.1f;
+        EnemyAIInstance.agent.acceleration = 200f;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
+        EnemyAIInstance.AgentMaxAcceleration = 200f;
+        EnemyAIInstance.movingTowardsTargetPlayer = false;
+        EnemyAIInstance.moveTowardsDestination = false;
+        EnemyAIInstance.openDoorSpeedMultiplier = 0f;
+        EnemyAIInstance.isEnemyDead = true;
+
+        EnemyAIInstance.netcodeController.AnimationParamDead.Value = true;
+
+        EnemyAIInstance.SetTargetPlayerInCaptivity(false);
+        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
+            EnemyAIInstance.BioId, 0, 0f);
+
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition, EnemyAIInstance.GetLookAheadVector());
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
+
+        AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);
+
+        if (EnemyAIInstance.roamMap.inProgress) EnemyAIInstance.StopSearch(EnemyAIInstance.roamMap);
+        EnemyAIInstance.KillEnemyServerRpc(false);
     }
 }

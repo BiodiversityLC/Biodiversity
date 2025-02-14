@@ -2,18 +2,23 @@
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
-public class SpottedAnimationStateBehaviour : BaseStateMachineBehaviour
+internal class SpottedAnimationStateBehaviour : BaseStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        if (AloeServerInstance.IsServer) 
-            AloeServerInstance.netcodeController.PlayAudioClipTypeServerRpc(AloeServerInstance.aloeId,
-            AloeClient.AudioClipTypes.InterruptedHealing);
+        if (AloeServerAIInstance.IsServer)
+        {
+            AloeServerAIInstance.PlayRandomAudioClipTypeServerRpc(
+                AloeClient.AudioClipTypes.interruptedHealingSfx.ToString(),
+                "creatureVoice",
+                    true, true, false, true);
+        }
+            
     }
-    
+
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         LogDebug("Spotted animation complete.");
-        if (AloeServerInstance.IsServer) NetcodeController.HasFinishedSpottedAnimation.Value = true;
+        if (AloeServerAIInstance.IsServer) NetcodeController.HasFinishedSpottedAnimation.Value = true;
     }
 }

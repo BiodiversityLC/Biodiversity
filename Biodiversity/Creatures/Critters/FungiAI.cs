@@ -29,6 +29,15 @@ public class FungiAI : BiodiverseAI {
 	private static readonly int StunOver = Animator.StringToHash("stun_over");
 
 	private static CritterConfig Config => CritterHandler.Instance.Config;
+
+	public override void Start()
+	{
+		base.Start();
+		
+		if (footstepSource != null) footstepSource.spatialBlend = 1;
+		if (creatureVoice!= null) creatureVoice.spatialBlend = 1;
+		if (creatureSFX != null) creatureSFX.spatialBlend = 1;
+	}
     
 	public override void DoAIInterval() {
 		base.DoAIInterval();

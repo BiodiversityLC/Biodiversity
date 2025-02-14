@@ -1,54 +1,57 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
+﻿using Biodiversity.Util.Attributes;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class CuddlingPlayerState : BehaviourState
+[Preserve]
+[State(AloeServerAI.AloeStates.CuddlingPlayer)]
+internal class CuddlingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
-    public CuddlingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+    public CuddlingPlayerState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [
-            
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
-        AloeServerInstance.agent.speed = 0;
-        AloeServerInstance.agentMaxSpeed = 0f;
-        AloeServerInstance.agentMaxAcceleration = 50f;
-        AloeServerInstance.movingTowardsTargetPlayer = false;
-        AloeServerInstance.openDoorSpeedMultiplier = 4f;
-        
-        // AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.8f, 1f);
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.0f, 0.5f);
+
+        EnemyAIInstance.agent.speed = 0;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
+        EnemyAIInstance.AgentMaxAcceleration = 50f;
+        EnemyAIInstance.movingTowardsTargetPlayer = false;
+        EnemyAIInstance.openDoorSpeedMultiplier = 4f;
+
+        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.8f, 1f);
+        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.0f,
+            0.5f);
     }
 
-    public override void AIIntervalBehaviour()
+    internal override void AIIntervalBehaviour()
     {
-        PlayerControllerB tempPlayer = AloeUtils.GetClosestPlayerLookingAtPosition(
-            transform: AloeServerInstance.eye.transform, 
-            ignorePlayer: AloeServerInstance.ActualTargetPlayer.Value, 
-            logSource: AloeServerInstance.Mls);
-        
+        PlayerControllerB tempPlayer = EnemyAIInstance.GetClosestPlayerLookingAtPosition(
+            EnemyAIInstance.eye.transform.position,
+            ignorePlayer: EnemyAIInstance.ActualTargetPlayer.Value);
+
         if (tempPlayer != null)
         {
-            AloeServerInstance.netcodeController.LookTargetPosition.Value =
+            EnemyAIInstance.netcodeController.LookTargetPosition.Value =
                 tempPlayer.gameplayCamera.transform.position;
-            AloeServerInstance.LookAtPosition(tempPlayer.transform.position);
+            EnemyAIInstance.LookAtPosition(tempPlayer.transform.position);
         }
         else if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
         {
-            AloeServerInstance.netcodeController.LookTargetPosition.Value =
-                AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
-            AloeServerInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
+            EnemyAIInstance.netcodeController.LookTargetPosition.Value =
+                EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
+            EnemyAIInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
         }
-        
-        AloeServerInstance.netcodeController.LookTargetPosition.Value =
-            AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
+
+        EnemyAIInstance.netcodeController.LookTargetPosition.Value =
+            EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
     }
 }

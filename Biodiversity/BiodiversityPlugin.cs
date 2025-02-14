@@ -29,14 +29,17 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     private Harmony _harmony;
 
+    internal static CachedList<Assembly> CachedAssemblies;
+
     private static readonly (string, string)[] SillyQuotes =
     [
-        ("don't get me wrong, I love women", "monty"),
-        ("i love MEN with BIG ARMS and STRONGMAN LEGS", "monty"),
-        ("thumpy wumpy", "monty"),
-        ("Your body should get split in two", "wesley"),
-        ("death for you and your bloodline", "monty"),
-        ("the fiend is watching... NOT VERY SIGMA!!", "rolevote"),
+        ("don't get me wrong, I love women", "Monty"),
+        ("i love MEN with BIG ARMS and STRONGMAN LEGS", "Monty"),
+        ("thumpy wumpy", "Monty"),
+        ("Your body should get split in two", "Wesley"),
+        ("death for you and your bloodline", "Monty"),
+        ("the fiend is watching... NOT VERY SIGMA!!", "Rolevote"),
+        ("we love fat bitches(gender neutral) and body representation for fat bitches(still gender neutral)", "TiltedHat"),
     ];
 
     private void Awake()
@@ -45,7 +48,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
         Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
         Instance = this;
 
-        Logger.LogDebug("Creating base biodiversity config.");
+        CachedAssemblies = new CachedList<Assembly>(() => AppDomain.CurrentDomain.GetAssemblies().ToList());
+
+        Logger.LogDebug("Creating base biodiversity config."); // Can't use LogVerbose here yet because we need the config to tell us whether verbose logging is enabled or not.
         Config = new BiodiversityConfig(base.Config);
 
         LogVerbose("Creating Harmony instance...");
@@ -97,7 +102,6 @@ public class BiodiversityPlugin : BaseUnityPlugin
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType is { IsGenericType: true }
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
-            && x.Name != "HoneyFeederHandler"
         ).ToList();
 
         foreach (Type type in creatureHandlers)
@@ -118,7 +122,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
         (string, string) quote = SillyQuotes[UnityEngine.Random.Range(0, SillyQuotes.Length)];
         Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
-        Logger.LogDebug(
+        LogVerbose(
             $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
     }
 
@@ -137,11 +141,11 @@ public class BiodiversityPlugin : BaseUnityPlugin
     /// </remarks>
     private void ApplyPatches()
     {
-        CachedDictionary<string, Assembly> cachedModAssemblies = new(assemblyName =>
+        Dictionary<string, Assembly> modAssemblies = new();
+        foreach (Assembly assembly in CachedAssemblies)
         {
-            return AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(assembly => assemblyName == assembly.GetName().Name);
-        });
+            modAssemblies.TryAdd(assembly.GetName().Name, assembly);
+        }
 
         Type[] types = Assembly.GetExecutingAssembly().GetTypes();
 
@@ -149,6 +153,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         {
             List<ModConditionalPatch> modConditionalAttrs =
                 type.GetCustomAttributes<ModConditionalPatch>(true).ToList();
+            
             if (modConditionalAttrs.Any())
             {
                 foreach (ModConditionalPatch modConditionalAttr in modConditionalAttrs)
@@ -159,32 +164,61 @@ public class BiodiversityPlugin : BaseUnityPlugin
                     string localPatchMethodName = modConditionalAttr.LocalPatchMethodName;
                     HarmonyPatchType patchType = modConditionalAttr.PatchType;
 
-                    // Check if the required mod is installed
-                    Assembly otherModAssembly = cachedModAssemblies[assemblyName];
-                    if (otherModAssembly == null)
+                    // Check if the required mod is installed; skip if not found
+                    if (!modAssemblies.TryGetValue(assemblyName, out Assembly otherModAssembly))
                         continue;
 
-                    Logger.LogDebug($"Mod {assemblyName} is installed! Patching {targetClassName}.{targetMethodName} with {localPatchMethodName}");
+                    LogVerbose(
+                        $"Mod {assemblyName} is installed! Patching {targetClassName}.{targetMethodName} with {localPatchMethodName}");
 
-                    Type targetClass = otherModAssembly.GetType(targetClassName);
-                    if (targetClass == null)
+                    // Get the target class; skip if null
+                    Type targetClass;
+
+                    try
                     {
-                        Logger.LogDebug($"Could not patch due to the target class '{targetClassName}' being null.");
+                        targetClass = otherModAssembly.GetType(targetClassName);
+                    }
+                    catch (Exception e) when (
+                        e is ArgumentException or ArgumentNullException or FileNotFoundException or FileLoadException or BadImageFormatException)
+                    {
+                        LogVerbose($"Could not patch because an exception occurred while getting the target class '{targetClassName}': {e.Message}");
                         continue;
                     }
-
-                    const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+                    
+                    if (targetClass == null)
+                    {
+                        LogVerbose($"Could not patch because the target class '{targetClassName}' is null.");
+                        continue;
+                    }
+                    
+                    const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                                               BindingFlags.Instance;
+                    
+                    // Get the target method; skip if null
                     MethodInfo targetMethod = targetClass.GetMethods(flags).FirstOrDefault(m => m.Name == targetMethodName);
                     if (targetMethod == null)
                     {
-                        Logger.LogDebug($"Could not patch due to the target method '{targetMethodName}' being null.");
+                        LogVerbose($"Could not patch because the target method '{targetMethodName}' is null.");
                         continue;
                     }
 
-                    MethodInfo localPatchMethod = type.GetMethod(localPatchMethodName, BindingFlags.NonPublic | BindingFlags.Static);
+                    // Get the local patch method; skip if null
+                    MethodInfo localPatchMethod;
+                    try 
+                    {
+                        localPatchMethod = type.GetMethod(localPatchMethodName,
+                            BindingFlags.NonPublic | BindingFlags.Static);
+                    }
+                    catch (Exception e) when (e is AmbiguousMatchException or ArgumentException)
+                    {
+                        LogVerbose($"Could not patch because an exception occured while getting the local patch method '{localPatchMethodName}': {e.Message}");
+                        continue;
+                    }
+                    
                     if (localPatchMethod == null)
                     {
-                        Logger.LogDebug($"Could not patch due to the local patch method '{localPatchMethodName}' being null.");
+                        LogVerbose(
+                            $"Could not patch because the local patch method '{localPatchMethodName}' is null.");
                         continue;
                     }
 
@@ -204,11 +238,13 @@ public class BiodiversityPlugin : BaseUnityPlugin
                             _harmony.Patch(targetMethod, finalizer: patchMethod);
                             break;
                         default:
-                            Logger.LogError($"Could not patch because patch type '{patchType.ToString()}' is incompatible.");
+                            Logger.LogError(
+                                $"Could not patch because patch type '{patchType.ToString()}' is incompatible.");
                             break;
                     }
 
-                    Logger.LogDebug($"Successfully patched {targetClassName}.{targetMethodName} with {localPatchMethodName} as {patchType}");
+                    LogVerbose(
+                        $"Successfully patched {targetClassName}.{targetMethodName} with {localPatchMethodName} as {patchType}");
                 }
             }
             else
@@ -224,13 +260,13 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     private static void NetcodePatcher()
     {
-        var types = Assembly.GetExecutingAssembly().GetLoadableTypes();
-        foreach (var type in types)
+        IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetLoadableTypes();
+        foreach (Type type in types)
         {
-            var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            foreach (var method in methods)
+            MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            foreach (MethodInfo method in methods)
             {
-                var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+                object[] attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
                 if (attributes.Length > 0)
                 {
                     method.Invoke(null, null);
@@ -244,18 +280,21 @@ public class BiodiversityPlugin : BaseUnityPlugin
         return new ConfigFile(Utility.CombinePaths(Paths.ConfigPath, "me.biodiversity." + configName + ".cfg"),
             saveOnInit: false, MetadataHelper.GetMetadata(this));
     }
-    
-    internal AssetBundle LoadBundle(string assetBundleName) 
-    {
-        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "assets", assetBundleName));
-        LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
 
+    internal static AssetBundle LoadBundle(string assetBundleName)
+    {
+        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
+            throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "AssetBundles",
+            assetBundleName));
+        
+        LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
         return bundle;
     }
-    
+
     internal static void LogVerbose(object message)
     {
-        if (Config.VerboseLogging) Logger.LogDebug(message);
+        if (Config.VerboseLogging)
+            Logger.LogDebug(message);
     }
-
 }

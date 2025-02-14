@@ -6,13 +6,13 @@ using Logger = BepInEx.Logging.Logger;
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-public class BaseStateMachineBehaviour : StateMachineBehaviour
+internal class BaseStateMachineBehaviour : StateMachineBehaviour
 {
     protected ManualLogSource Mls;
     protected string AloeId;
-    
+
     protected AloeNetcodeController NetcodeController;
-    protected AloeServer AloeServerInstance;
+    protected AloeServerAI AloeServerAIInstance;
     protected AloeClient AloeClientInstance;
 
     private bool _networkEventsSubscribed;
@@ -27,13 +27,13 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
         UnsubscribeToNetworkEvents();
     }
 
-    public void Initialize(
-        AloeNetcodeController receivedNetcodeController, 
-        AloeServer receivedAloeServer,
+    internal void Initialize(
+        AloeNetcodeController receivedNetcodeController,
+        AloeServerAI receivedAloeServerAI,
         AloeClient receivedAloeClient)
     {
         NetcodeController = receivedNetcodeController;
-        AloeServerInstance = receivedAloeServer;
+        AloeServerAIInstance = receivedAloeServerAI;
         AloeClientInstance = receivedAloeClient;
         SubscribeToNetworkEvents();
     }
@@ -58,10 +58,10 @@ public class BaseStateMachineBehaviour : StateMachineBehaviour
         Mls?.Dispose();
         Mls = Logger.CreateLogSource(
             $"Aloe Animation State Machine Behaviour {AloeId}");
-        
+
         LogDebug("Successfully synced aloe identifier");
     }
-    
+
     protected void LogDebug(string msg)
     {
 #if DEBUG

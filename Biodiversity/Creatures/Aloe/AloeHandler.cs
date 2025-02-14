@@ -3,19 +3,24 @@
 namespace Biodiversity.Creatures.Aloe;
 
 [UsedImplicitly]
-internal class AloeHandler : BiodiverseAIHandler<AloeHandler> 
+internal class AloeHandler : BiodiverseAIHandler<AloeHandler>
 {
     internal AloeAssets Assets { get; set; }
     internal AloeConfig Config { get; set; }
 
-    public AloeHandler() 
+    public AloeHandler()
     {
         Assets = new AloeAssets("aloebracken");
         Config = new AloeConfig(BiodiversityPlugin.Instance.CreateConfig("aloe"));
 
         Assets.EnemyType.PowerLevel = Config.PowerLevel;
         Assets.EnemyType.MaxCount = Config.MaxAmount;
-        
+
+        if (Assets.FakePlayerBodyRagdollPrefab == null)
+        {
+            BiodiversityPlugin.Logger.LogError("FakePlayerBodyRagdollPrefab is null.");
+        }
+
         TranslateTerminalNode(Assets.TerminalNode);
 
         RegisterEnemyWithConfig(
@@ -25,5 +30,4 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler>
             Assets.TerminalNode,
             Assets.TerminalKeyword);
     }
-    
 }

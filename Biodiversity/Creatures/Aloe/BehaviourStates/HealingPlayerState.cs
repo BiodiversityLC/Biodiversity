@@ -1,87 +1,96 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
+using Biodiversity.Util.Types;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class HealingPlayerState : BehaviourState
+[Preserve]
+[State(AloeServerAI.AloeStates.HealingPlayer)]
+internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private int _healingPerInterval;
 
     private bool _finishedHealing;
-    
-    public HealingPlayerState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+
+    public HealingPlayerState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [
-            new TransitionToCuddlingPlayer(aloeServerInstance, this),
+            new TransitionToCuddlingPlayer(EnemyAIInstance, this),
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
-        AloeServerInstance.agent.speed = 0;
-        AloeServerInstance.agentMaxSpeed = 0f;
-        AloeServerInstance.agentMaxAcceleration = 50f;
-        AloeServerInstance.movingTowardsTargetPlayer = false;
-        AloeServerInstance.openDoorSpeedMultiplier = 4f;
 
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, false);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamHealing, true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.TargetPlayerClientId,
-            AloeServerInstance.ActualTargetPlayer.Value.actualClientId);
-        
-        AloeServerInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(AloeServerInstance.aloeId, true);
-        AloeServerInstance.netcodeController.UnMuffleTargetPlayerVoiceClientRpc(AloeServerInstance.aloeId);
-        // AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.8f, 1f);
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0.0f, 0.5f);
+        EnemyAIInstance.agent.speed = 0;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
+        EnemyAIInstance.AgentMaxAcceleration = 50f;
+        EnemyAIInstance.movingTowardsTargetPlayer = false;
+        EnemyAIInstance.openDoorSpeedMultiplier = 4f;
 
-        int playerMaxHealth = AloeSharedData.Instance.GetPlayerMaxHealth(AloeServerInstance.ActualTargetPlayer.Value);
-        if (AloeServerInstance.ActualTargetPlayer.Value.health == playerMaxHealth)
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
+            EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+
+        EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(EnemyAIInstance.BioId, true);
+        EnemyAIInstance.netcodeController.UnMuffleTargetPlayerVoiceClientRpc(EnemyAIInstance.BioId);
+        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.8f, 1f);
+        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.0f,
+            0.5f);
+
+        int playerMaxHealth = AloeSharedData.Instance.GetPlayerMaxHealth(EnemyAIInstance.ActualTargetPlayer.Value);
+        if (EnemyAIInstance.ActualTargetPlayer.Value.health == playerMaxHealth)
         {
-            AloeServerInstance.LogDebug("Target player is already at max health, switching to cuddling player.");
-            AloeServerInstance.SwitchBehaviourState(AloeServer.States.CuddlingPlayer);
+            EnemyAIInstance.LogVerbose("Target player is already at max health, switching to cuddling player.");
+            EnemyAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.CuddlingPlayer);
             return;
         }
-        
+
         // Start healing the player
-        AloeServerInstance.LogDebug("Starting to heal the player");
-        
+        EnemyAIInstance.LogVerbose("Starting to heal the player");
+
         // Calculate the heal amount per AIInterval
-        float baseHealingRate = 100f / AloeServerInstance.TimeItTakesToFullyHealPlayer;
+        float baseHealingRate = 100f / EnemyAIInstance.TimeItTakesToFullyHealPlayer;
         float healingRate = baseHealingRate * playerMaxHealth / 100f;
-        _healingPerInterval = Mathf.CeilToInt(healingRate * AloeServerInstance.AIIntervalTime);
-        
+        _healingPerInterval = Mathf.CeilToInt(healingRate * EnemyAIInstance.AIIntervalTime);
+
         // Calculate the total time it takes to heal the player
-        float totalHealingTime = (playerMaxHealth - AloeServerInstance.ActualTargetPlayer.Value.health) / healingRate;
-        AloeServerInstance.netcodeController.PlayHealingVfxClientRpc(AloeServerInstance.aloeId, totalHealingTime);
-        
-        AloeServerInstance.ActualTargetPlayer.Value.HealServerRpc(); // Doesn't actually heal them, just makes them not bleed anymore
+        float totalHealingTime = (playerMaxHealth - EnemyAIInstance.ActualTargetPlayer.Value.health) / healingRate;
+        EnemyAIInstance.netcodeController.PlayHealingVfxClientRpc(EnemyAIInstance.BioId, totalHealingTime);
+        EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.healingSfx.ToString(), "creatureVoice");
+        EnemyAIInstance.ActualTargetPlayer.Value
+            .HealServerRpc(); // Doesn't actually heal them, just makes them not bleed anymore
     }
 
-    public override void AIIntervalBehaviour()
+    internal override void AIIntervalBehaviour()
     {
-        AloeServerInstance.netcodeController.LookTargetPosition.Value =
-            AloeServerInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
-        if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
-            AloeServerInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
+        EnemyAIInstance.netcodeController.LookTargetPosition.Value =
+            EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
         
-        int targetPlayerMaxHealth = AloeSharedData.Instance.GetPlayerMaxHealth(AloeServerInstance.ActualTargetPlayer.Value);
-        if (AloeServerInstance.ActualTargetPlayer.Value.health < targetPlayerMaxHealth)
+        if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
+            EnemyAIInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
+
+        int targetPlayerMaxHealth =
+            AloeSharedData.Instance.GetPlayerMaxHealth(EnemyAIInstance.ActualTargetPlayer.Value);
+        if (EnemyAIInstance.ActualTargetPlayer.Value.health < targetPlayerMaxHealth)
         {
             // First check if the current heal amount will give the player too much health
             int healthIncrease = _healingPerInterval;
-            if (AloeServerInstance.ActualTargetPlayer.Value.health + _healingPerInterval >= targetPlayerMaxHealth)
+            if (EnemyAIInstance.ActualTargetPlayer.Value.health + _healingPerInterval >= targetPlayerMaxHealth)
             {
-                healthIncrease = targetPlayerMaxHealth - AloeServerInstance.ActualTargetPlayer.Value.health;
+                healthIncrease = targetPlayerMaxHealth - EnemyAIInstance.ActualTargetPlayer.Value.health;
             }
-            
+
             _finishedHealing = false;
-            
+
             // Todo: move this to clientside
-            AloeServerInstance.netcodeController.HealTargetPlayerByAmountClientRpc(AloeServerInstance.aloeId, healthIncrease);
-            AloeServerInstance.LogDebug($"Healed player by amount: {healthIncrease}");
+            EnemyAIInstance.netcodeController.HealTargetPlayerByAmountClientRpc(EnemyAIInstance.BioId, healthIncrease);
+            EnemyAIInstance.LogVerbose($"Healed player by amount: {healthIncrease}");
         }
         // If the player cannot be healed anymore, then switch to cuddling
         else
@@ -90,17 +99,17 @@ public class HealingPlayerState : BehaviourState
         }
     }
 
-    private class TransitionToCuddlingPlayer(AloeServer aloeServerInstance, HealingPlayerState healingPlayerState)
-        : StateTransition(aloeServerInstance)
+    private class TransitionToCuddlingPlayer(AloeServerAI enemyAIInstance, HealingPlayerState healingPlayerState)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
             return healingPlayerState._finishedHealing;
         }
 
-        public override AloeServer.States NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.CuddlingPlayer;
+            return AloeServerAI.AloeStates.CuddlingPlayer;
         }
     }
 }

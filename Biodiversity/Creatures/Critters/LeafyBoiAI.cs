@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 
@@ -134,7 +132,7 @@ public class LeafyBoiAI : BiodiverseAI {
     }
 
     private void ScanForPlayers() {
-        if (GetPlayersCloseBy(SCARY_PLAYER_DISTANCE, out List<PlayerControllerB> players)) 
+        if (IsPlayerCloseByToPosition(transform.position, SCARY_PLAYER_DISTANCE)) 
         {
             timeSinceSeenPlayer = 0;
 

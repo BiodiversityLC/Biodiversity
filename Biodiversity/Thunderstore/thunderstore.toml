@@ -14,7 +14,7 @@ Evaisa-LethalLib = "0.16.1"
 
 [build]
 icon = "./icon.png"
-readme = "../README.md"
+readme = "../../README.md"
 outdir = "../../Packages"
 
 [[build.copy]]
@@ -23,7 +23,7 @@ target = "./BepInEx/plugins/Biodiversity/lang"
 
 [[build.copy]]
 source = "../AssetBundles"
-target = "./BepInEx/plugins/Biodiversity/assets"
+target = "./BepInEx/plugins/Biodiversity/AssetBundles"
 
 [[build.copy]]
 source = "../bin/Release/netstandard2.1/com.github.biodiversitylc.Biodiversity.dll"

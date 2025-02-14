@@ -56,7 +56,7 @@ namespace Biodiversity.Creatures.Ogopogo
         // Player references
         private readonly NullableObject<PlayerControllerB> playerGrabbed = new();
         private readonly NullableObject<PlayerControllerB> chasedPlayer = new();
-        private CachedDictionary<ulong, MeshRenderer> playerVisorRenderers;
+        private PerKeyCachedDictionary<ulong, MeshRenderer> playerVisorRenderers;
         private float[] _playerDistances;
 
         // Audio
@@ -198,7 +198,7 @@ namespace Biodiversity.Creatures.Ogopogo
             // set raycast pos to top of water
             RaycastPos.position = new Vector3(transform.position.x, collider.bounds.max.y, transform.position.z);
 
-            playerVisorRenderers = new CachedDictionary<ulong, MeshRenderer>(playerId =>
+            playerVisorRenderers = new PerKeyCachedDictionary<ulong, MeshRenderer>(playerId =>
                 StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
                     .GetComponentsInChildren<MeshRenderer>()[0]);
         }

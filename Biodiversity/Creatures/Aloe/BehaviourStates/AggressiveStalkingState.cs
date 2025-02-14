@@ -1,104 +1,109 @@
-﻿using Biodiversity.Creatures.Aloe.Types;
-using Biodiversity.Util;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
+using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
-public class AggressiveStalkingState : BehaviourState
+[Preserve]
+[State(AloeServerAI.AloeStates.AggressiveStalking)]
+internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
     private bool _isPlayerReachable;
+    private bool _inGrabAnimation;
 
     private const float GrabAnimationAgentMaxSpeed = 2f;
-    private const float NormalAgentMaxSpeed = 5f;
-    
     private const float GrabAnimationAgentMaxAcceleration = 200f;
-    private const float NormalAgentMaxAcceleration = 50f;
-    
-    public AggressiveStalkingState(AloeServer aloeServerInstance, AloeServer.States stateType) : base(aloeServerInstance, stateType)
+
+    public AggressiveStalkingState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [
-            new TransitionToAvoidingPlayer(aloeServerInstance),
-            new TransitionToPassiveRoaming(aloeServerInstance, this)
+            new TransitionToAvoidingPlayer(EnemyAIInstance),
+            new TransitionToPassiveRoaming(EnemyAIInstance, this)
         ];
     }
 
-    public override void OnStateEnter(ref StateData initData)
+    internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        AloeServerInstance.agentMaxSpeed = NormalAgentMaxSpeed;
-        AloeServerInstance.agentMaxAcceleration = NormalAgentMaxAcceleration;
-        AloeServerInstance.inGrabAnimation = false;
-        AloeServerInstance.movingTowardsTargetPlayer = false;
-        AloeServerInstance.openDoorSpeedMultiplier = 4f;
-        
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.ShouldHaveDarkSkin, true);
-        AloeUtils.ChangeNetworkVar(AloeServerInstance.netcodeController.AnimationParamCrawling, true);
-        
-        AloeServerInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(AloeServerInstance.aloeId, 0f, 0.3f);
+
+        _inGrabAnimation = false;
+
+        EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.StalkingMaxSpeed;
+        EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.StalkingMaxAcceleration;
+        EnemyAIInstance.movingTowardsTargetPlayer = false;
+        EnemyAIInstance.openDoorSpeedMultiplier = 4f;
+
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);
+
+        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f, 0.3f);
     }
 
-    public override void AIIntervalBehaviour()
+    internal override void AIIntervalBehaviour()
     {
-        _isPlayerReachable = true;
-        if (AloeServerInstance.inGrabAnimation)
-        {
-            AloeServerInstance.agentMaxSpeed = GrabAnimationAgentMaxSpeed;
-            AloeServerInstance.agentMaxAcceleration = GrabAnimationAgentMaxAcceleration;
-            AloeServerInstance.agent.acceleration = GrabAnimationAgentMaxAcceleration;
+        base.AIIntervalBehaviour();
 
-            float distanceToGrabbingPlayer = Vector3.Distance(AloeServerInstance.transform.position,
-                AloeServerInstance.ActualTargetPlayer.Value.transform.position);
-            AloeServerInstance.movingTowardsTargetPlayer = distanceToGrabbingPlayer > 3f;
-            AloeServerInstance.LogDebug($"Distance to grabbing player: {distanceToGrabbingPlayer}");
+        _isPlayerReachable = true;
+
+        if (_inGrabAnimation)
+        {
+            EnemyAIInstance.AgentMaxSpeed = GrabAnimationAgentMaxSpeed;
+            EnemyAIInstance.AgentMaxAcceleration = GrabAnimationAgentMaxAcceleration;
+            EnemyAIInstance.agent.acceleration = GrabAnimationAgentMaxAcceleration;
+
+            float distanceToGrabbingPlayer = Vector3.Distance(EnemyAIInstance.transform.position,
+                EnemyAIInstance.ActualTargetPlayer.Value.transform.position);
+            EnemyAIInstance.movingTowardsTargetPlayer = distanceToGrabbingPlayer > 3f;
+            //EnemyAIInstance.LogVerbose($"Distance to grabbing player: {distanceToGrabbingPlayer}");
         }
         else
         {
-            AloeServerInstance.agentMaxSpeed = NormalAgentMaxSpeed;
-            AloeServerInstance.agentMaxAcceleration = NormalAgentMaxAcceleration;
-            
-            if (Vector3.Distance(AloeServerInstance.transform.position, 
-                    AloeServerInstance.ActualTargetPlayer.Value.transform.position) <= 3f && 
-                !AloeServerInstance.inGrabAnimation)
+            EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.StalkingMaxSpeed;
+            EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.StalkingMaxAcceleration;
+
+            if (Vector3.Distance(EnemyAIInstance.transform.position,
+                    EnemyAIInstance.ActualTargetPlayer.Value.transform.position) <= 3f &&
+                !_inGrabAnimation)
             {
                 // See if the aloe can kidnap the player
-                AloeServerInstance.LogDebug("Player is close to aloe! Kidnapping him now");
-                AloeServerInstance.agent.speed = 0f;
-                AloeServerInstance.agent.acceleration = 0f;
-                AloeServerInstance.netcodeController.SetAnimationTriggerClientRpc(AloeServerInstance.aloeId, AloeClient.Grab);
-                AloeServerInstance.inGrabAnimation = true;
+                EnemyAIInstance.LogVerbose("Player is close to aloe! Kidnapping him now");
+                EnemyAIInstance.agent.speed = 0f;
+                EnemyAIInstance.agent.acceleration = 0f;
+                EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId, AloeClient.Grab);
+                _inGrabAnimation = true;
             }
-            else if (AloeUtils.IsPlayerReachable(
-                         agent: AloeServerInstance.agent, 
-                         player: AloeServerInstance.ActualTargetPlayer.Value, 
-                         transform: AloeServerInstance.transform, 
-                         eye: AloeServerInstance.eye, 
-                         viewWidth: AloeServerInstance.ViewWidth, 
-                         viewRange: AloeServerInstance.ViewRange, 
-                         logSource: AloeServerInstance.Mls))
+
+            else if (EnemyAIInstance.IsPlayerReachable(
+                         player: EnemyAIInstance.ActualTargetPlayer.Value,
+                         eyeTransform: EnemyAIInstance.eye,
+                         viewWidth: EnemyAIInstance.ViewWidth,
+                         viewRange: EnemyAIInstance.ViewRange))
             {
                 if (Vector3.Distance(
-                        AloeServerInstance.transform.position, 
-                        AloeServerInstance.ActualTargetPlayer.Value.transform.position) <= 5)
+                        EnemyAIInstance.transform.position,
+                        EnemyAIInstance.ActualTargetPlayer.Value.transform.position) <= 5)
                 {
-                    AloeServerInstance.movingTowardsTargetPlayer = true;
+                    EnemyAIInstance.movingTowardsTargetPlayer = true;
                 }
                 else
                 {
-                    Transform closestNodeToPlayer = AloeUtils.GetClosestValidNodeToPosition(
-                        pathStatus: out AloeUtils.PathStatus pathStatus,
-                        agent: AloeServerInstance.agent,
-                        position: AloeServerInstance.ActualTargetPlayer.Value.transform.position,
-                        allAINodes: AloeServerInstance.allAINodes,
+                    Transform closestNodeToPlayer = BiodiverseAI.GetClosestValidNodeToPosition(
+                        pathStatus: out BiodiverseAI.PathStatus pathStatus,
+                        agent: EnemyAIInstance.agent,
+                        position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
+                        allAINodes: EnemyAIInstance.allAINodes,
                         ignoredAINodes: null,
                         checkLineOfSight: true,
                         allowFallbackIfBlocked: false,
-                        bufferDistance: 0f,
-                        logSource: AloeServerInstance.Mls);
+                        bufferDistance: 0f);
 
-                    if (pathStatus == AloeUtils.PathStatus.Invalid) AloeServerInstance.moveTowardsDestination = false;
-                    else AloeServerInstance.SetDestinationToPosition(closestNodeToPlayer.position);
+                    if (pathStatus == BiodiverseAI.PathStatus.Invalid)
+                        EnemyAIInstance.moveTowardsDestination = false;
+                    else EnemyAIInstance.SetDestinationToPosition(closestNodeToPlayer.position);
                 }
             }
             else
@@ -107,47 +112,45 @@ public class AggressiveStalkingState : BehaviourState
             }
         }
     }
-    
-    private class TransitionToAvoidingPlayer(AloeServer aloeServerInstance)
-        : StateTransition(aloeServerInstance)
+
+    private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
-        
-        public override bool ShouldTransitionBeTaken()
+
+        internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
-            _playerLookingAtAloe = AloeUtils.GetClosestPlayerLookingAtPosition
-                (AloeServerInstance.eye.transform, logSource: AloeServerInstance.Mls);
+            _playerLookingAtAloe = EnemyAIInstance.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
             return _playerLookingAtAloe != null;
         }
-        
-        public override AloeServer.States NextState()
+
+        internal override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.AvoidingPlayer;
+            return AloeServerAI.AloeStates.AvoidingPlayer;
         }
-        
-        public override void OnTransition()
+
+        internal override void OnTransition()
         {
-            AloeServerInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
-            AloeServerInstance.timesFoundSneaking++;
+            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
+            EnemyAIInstance.TimesFoundSneaking++;
         }
     }
 
     private class TransitionToPassiveRoaming(
-        AloeServer aloeServerInstance,
+        AloeServerAI enemyAIInstance,
         AggressiveStalkingState aggressiveStalkingState)
-        : StateTransition(aloeServerInstance)
+        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
-        public override bool ShouldTransitionBeTaken()
+        internal override bool ShouldTransitionBeTaken()
         {
-            bool isPlayerDead = PlayerUtil.IsPlayerDead(AloeServerInstance.ActualTargetPlayer.Value);
-            AloeServerInstance.LogDebug($"Is player dead?: {isPlayerDead}");
+            bool isPlayerDead = PlayerUtil.IsPlayerDead(EnemyAIInstance.ActualTargetPlayer.Value);
             return isPlayerDead || !aggressiveStalkingState._isPlayerReachable;
         }
 
-        public override AloeServer.States NextState()
+        internal override AloeServerAI.AloeStates NextState()
         {
-            return AloeServer.States.Roaming;
+            return AloeServerAI.AloeStates.Roaming;
         }
     }
 }

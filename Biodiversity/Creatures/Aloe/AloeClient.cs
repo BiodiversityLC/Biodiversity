@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
-using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Util.Lang;
 using Biodiversity.Util.Types;
 using Unity.Netcode;
@@ -45,14 +44,14 @@ public class AloeClient : MonoBehaviour
 
     public enum AudioClipTypes
     {
-        Stun,
-        Chase,
-        CrackNeck,
-        Healing,
-        InterruptedHealing,
-        SnatchAndDrag,
-        Steps,
-        Hit,
+        stunSfx,
+        chaseSfx,
+        crackNeckSfx,
+        healingSfx,
+        interruptedHealingSfx,
+        snatchAndDragSfx,
+        stepsSfx,
+        hitSfx,
     }
 
     private enum TargetPlayerOffsetType
@@ -81,11 +80,11 @@ public class AloeClient : MonoBehaviour
 
     private readonly List<Tuple<string, Type>> _playerRendererObjects = 
     [
-        new Tuple<string, Type>("LOD1", typeof(SkinnedMeshRenderer)),
-        new Tuple<string, Type>("LOD2", typeof(SkinnedMeshRenderer)),
-        new Tuple<string, Type>("LOD3", typeof(SkinnedMeshRenderer)),
-        new Tuple<string, Type>("LevelSticker", typeof(MeshRenderer)),
-        new Tuple<string, Type>("BetaBadge", typeof(MeshRenderer)),
+        new("LOD1", typeof(SkinnedMeshRenderer)),
+        new("LOD2", typeof(SkinnedMeshRenderer)),
+        new("LOD3", typeof(SkinnedMeshRenderer)),
+        new("LevelSticker", typeof(MeshRenderer)),
+        new("BetaBadge", typeof(MeshRenderer)),
         // new Tuple<string, Type>("Circle", typeof(SkinnedMeshRenderer)),
         // new Tuple<string, Type>("CopyHeldProp", typeof(MeshRenderer)),
         // new Tuple<string, Type>("PlayerPhysicsBox", typeof(MeshRenderer)),
@@ -94,24 +93,18 @@ public class AloeClient : MonoBehaviour
         // new Tuple<string, Type>("LineOfSight2", typeof(MeshRenderer)),
     ];
 
-#if !UNITY_EDITOR
-    [field: HideInInspector]
-    [field: SerializeField]
-    public AloeConfig Config { get; private set; } = AloeHandler.Instance.Config;
-#endif
-
 #pragma warning disable 0649
     [Header("Audio")] [Space(5f)] 
     [SerializeField] private AudioSource aloeVoiceSource;
     [SerializeField] private AudioSource aloeFootstepsSource;
-    public AudioClip[] stunSfx;
-    public AudioClip[] chaseSfx;
-    public AudioClip[] crackNeckSfx;
-    public AudioClip[] healingSfx;
-    public AudioClip[] interruptedHealingSfx;
-    public AudioClip[] snatchAndDragSfx;
-    public AudioClip[] stepsSfx;
-    public AudioClip[] hitSfx;
+    [SerializeField] public AudioClip[] stunSfx;
+    [SerializeField] public AudioClip[] chaseSfx;
+    [SerializeField] public AudioClip[] crackNeckSfx;
+    [SerializeField] public AudioClip[] healingSfx;
+    [SerializeField] public AudioClip[] interruptedHealingSfx;
+    [SerializeField] public AudioClip[] snatchAndDragSfx;
+    [SerializeField] public AudioClip[] stepsSfx;
+    [SerializeField] public AudioClip[] hitSfx;
 
     [Header("Renderers and Materials")] [Space(5f)] 
     [SerializeField] private Renderer bodyRenderer;
@@ -151,12 +144,12 @@ public class AloeClient : MonoBehaviour
 
     private readonly NullableObject<PlayerControllerB> _targetPlayer = new();
 
-    private CachedValue<AloeServer> _aloeServer;
+    private CachedValue<AloeServerAI> _aloeServer;
 
-    private CachedDictionary<ulong, List<Tuple<Component, bool>>> _targetPlayerCachedRenderers;
-    private CachedDictionary<ulong, MeshRenderer> _playerVisorRenderers;
-    private CachedDictionary<ulong, AudioLowPassFilter> _playerAudioLowPassFilters;
-    private CachedDictionary<ulong, OccludeAudio> _playerOccludeAudios;
+    private PerKeyCachedDictionary<ulong, List<Tuple<Component, bool>>> _targetPlayerPerKeyCachedRenderers;
+    private PerKeyCachedDictionary<ulong, MeshRenderer> _playerVisorRenderers;
+    private PerKeyCachedDictionary<ulong, AudioLowPassFilter> _playerAudioLowPassFilters;
+    private PerKeyCachedDictionary<ulong, OccludeAudio> _playerOccludeAudios;
     
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
 
@@ -180,16 +173,14 @@ public class AloeClient : MonoBehaviour
     private float _lastReceivedNewLookTargetPositionTime;
     private const float LookTargetPositionLerpTime = 0.1f;
 
-    private int _currentBehaviourStateIndex;
-
     private void Awake()
     {
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client");
         if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
 
-        _aloeServer = new CachedValue<AloeServer>(GetComponent<AloeServer>);
-
-        _targetPlayerCachedRenderers = new CachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
+        _aloeServer = new CachedValue<AloeServerAI>(GetComponent<AloeServerAI>);
+        
+        _targetPlayerPerKeyCachedRenderers = new PerKeyCachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
         {
             List<Tuple<Component, bool>> rendererComponents = [];
             
@@ -211,11 +202,11 @@ public class AloeClient : MonoBehaviour
                         continue;
                     }
 
-                    LogDebug($"Found transform for renderer: {rendererTuple.Item1}");
+                    BiodiversityPlugin.LogVerbose($"Found transform for renderer: {rendererTuple.Item1}");
 
                     if (rendererTransform.GetComponent(rendererTuple.Item2) is Renderer rendererComponent)
                     {
-                        LogDebug($"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
+                        BiodiversityPlugin.LogVerbose($"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
                         rendererComponents.Add(new Tuple<Component, bool>(rendererComponent, rendererComponent.enabled));
                     }
                     else
@@ -233,15 +224,15 @@ public class AloeClient : MonoBehaviour
             return rendererComponents;
         });
         
-        _playerVisorRenderers = new CachedDictionary<ulong, MeshRenderer>(playerId =>
+        _playerVisorRenderers = new PerKeyCachedDictionary<ulong, MeshRenderer>(playerId =>
             StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
                 .GetComponentsInChildren<MeshRenderer>()[0]);
 
-        _playerAudioLowPassFilters = new CachedDictionary<ulong, AudioLowPassFilter>(playerId =>
+        _playerAudioLowPassFilters = new PerKeyCachedDictionary<ulong, AudioLowPassFilter>(playerId =>
             StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource
                 .GetComponent<AudioLowPassFilter>());
 
-        _playerOccludeAudios = new CachedDictionary<ulong, OccludeAudio>(playerId =>
+        _playerOccludeAudios = new PerKeyCachedDictionary<ulong, OccludeAudio>(playerId =>
             StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource.GetComponent<OccludeAudio>());
     }
 
@@ -273,14 +264,12 @@ public class AloeClient : MonoBehaviour
     
     private void Update()
     {
-        _currentBehaviourStateIndex = netcodeController.CurrentBehaviourStateIndex.Value;
-
         Vector3 position = transform.position;
         _agentCurrentSpeed = Mathf.Lerp(_agentCurrentSpeed, (position - _agentLastPosition).magnitude / Time.deltaTime,
             0.75f);
         _agentLastPosition = position;
 
-        animator.SetFloat(Speed, _agentCurrentSpeed);
+        animator.SetFloat(Speed, _agentCurrentSpeed + 0.1f);
         animator.SetBool(Healing, netcodeController.AnimationParamHealing.Value);
         animator.SetBool(Crawling, netcodeController.AnimationParamCrawling.Value);
         animator.SetBool(Stunned, netcodeController.AnimationParamStunned.Value);
@@ -292,115 +281,115 @@ public class AloeClient : MonoBehaviour
         
         if (Keyboard.current.numpad8Key.wasPressedThisFrame)
         {
-            LogDebug("moved up");
+            BiodiversityPlugin.LogVerbose("moved up");
             _offsetPosition += Vector3.up * moveAmount;
         }
         
         if (Keyboard.current.numpad2Key.wasPressedThisFrame)
         {
-            LogDebug("moved down");
+            BiodiversityPlugin.LogVerbose("moved down");
             _offsetPosition -= Vector3.up * moveAmount;
         }
         
         if (Keyboard.current.numpad4Key.wasPressedThisFrame)
         {
-            LogDebug("moved left");
+            BiodiversityPlugin.LogVerbose("moved left");
             _offsetPosition -= Vector3.right * moveAmount;
         }
         
         if (Keyboard.current.numpad6Key.wasPressedThisFrame)
         {
-            LogDebug("moved right");
+            BiodiversityPlugin.LogVerbose("moved right");
             _offsetPosition += Vector3.right * moveAmount;
         }
         
         if (Keyboard.current.numpad7Key.wasPressedThisFrame)
         {
-            LogDebug("moved back");
+            BiodiversityPlugin.LogVerbose("moved back");
             _offsetPosition -= Vector3.forward * moveAmount;
         }
         
         if (Keyboard.current.numpad9Key.wasPressedThisFrame)
         {
-            LogDebug("moved forwards");
+            BiodiversityPlugin.LogVerbose("moved forwards");
             _offsetPosition += Vector3.forward * moveAmount;
         }
         
         if (Keyboard.current.numpad1Key.wasPressedThisFrame)
         {
-            LogDebug("rotated up");
+            BiodiversityPlugin.LogVerbose("rotated up");
             _offsetRotation *= Quaternion.Euler(Vector3.up * rotationAmount);
         }
         
         if (Keyboard.current.numpad3Key.wasPressedThisFrame)
         {
-            LogDebug("rotated down");
+            BiodiversityPlugin.LogVerbose("rotated down");
             _offsetRotation *= Quaternion.Euler(Vector3.down * rotationAmount);
         }
         
         if (Keyboard.current.numpadDivideKey.wasPressedThisFrame)
         {
-            LogDebug("rotated left");
+            BiodiversityPlugin.LogVerbose("rotated left");
             _offsetRotation *= Quaternion.Euler(Vector3.left * rotationAmount);
         }
         
         if (Keyboard.current.numpadMultiplyKey.wasPressedThisFrame)
         {
-            LogDebug("rotated right");
+            BiodiversityPlugin.LogVerbose("rotated right");
             _offsetRotation *= Quaternion.Euler(Vector3.right * rotationAmount);
         }
         
         if (Keyboard.current.numpad0Key.wasPressedThisFrame)
         {
-            LogDebug("rotated forward");
+            BiodiversityPlugin.LogVerbose("rotated forward");
             _offsetRotation *= Quaternion.Euler(Vector3.forward * rotationAmount);
         }
         
         if (Keyboard.current.numpadPeriodKey.wasPressedThisFrame)
         {
-            LogDebug("rotated back");
+            BiodiversityPlugin.LogVerbose("rotated back");
             _offsetRotation *= Quaternion.Euler(Vector3.back * rotationAmount);
         }
         
         // Reset position to original local position
         if (Keyboard.current.homeKey.wasPressedThisFrame)
         {
-            LogDebug("reset all");
+            BiodiversityPlugin.LogVerbose("reset all");
             _offsetPosition = Vector3.zero;
             _offsetRotation = Quaternion.identity;
         }
         
         if (Keyboard.current.pageUpKey.wasPressedThisFrame)
         {
-            LogDebug("reset rotation");
+            BiodiversityPlugin.LogVerbose("reset rotation");
             _offsetRotation = Quaternion.identity;
         }
         
         if (Keyboard.current.pageDownKey.wasPressedThisFrame)
         {
-            LogDebug("reset position");
+            BiodiversityPlugin.LogVerbose("reset position");
             _offsetPosition = Vector3.zero;
         }
         
         if (Keyboard.current.numpadPlusKey.wasPressedThisFrame)
         {
-            LogDebug(
+            BiodiversityPlugin.LogVerbose(
                 $"Offset Position: {_offsetPosition}, Offset Rotation: {_offsetRotation}, current position: {_targetPlayer.Value.transform.position}, bob: {transform.position + _offsetPosition}");
         }
         */
 
         if (_targetPlayerCanEscape)
         {
-            switch (_currentBehaviourStateIndex)
+            switch (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value)
             {
-                case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer:
+                case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer:
                 {
                     if (!_targetPlayer.IsNotNull) break;
                     if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
 
                     if (Keyboard.current.spaceKey.wasPressedThisFrame)
                     {
-                        LogDebug($"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
+                        BiodiversityPlugin.LogVerbose($"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
                         _currentEscapeChargeValue += escapeChargePerPress;
                     }
 
@@ -409,7 +398,7 @@ public class AloeClient : MonoBehaviour
 
                     if (_currentEscapeChargeValue >= escapeChargeThreshold)
                     {
-                        LogDebug("Triggering aloe escape");
+                        BiodiversityPlugin.LogVerbose("Triggering aloe escape");
                         _currentEscapeChargeValue = 0;
                         _targetPlayerCanEscape = false;
                         netcodeController.TargetPlayerEscapedServerRpc(_aloeId);
@@ -441,9 +430,9 @@ public class AloeClient : MonoBehaviour
         }
 
         // Animate the real target player's body
-        if (netcodeController.CurrentBehaviourStateIndex.Value is (int)AloeServer.States.KidnappingPlayer
-                or (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer &&
-            _targetPlayer.IsNotNull && _targetPlayerInCaptivity && _targetPlayer.Value.inSpecialInteractAnimation)
+        if (_targetPlayerInCaptivity && _targetPlayer.IsNotNull && (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.AloeStates.KidnappingPlayer
+                or (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer) &&
+              _targetPlayer.Value.inSpecialInteractAnimation)
         {
             _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
             _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
@@ -467,7 +456,7 @@ public class AloeClient : MonoBehaviour
 
     private IEnumerator CrushPlayerAnimation(PlayerControllerB player)
     {
-        LogDebug($"Killing player: {player.name}");
+        BiodiversityPlugin.LogVerbose($"Killing player: {player.name}");
         if (player.inSpecialInteractAnimation &&
             player.currentTriggerInAnimationWith != null)
             player.currentTriggerInAnimationWith.CancelAnimationExternally();
@@ -489,44 +478,7 @@ public class AloeClient : MonoBehaviour
         
         player.KillPlayer(Vector3.zero, true, CauseOfDeath.Crushing, 1);
     }
-
-    /// <summary>
-    /// Plays an audio clip with the given type and index
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="audioClipType">The audio clip type to play.</param>
-    /// <param name="clipIndex">The index of the clip in their respective AudioClip array to play.</param>
-    /// <param name="interrupt">Whether to interrupt any previously playing sound before playing the new audio.</param>
-    private void HandlePlayAudioClipType(string receivedAloeId, AudioClipTypes audioClipType, int clipIndex,
-        bool interrupt = false)
-    {
-        if (_aloeId != receivedAloeId) return;
-
-        AudioClip audioClipToPlay = audioClipType switch
-        {
-            AudioClipTypes.Stun => stunSfx[clipIndex],
-            AudioClipTypes.Chase => chaseSfx[clipIndex],
-            AudioClipTypes.CrackNeck => crackNeckSfx[clipIndex],
-            AudioClipTypes.Healing => healingSfx[clipIndex],
-            AudioClipTypes.InterruptedHealing => interruptedHealingSfx[clipIndex],
-            AudioClipTypes.SnatchAndDrag => snatchAndDragSfx[clipIndex],
-            AudioClipTypes.Steps => stepsSfx[clipIndex],
-            AudioClipTypes.Hit => hitSfx[clipIndex],
-            _ => null
-        };
-
-        if (audioClipToPlay == null)
-        {
-            _mls.LogError($"Invalid audio clip with type: {audioClipType} and index: {clipIndex}");
-            return;
-        }
-
-        LogDebug($"Playing audio clip: {audioClipToPlay.name}");
-        if (interrupt) aloeVoiceSource.Stop(true);
-        aloeVoiceSource.PlayOneShot(audioClipToPlay);
-        WalkieTalkie.TransmitOneShotAudio(aloeVoiceSource, audioClipToPlay, aloeVoiceSource.volume);
-    }
-
+    
     private void HandleChangeAloeSkinColour(bool oldValue, bool newValue)
     {
         if (_changeSkinColourCoroutine != null) StopCoroutine(ChangeAloeSkinColour(newValue));
@@ -542,7 +494,7 @@ public class AloeClient : MonoBehaviour
     /// <returns></returns>
     private IEnumerator ChangeAloeSkinColour(bool toDark)
     {
-        LogDebug($"Changing Aloe's skin to a {(toDark ? "dark" : "light")} colour");
+        BiodiversityPlugin.LogVerbose($"Changing Aloe's skin to a {(toDark ? "dark" : "light")} colour");
         float timeElapsed = 0f;
         float startMetallicValue = toDark ? 0 : skinMetallicValueDark;
         float endMetallicValue = toDark ? skinMetallicValueDark : 0;
@@ -624,7 +576,7 @@ public class AloeClient : MonoBehaviour
             _targetPlayer.Value.MakeCriticallyInjured(false);
         }
             
-        LogDebug($"Target player health after last heal: {_targetPlayer.Value.health}");
+        BiodiversityPlugin.LogVerbose($"Target player health after last heal: {_targetPlayer.Value.health}");
     }
 
     private IEnumerator ChangeTargetPlayerOffsets(TargetPlayerOffsetType offsetType, float duration = 0.5f)
@@ -650,7 +602,7 @@ public class AloeClient : MonoBehaviour
     private void HandleTransitionToRunningForwardsAndCarryingPlayer(string receivedAloeId, float transitionDuration)
     {
         if (_aloeId != receivedAloeId) return;
-        LogDebug($"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
+        BiodiversityPlugin.LogVerbose($"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
 
         if (_currentFakePlayerBodyRagdoll == null)
         {
@@ -670,11 +622,21 @@ public class AloeClient : MonoBehaviour
         NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
     {
         if (_aloeId != receivedAloeId) return;
-        if (_currentFakePlayerBodyRagdoll != null) Destroy(_currentFakePlayerBodyRagdoll.gameObject);
-        if (!fakePlayerBodyRagdollNetworkObjectReference.TryGet(out NetworkObject fakePlayerBodyRagdollNetworkObject))
-            return;
+        BiodiversityPlugin.LogVerbose($"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
+        
+        if (_currentFakePlayerBodyRagdoll != null)
+        {
+            BiodiversityPlugin.LogVerbose("_currentFakePlayerBodyRagdoll is not null. Destroying it.");
+            Destroy(_currentFakePlayerBodyRagdoll.gameObject);
+            _currentFakePlayerBodyRagdoll = null;
+        }
 
-        LogDebug($"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
+        if (!fakePlayerBodyRagdollNetworkObjectReference.TryGet(out NetworkObject fakePlayerBodyRagdollNetworkObject))
+        {
+            BiodiversityPlugin.Logger.LogError("Could not get the network object for the fake player body ragdoll.");
+            return; 
+        }
+        
         _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollNetworkObject.GetComponent<FakePlayerBodyRagdoll>();
         if (_currentFakePlayerBodyRagdoll == null)
         {
@@ -683,7 +645,6 @@ public class AloeClient : MonoBehaviour
         }
 
         _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", ragdollGrabTarget);
-
         if (GameNetworkManager.Instance.localPlayerController == _targetPlayer.Value)
         {
             _currentFakePlayerBodyRagdoll.bodyMeshRenderer.enabled = false;
@@ -763,7 +724,7 @@ public class AloeClient : MonoBehaviour
         }
 
         _targetPlayerInCaptivity = setToInCaptivity;
-        LogDebug($"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
+        BiodiversityPlugin.LogVerbose($"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
     }
 
     /// <summary>
@@ -785,7 +746,7 @@ public class AloeClient : MonoBehaviour
                 false,
                 true,
                 "LC_AloeGrabTip");
-        LogDebug($"Set {_targetPlayer.Value.playerUsername} able to escape");
+        BiodiversityPlugin.LogVerbose($"Set {_targetPlayer.Value.playerUsername} able to escape");
     }
 
     /// <summary>
@@ -798,7 +759,7 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
-        if (player == null) return;
+        if (player == null || player != GameNetworkManager.Instance.localPlayerController) return;
         player.JumpToFearLevel(targetInsanity);
         player.IncreaseFearLevelOverTime(0.8f);
     }
@@ -811,11 +772,10 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
 
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null)
-            StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
 
-        LogDebug($"Muffling {_targetPlayer.Value.playerUsername}");
+        BiodiversityPlugin.LogVerbose($"Muffling {_targetPlayer.Value.playerUsername}");
         _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 5f;
         _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = true;
         _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 500f;
@@ -830,11 +790,10 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
 
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null)
-            StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
 
-        LogDebug($"UnMuffling {_targetPlayer.Value.playerUsername}");
+        BiodiversityPlugin.LogVerbose($"UnMuffling {_targetPlayer.Value.playerUsername}");
         _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 1f;
         _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = false;
         _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 20000f;
@@ -850,7 +809,7 @@ public class AloeClient : MonoBehaviour
         }
         
         ulong targetPlayerId = _targetPlayer.Value.actualClientId;
-        List<Tuple<Component, bool>> cachedRenderers = _targetPlayerCachedRenderers[targetPlayerId];
+        List<Tuple<Component, bool>> cachedRenderers = _targetPlayerPerKeyCachedRenderers[targetPlayerId];
         
         if (cachedRenderers == null || cachedRenderers.Count == 0)
         {
@@ -881,9 +840,8 @@ public class AloeClient : MonoBehaviour
         // healingOrbEffect.SendEvent("OnShowHealingOrb");
         
         healingLightEffect.enabled = true;
-        LogDebug("Playing HealingOrbVfx");
+        BiodiversityPlugin.LogVerbose("Playing HealingOrbVfx");
         StartCoroutine(DisableHealingLightDelayed(totalHealingTime));
-        HandlePlayAudioClipType(receivedAloeId, AudioClipTypes.Healing, 0, true);
     }
 
     private IEnumerator DisableHealingLightDelayed(float seconds)
@@ -901,7 +859,7 @@ public class AloeClient : MonoBehaviour
             _mls.LogError($"Cannot damage player with id {playerId}, because they do not exist.");
             return;
         }
-        LogDebug($"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
+        BiodiversityPlugin.LogVerbose($"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
         playerToDamage.Value.DamagePlayer(damage, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.Value.turnCompass.forward * (-1 * 5));
     }
 
@@ -912,6 +870,7 @@ public class AloeClient : MonoBehaviour
     {
         AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
         aloeFootstepsSource.PlayOneShot(audioClipToPlay);
+        aloeFootstepsSource.pitch = Random.Range(aloeFootstepsSource.pitch - 0.1f, aloeFootstepsSource.pitch + 0.1f);
         WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
     }
 
@@ -926,7 +885,7 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         if (duration < 0f) duration = lookBlendDuration;
-        LogDebug(
+        BiodiversityPlugin.LogVerbose(
             $"Changing look aim constraint weight from {lookAimRig.weight} to {endWeight} in {duration} seconds blend time.");
         if (_changeLookAimConstraintWeightCoroutine != null) StopCoroutine(_changeLookAimConstraintWeightCoroutine);
         _changeLookAimConstraintWeightCoroutine =
@@ -935,8 +894,8 @@ public class AloeClient : MonoBehaviour
 
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        _targetPlayer.Value = newValue == AloeServer.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
-        LogDebug(_targetPlayer.IsNotNull
+        _targetPlayer.Value = newValue == BiodiverseAI.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
+        BiodiversityPlugin.LogVerbose(_targetPlayer.IsNotNull
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
             : "Changed target player to null.");
     }
@@ -949,27 +908,27 @@ public class AloeClient : MonoBehaviour
 
     private void HandleBehaviourStateChanged(int oldValue, int newValue)
     {
-        petalsRenderer.enabled = newValue is (int)AloeServer.States.HealingPlayer
-            or (int)AloeServer.States.CuddlingPlayer or (int)AloeServer.States.ChasingEscapedPlayer
-            or (int)AloeServer.States.AttackingPlayer;
+        petalsRenderer.enabled = newValue is (int)AloeServerAI.AloeStates.HealingPlayer
+            or (int)AloeServerAI.AloeStates.CuddlingPlayer or (int)AloeServerAI.AloeStates.ChasingEscapedPlayer
+            or (int)AloeServerAI.AloeStates.AttackingPlayer;
         
         switch (newValue)
         {
-            case (int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer when oldValue is not ((int)AloeServer.States.HealingPlayer or (int)AloeServer.States.CuddlingPlayer):
+            case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer when oldValue is not ((int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer):
             {
-                LogDebug("Switching target player offset to cuddled.");
+                BiodiversityPlugin.LogVerbose("Switching target player offset to cuddled.");
                 if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
                 _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Cuddled, 0.25f));
                 break;
             }
             
-            case (int)AloeServer.States.KidnappingPlayer when
-                oldValue is not (int)AloeServer.States.KidnappingPlayer:
+            case (int)AloeServerAI.AloeStates.KidnappingPlayer when
+                oldValue is not (int)AloeServerAI.AloeStates.KidnappingPlayer:
             {
                 _offsetPosition = Vector3.zero;
                 _offsetRotation = Quaternion.identity;
                 
-                LogDebug("Switching target player offset to dragged.");
+                BiodiversityPlugin.LogVerbose("Switching target player offset to dragged.");
                 if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
                 _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Dragged, 0.25f));
                 break;
@@ -983,7 +942,7 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     public void OnAnimationEventPlayPoofParticleEffect()
     {
-        LogDebug($"In {nameof(OnAnimationEventPlayPoofParticleEffect)}");
+        BiodiversityPlugin.LogVerbose($"In {nameof(OnAnimationEventPlayPoofParticleEffect)}");
         poofParticleSystem.Play();
 
         bodyRenderer.enabled = false;
@@ -1005,19 +964,19 @@ public class AloeClient : MonoBehaviour
     private IEnumerator DestroyAloeObjectAfterDuration(float duration)
     {
         yield return new WaitForSeconds(duration);
-        LogDebug("Destroying gameobject.");
+        BiodiversityPlugin.LogVerbose("Destroying gameobject.");
         Destroy(gameObject);
     }
 
     private void AddStateMachineBehaviours(Animator receivedAnimator)
     {
-        AloeServer aloeServer = _aloeServer.Value;
+        AloeServerAI aloeServerAI = _aloeServer.Value;
         StateMachineBehaviour[] behaviours = receivedAnimator.GetBehaviours<StateMachineBehaviour>();
         foreach (StateMachineBehaviour behaviour in behaviours)
         {
             if (behaviour is BaseStateMachineBehaviour baseStateMachineBehaviour)
             {
-                baseStateMachineBehaviour.Initialize(netcodeController, aloeServer, this);
+                baseStateMachineBehaviour.Initialize(netcodeController, aloeServerAI, this);
             }
         }
     }
@@ -1062,7 +1021,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnSetTargetPlayerInCaptivity += HandleSetTargetPlayerInCaptivity;
         netcodeController.OnSetTargetPlayerAbleToEscape += HandleSetTargetPlayerAbleToEscape;
         netcodeController.OnPlayHealingVfx += HandlePlayHealingVfx;
-        netcodeController.OnPlayAudioClipType += HandlePlayAudioClipType;
         netcodeController.OnCrushPlayerNeck += HandleCrushPlayerAnimation;
         netcodeController.OnDamagePlayer += HandleDamagePlayer;
         netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
@@ -1072,7 +1030,7 @@ public class AloeClient : MonoBehaviour
 
         netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
         netcodeController.ShouldHaveDarkSkin.OnValueChanged += HandleChangeAloeSkinColour;
-        netcodeController.CurrentBehaviourStateIndex.OnValueChanged += HandleBehaviourStateChanged;
+        _aloeServer.Value.NetworkCurrentBehaviourStateIndex.OnValueChanged += HandleBehaviourStateChanged;
         
         if (!netcodeController.IsOwner)
             netcodeController.LookTargetPosition.OnValueChanged += HandleLookTargetPositionChanged;
@@ -1094,7 +1052,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnSetTargetPlayerInCaptivity -= HandleSetTargetPlayerInCaptivity;
         netcodeController.OnSetTargetPlayerAbleToEscape -= HandleSetTargetPlayerAbleToEscape;
         netcodeController.OnPlayHealingVfx -= HandlePlayHealingVfx;
-        netcodeController.OnPlayAudioClipType -= HandlePlayAudioClipType;
         netcodeController.OnCrushPlayerNeck -= HandleCrushPlayerAnimation;
         netcodeController.OnDamagePlayer -= HandleDamagePlayer;
         netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
@@ -1104,12 +1061,12 @@ public class AloeClient : MonoBehaviour
 
         netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
         netcodeController.ShouldHaveDarkSkin.OnValueChanged -= HandleChangeAloeSkinColour;
-        netcodeController.CurrentBehaviourStateIndex.OnValueChanged -= HandleBehaviourStateChanged;
+        _aloeServer.Value.NetworkCurrentBehaviourStateIndex.OnValueChanged -= HandleBehaviourStateChanged;
         
         if (!netcodeController.IsOwner)
             netcodeController.LookTargetPosition.OnValueChanged -= HandleLookTargetPositionChanged;
 
-        _networkEventsSubscribed = false;
+        _networkEventsSubscribed = false; 
     }
 
     /// <summary>
@@ -1130,10 +1087,10 @@ public class AloeClient : MonoBehaviour
     {
         if (_aloeId != receivedAloeId) return;
         
-        escapeChargePerPress = Config.EscapeChargePerPress;
-        escapeChargeDecayRate = Config.EscapeChargeDecayRate;
-        escapeChargeThreshold = Config.EscapeChargeThreshold;
-        skinMetallicTransitionTime = Config.DarkSkinTransitionTime;
+        escapeChargePerPress = AloeHandler.Instance.Config.EscapeChargePerPress;
+        escapeChargeDecayRate = AloeHandler.Instance.Config.EscapeChargeDecayRate;
+        escapeChargeThreshold = AloeHandler.Instance.Config.EscapeChargeThreshold;
+        skinMetallicTransitionTime = AloeHandler.Instance.Config.DarkSkinTransitionTime;
     }
 
     /// <summary>
@@ -1142,21 +1099,11 @@ public class AloeClient : MonoBehaviour
     /// <param name="id">The Aloe ID.</param>
     private void HandleSyncAloeId(string id)
     {
+        //todo: delete this
         _aloeId = id;
         _mls?.Dispose();
         _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client {_aloeId}");
 
-        LogDebug("Successfully synced aloe id.");
-    }
-
-    /// <summary>
-    /// Only logs the given message if the assembly version is in debug, not release
-    /// </summary>
-    /// <param name="msg">The debug message to log.</param>
-    private void LogDebug(string msg)
-    {
-#if DEBUG
-        _mls?.LogInfo(msg);
-#endif
+        BiodiversityPlugin.LogVerbose("Successfully synced aloe id.");
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Biodiversity.Util;
+using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 
@@ -8,14 +9,28 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class EnemyAIPatches
 {
-    [HarmonyPatch("PlayerIsTargetable")]
-    [HarmonyPrefix]
-    private static bool PlayerIsTargetablePatch(EnemyAI __instance, PlayerControllerB playerScript, ref bool __result)
+    // [HarmonyPatch("PlayerIsTargetable")]
+    // [HarmonyPrefix]
+    // private static bool PlayerIsTargetablePatch(EnemyAI __instance, PlayerControllerB playerScript, ref bool __result)
+    // {
+    //     // Stops the player from being targeted by enemies if they are being kidnapped
+    //     if (!AloeSharedData.Instance.IsPlayerKidnapBound(playerScript)) return true;
+    //     __result = false;
+    //     return false;
+    // }
+    
+    [HarmonyPatch(nameof(EnemyAI.PlayerIsTargetable))]
+    [HarmonyPostfix]
+    private static void OverridePlayerIsTargetable(
+        EnemyAI __instance,
+        ref bool __result,
+        PlayerControllerB playerScript,
+        bool cannotBeInShip,
+        bool overrideInsideFactoryCheck)
     {
-        // Stops the player from being targeted by enemies if they are being kidnapped
-        if (!AloeSharedData.Instance.IsPlayerKidnapBound(playerScript)) return true;
-        __result = false;
-        return false;
+        if (!__result) return; // If the player is already unable to be targeted, then we need no further interventions
+        if (playerScript != null && !PlayerUtil.IsPlayerDead(playerScript) && AloeSharedData.Instance.IsPlayerKidnapBound(playerScript))
+            __result = false;
     }
 
     [HarmonyPatch(nameof(EnemyAI.CheckLineOfSightForPlayer))]
@@ -27,10 +42,10 @@ internal static class EnemyAIPatches
         int range,
         int proximityAwareness)
     {
-        if (__result != null && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
+        if (__result != null && !PlayerUtil.IsPlayerDead(__result) && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
             __result = null;
     }
-    
+
     [HarmonyPatch(nameof(EnemyAI.CheckLineOfSightForClosestPlayer))]
     [HarmonyPostfix]
     private static void OverrideCheckLineOfSightForClosestPlayer(
@@ -41,7 +56,7 @@ internal static class EnemyAIPatches
         int proximityAwareness,
         float bufferDistance)
     {
-        if (__result != null && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
+        if (__result != null && !PlayerUtil.IsPlayerDead(__result) && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
             __result = null;
     }
 
@@ -54,9 +69,9 @@ internal static class EnemyAIPatches
         float viewWidth)
     {
         PlayerControllerB targetPlayer = __instance.targetPlayer;
-        if (targetPlayer != null && (AloeSharedData.Instance.IsPlayerKidnapBound(targetPlayer) ||
-                                     (__instance is FlowermanAI &&
-                                      AloeSharedData.Instance.IsPlayerStalkBound(targetPlayer))))
+        if (targetPlayer != null && !PlayerUtil.IsPlayerDead(targetPlayer) &&
+            (AloeSharedData.Instance.IsPlayerKidnapBound(targetPlayer) || 
+             (__instance is FlowermanAI && AloeSharedData.Instance.IsPlayerStalkBound(targetPlayer))))
             __instance.targetPlayer = null;
     }
 }

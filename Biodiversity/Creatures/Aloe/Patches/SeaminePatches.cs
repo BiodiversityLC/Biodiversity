@@ -21,8 +21,8 @@ internal class SeaminePatches
         if (!IsHost(__instance) && !IsServer(__instance)) return true;
         if (AloeHandler.Instance.Config.LandminesBlowUpAloe) return true;
 
-        AloeServer aloeAI = other.gameObject.GetComponentInParent<AloeServer>();
-        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.aloeId))
+        AloeServerAI aloeAI = other.gameObject.GetComponentInParent<AloeServerAI>();
+        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
         {
             return false;
         }
@@ -35,7 +35,7 @@ internal class SeaminePatches
 
         return true;
     }
-    
+
     // Reflection-based method to check if `__instance.IsHost` is true
     private static bool IsHost(object instance)
     {
