@@ -110,7 +110,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     
     [field: Tooltip("The required health a player needs to be or lower for the Aloe to kidnap and heal them.")]
     [field: Range(1, 100)]
-    public int PlayerHealthThresholdForHealing { get; private set; } = 60;
+    public int PlayerHealthThresholdForHealing { get; private set; } = 80;
 
     [field: Tooltip("The distance from the player the Aloe will stop and stare at the player from.")]
     [field: Range(0.5f, 100f)]
@@ -138,7 +138,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("The amount of time the Aloe will stare at you before chasing you if you escape.")]
     [field: Range(0f, 30f)]
-    public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 2f;
+    public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 3f;
 
     [field: Tooltip("Whether landmines and seamines will blow up if the Aloe moves over one while carrying a player.")]
     public bool LandminesBlowUpAloe { get; private set; } = false;
