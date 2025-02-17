@@ -7,6 +7,7 @@ using Biodiversity.Util.Lang;
 using Biodiversity.Util.Types;
 using Unity.Netcode;
 using GameNetcodeStuff;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
@@ -42,6 +43,7 @@ public class AloeClient : MonoBehaviour
 
     public const float SnatchAndGrabAudioLength = 2.019f;
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public enum AudioClipTypes
     {
         stunSfx,
@@ -171,6 +173,7 @@ public class AloeClient : MonoBehaviour
     private float _currentEscapeChargeValue;
     private float _agentCurrentSpeed;
     private float _lastReceivedNewLookTargetPositionTime;
+    private float _lastFootstepTime;
     private const float LookTargetPositionLerpTime = 0.1f;
 
     private void Awake()
@@ -274,6 +277,8 @@ public class AloeClient : MonoBehaviour
         animator.SetBool(Crawling, netcodeController.AnimationParamCrawling.Value);
         animator.SetBool(Stunned, netcodeController.AnimationParamStunned.Value);
         animator.SetBool(Dead, netcodeController.AnimationParamDead.Value);
+        
+        _lastFootstepTime += Time.deltaTime;
 
         /*
         const float moveAmount = 0.1f;
@@ -868,6 +873,9 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     public void OnAnimationEventPlayFootstepSfx()
     {
+        BiodiversityPlugin.LogVerbose($"Last footstep time: {_lastFootstepTime}");
+        _lastFootstepTime = 0;
+        
         AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
         aloeFootstepsSource.PlayOneShot(audioClipToPlay);
         aloeFootstepsSource.pitch = Random.Range(aloeFootstepsSource.pitch - 0.1f, aloeFootstepsSource.pitch + 0.1f);

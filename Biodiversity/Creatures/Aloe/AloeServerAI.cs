@@ -390,7 +390,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
 
             if ((closestOutsideNode - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
             {
-                agent.Warp(RoundManager.Instance.GetRandomNavMeshPositionInRadius(_mainEntrancePosition, 30f));
+                allAINodes = AloeSharedData.Instance.GetOutsideAINodes();
             }
         }
 

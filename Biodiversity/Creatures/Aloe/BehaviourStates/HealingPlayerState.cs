@@ -39,9 +39,6 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
 
         EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(EnemyAIInstance.BioId, true);
         EnemyAIInstance.netcodeController.UnMuffleTargetPlayerVoiceClientRpc(EnemyAIInstance.BioId);
-        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.8f, 1f);
-        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.0f,
-            0.5f);
 
         int playerMaxHealth = AloeSharedData.Instance.GetPlayerMaxHealth(EnemyAIInstance.ActualTargetPlayer.Value);
         if (EnemyAIInstance.ActualTargetPlayer.Value.health == playerMaxHealth)
@@ -51,8 +48,10 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
             return;
         }
 
-        // Start healing the player
-        EnemyAIInstance.LogVerbose("Starting to heal the player");
+        // Start healing/damage the player
+        EnemyAIInstance.LogVerbose(AloeHandler.Instance.Config.AloeEnabled //AloeHandler.Instance.Config.DamageInsteadOfHeal
+            ? "Starting to damage the player."
+            : "Starting to heal the player.");
 
         // Calculate the heal amount per AIInterval
         float baseHealingRate = 100f / EnemyAIInstance.TimeItTakesToFullyHealPlayer;

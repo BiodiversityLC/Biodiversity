@@ -142,6 +142,9 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("Whether landmines and seamines will blow up if the Aloe moves over one while carrying a player.")]
     public bool LandminesBlowUpAloe { get; private set; } = false;
+
+    // [field: Tooltip("Whether to use an alternative behaviour for the Aloe where she will damage players instead of heal them. To adjust the amount of damage she does, just adjust the `TimeItTakesToFullyHealPlayer` parameter.")]
+    // public bool DamageInsteadOfHeal { get; private set; } = false;
     
     [field: Tooltip("How often (in seconds) the Aloe updates its logic. Higher values increase performance but slow down reaction times.")]
     [field: Range(0.001f, 1f)]
