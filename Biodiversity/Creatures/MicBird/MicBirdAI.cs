@@ -544,7 +544,7 @@ namespace Biodiversity.Creatures.MicBird
                     callTimer = 60;
 
 
-                    if (Random.Range(0, 2) == 0)
+                    if (Random.Range(1, 101) <= MicBirdHandler.Instance.Config.TeleportCancelChance)
                     {
                         if (TeleporterStatus.Teleporting)
                         {
@@ -552,7 +552,7 @@ namespace Biodiversity.Creatures.MicBird
                         }
                     }
 
-                    if (Random.Range(1, 101) < 21)
+                    if (Random.Range(1, 101) <= MicBirdHandler.Instance.Config.InverseTeleportCancelChance)
                     {
                         if (TeleporterStatus.TeleportingInverse)
                         {
@@ -560,8 +560,23 @@ namespace Biodiversity.Creatures.MicBird
                         }
                     }
 
+                    int num = Random.Range(1, MicBirdHandler.Instance.totalweight + 1);
+                    string malfunctionName = "";
+                    foreach (var weight in MicBirdHandler.Instance.weights)
+                    {
+                        if (num <= weight.Second)
+                        {
+                            malfunctionName = weight.First;
+                            break;
+                        }
+                    }
 
-                    malfunction = (MalfunctionID)Random.Range(1, Enum.GetValues(typeof(MalfunctionID)).Length);
+                    if (malfunctionName == "")
+                    {
+                        BiodiversityPlugin.Logger.LogInfo("Something is not working.");
+                    }
+
+                    malfunction = Enum.Parse<MalfunctionID>(malfunctionName);
                     BiodiversityPlugin.Logger.LogInfo("Setting malfunction to " + malfunction.ToString());
                     switch (malfunction)
                     {
@@ -582,6 +597,7 @@ namespace Biodiversity.Creatures.MicBird
                             baseMalfunctionInterval = 0.66f;
                             break;
                         default:
+                            BiodiversityPlugin.Logger.LogInfo("Something is not working. (2)");
                             break;
                     }
                     malfunctionInterval = baseMalfunctionInterval;

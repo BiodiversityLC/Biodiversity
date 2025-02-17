@@ -19,5 +19,25 @@ namespace Biodiversity.Creatures.MicBird
 
         [field: Tooltip("Maximum time between roam/idle sounds")]
         public int BoomBirdIdleMaxTime { get; private set; } = 35;
+
+        // Malfunction configs
+        [field: Tooltip("Weight of the walkie malfunction")]
+        public int WalkieMalfunctionWeight { get; private set; } = 10;
+
+        [field: Tooltip("Weight of the door malfunction")]
+        public int DoorMalfunctionWeight { get; private set; } = 10;
+
+        [field: Tooltip("Weight of the radar malfunction")]
+        public int RadarMalfunctionWeight { get; private set; } = 10;
+
+        [field: Tooltip("Weight of the lights out malfunction")]
+        public int LightsOutMalfunctionWeight { get; private set; } = 10;
+
+        // Chance based malfunction configs
+        [field: Tooltip("Chance (in percent) of canceling a teleport into the ship when a malfunction occurs.")]
+        public int TeleportCancelChance { get; private set; } = 50;
+
+        [field: Tooltip("Chance (in percent) of canceling an inverse teleport when a malfunction occurs.")]
+        public int InverseTeleportCancelChance { get; private set; } = 25;
     }
 }
