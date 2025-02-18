@@ -156,6 +156,8 @@ namespace Biodiversity.Creatures.CoilCrab
             if (enemyHP <= 0 && !deadBefore)
             {
                 CustomKillEnemy();
+                creatureAnimator.SetBool("Exploding", false);
+                creatureAnimator.SetBool("Walking", false);
                 creatureAnimator.SetBool("Dead", true);
                 dropShell();
             }
