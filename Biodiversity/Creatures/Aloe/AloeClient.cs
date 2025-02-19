@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using BepInEx.Logging;
 using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 using Biodiversity.Util.Lang;
 using Biodiversity.Util.Types;
@@ -13,14 +12,12 @@ using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
 using UnityEngine.InputSystem;
 using UnityEngine.VFX;
-using Logger = BepInEx.Logging.Logger;
 using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Aloe;
 
 public class AloeClient : MonoBehaviour
 {
-    private ManualLogSource _mls;
     private string _aloeId;
 
     private static readonly int Metallic = Shader.PropertyToID("_Metallic");
@@ -178,7 +175,6 @@ public class AloeClient : MonoBehaviour
 
     private void Awake()
     {
-        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client");
         if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
 
         _aloeServer = new CachedValue<AloeServerAI>(GetComponent<AloeServerAI>);
@@ -190,7 +186,7 @@ public class AloeClient : MonoBehaviour
             NullableObject<PlayerControllerB> player = new(StartOfRound.Instance.allPlayerScripts[playerId]);
             if (!player.IsNotNull)
             {
-                _mls.LogError("Cannot get target player renderers because the target player variable is null.");
+                BiodiversityPlugin.Logger.LogError("Cannot get target player renderers because the target player variable is null.");
                 return rendererComponents;
             }
 
@@ -201,7 +197,7 @@ public class AloeClient : MonoBehaviour
                     Transform rendererTransform = _targetPlayer.Value.transform.Find(rendererTuple.Item1);
                     if (rendererTransform == null)
                     {
-                        _mls.LogWarning($"Transform not found for renderer: {rendererTuple.Item1}");
+                        BiodiversityPlugin.Logger.LogWarning($"Transform not found for renderer: {rendererTuple.Item1}");
                         continue;
                     }
 
@@ -214,13 +210,13 @@ public class AloeClient : MonoBehaviour
                     }
                     else
                     {
-                        _mls.LogWarning(
+                        BiodiversityPlugin.Logger.LogWarning(
                             $"Component of type {rendererTuple.Item2} not found or incorrect type for renderer: {rendererTuple.Item1}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    _mls.LogError($"Error processing renderer: {rendererTuple.Item1} for player ID {playerId}: {ex.Message}");
+                    BiodiversityPlugin.Logger.LogError($"Error processing renderer: {rendererTuple.Item1} for player ID {playerId}: {ex.Message}");
                 }
             }
 
@@ -435,13 +431,19 @@ public class AloeClient : MonoBehaviour
         }
 
         // Animate the real target player's body
-        if (_targetPlayerInCaptivity && _targetPlayer.IsNotNull && (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.AloeStates.KidnappingPlayer
-                or (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer) &&
-              _targetPlayer.Value.inSpecialInteractAnimation)
+        if (_targetPlayerInCaptivity && _targetPlayer.IsNotNull)
         {
-            _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
-            _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
+            if (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.AloeStates.KidnappingPlayer
+                    or (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer &&
+                _targetPlayer.Value.inSpecialInteractAnimation)
+            {
+                _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
+                _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
+            }
         }
+        
+        CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value); // such a shitty way of fixing a bug
+        UpdateRagdollVisibility(); // this too
     }
 
     /// <summary>
@@ -611,7 +613,7 @@ public class AloeClient : MonoBehaviour
 
         if (_currentFakePlayerBodyRagdoll == null)
         {
-            _mls.LogError("The player body ragdoll is null, this should never happen.");
+            BiodiversityPlugin.Logger.LogError("The player body ragdoll is null, this should never happen.");
             return;
         }
 
@@ -629,12 +631,7 @@ public class AloeClient : MonoBehaviour
         if (_aloeId != receivedAloeId) return;
         BiodiversityPlugin.LogVerbose($"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
         
-        if (_currentFakePlayerBodyRagdoll != null)
-        {
-            BiodiversityPlugin.LogVerbose("_currentFakePlayerBodyRagdoll is not null. Destroying it.");
-            Destroy(_currentFakePlayerBodyRagdoll.gameObject);
-            _currentFakePlayerBodyRagdoll = null;
-        }
+        CleanupRagdoll();
 
         if (!fakePlayerBodyRagdollNetworkObjectReference.TryGet(out NetworkObject fakePlayerBodyRagdollNetworkObject))
         {
@@ -645,15 +642,20 @@ public class AloeClient : MonoBehaviour
         _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollNetworkObject.GetComponent<FakePlayerBodyRagdoll>();
         if (_currentFakePlayerBodyRagdoll == null)
         {
-            _mls.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
+            BiodiversityPlugin.Logger.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
             return;
         }
 
         _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", ragdollGrabTarget);
-        if (GameNetworkManager.Instance.localPlayerController == _targetPlayer.Value)
-        {
-            _currentFakePlayerBodyRagdoll.bodyMeshRenderer.enabled = false;
-        }
+        UpdateRagdollVisibility();
+    }
+    
+    private void UpdateRagdollVisibility()
+    {
+        if (_currentFakePlayerBodyRagdoll == null) return;
+    
+        bool isLocalPlayer = GameNetworkManager.Instance.localPlayerController == _targetPlayer.Value;
+        _currentFakePlayerBodyRagdoll.bodyMeshRenderer.enabled = !isLocalPlayer;
     }
 
     /// <summary>
@@ -670,66 +672,74 @@ public class AloeClient : MonoBehaviour
             _targetPlayerInCaptivity = false;
             return;
         }
+        
+        PlayerControllerB targetPlayer = _targetPlayer.Value;
 
-        if (setToInCaptivity)
-        {
-            if (_targetPlayer.Value.inSpecialInteractAnimation && _targetPlayer.Value.currentTriggerInAnimationWith != null)
-                _targetPlayer.Value.currentTriggerInAnimationWith.CancelAnimationExternally();
-
-            _targetPlayer.Value.isCrouching = false;
-            _targetPlayer.Value.playerBodyAnimator.SetBool(PlayerCrouching, false);
-            HandleMuffleTargetPlayerVoice(_aloeId);
-            _targetPlayer.Value.inSpecialInteractAnimation = true;
-            _targetPlayer.Value.inAnimationWithEnemy = _aloeServer.Value;
-            _targetPlayer.Value.isInElevator = false;
-            _targetPlayer.Value.isInHangarShipRoom = false;
-            _targetPlayer.Value.ResetZAndXRotation();
-            _targetPlayer.Value.DropAllHeldItemsAndSync();
-
-            if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value)
-            {
-                ToggleTargetPlayerRenderers(false);
-            }
-            else
-            {
-                GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = false;
-                _playerVisorRenderers[_targetPlayer.Value.actualClientId].enabled = false;
-            }
-        }
-        else
-        {
-            if (_currentFakePlayerBodyRagdoll != null)
-            {
-                Destroy(_currentFakePlayerBodyRagdoll.gameObject);
-                _currentFakePlayerBodyRagdoll = null;
-            }
-
-            if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value)
-            {
-                ToggleTargetPlayerRenderers(true);
-            }
-            else
-            {
-                GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
-                _playerVisorRenderers[_targetPlayer.Value.actualClientId].enabled = true;
-            }
-
-            // healingOrbEffect.Stop();
-            healingLightEffect.enabled = false;
-            _targetPlayer.Value.inSpecialInteractAnimation = false;
-            _targetPlayer.Value.inAnimationWithEnemy = null;
-            _targetPlayer.Value.ResetZAndXRotation();
-            
-            // Make sure the player is on a navmesh
-            Vector3 validPosition =
-                RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
-            _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
-            
-            HandleUnMuffleTargetPlayerVoice(_aloeId);
-        }
+        if (setToInCaptivity) SetupCaptivity(targetPlayer);
+        else ReleaseCaptivity(targetPlayer);
 
         _targetPlayerInCaptivity = setToInCaptivity;
         BiodiversityPlugin.LogVerbose($"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
+    }
+
+    private void SetupCaptivity(PlayerControllerB targetPlayer)
+    {
+        if (targetPlayer.inSpecialInteractAnimation && targetPlayer.currentTriggerInAnimationWith != null)
+            targetPlayer.currentTriggerInAnimationWith.CancelAnimationExternally();
+
+        targetPlayer.isCrouching = false;
+        targetPlayer.playerBodyAnimator.SetBool(PlayerCrouching, false);
+        HandleMuffleTargetPlayerVoice(_aloeId);
+        
+        targetPlayer.inSpecialInteractAnimation = true;
+        targetPlayer.inAnimationWithEnemy = _aloeServer.Value;
+        targetPlayer.isInElevator = false;
+        targetPlayer.isInHangarShipRoom = false;
+        
+        targetPlayer.ResetZAndXRotation();
+        targetPlayer.DropAllHeldItemsAndSync();
+
+        CorrectlySetTargetPlayerLocalRenderers(false, targetPlayer);
+    }
+
+    private void ReleaseCaptivity(PlayerControllerB targetPlayer)
+    {
+        CleanupRagdoll();
+        CorrectlySetTargetPlayerLocalRenderers(true, targetPlayer);
+        
+        // healingOrbEffect.Stop();
+        healingLightEffect.enabled = false;
+        _targetPlayer.Value.inSpecialInteractAnimation = false;
+        _targetPlayer.Value.inAnimationWithEnemy = null;
+        _targetPlayer.Value.ResetZAndXRotation();
+            
+        // Make sure the player is on a navmesh
+        Vector3 validPosition =
+            RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
+        _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
+            
+        HandleUnMuffleTargetPlayerVoice(_aloeId);
+    }
+
+    private void CorrectlySetTargetPlayerLocalRenderers(bool enable, PlayerControllerB targetPlayer)
+    {
+        if (GameNetworkManager.Instance.localPlayerController == targetPlayer)
+        {
+            GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = enable;
+            _playerVisorRenderers[targetPlayer.actualClientId].enabled = enable;
+        }
+        else
+        {
+            ToggleTargetPlayerLocalRenderers(enable);
+        }
+    }
+
+    private void CleanupRagdoll()
+    {
+        if (_currentFakePlayerBodyRagdoll == null) return;
+        BiodiversityPlugin.LogVerbose("_currentFakePlayerBodyRagdoll is not null. Destroying it.");
+        Destroy(_currentFakePlayerBodyRagdoll.gameObject);
+        _currentFakePlayerBodyRagdoll = null;
     }
 
     /// <summary>
@@ -805,11 +815,11 @@ public class AloeClient : MonoBehaviour
         _targetPlayer.Value.voiceMuffledByEnemy = false;
     }
 
-    private void ToggleTargetPlayerRenderers(bool setToEnabled)
+    private void ToggleTargetPlayerLocalRenderers(bool setToEnabled)
     {
         if (!_targetPlayer.IsNotNull)
         {
-            _mls.LogError("Cannot toggle target player renderers because the target player variable is null.");
+            BiodiversityPlugin.Logger.LogError("Cannot toggle target player renderers because the target player variable is null.");
             return;
         }
         
@@ -818,7 +828,7 @@ public class AloeClient : MonoBehaviour
         
         if (cachedRenderers == null || cachedRenderers.Count == 0)
         {
-            _mls.LogWarning($"No renderer components cached for player ID {targetPlayerId}");
+            BiodiversityPlugin.Logger.LogWarning($"No renderer components cached for player ID {targetPlayerId}");
             return;
         }
 
@@ -861,7 +871,7 @@ public class AloeClient : MonoBehaviour
         NullableObject<PlayerControllerB> playerToDamage = new(StartOfRound.Instance.allPlayerScripts[playerId]);
         if (!playerToDamage.IsNotNull)
         {
-            _mls.LogError($"Cannot damage player with id {playerId}, because they do not exist.");
+            BiodiversityPlugin.Logger.LogError($"Cannot damage player with id {playerId}, because they do not exist.");
             return;
         }
         BiodiversityPlugin.LogVerbose($"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
@@ -1109,8 +1119,6 @@ public class AloeClient : MonoBehaviour
     {
         //todo: delete this
         _aloeId = id;
-        _mls?.Dispose();
-        _mls = Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_GUID} | Aloe Client {_aloeId}");
 
         BiodiversityPlugin.LogVerbose("Successfully synced aloe id.");
     }
