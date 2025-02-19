@@ -14,7 +14,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	public bool FungiEnabled { get; private set; } = true;
 	
 	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:8,March:45,Artifice:95,Solace:80,Fray:32,Seichi:16,Olympus:15,Arelion:6,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8,Mycorditum:34,Phaedra:40,Pelagia:40";
+	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:8,March:45,Artifice:10,Solace:80,Fray:32,Seichi:16,Olympus:15,Arelion:6,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8,Mycorditum:34,Phaedra:10,Pelagia:40,Derelect:21";
 	
 	[field: Tooltip("Normal speed of fungi.")]
 	[field: Range(3f, 20f)]
@@ -38,7 +38,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	public bool LeafBoyEnabled { get; private set; } = true;
 	
 	[field: Tooltip("Spawn weight of the Leaf boys on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:15,Experimentation:0,Assurance:85,Offense:30,Artifice:0,Rend:0,Dine:0,Titan:0,Seichi:28,Olympus:1,Arelion:6,Fray:300,Vertigo:12,Integrity:25,Collateral:10,Hydro:38,USC Vortex:12,Phaedra:20";
+	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:15,Assurance:85,Offense:5,Artifice:10,Rend:5,Dine:15,Seichi:10,Fray:300,Vertigo:5,Integrity:25,Collateral:10,Hydro:38,Brutality:15,USC Vortex:12,Phaedra:35,Valiance:28,Natit:8,Starship-13:30";
 
 	[field: Tooltip("The distance a player has to be from a LeafBoy for him to get scared.")]
 	[field: Range(1f, 20f)] 

@@ -13,7 +13,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     public bool AloeEnabled { get; private set; } = true;
     
     [field: Tooltip("Spawn weight of the Aloe on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-    public string Rarity { get; private set; } = "Experimentation:28,Assurance:75,Offense:65,March:55,Artifice:95,Aquatis:18,Integrity:21,Vertigo:36,Solace:12,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Atlantica:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Seichi:14,USCVortex:8,Hydro:20,Arcadia:40,Olympus:4,Arelion:7,Modded:2,Phaedra:50,Pelagia:18";
+    public string Rarity { get; private set; } = "Experimentation:28,Assurance:75,Offense:65,March:55,Artifice:95,Aquatis:18,Integrity:21,Vertigo:36,Solarius:10,Phuket:20,Sierra:40,Fray:45,Fission-C:5,Etern:12,Gloom:17,Junic:31,Polarus:13,Motra:22,Seichi:14,USCVortex:8,Hydro:20,Arcadia:18,Derelect:30,Arelion:7,Phaedra:50,Pelagia:18,Torus:26,Starship-13:35,Modded:2";
 
     [field: Tooltip("The power level of the Aloe.")]
     [field: Range(0f, 15f)]
@@ -110,7 +110,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     
     [field: Tooltip("The required health a player needs to be or lower for the Aloe to kidnap and heal them.")]
     [field: Range(1, 100)]
-    public int PlayerHealthThresholdForHealing { get; private set; } = 60;
+    public int PlayerHealthThresholdForHealing { get; private set; } = 80;
 
     [field: Tooltip("The distance from the player the Aloe will stop and stare at the player from.")]
     [field: Range(0.5f, 100f)]
@@ -138,7 +138,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("The amount of time the Aloe will stare at you before chasing you if you escape.")]
     [field: Range(0f, 30f)]
-    public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 2f;
+    public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 3f;
 
     [field: Tooltip("Whether landmines and seamines will blow up if the Aloe moves over one while carrying a player.")]
     public bool LandminesBlowUpAloe { get; private set; } = false;

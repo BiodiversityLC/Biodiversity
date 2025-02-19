@@ -135,6 +135,8 @@ namespace Biodiversity.Creatures.CoilCrab
 
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
         {
+            if (playerWhoHit == null) return;
+
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
 
             BiodiversityPlugin.Logger.LogInfo("Hit by " + force + " damage.");
@@ -154,6 +156,8 @@ namespace Biodiversity.Creatures.CoilCrab
             if (enemyHP <= 0 && !deadBefore)
             {
                 CustomKillEnemy();
+                creatureAnimator.SetBool("Exploding", false);
+                creatureAnimator.SetBool("Walking", false);
                 creatureAnimator.SetBool("Dead", true);
                 dropShell();
             }
