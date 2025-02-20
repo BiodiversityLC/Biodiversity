@@ -68,9 +68,6 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
 
     internal override void AIIntervalBehaviour()
     {
-        EnemyAIInstance.netcodeController.LookTargetPosition.Value =
-            EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
-        
         if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
             EnemyAIInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
 

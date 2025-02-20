@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Biodiversity.Util;
+using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
@@ -11,7 +12,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// </summary>
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 [HarmonyPatch(typeof(Landmine))]
-internal class LandminePatch
+internal static class LandminePatch
 {
     [HarmonyPatch(nameof(Landmine.OnTriggerEnter))]
     [HarmonyPrefix]
@@ -22,15 +23,11 @@ internal class LandminePatch
 
         AloeServerAI aloeAI = other.gameObject.GetComponentInParent<AloeServerAI>();
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
-        {
             return false;
-        }
 
         PlayerControllerB component = other.gameObject.GetComponent<PlayerControllerB>();
-        if (component != null && AloeSharedData.Instance.IsPlayerKidnapBound(component) && !component.isPlayerDead)
-        {
+        if (!PlayerUtil.IsPlayerDead(component) && AloeSharedData.Instance.IsPlayerKidnapBound(component))
             return false;
-        }
 
         return true;
     }
@@ -44,15 +41,11 @@ internal class LandminePatch
 
         AloeServerAI aloeAI = other.gameObject.GetComponentInParent<AloeServerAI>();
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
-        {
             return false;
-        }
 
         PlayerControllerB component = other.gameObject.GetComponent<PlayerControllerB>();
-        if (component != null && AloeSharedData.Instance.IsPlayerKidnapBound(component) && !component.isPlayerDead)
-        {
+        if (!PlayerUtil.IsPlayerDead(component) && AloeSharedData.Instance.IsPlayerKidnapBound(component))
             return false;
-        }
 
         return true;
     }

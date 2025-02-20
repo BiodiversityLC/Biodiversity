@@ -26,10 +26,6 @@ internal class CuddlingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         EnemyAIInstance.AgentMaxAcceleration = 50f;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.openDoorSpeedMultiplier = 4f;
-
-        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.8f, 1f);
-        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.0f,
-            0.5f);
     }
 
     internal override void AIIntervalBehaviour()
@@ -40,18 +36,11 @@ internal class CuddlingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
 
         if (tempPlayer != null)
         {
-            EnemyAIInstance.netcodeController.LookTargetPosition.Value =
-                tempPlayer.gameplayCamera.transform.position;
             EnemyAIInstance.LookAtPosition(tempPlayer.transform.position);
         }
         else if (AloeSharedData.Instance.BrackenRoomDoorPosition != Vector3.zero)
         {
-            EnemyAIInstance.netcodeController.LookTargetPosition.Value =
-                EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
             EnemyAIInstance.LookAtPosition(AloeSharedData.Instance.BrackenRoomDoorPosition);
         }
-
-        EnemyAIInstance.netcodeController.LookTargetPosition.Value =
-            EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
     }
 }

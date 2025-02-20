@@ -1,6 +1,5 @@
 ﻿using System;
 using Unity.Netcode;
-using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -9,7 +8,6 @@ public class AloeNetcodeController : NetworkBehaviour
     internal readonly NetworkVariable<ulong> TargetPlayerClientId = new();
     internal readonly NetworkVariable<bool> HasFinishedSpottedAnimation = new();
     internal readonly NetworkVariable<bool> ShouldHaveDarkSkin = new();
-    internal readonly NetworkVariable<Vector3> LookTargetPosition = new();
 
     internal readonly NetworkVariable<bool> AnimationParamCrawling = new();
     internal readonly NetworkVariable<bool> AnimationParamHealing = new();
@@ -28,7 +26,6 @@ public class AloeNetcodeController : NetworkBehaviour
     internal event Action<string, bool> OnSetTargetPlayerAbleToEscape;
     internal event Action<string, float> OnPlayHealingVfx;
     internal event Action<string, ulong> OnCrushPlayerNeck;
-    internal event Action<string, float, float> OnChangeLookAimConstraintWeight;
     internal event Action<string, float> OnTransitionToRunningForwardsAndCarryingPlayer;
     internal event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
     internal event Action<string, ulong, int> OnDamagePlayer;
@@ -50,12 +47,6 @@ public class AloeNetcodeController : NetworkBehaviour
     internal void TransitionToRunningForwardsAndCarryingPlayerClientRpc(string receivedAloeId, float transitionDuration)
     {
         OnTransitionToRunningForwardsAndCarryingPlayer?.Invoke(receivedAloeId, transitionDuration);
-    }
-
-    [ClientRpc]
-    internal void ChangeLookAimConstraintWeightClientRpc(string receivedAloeId, float endWeight, float duration = -1f)
-    {
-        OnChangeLookAimConstraintWeight?.Invoke(receivedAloeId, endWeight, duration);
     }
 
     [ClientRpc]

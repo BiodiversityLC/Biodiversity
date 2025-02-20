@@ -8,9 +8,15 @@ namespace Biodiversity.Util.Attributes;
 /// This attribute is used to mark classes or methods as conditional patches for a target class or method in an external mod.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The patch will only be applied if the mod specified in the <see cref="AssemblyName"/> is loaded.
 /// Note that you cannot specify parameters when targeting methods, so this attribute will not work with overloaded methods.
 /// Overloading refers to methods that have the same name but different parameters.
+/// </para>
+/// <para>
+/// If you are having problems with getting the exact <see cref="AssemblyName"/>, <see cref="TargetClassName"/>, <see cref="TargetMethodName"/>,
+/// or are having problems in general, then turn on verbose logging in the <c>Lethal Company\BepInEx\config\com.github.biodiversitylc.Biodiversity.cfg</c> config file.
+/// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public class ModConditionalPatch : Attribute

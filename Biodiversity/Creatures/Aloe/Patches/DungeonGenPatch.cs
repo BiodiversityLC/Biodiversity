@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using BepInEx.Logging;
 using DunGen;
 using HarmonyLib;
 using Unity.Netcode;
@@ -15,18 +14,16 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// </summary>
 [HarmonyPatch(typeof(DungeonGenerator))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-internal class DungeonGenPatch
+internal static class DungeonGenPatch
 {
-    private static readonly ManualLogSource Mls = new("AloeDunGenPatches");
-
     [HarmonyPatch("ChangeStatus")]
     [HarmonyPostfix]
     public static void OnChangeStatus(DungeonGenerator __instance)
     {
         if (!NetworkManager.Singleton.IsServer) return;
 
-        if (__instance.CurrentDungeon == null) LogDebug("CurrentDungeon is null");
-        else if (__instance.CurrentDungeon.AllTiles == null) LogDebug("AllTiles is null");
+        if (__instance.CurrentDungeon == null) BiodiversityPlugin.Logger.LogDebug("CurrentDungeon is null");
+        else if (__instance.CurrentDungeon.AllTiles == null) BiodiversityPlugin.Logger.LogDebug("AllTiles is null");
 
         Tile tile = FindTileWithName(__instance.CurrentDungeon, "SmallRoom2");
         if (tile == null) return;
@@ -61,14 +58,7 @@ internal class DungeonGenPatch
     private static Tile FindTileWithName(Dungeon dungeon, string nameContains)
     {
         if (dungeon != null) return dungeon.AllTiles.FirstOrDefault(tile => tile.name.Contains(nameContains));
-        LogDebug("Dungeon is null");
+        BiodiversityPlugin.Logger.LogDebug("Dungeon is null");
         return null;
-    }
-
-    private static void LogDebug(string msg)
-    {
-#if DEBUG
-        Mls?.LogInfo($"{msg}");
-#endif
     }
 }

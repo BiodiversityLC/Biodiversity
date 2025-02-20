@@ -10,7 +10,7 @@ namespace Biodiversity;
 public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
 {
     [field: Header("Development")]
-    [field: Tooltip("Whether to log more debug information to the console.")]
+    [field: Tooltip("Whether to log more debug information to the console. 99% of people do NOT need to touch this.")]
     public bool VerboseLogging { get; private set; } = false;
 
     [field: NonSerialized] public string Language { get; private set; } = "en";

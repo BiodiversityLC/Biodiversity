@@ -419,17 +419,6 @@ public class AloeClient : MonoBehaviour
 
     private void LateUpdate()
     {
-        // Make the look target aim at a player
-        {
-            float timeSinceLastUpdate = Time.time - _lastReceivedNewLookTargetPositionTime;
-            float t = timeSinceLastUpdate / LookTargetPositionLerpTime;
-
-            Vector3 newPosition = Vector3.Lerp(transform.position, _lastReceivedLookTargetPosition, t);
-
-            AloeUtils.SmoothMoveTransformPositionTo(lookTarget, newPosition, smoothLookTargetPositionTime,
-                ref _lookTargetVelocity);
-        }
-
         // Animate the real target player's body
         if (_targetPlayerInCaptivity && _targetPlayer.IsNotNull)
         {
@@ -538,31 +527,6 @@ public class AloeClient : MonoBehaviour
         bodyRenderer.SetPropertyBlock(_propertyBlock);
         
         _changeSkinColourCoroutine = null;
-    }
-
-    /// <summary>
-    /// Blends the look multi-aim constraint weight parameter over a specific duration
-    /// </summary>
-    /// <param name="startWeight">The start weight of the blend.</param>
-    /// <param name="endWeight">The end weight of the blend.</param>
-    /// <param name="duration">The duration of the blend.</param>
-    /// <returns></returns>
-    private IEnumerator BlendLookAimConstraintWeight(float startWeight, float endWeight, float duration)
-    {
-        float elapsed = 0f;
-
-        // Exit early if the start and end weights are the same
-        if (Mathf.Approximately(startWeight, endWeight)) yield break;
-
-        while (elapsed < duration)
-        {
-            lookAimRig.weight = Mathf.Lerp(startWeight, endWeight, elapsed / duration);
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        lookAimRig.weight = endWeight;
-        _changeLookAimConstraintWeightCoroutine = null;
     }
 
     /// <summary>
@@ -892,36 +856,12 @@ public class AloeClient : MonoBehaviour
         WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
     }
 
-    /// <summary>
-    /// Changes the look aim constraint weight to the specified value.
-    /// The look aim constraint is used for making the Aloe look at something with her head bone.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="endWeight">The weight to blend to.</param>
-    /// <param name="duration">The duration of the blend.</param>
-    private void HandleChangeLookAimConstraintWeight(string receivedAloeId, float endWeight, float duration = -1f)
-    {
-        if (_aloeId != receivedAloeId) return;
-        if (duration < 0f) duration = lookBlendDuration;
-        BiodiversityPlugin.LogVerbose(
-            $"Changing look aim constraint weight from {lookAimRig.weight} to {endWeight} in {duration} seconds blend time.");
-        if (_changeLookAimConstraintWeightCoroutine != null) StopCoroutine(_changeLookAimConstraintWeightCoroutine);
-        _changeLookAimConstraintWeightCoroutine =
-            StartCoroutine(BlendLookAimConstraintWeight(lookAimRig.weight, endWeight, duration));
-    }
-
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
         _targetPlayer.Value = newValue == BiodiverseAI.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
         BiodiversityPlugin.LogVerbose(_targetPlayer.IsNotNull
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
             : "Changed target player to null.");
-    }
-
-    private void HandleLookTargetPositionChanged(Vector3 oldValue, Vector3 newValue)
-    {
-        _lastReceivedLookTargetPosition = newValue;
-        _lastReceivedNewLookTargetPositionTime = Time.time;
     }
 
     private void HandleBehaviourStateChanged(int oldValue, int newValue)
@@ -1041,7 +981,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnPlayHealingVfx += HandlePlayHealingVfx;
         netcodeController.OnCrushPlayerNeck += HandleCrushPlayerAnimation;
         netcodeController.OnDamagePlayer += HandleDamagePlayer;
-        netcodeController.OnChangeLookAimConstraintWeight += HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll += HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer +=
             HandleTransitionToRunningForwardsAndCarryingPlayer;
@@ -1049,9 +988,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
         netcodeController.ShouldHaveDarkSkin.OnValueChanged += HandleChangeAloeSkinColour;
         _aloeServer.Value.NetworkCurrentBehaviourStateIndex.OnValueChanged += HandleBehaviourStateChanged;
-        
-        if (!netcodeController.IsOwner)
-            netcodeController.LookTargetPosition.OnValueChanged += HandleLookTargetPositionChanged;
 
         _networkEventsSubscribed = true;
     }
@@ -1072,7 +1008,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.OnPlayHealingVfx -= HandlePlayHealingVfx;
         netcodeController.OnCrushPlayerNeck -= HandleCrushPlayerAnimation;
         netcodeController.OnDamagePlayer -= HandleDamagePlayer;
-        netcodeController.OnChangeLookAimConstraintWeight -= HandleChangeLookAimConstraintWeight;
         netcodeController.OnSpawnFakePlayerBodyRagdoll -= HandleSpawnFakePlayerBodyRagdoll;
         netcodeController.OnTransitionToRunningForwardsAndCarryingPlayer -=
             HandleTransitionToRunningForwardsAndCarryingPlayer;
@@ -1080,9 +1015,6 @@ public class AloeClient : MonoBehaviour
         netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
         netcodeController.ShouldHaveDarkSkin.OnValueChanged -= HandleChangeAloeSkinColour;
         _aloeServer.Value.NetworkCurrentBehaviourStateIndex.OnValueChanged -= HandleBehaviourStateChanged;
-        
-        if (!netcodeController.IsOwner)
-            netcodeController.LookTargetPosition.OnValueChanged -= HandleLookTargetPositionChanged;
 
         _networkEventsSubscribed = false; 
     }

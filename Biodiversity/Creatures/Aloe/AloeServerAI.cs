@@ -18,8 +18,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     
     public int PlayerHealthThresholdForStalking { get; private set; } = 90;
     public int PlayerHealthThresholdForHealing { get; private set; } = 45;
-    public float ViewWidth { get; private set; } = 115f;
-    public int ViewRange { get; private set; } = 80;
+    public float ViewWidth { get; private set; } = 135f;
+    public int ViewRange { get; private set; } = 65;
     public float PassiveStalkStaredownDistance { get; private set; } = 10f;
     public float TimeItTakesToFullyHealPlayer { get; private set; } = 15f;
     public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 2f;
@@ -70,7 +70,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     internal Vector3 FavouriteSpot;
     private Vector3 _mainEntrancePosition;
     
-    [SerializeField] private float lookAheadDistance = 200f;
     internal float AgentMaxAcceleration;
     internal float AgentMaxSpeed;
     private float _takeDamageCooldown;
@@ -180,7 +179,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             string key = field.Name;
             Type fieldType = field.FieldType;
                 
-            LogVerbose($"Field name: {key}, field type: {fieldType.ToString()}");
+            LogVerbose($"Field name: {key}, field type: {fieldType}");
 
             // This code looks ugly because there are null checks inside each if statement.
             // Its better this way though because we only null check if we find a type that we actually want first.
@@ -421,7 +420,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         if (inCrushHeadAnimation) return;
         if (InSlapAnimation && SlappingPlayer.IsNotNull)
         {
-            LookAtPosition(SlappingPlayer.Value.transform.position, 30f);
+            LookAtPosition(SlappingPlayer.Value.transform.position);
         }
 
         switch (CurrentState.GetStateType())
@@ -637,7 +636,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.stunSfx.ToString(), creatureVoice.ToString(), true, true, false, true);
         netcodeController.AnimationParamStunned.Value = true;
         netcodeController.AnimationParamHealing.Value = false;
-        netcodeController.ChangeLookAimConstraintWeightClientRpc(BioId, 0, 0f);
 
         StateData stateData = new();
         stateData.Add("overridePlaySpottedAnimation", true);
@@ -814,12 +812,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             : "Changed target player to null.");
     }
 
-    // todo: remove this
-    public Vector3 GetLookAheadVector()
-    {
-        return rootTransform.forward * lookAheadDistance + headBone.up;
-    }
-
     /// <summary>
     /// Subscribe to the needed network events.
     /// </summary>
@@ -860,8 +852,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         // Maybe theres a modular way to do this? Doing it manually seems really dumb
         
         enemyHP = AloeHandler.Instance.Config.Health;
-        ViewWidth = 135f;
-        ViewRange = 65;
         PlayerHealthThresholdForStalking = AloeHandler.Instance.Config.PlayerHealthThresholdForStalking;
         PlayerHealthThresholdForHealing = AloeHandler.Instance.Config.PlayerHealthThresholdForHealing;
         TimeItTakesToFullyHealPlayer = AloeHandler.Instance.Config.TimeItTakesToFullyHealPlayer;

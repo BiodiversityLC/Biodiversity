@@ -18,7 +18,7 @@ internal class SpottedAnimationStateBehaviour : BaseStateMachineBehaviour
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        LogDebug("Spotted animation complete.");
+        BiodiversityPlugin.LogVerbose("Spotted animation complete.");
         if (AloeServerAIInstance.IsServer) NetcodeController.HasFinishedSpottedAnimation.Value = true;
     }
 }

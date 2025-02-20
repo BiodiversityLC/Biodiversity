@@ -33,11 +33,8 @@ internal class DeadState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
         EnemyAIInstance.netcodeController.AnimationParamDead.Value = true;
 
         EnemyAIInstance.SetTargetPlayerInCaptivity(false);
-        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
-            EnemyAIInstance.BioId, 0, 0f);
 
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition, EnemyAIInstance.GetLookAheadVector());
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
 
         AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);

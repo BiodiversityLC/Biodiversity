@@ -9,7 +9,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// </summary>
 [HarmonyPatch(typeof(StartOfRound))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-internal class StartOfRoundPatch
+internal static class StartOfRoundPatch
 {
     /// <summary>
     /// It makes sure to clear the round specific data when the round is finished.

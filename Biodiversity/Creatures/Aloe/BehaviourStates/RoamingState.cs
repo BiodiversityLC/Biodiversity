@@ -34,14 +34,11 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
         _reachedFavouriteSpotForRoaming = false;
 
         AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);
-
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.LookTargetPosition, EnemyAIInstance.GetLookAheadVector());
+        
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
-
-        EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0, 0.5f);
 
         EnemyAIInstance.LogVerbose("Heading towards favourite position before roaming.");
         EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.FavouriteSpot);

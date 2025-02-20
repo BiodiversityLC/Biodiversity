@@ -31,8 +31,7 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.ChasingEscapedPlayerMaxAcceleration;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.openDoorSpeedMultiplier = 2f;
-
-        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.9f, 0.5f);
+        
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.chaseSfx.ToString(), "creatureVoice", true, true, false, true);
         EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId, AloeClient.Stand);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
@@ -53,11 +52,6 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
         _isPlayerTargetable = true;
         if (WaitBeforeChasingTimer <= 0)
         {
-            if (!EnemyAIInstance.movingTowardsTargetPlayer)
-            {
-                // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f, 0.25f);
-            }
-
             if (EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
             {
                 EnemyAIInstance.movingTowardsTargetPlayer = true;
@@ -66,22 +60,13 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
             {
                 _isPlayerTargetable = false;
             }
-        }
-
-        if (EnemyAIInstance.DoesEyeHaveLineOfSightToPosition(
-                position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
-                eyeTransform: EnemyAIInstance.eye,
-                width: EnemyAIInstance.ViewWidth,
-                range: EnemyAIInstance.ViewRange))
-        {
-            EnemyAIInstance.netcodeController.LookTargetPosition.Value =
-                EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position;
-            if (WaitBeforeChasingTimer <= 0)
+            
+            if (EnemyAIInstance.DoesEyeHaveLineOfSightToPosition(
+                    position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
+                    eyeTransform: EnemyAIInstance.eye,
+                    width: EnemyAIInstance.ViewWidth,
+                    range: EnemyAIInstance.ViewRange))
                 EnemyAIInstance.LookAtPosition(EnemyAIInstance.ActualTargetPlayer.Value.transform.position);
-        }
-        else
-        {
-            //EnemyAIInstance.netcodeController.LookTargetPosition.Value = EnemyAIInstance.GetLookAheadVector();
         }
     }
 

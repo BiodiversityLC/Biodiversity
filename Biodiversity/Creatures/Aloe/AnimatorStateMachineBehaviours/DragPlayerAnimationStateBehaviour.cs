@@ -7,7 +7,7 @@ internal class DragPlayerAnimationStateBehaviour : BaseStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        LogDebug("Grab player animation complete.");
+        BiodiversityPlugin.LogVerbose("Grab player animation complete.");
         if (!AloeServerAIInstance.IsServer) return;
 
         if (!AloeServerAIInstance.ActualTargetPlayer.IsNotNull ||

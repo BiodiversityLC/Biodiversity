@@ -11,7 +11,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 
 [HarmonyPatch(typeof(PlayerControllerB))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-internal class TeleportPatches
+internal static class TeleportPatches
 {
     // Unbinds the player from the aloe if they are teleported during the kidnapping
     [HarmonyPatch("TeleportPlayer")]

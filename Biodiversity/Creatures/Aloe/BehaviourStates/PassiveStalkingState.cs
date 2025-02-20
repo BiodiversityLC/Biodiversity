@@ -38,8 +38,6 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
 
         _isPlayerReachable = true;
         EnemyAIInstance.IsStaringAtTargetPlayer = false;
-
-        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f);
     }
 
     internal override void AIIntervalBehaviour()
@@ -68,12 +66,6 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
         // If she cant stare, then go and find the player
         else
         {
-            if (EnemyAIInstance.IsStaringAtTargetPlayer)
-            {
-                // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(
-                //     EnemyAIInstance.BioId, 0, 0.1f);
-            }
-                
             EnemyAIInstance.IsStaringAtTargetPlayer = false;
 
             if (EnemyAIInstance.IsPlayerReachable(

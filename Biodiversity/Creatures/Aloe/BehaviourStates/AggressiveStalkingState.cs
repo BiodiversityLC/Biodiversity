@@ -39,8 +39,6 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
 
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);
-
-        // EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0f, 0.3f);
     }
 
     internal override void AIIntervalBehaviour()
@@ -58,7 +56,6 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
             float distanceToGrabbingPlayer = Vector3.Distance(EnemyAIInstance.transform.position,
                 EnemyAIInstance.ActualTargetPlayer.Value.transform.position);
             EnemyAIInstance.movingTowardsTargetPlayer = distanceToGrabbingPlayer > 3f;
-            //EnemyAIInstance.LogVerbose($"Distance to grabbing player: {distanceToGrabbingPlayer}");
         }
         else
         {
@@ -99,7 +96,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
                         ignoredAINodes: null,
                         checkLineOfSight: true,
                         allowFallbackIfBlocked: false,
-                        bufferDistance: 0f);
+                        bufferDistance: 0.2f);
 
                     if (pathStatus == BiodiverseAI.PathStatus.Invalid)
                         EnemyAIInstance.moveTowardsDestination = false;

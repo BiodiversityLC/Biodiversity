@@ -19,7 +19,7 @@ internal static class EnemyAIPatches
         bool overrideInsideFactoryCheck)
     {
         if (!__result) return; // If the player is already unable to be targeted, then we need no further interventions
-        if (playerScript != null && !PlayerUtil.IsPlayerDead(playerScript) && AloeSharedData.Instance.IsPlayerKidnapBound(playerScript))
+        if (!PlayerUtil.IsPlayerDead(playerScript) && AloeSharedData.Instance.IsPlayerKidnapBound(playerScript))
             __result = false;
     }
 
@@ -32,7 +32,7 @@ internal static class EnemyAIPatches
         int range,
         int proximityAwareness)
     {
-        if (__result != null && !PlayerUtil.IsPlayerDead(__result) && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
+        if (!PlayerUtil.IsPlayerDead(__result) && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
             __result = null;
     }
 
@@ -46,7 +46,7 @@ internal static class EnemyAIPatches
         int proximityAwareness,
         float bufferDistance)
     {
-        if (__result != null && !PlayerUtil.IsPlayerDead(__result) && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
+        if (!PlayerUtil.IsPlayerDead(__result) && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
             __result = null;
     }
 
@@ -59,7 +59,7 @@ internal static class EnemyAIPatches
         float viewWidth)
     {
         PlayerControllerB targetPlayer = __instance.targetPlayer;
-        if (targetPlayer != null && !PlayerUtil.IsPlayerDead(targetPlayer) &&
+        if (!PlayerUtil.IsPlayerDead(targetPlayer) &&
             (AloeSharedData.Instance.IsPlayerKidnapBound(targetPlayer) || 
              (__instance is FlowermanAI && AloeSharedData.Instance.IsPlayerStalkBound(targetPlayer))))
             __instance.targetPlayer = null;

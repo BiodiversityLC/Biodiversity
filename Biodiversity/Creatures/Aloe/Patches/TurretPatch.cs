@@ -10,7 +10,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// </summary>
 [HarmonyPatch(typeof(Turret))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-internal class TurretPatch
+internal static class TurretPatch
 {
     [HarmonyPatch(nameof(Turret.CheckForPlayersInLineOfSight))]
     [HarmonyPostfix]
