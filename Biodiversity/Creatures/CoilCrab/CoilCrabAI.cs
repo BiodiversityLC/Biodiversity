@@ -85,6 +85,12 @@ namespace Biodiversity.Creatures.CoilCrab
             Shell.grabbable = false;
         }
 
+        [ClientRpc]
+        public void SpawnExpolosionClientRpc(Vector3 explosionPosition, float killRange, float damageRange, int nonLethalDamage)
+        {
+            Landmine.SpawnExplosion(explosionPosition, true, killRange, damageRange, nonLethalDamage);
+        }
+
         public void CustomKillEnemy()
         {
             KillEnemy();
@@ -224,7 +230,7 @@ namespace Biodiversity.Creatures.CoilCrab
                         creatureAnimator.SetBool("Walking", false);
                         creatureAnimator.SetBool("Exploding", true);
                         SwitchToBehaviourClientRpc((int)State.CREEP);
-                        Landmine.SpawnExplosion(transform.position, true, CoilCrabHandler.Instance.Config.KillRange, CoilCrabHandler.Instance.Config.DamageRange, CoilCrabHandler.Instance.Config.ExplosionDamage);
+                        SpawnExpolosionClientRpc(transform.position, CoilCrabHandler.Instance.Config.KillRange, CoilCrabHandler.Instance.Config.DamageRange, CoilCrabHandler.Instance.Config.ExplosionDamage);
                     }
 
                     break;
