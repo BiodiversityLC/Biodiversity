@@ -6,6 +6,7 @@ using Object = UnityEngine.Object;
 using GameNetcodeStuff;
 using UnityEngine.AI;
 using Biodiversity.Util.SharedVariables;
+using BepInEx.Bootstrap;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -100,6 +101,10 @@ namespace Biodiversity.Creatures.MicBird
         private bool spawnDone = false;
 
         private bool hurt = false;
+        private bool compatMode = false;
+        private static bool sideSet = false;
+        private static bool compatSide = false; // I don't care what false and tru map to it works. The middle node is turned all weird so forward is either left or right.
+
         public override void Start()
         {
             base.Start();
@@ -113,6 +118,19 @@ namespace Biodiversity.Creatures.MicBird
 
             spawnPosition = transform.position;
 
+            foreach (var plugin in Chainloader.PluginInfos)
+            {
+                string GUID = plugin.Value.Metadata.GUID;
+                if (GUID == "mborsh.WiderShipMod" || GUID == "MelanieMelicious.2StoryShip" || GUID == "windblownleaves.problematicpilotry")
+                {
+                    compatMode = true;
+                    if (!sideSet) {
+                        compatSide = Random.Range(0, 2) == 0;
+                        sideSet = true;
+                    }
+                    break;
+                }
+            }
 
             HoarderBugAI.RefreshGrabbableObjectsInMapList();
 
@@ -482,15 +500,30 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         agent.speed = 3;
                     }
-
-                    if (firstSpawned == this)
+                    if (!compatMode)
                     {
-                        targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0);
+                        if (firstSpawned == this)
+                        {
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0);
+                        }
+                        else
+                        {
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(negativeRandom(2, 7), 4, negativeRandom(2, 7));
+                        }
                     }
                     else
                     {
-                        targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(negativeRandom(2, 7), 4, negativeRandom(2, 7));
+                        if (firstSpawned == this)
+                        {
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.middleOfShipNode.forward * (compatSide ? 1 : -1));
+                        }
+                        else
+                        {
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (Random.Range(13, 19) * StartOfRound.Instance.middleOfShipNode.forward * (compatSide ? 1 : -1)) + (negativeRandom(2, 6) * StartOfRound.Instance.middleOfShipNode.right);
+                        }
                     }
+
+
 
                     if (!setDestCalledAlready)
                     {
@@ -499,8 +532,22 @@ namespace Biodiversity.Creatures.MicBird
                         agent.SetDestination(targetPos);
                     }
 
+                    bool AtDestination = false;
+                    if (!compatMode)
+                    {
+                        if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0), transform.position) < 5)
+                        {
+                            AtDestination = true;
+                        }
+                    } else
+                    {
+                        if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.middleOfShipNode.forward * (compatSide ? 1 : -1)), transform.position) < 10)
+                        {
+                            AtDestination = true;
+                        }
+                    }
 
-                    if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + new Vector3(0, 4, 0), transform.position) < 5)
+                    if (AtDestination)
                     {
                         BiodiversityPlugin.Logger.LogInfo("Perching");
                         SwitchToBehaviourClientRpc((int)State.PERCH);
