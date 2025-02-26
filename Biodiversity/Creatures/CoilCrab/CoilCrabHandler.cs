@@ -30,6 +30,7 @@ namespace Biodiversity.Creatures.CoilCrab
 
             LethalLib.Modules.Items.RegisterScrap(Assets.CoilShellItem, 0, LethalLib.Modules.Levels.LevelTypes.None);
 
+            TranslateTerminalNode(Assets.CoilCrabTerminalNode);
             RegisterEnemyWithConfig(
                 Config.EnableCoilCrab,
                 Config.CoilCrabRarity,

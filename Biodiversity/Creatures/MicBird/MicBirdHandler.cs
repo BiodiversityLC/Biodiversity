@@ -37,6 +37,7 @@ namespace Biodiversity.Creatures.MicBird
                 //BiodiversityPlugin.Logger.LogInfo($"{weight.Second}:{weight.First}");
             }
 
+            TranslateTerminalNode(Assets.MicBirdTerminalNode);
             RegisterEnemyWithConfig(
                 Config.EnableBoomBird,
                 Config.BoomBirdRarity,
