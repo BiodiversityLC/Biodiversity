@@ -515,11 +515,11 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         if (firstSpawned == this)
                         {
-                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.middleOfShipNode.forward * (compatSide ? 1 : -1));
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1));
                         }
                         else
                         {
-                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (Random.Range(13, 19) * StartOfRound.Instance.middleOfShipNode.forward * (compatSide ? 1 : -1)) + (negativeRandom(2, 6) * StartOfRound.Instance.middleOfShipNode.right);
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (Random.Range(13, 19) * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1)) + (negativeRandom(2, 6) * StartOfRound.Instance.shipBounds.transform.right);
                         }
                     }
 
@@ -541,7 +541,7 @@ namespace Biodiversity.Creatures.MicBird
                         }
                     } else
                     {
-                        if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.middleOfShipNode.forward * (compatSide ? 1 : -1)), transform.position) < 10)
+                        if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1)), transform.position) < 10)
                         {
                             AtDestination = true;
                         }
