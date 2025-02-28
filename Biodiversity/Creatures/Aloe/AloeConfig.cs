@@ -8,7 +8,9 @@ namespace Biodiversity.Creatures.Aloe;
 [Serializable]
 public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg)
 {
+    #region SpawnSettings
     [field: Header("Spawn Settings")]
+    
     [field: Tooltip("Whether the Aloe will spawn in games.")]
     public bool AloeEnabled { get; private set; } = true;
     
@@ -23,7 +25,12 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Range(0, 100)]
     public int MaxAmount { get; private set; } = 1;
     
+    #endregion
+    
+    #region MovementSettings
+    
     [field: Header("Movement Settings")]
+    
     [field: Tooltip("The max speed of the Aloe when she's roaming.")]
     [field: Range(0.01f, 500f)]
     public float RoamingMaxSpeed { get; private set; } = 2f;
@@ -87,7 +94,12 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Tooltip("Whether the Aloe will try to avoid overshooting the destination point by slowing down in time. I suggest you leave this on.")]
     public bool AutoBraking { get; private set; } = true;
     
+    #endregion
+
+    #region GeneralSettings
+
     [field: Header("General Settings")]
+    
     [field: Tooltip("The health of the Aloe upon spawning.")]
     [field: Range(1, 100)]
     public int Health { get; private set; } = 6;
@@ -145,8 +157,30 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     // [field: Tooltip("Whether to use an alternative behaviour for the Aloe where she will damage players instead of heal them. To adjust the amount of damage she does, just adjust the `TimeItTakesToFullyHealPlayer` parameter.")]
     // public bool DamageInsteadOfHeal { get; private set; } = false;
+
+    #endregion
+
+    #region AdvancedSettings
+
+    [field: Header("Advanced Settings")]
     
     [field: Tooltip("How often (in seconds) the Aloe updates its logic. Higher values increase performance but slow down reaction times.")]
     [field: Range(0.001f, 1f)]
     public float AiIntervalTime { get; private set; } = 0.03f;
+
+    [field: Tooltip("The height of the Aloe's NavMeshAgent in meters.")]
+    [field: Range(0.01f, 10f)]
+    public float NavMeshAgentHeight { get; private set; } = 2.2f;
+
+    [field: Tooltip("The radius of the Aloe's NavMeshAgent in meters.")]
+    [field: Range(0.01f, 5f)]
+    public float NavMeshAgentRadius { get; private set; } = 0.5f;
+    
+    [field: Tooltip("The avoidance priority of the Aloe's NavMeshAgent. Lower values indicate higher priority. Example: an agent with priority 49 can push an agent with priority 50 out of its path.")]
+    [field: Range(0, 99)]
+    public int NavMeshAgentAvoidancePriority { get; private set; } = 50;
+
+    #endregion
+
+
 }

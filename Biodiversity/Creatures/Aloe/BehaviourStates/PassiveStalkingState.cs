@@ -46,23 +46,24 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
         if (!EnemyAIInstance.ActualTargetPlayer.IsNotNull) return;
 
         // See if the aloe can stare at the player
-        if (Vector3.Distance(EnemyAIInstance.transform.position,
+        if (Vector3.Distance(
+                EnemyAIInstance.transform.position,
                 EnemyAIInstance.ActualTargetPlayer.Value.transform.position) <=
             EnemyAIInstance.PassiveStalkStaredownDistance &&
             !Physics.Linecast(EnemyAIInstance.eye.position,
                 EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position,
                 StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
         {
-            if (!EnemyAIInstance.IsStaringAtTargetPlayer)
-            {
-                EnemyAIInstance.LogVerbose("Aloe is staring at player");
-                //EnemyAIInstance.netcodeController.ChangeLookAimConstraintWeightClientRpc(EnemyAIInstance.BioId, 0.8f);
-            }
+            // if (!EnemyAIInstance.IsStaringAtTargetPlayer)
+            // {
+            //     EnemyAIInstance.LogVerbose("Aloe is staring at player");
+            // }
             
             EnemyAIInstance.moveTowardsDestination = false;
             EnemyAIInstance.movingTowardsTargetPlayer = false;
             EnemyAIInstance.IsStaringAtTargetPlayer = true;
         }
+        
         // If she cant stare, then go and find the player
         else
         {
@@ -78,7 +79,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
                     pathStatus: out BiodiverseAI.PathStatus pathStatus,
                     agent: EnemyAIInstance.agent,
                     position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
-                    allAINodes: EnemyAIInstance.allAINodes,
+                    givenAiNodes: EnemyAIInstance.allAINodes,
                     ignoredAINodes: null,
                     checkLineOfSight: true,
                     allowFallbackIfBlocked: false,
@@ -102,7 +103,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
         internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
-            _playerLookingAtAloe = EnemyAIInstance.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
+            _playerLookingAtAloe = BiodiverseAI.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
             return _playerLookingAtAloe != null;
         }
 

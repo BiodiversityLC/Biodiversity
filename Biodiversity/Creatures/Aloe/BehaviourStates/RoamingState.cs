@@ -78,7 +78,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
         internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
-            _playerLookingAtAloe = EnemyAIInstance.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
+            _playerLookingAtAloe = BiodiverseAI.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
             return _playerLookingAtAloe != null;
         }
 
@@ -101,8 +101,9 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
         internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player has below "playerHealthThresholdForStalking" % of health
-            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
             {
+                PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
                 if (!EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
                 if (player.health > EnemyAIInstance.PlayerHealthThresholdForStalking) continue;
                 if (AloeSharedData.Instance.IsPlayerStalkBound(player)) continue;

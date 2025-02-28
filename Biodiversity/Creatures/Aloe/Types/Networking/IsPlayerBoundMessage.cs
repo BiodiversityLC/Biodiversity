@@ -1,7 +1,9 @@
-﻿using Unity.Netcode;
+﻿using JetBrains.Annotations;
+using Unity.Netcode;
 
 namespace Biodiversity.Creatures.Aloe.Types.Networking;
 
+[UsedImplicitly]
 public struct IsPlayerBoundMessage : INetworkSerializable
 {
     public ulong PlayerId;

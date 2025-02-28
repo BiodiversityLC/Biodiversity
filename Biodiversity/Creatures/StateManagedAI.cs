@@ -2,7 +2,6 @@
 using Biodiversity.Util.Types;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Unity.Netcode;
 
@@ -71,9 +70,13 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         if (!ShouldRunAiInterval()) return;
         
         CurrentState?.AIIntervalBehaviour();
-
-        foreach (StateTransition<TState, TEnemyAI> transition in (CurrentState?.Transitions ?? []).Where(transition => transition.ShouldTransitionBeTaken()))
+        
+        List<StateTransition<TState, TEnemyAI>> transitions = CurrentState?.Transitions ?? [];
+        for (int i = 0; i < transitions.Count; i++)
         {
+            StateTransition<TState, TEnemyAI> transition = transitions[i];
+            if (!transition.ShouldTransitionBeTaken()) continue;
+            
             transition.OnTransition();
             LogVerbose("SwitchBehaviourState() called from DoAIInterval()");
             SwitchBehaviourState(transition.NextState());
@@ -123,10 +126,11 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         
         // todo: cache stuff in this function because reflection is bad. Make sure to use a separate class because static thingies in generic classes (in this case) is bad.
         List<Type> stateTypes = [];
-        foreach (Assembly assembly in BiodiversityPlugin.CachedAssemblies.Value)
+        for (int i = 0; i < BiodiversityPlugin.CachedAssemblies.Value.Count; i++)
         {
+            Assembly assembly = BiodiversityPlugin.CachedAssemblies.Value[i];
             if (!assembly.FullName.Contains("Biodiversity")) continue;
-            
+
             Type[] types;
             try
             {
@@ -138,8 +142,9 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                 continue;
             }
 
-            foreach (Type type in types)
+            for (int j = 0; j < types.Length; j++)
             {
+                Type type = types[j];
                 if (type.IsSubclassOf(typeof(BehaviourState<TState, TEnemyAI>)) && !type.IsAbstract)
                 {
                     stateTypes.Add(type);

@@ -3,12 +3,11 @@ using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Pool;
 using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures;
@@ -55,7 +54,14 @@ public abstract class BiodiverseAI : EnemyAI
     /// <returns>Returns <c>true</c> if there is at least one player within the specified distance.</returns>
     protected static bool IsPlayerCloseByToPosition(Vector3 position, float playerDetectionRange)
     {
-        return StartOfRound.Instance.allPlayerScripts.Any(player => !PlayerUtil.IsPlayerDead(player) && Vector3.Distance(player.transform.position, position) <= playerDetectionRange);
+        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        {
+            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+            if (!PlayerUtil.IsPlayerDead(player) &&
+                Vector3.Distance(player.transform.position, position) <= playerDetectionRange) return true;
+        }
+
+        return false;
     }
 
     // https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5
@@ -166,8 +172,9 @@ public abstract class BiodiverseAI : EnemyAI
                 }
             }
 
-            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
             {
+                PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
                 if (PlayerUtil.IsPlayerDead(player)) continue;
                 if (player.HasLineOfSightToPosition(position, 70f, 80, 1)) return PathStatus.ValidButInLos;
             }
@@ -182,7 +189,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="pathStatus">The PathStatus enum indicating the validity of the path.</param>
     /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
     /// <param name="position">The reference position to measure distance from.</param>
-    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
+    /// <param name="givenAiNodes">A collection of all AI node game objects to consider.</param>
     /// <param name="ignoredAINodes">A collection of AI node game objects to ignore.</param>
     /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
     /// <param name="allowFallbackIfBlocked">If true, allows finding another node if the first is blocked by line of sight.</param>
@@ -192,8 +199,8 @@ public abstract class BiodiverseAI : EnemyAI
         out PathStatus pathStatus,
         NavMeshAgent agent,
         Vector3 position,
-        IEnumerable<GameObject> allAINodes,
-        IEnumerable<GameObject> ignoredAINodes = null,
+        IEnumerable<GameObject> givenAiNodes,
+        List<GameObject> ignoredAINodes = null,
         bool checkLineOfSight = false,
         bool allowFallbackIfBlocked = false,
         float bufferDistance = 1f)
@@ -203,7 +210,7 @@ public abstract class BiodiverseAI : EnemyAI
             pathStatus: out pathStatus,
             agent: agent,
             position: position,
-            allAINodes: allAINodes,
+            givenAiNodes: givenAiNodes,
             ignoredAINodes: ignoredAINodes,
             checkLineOfSight: checkLineOfSight,
             allowFallbackIfBlocked: allowFallbackIfBlocked,
@@ -216,7 +223,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="pathStatus">The PathStatus enum indicating the validity of the path.</param>
     /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
     /// <param name="position">The reference position to measure distance from.</param>
-    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
+    /// <param name="givenAiNodes">A collection of all AI node game objects to consider.</param>
     /// <param name="ignoredAINodes">A collection of AI node game objects to ignore.</param>
     /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
     /// <param name="allowFallbackIfBlocked">If true, allows finding another node if the first is blocked by line of sight.</param>
@@ -226,8 +233,8 @@ public abstract class BiodiverseAI : EnemyAI
         out PathStatus pathStatus,
         NavMeshAgent agent,
         Vector3 position,
-        IEnumerable<GameObject> allAINodes,
-        IEnumerable<GameObject> ignoredAINodes = null,
+        IEnumerable<GameObject> givenAiNodes,
+        List<GameObject> ignoredAINodes = null,
         bool checkLineOfSight = false,
         bool allowFallbackIfBlocked = false,
         float bufferDistance = 1f)
@@ -237,7 +244,7 @@ public abstract class BiodiverseAI : EnemyAI
             pathStatus: out pathStatus,
             agent: agent,
             position: position,
-            allAINodes: allAINodes,
+            givenAiNodes: givenAiNodes,
             ignoredAINodes: ignoredAINodes,
             checkLineOfSight: checkLineOfSight,
             allowFallbackIfBlocked: allowFallbackIfBlocked,
@@ -251,7 +258,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="pathStatus">The PathStatus enum indicating the validity of the path.</param>
     /// <param name="agent">The NavMeshAgent to calculate the path for.</param>
     /// <param name="position">The reference position to measure distance from.</param>
-    /// <param name="allAINodes">A collection of all AI node game objects to consider.</param>
+    /// <param name="givenAiNodes">A collection of all AI node game objects to consider.</param>
     /// <param name="ignoredAINodes">A collection of AI node game objects to ignore.</param>
     /// <param name="checkLineOfSight">Whether to check if any segment of the path to the node is obstructed by line of sight.</param>
     /// <param name="allowFallbackIfBlocked">If true, allows finding another node if the first is blocked by line of sight.</param>
@@ -262,18 +269,30 @@ public abstract class BiodiverseAI : EnemyAI
         out PathStatus pathStatus,
         NavMeshAgent agent,
         Vector3 position,
-        IEnumerable<GameObject> allAINodes,
-        IEnumerable<GameObject> ignoredAINodes,
+        IEnumerable<GameObject> givenAiNodes,
+        List<GameObject> ignoredAINodes,
         bool checkLineOfSight,
         bool allowFallbackIfBlocked,
         float bufferDistance)
     {
-        HashSet<GameObject> ignoredNodesSet = ignoredAINodes == null ? [] : [..ignoredAINodes];
-
-        List<GameObject> aiNodes = allAINodes
-            .Where(node =>
-                !ignoredNodesSet.Contains(node) && Vector3.Distance(position, node.transform.position) > bufferDistance)
-            .ToList();
+        HashSet<GameObject> ignoredNodesSet = CollectionPool<HashSet<GameObject>, GameObject>.Get();
+        if (ignoredAINodes != null)
+        {
+            for (int i=0; i < ignoredAINodes.Count; i++)
+            {
+                ignoredNodesSet.Add(ignoredAINodes[i]);
+            }
+        }
+        
+        List<GameObject> aiNodes = ListPool<GameObject>.Get();
+        foreach (GameObject node in givenAiNodes)
+        {
+            if (ignoredNodesSet.Contains(node)) continue;
+            if (Vector3.Distance(position, node.transform.position) <= bufferDistance) continue;
+            aiNodes.Add(node);
+        }
+        
+        CollectionPool<HashSet<GameObject>, GameObject>.Release(ignoredNodesSet);
 
         aiNodes.Sort((a, b) =>
         {
@@ -282,32 +301,52 @@ public abstract class BiodiverseAI : EnemyAI
             return findClosest ? distanceA.CompareTo(distanceB) : distanceB.CompareTo(distanceA);
         });
 
-        foreach (GameObject node in aiNodes)
+        try
         {
-            pathStatus = IsPathValid(agent, node.transform.position, checkLineOfSight);
-            if (pathStatus == PathStatus.Valid)
+            for (int i = 0; i < aiNodes.Count; i++)
             {
-                return node.transform;
-            }
-
-            if (pathStatus == PathStatus.ValidButInLos && allowFallbackIfBlocked)
-            {
-                // Try to find another valid node without checking line of sight
-                foreach (GameObject fallbackNode in aiNodes)
+                GameObject node = aiNodes[i];
+                pathStatus = IsPathValid(agent, node.transform.position, checkLineOfSight);
+                switch (pathStatus)
                 {
-                    if (fallbackNode == node) continue;
-                    PathStatus fallbackStatus = IsPathValid(agent, fallbackNode.transform.position);
-                    if (fallbackStatus == PathStatus.Valid)
+                    case PathStatus.Valid:
+                        return node.transform;
+                
+                    case PathStatus.ValidButInLos when allowFallbackIfBlocked:
                     {
-                        pathStatus = PathStatus.ValidButInLos;
-                        return fallbackNode.transform;
+                        // Try to find another valid node without checking line of sight
+                        for (int j = 0; j < aiNodes.Count; j++)
+                        {
+                            GameObject fallbackNode = aiNodes[j];
+                            if (fallbackNode == node) continue;
+                    
+                            PathStatus fallbackStatus = IsPathValid(agent, fallbackNode.transform.position);
+                            if (fallbackStatus == PathStatus.Valid)
+                            {
+                                pathStatus = PathStatus.ValidButInLos;
+                                return fallbackNode.transform;
+                            }
+                        }
+
+                        break;
                     }
+                
+                    case PathStatus.Invalid:
+                    case PathStatus.Unknown:
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(pathStatus), pathStatus, null);
                 }
             }
-        }
 
-        pathStatus = PathStatus.Invalid;
-        return null;
+            pathStatus = PathStatus.Invalid;
+            return null;
+        }
+        finally
+        {
+            ListPool<GameObject>.Release(aiNodes);
+        }
     }
     
     /// <summary>
@@ -366,64 +405,21 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="range">The AI's view range in units.</param>
     /// <param name="proximityAwareness">The proximity awareness range of the AI.</param>
     /// <returns>Returns true if the AI has line of sight to the given position; otherwise, false.</returns>
-    internal bool DoesEyeHaveLineOfSightToPosition(
+    internal static bool DoesEyeHaveLineOfSightToPosition(
         Vector3 position,
         Transform eyeTransform,
         float width = 45f,
         int range = 60,
         float proximityAwareness = -1f)
     {
-        return Vector3.Distance(eyeTransform.position, position) < range && !Physics.Linecast(eyeTransform.position, position, StartOfRound.Instance.collidersAndRoomMaskAndDefault) && (Vector3.Angle(eyeTransform.forward, position - eyeTransform.position) < width || Vector3.Distance(eyeTransform.position, position) < proximityAwareness);
-    }
-    
-    /// <summary>
-    /// Returns a list of all players that are visible from the eye.
-    /// </summary>
-    /// <param name="eyeTransform">The transform representing the eye position and direction.</param>
-    /// <param name="width">The view width of the eye in degrees.</param>
-    /// <param name="range">The view range of the eye in units.</param>
-    /// <returns>Returns a list of players that are visible from the eye.</returns>
-    internal List<PlayerControllerB> GetAllVisiblePlayersFromEye(
-        Transform eyeTransform,
-        float width = 45f,
-        int range = 60)
-    {
-        List<PlayerControllerB> visiblePlayers = [];
-        visiblePlayers.AddRange(StartOfRound.Instance.allPlayerScripts.Where(PlayerTargetableConditions.IsPlayerTargetable).Where(player => DoesEyeHaveLineOfSightToPosition(player.transform.position, eyeTransform, width, range)));
-
-        LogVerbose($"Number of visible players: {visiblePlayers.Count}");
-        return visiblePlayers;
-    }
-
-    /// <summary>
-    /// Finds and returns the player that is closest to the specified transform, considering a buffer distance.
-    /// </summary>
-    /// <param name="players">The list of players to search through.</param>
-    /// <param name="position">The vector to measure distances from.</param>
-    /// <param name="inputPlayer">The current player being targeted.</param>
-    /// <param name="bufferDistance">The buffer distance to prevent constant target switching.</param>
-    /// <returns>The player that is closest to the specified transform within the buffer distance, or the closest player if none are within the buffer distance.</returns>
-    internal PlayerControllerB GetClosestPlayerFromList(
-        List<PlayerControllerB> players, 
-        Vector3 position,
-        PlayerControllerB inputPlayer, 
-        float bufferDistance = 1.5f)
-    {
-        PlayerControllerB closestPlayer = inputPlayer;
-        float closestDistance = float.MaxValue;
-
-        foreach (PlayerControllerB player in players)
-        {
-            if (player == inputPlayer) continue; // Skip the input player itself
-            float distance = Vector3.Distance(position, player.transform.position);
-            if (!(distance < closestDistance)) continue;
-            closestDistance = distance;
-            closestPlayer = player;
-        }
-
-        if (inputPlayer == null) return closestPlayer;
-        float inputPlayerDistance = Vector3.Distance(position, inputPlayer.transform.position);
-        return Mathf.Abs(closestDistance - inputPlayerDistance) < bufferDistance ? inputPlayer : closestPlayer;
+        float distanceFromEyeToPosition = Vector3.Distance(eyeTransform.position, position);
+        
+        return distanceFromEyeToPosition < range &&
+               !Physics.Linecast(eyeTransform.position, position, StartOfRound.Instance.collidersAndRoomMaskAndDefault) &&
+               (
+                   Vector3.Angle(eyeTransform.forward, position - eyeTransform.position) < width ||
+                   distanceFromEyeToPosition < proximityAwareness
+               );
     }
     
     /// <summary>
@@ -432,21 +428,23 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="position">The position to check if a player is looking at.</param>
     /// <param name="ignorePlayer">An optional player to exclude from the check.</param>
     /// <returns>Returns the player object that is looking at the specified position, or null if no player is found.</returns>
-    internal PlayerControllerB GetClosestPlayerLookingAtPosition(Vector3 position, PlayerControllerB ignorePlayer = null)
+    internal static PlayerControllerB GetClosestPlayerLookingAtPosition(Vector3 position, PlayerControllerB ignorePlayer = null)
     {
         PlayerControllerB closestPlayer = null;
         float closestDistance = float.MaxValue;
         bool isThereAPlayerToIgnore = ignorePlayer != null;
 
-        foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
         {
-            if (player.isPlayerDead || !player.isInsideFactory) continue;
-            if (isThereAPlayerToIgnore && ignorePlayer == player) continue;
+            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
             
+            if (isThereAPlayerToIgnore && ignorePlayer == player) continue;
+            if (PlayerUtil.IsPlayerDead(player) || !player.isInsideFactory) continue;
             if (!player.HasLineOfSightToPosition(position, 60f)) continue;
+            
             float distance = Vector3.Distance(position, player.transform.position);
             if (!(distance < closestDistance)) continue;
-            
+
             closestPlayer = player;
             closestDistance = distance;
         }
@@ -462,17 +460,61 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="playerViewWidth">The view width of the players in degrees.</param>
     /// <param name="playerViewRange">The view range of the players in units.</param>
     /// <returns>A list of players who are looking at the specified position.</returns>
-    internal List<PlayerControllerB> GetAllPlayersLookingAtPosition(
+    internal static List<PlayerControllerB> GetAllPlayersLookingAtPosition(
         Vector3 position, 
         PlayerControllerB ignorePlayer = null,
         float playerViewWidth = 45f,
         int playerViewRange = 60)
     {
-        List<PlayerControllerB> players = [];
-        bool isThereAPlayerToIgnore = ignorePlayer != null;
-
-        players.AddRange(from player in StartOfRound.Instance.allPlayerScripts where !PlayerUtil.IsPlayerDead(player) where !isThereAPlayerToIgnore || player != ignorePlayer where player.HasLineOfSightToPosition(position, playerViewWidth, playerViewRange) select player);
-
+        return GetPlayersLookingAtPositionInternal(
+            position: position,
+            players: [],
+            ignorePlayer: ignorePlayer,
+            playerViewWidth: playerViewWidth,
+            playerViewRange: playerViewRange);
+    }
+    
+    /// <summary>
+    /// Returns a pooled list of all the players who are currently looking at the specified position.
+    /// The caller must release the list using <see cref="ListPool{PlayerControllerB}"/> once finished.
+    /// </summary>
+    /// <param name="position">The position to check if a player is looking at.</param>
+    /// <param name="ignorePlayer">An optional player to exclude from the check.</param>
+    /// <param name="playerViewWidth">The view width of the players in degrees.</param>
+    /// <param name="playerViewRange">The view range of the players in units.</param>
+    /// <returns>A <see cref="ListPool{PlayerControllerB}"/> of players who are looking at the specified position.</returns>
+    internal static List<PlayerControllerB> GetAllPlayersLookingAtPositionPooled(
+        Vector3 position, 
+        PlayerControllerB ignorePlayer = null,
+        float playerViewWidth = 45f,
+        int playerViewRange = 60)
+    {
+        return GetPlayersLookingAtPositionInternal(
+            position: position,
+            players: ListPool<PlayerControllerB>.Get(),
+            ignorePlayer: ignorePlayer,
+            playerViewWidth: playerViewWidth,
+            playerViewRange: playerViewRange);
+    }
+    
+    private static List<PlayerControllerB> GetPlayersLookingAtPositionInternal(
+        Vector3 position,
+        List<PlayerControllerB> players,
+        PlayerControllerB ignorePlayer = null,
+        float playerViewWidth = 45f,
+        int playerViewRange = 60)
+    {
+        PlayerControllerB[] allPlayers = StartOfRound.Instance.allPlayerScripts;
+        bool shouldIgnore = ignorePlayer != null;
+        
+        for (int i = 0; i < allPlayers.Length; i++)
+        {
+            PlayerControllerB player = allPlayers[i];
+            if (shouldIgnore && ignorePlayer == player) continue;
+            if (PlayerUtil.IsPlayerDead(player)) continue;
+            if (player.HasLineOfSightToPosition(position, playerViewWidth, playerViewRange))
+                players.Add(player);
+        }
         return players;
     }
     
@@ -494,11 +536,14 @@ public abstract class BiodiverseAI : EnemyAI
         float bufferDistance = 1.5f,
         bool requireLineOfSight = false)
     {
-        if (player == null)
+        if (PlayerUtil.IsPlayerDead(player))
         {
-            LogVerbose("Player is not reachable because the player object is null.");
+            // Just a debugging check
+            if (BiodiversityPlugin.Config.VerboseLogging && player == null) 
+                LogVerbose("Player is not reachable because the player object is null.");
             return false;
         }
+        
         
         float currentDistance = Vector3.Distance(transform.position, player.transform.position);
         float optimalDistance = currentDistance;
@@ -513,38 +558,42 @@ public abstract class BiodiverseAI : EnemyAI
         
         bool isReachable = Mathf.Abs(optimalDistance - currentDistance) < bufferDistance;
 
-        //LogVerbose($"Is player reachable: {isReachable}");
+        // LogVerbose($"Is player reachable: {isReachable}");
         return isReachable;
     }
-    
+
+    #region Logging
+
     internal void LogInfo(object message)
     {
-        BiodiversityPlugin.Logger.LogInfo($"{GetLogPrefix()} {message}");
+        BiodiversityPlugin.Logger.LogInfo(() => $"{GetLogPrefix()} {message}");
     }
 
     internal void LogVerbose(object message)
     {
         if (BiodiversityPlugin.Config.VerboseLogging)
-            BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
+            BiodiversityPlugin.Logger.LogDebug(() => $"{GetLogPrefix()} {message}");
     }
 
     internal void LogDebug(object message)
     {
-        BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
+        BiodiversityPlugin.Logger.LogDebug(() => $"{GetLogPrefix()} {message}");
     }
 
     internal void LogError(object message)
     {
-        BiodiversityPlugin.Logger.LogError($"{GetLogPrefix()} {message}");
+        BiodiversityPlugin.Logger.LogError(() => $"{GetLogPrefix()} {message}");
     }
 
     internal void LogWarning(object message)
     {
-        BiodiversityPlugin.Logger.LogWarning($"{GetLogPrefix()} {message}");
+        BiodiversityPlugin.Logger.LogWarning(() => $"{GetLogPrefix()} {message}");
     }
 
     protected virtual string GetLogPrefix()
     {
         return $"[{enemyType.enemyName}]";
     }
+
+    #endregion
 }

@@ -41,8 +41,9 @@ public static class VanillaEnemies
         List<string> unknownTypes = [];
         BiodiversityPlugin.LogVerbose("Getting all vanilla enemy types.");
 
-        foreach (NetworkPrefab networkPrefab in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs)
+        for (int i = 0; i < NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs.Count; i++)
         {
+            NetworkPrefab networkPrefab = NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs[i];
             if (!networkPrefab.Prefab.TryGetComponent(out EnemyAI enemyAI)) continue;
             BiodiversityPlugin.LogVerbose($"Found enemy: {enemyAI.enemyType.name}");
 

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using DunGen;
 using HarmonyLib;
 using Unity.Netcode;
@@ -48,16 +47,27 @@ internal static class DungeonGenPatch
         node3.transform.position = brackenRoomTransform.TransformPoint(localPosition3);
 
         List<GameObject> nodes = [node1, node2, node3];
-        nodes.ForEach(node =>
+        for (int i = 0; i < nodes.Count; i++)
         {
+            GameObject node = nodes[i];
             node.transform.SetParent(brackenRoomTransform, true);
             RoundManager.Instance.insideAINodes.AddItem(node);
-        });
+        }
     }
 
     private static Tile FindTileWithName(Dungeon dungeon, string nameContains)
     {
-        if (dungeon != null) return dungeon.AllTiles.FirstOrDefault(tile => tile.name.Contains(nameContains));
+        if (dungeon != null)
+        {
+            for (int i = 0; i < dungeon.AllTiles.Count; i++)
+            {
+                Tile tile = dungeon.AllTiles[i];
+                if (tile.name.Contains(nameContains)) return tile;
+            }
+
+            return null;
+        }
+
         BiodiversityPlugin.Logger.LogDebug("Dungeon is null");
         return null;
     }

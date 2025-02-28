@@ -92,7 +92,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
                         pathStatus: out BiodiverseAI.PathStatus pathStatus,
                         agent: EnemyAIInstance.agent,
                         position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
-                        allAINodes: EnemyAIInstance.allAINodes,
+                        givenAiNodes: EnemyAIInstance.allAINodes,
                         ignoredAINodes: null,
                         checkLineOfSight: true,
                         allowFallbackIfBlocked: false,
@@ -118,7 +118,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
         internal override bool ShouldTransitionBeTaken()
         {
             // Check if a player sees the aloe
-            _playerLookingAtAloe = EnemyAIInstance.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
+            _playerLookingAtAloe = BiodiverseAI.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
             return _playerLookingAtAloe != null;
         }
 

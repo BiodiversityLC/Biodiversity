@@ -7,6 +7,7 @@ using System.Reflection;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Video;
+using Object = UnityEngine.Object;
 
 namespace Biodiversity.Util.Assetloading;
 
@@ -29,35 +30,41 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
         AssetBundle bundle = BiodiversityPlugin.LoadBundle(filePath);
 
         Type type = typeof(T);
-        foreach (FieldInfo field in type.GetFields()) 
+        for (int i = 0; i < type.GetFields().Length; i++)
         {
-            LoadFromBundleAttribute loadInstruction = (LoadFromBundleAttribute)field.GetCustomAttribute(typeof(LoadFromBundleAttribute));
+            FieldInfo field = type.GetFields()[i];
+            LoadFromBundleAttribute loadInstruction =
+                (LoadFromBundleAttribute)field.GetCustomAttribute(typeof(LoadFromBundleAttribute));
             if (loadInstruction == null) continue;
 
             field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
         }
-        
+
         // todo: fix this; the cachedList isnt being used properly because its just being reset every time this function is called
         _cachedItems = new CachedList<Item>(() => LoadAllItemsFromBundle(bundle));
-        
-        foreach (UnityEngine.Object asset in bundle.LoadAllAssets())
+
+        Object[] assets = bundle.LoadAllAssets();
+        for (int i = 0; i < assets.Length; i++)
         {
-            if (asset is GameObject gameObject) 
+            Object asset = assets[i];
+            if (asset is GameObject gameObject)
             {
                 if (gameObject.GetComponent<NetworkObject>() == null) continue;
                 if (GameNetworkManagerPatch.NetworkPrefabsToRegister.Contains(gameObject)) continue;
                 GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject);
             }
 
-            if (asset is AudioClip { preloadAudioData: false } clip) 
+            if (asset is AudioClip { preloadAudioData: false } clip)
             {
-                BiodiversityPlugin.Logger.LogWarning($"Loading Audio data for '{clip.name}' because it does not have preloadAudioData enabled!");
+                BiodiversityPlugin.Logger.LogWarning(
+                    $"Loading Audio data for '{clip.name}' because it does not have preloadAudioData enabled!");
                 clip.LoadAudioData();
             }
 
-            if (asset is VideoClip videoClip) 
+            if (asset is VideoClip videoClip)
             {
-                BiodiversityPlugin.Logger.LogError($"VideoClip: '{videoClip.name}' is being loaded from '{typeof(T).Name}' instead of the dedicated video clip bundle. It will not work correctly.");
+                BiodiversityPlugin.Logger.LogError(
+                    $"VideoClip: '{videoClip.name}' is being loaded from '{typeof(T).Name}' instead of the dedicated video clip bundle. It will not work correctly.");
             }
         }
 
@@ -71,9 +78,9 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
     /// <param name="path">The path of the asset to load within the asset bundle.</param>
     /// <returns>The loaded asset as a <see cref="UnityEngine.Object"/>.</returns>
     /// <exception cref="ArgumentException">Thrown if the asset could not be found in the bundle.</exception>
-    private static UnityEngine.Object LoadAsset(AssetBundle bundle, string path) 
+    private static Object LoadAsset(AssetBundle bundle, string path) 
     {
-        UnityEngine.Object result = bundle.LoadAsset<UnityEngine.Object>(path);
+        Object result = bundle.LoadAsset<Object>(path);
         if (result == null) throw new ArgumentException(path + " is not valid in the assetbundle!");
 
         return result;
@@ -89,7 +96,7 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
     {
         List<Item> items = [];
 
-        foreach (UnityEngine.Object asset in bundle.LoadAllAssets())
+        foreach (Object asset in bundle.LoadAllAssets())
         {
             if (asset is Item item)
                 items.Add(item);

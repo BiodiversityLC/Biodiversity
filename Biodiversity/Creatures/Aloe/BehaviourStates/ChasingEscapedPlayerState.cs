@@ -61,7 +61,7 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
                 _isPlayerTargetable = false;
             }
             
-            if (EnemyAIInstance.DoesEyeHaveLineOfSightToPosition(
+            if (BiodiverseAI.DoesEyeHaveLineOfSightToPosition(
                     position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
                     eyeTransform: EnemyAIInstance.eye,
                     width: EnemyAIInstance.ViewWidth,

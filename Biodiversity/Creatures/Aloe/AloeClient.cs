@@ -7,6 +7,7 @@ using Biodiversity.Util.Types;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
@@ -123,7 +124,6 @@ public class AloeClient : MonoBehaviour
     [Header("Animation")] [Space(5f)] 
     [SerializeField] private Animator animator;
     [SerializeField] private Rig lookAimRig;
-    [SerializeField] private Transform lookTarget;
     [SerializeField] private Transform ragdollGrabTarget;
 
     [Header("Controllers")] [Space(5f)] 
@@ -138,8 +138,6 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float escapeChargePerPress = 15f;
     [SerializeField] private float escapeChargeDecayRate = 15f;
     [SerializeField] private float escapeChargeThreshold = 100f;
-    [SerializeField] private float lookBlendDuration = 0.5f;
-    [SerializeField] private float smoothLookTargetPositionTime = 0.3f;
 
     private readonly NullableObject<PlayerControllerB> _targetPlayer = new();
 
@@ -153,13 +151,10 @@ public class AloeClient : MonoBehaviour
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
 
     private Vector3 _agentLastPosition;
-    private Vector3 _lookTargetVelocity;
-    private Vector3 _lastReceivedLookTargetPosition;
     private Vector3 _offsetPosition = Vector3.zero;
 
     private Quaternion _offsetRotation = Quaternion.identity;
 
-    private Coroutine _changeLookAimConstraintWeightCoroutine;
     private Coroutine _changeSkinColourCoroutine;
     private Coroutine _changeTargetPlayerOffsets;
 
@@ -169,9 +164,7 @@ public class AloeClient : MonoBehaviour
 
     private float _currentEscapeChargeValue;
     private float _agentCurrentSpeed;
-    private float _lastReceivedNewLookTargetPositionTime;
     private float _lastFootstepTime;
-    private const float LookTargetPositionLerpTime = 0.1f;
 
     private void Awake()
     {
@@ -190,23 +183,27 @@ public class AloeClient : MonoBehaviour
                 return rendererComponents;
             }
 
-            foreach (Tuple<string, Type> rendererTuple in _playerRendererObjects)
+            for (int i = 0; i < _playerRendererObjects.Count; i++)
             {
+                Tuple<string, Type> rendererTuple = _playerRendererObjects[i];
                 try
                 {
                     Transform rendererTransform = _targetPlayer.Value.transform.Find(rendererTuple.Item1);
                     if (rendererTransform == null)
                     {
-                        BiodiversityPlugin.Logger.LogWarning($"Transform not found for renderer: {rendererTuple.Item1}");
+                        BiodiversityPlugin.Logger.LogWarning(
+                            $"Transform not found for renderer: {rendererTuple.Item1}");
                         continue;
                     }
 
-                    BiodiversityPlugin.LogVerbose($"Found transform for renderer: {rendererTuple.Item1}");
+                    BiodiversityPlugin.LogVerbose(() => $"Found transform for renderer: {rendererTuple.Item1}");
 
                     if (rendererTransform.GetComponent(rendererTuple.Item2) is Renderer rendererComponent)
                     {
-                        BiodiversityPlugin.LogVerbose($"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
-                        rendererComponents.Add(new Tuple<Component, bool>(rendererComponent, rendererComponent.enabled));
+                        BiodiversityPlugin.LogVerbose(() =>
+                            $"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
+                        rendererComponents.Add(new Tuple<Component, bool>(rendererComponent,
+                            rendererComponent.enabled));
                     }
                     else
                     {
@@ -216,7 +213,8 @@ public class AloeClient : MonoBehaviour
                 }
                 catch (Exception ex)
                 {
-                    BiodiversityPlugin.Logger.LogError($"Error processing renderer: {rendererTuple.Item1} for player ID {playerId}: {ex.Message}");
+                    BiodiversityPlugin.Logger.LogError(
+                        $"Error processing renderer: {rendererTuple.Item1} for player ID {playerId}: {ex.Message}");
                 }
             }
 
@@ -276,7 +274,603 @@ public class AloeClient : MonoBehaviour
         
         _lastFootstepTime += Time.deltaTime;
 
-        /*
+        // ManuallyControlPlayerOffsets();
+
+        if (_targetPlayerCanEscape)
+        {
+            switch (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value)
+            {
+                case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer:
+                {
+                    if (!_targetPlayer.IsNotNull) break;
+                    if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
+
+                    if (Keyboard.current.spaceKey.wasPressedThisFrame)
+                    {
+                        BiodiversityPlugin.LogVerbose(() => $"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
+                        _currentEscapeChargeValue += escapeChargePerPress;
+                    }
+
+                    if (_currentEscapeChargeValue > 0) _currentEscapeChargeValue -= escapeChargeDecayRate * Time.deltaTime;
+                    else _currentEscapeChargeValue = 0;
+
+                    if (_currentEscapeChargeValue >= escapeChargeThreshold)
+                    {
+                        BiodiversityPlugin.LogVerbose("Triggering aloe escape");
+                        _currentEscapeChargeValue = 0;
+                        _targetPlayerCanEscape = false;
+                        netcodeController.TargetPlayerEscapedServerRpc(_aloeId);
+                        
+                        // healingOrbEffect.Stop();
+                        healingLightEffect.enabled = false;
+                    }
+
+                    break;
+                }
+            }
+        }
+        else
+        {
+            _currentEscapeChargeValue = 0;  
+        }
+            
+        
+    }
+
+    private void LateUpdate()
+    {
+        // Animate the real target player's body
+        if (_targetPlayerInCaptivity && _targetPlayer.IsNotNull)
+        {
+            if (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.AloeStates.KidnappingPlayer
+                    or (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer &&
+                _targetPlayer.Value.inSpecialInteractAnimation)
+            {
+                _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
+                _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
+            }
+        }
+        
+        CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value); // such a shitty way of fixing a bug
+        UpdateRagdollVisibility(); // this too
+    }
+
+    /// <summary>
+    /// Handles what should happen to make the Aloe crush a player's head
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="playerClientId">The player's client id whose head will be crushed.</param>
+    private void HandleCrushPlayerAnimation(string receivedAloeId, ulong playerClientId)
+    {
+        if (_aloeId != receivedAloeId) return;
+
+        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
+        if (player == null) return;
+
+        StartCoroutine(CrushPlayerAnimation(player));
+    }
+
+    private IEnumerator CrushPlayerAnimation(PlayerControllerB player)
+    {
+        BiodiversityPlugin.LogVerbose(() => $"Killing player: {player.name}");
+        if (player.inSpecialInteractAnimation &&
+            player.currentTriggerInAnimationWith != null)
+            player.currentTriggerInAnimationWith.CancelAnimationExternally();
+
+        player.isCrouching = false;
+        player.playerBodyAnimator.SetBool(PlayerCrouching, false);
+        yield return null;
+        
+        player.inSpecialInteractAnimation = true;
+        player.inAnimationWithEnemy = _aloeServer.Value;
+        player.isInElevator = false;
+        player.isInHangarShipRoom = false;
+        player.ResetZAndXRotation();
+        player.DropAllHeldItemsAndSync();
+        player.inSpecialInteractAnimation = true;
+        player.transform.LookAt(transform.position);
+        animator.SetTrigger(Crush);
+        yield return new WaitForSeconds(0.3f);
+        
+        player.KillPlayer(Vector3.zero, true, CauseOfDeath.Crushing, 1);
+    }
+    
+    private void HandleChangeAloeSkinColour(bool oldValue, bool newValue)
+    {
+        if (_changeSkinColourCoroutine != null) StopCoroutine(ChangeAloeSkinColour(newValue));
+        _propertyBlock ??= new MaterialPropertyBlock();
+        bodyRenderer.GetPropertyBlock(_propertyBlock);
+        _changeSkinColourCoroutine = StartCoroutine(ChangeAloeSkinColour(newValue));
+    }
+
+    /// <summary>
+    /// A coroutine for smoothly transitioning the Aloe's skin colour
+    /// </summary>
+    /// <param name="toDark">Whether her skin colour is going to a dark colour or not.</param>
+    /// <returns></returns>
+    private IEnumerator ChangeAloeSkinColour(bool toDark)
+    {
+        BiodiversityPlugin.LogVerbose(() => $"Changing Aloe's skin to a {(toDark ? "dark" : "light")} colour");
+        float timeElapsed = 0f;
+        float startMetallicValue = toDark ? 0 : skinMetallicValueDark;
+        float endMetallicValue = toDark ? skinMetallicValueDark : 0;
+
+        Color currentColour = bodyRenderer.material.GetColor(BaseColour);
+        RGBToHSV(currentColour, out float h, out float s, out float v);
+        float endV = toDark ? 0.5f : 1f;
+
+        // Early exit if the skin colour is already the desired colour
+        if (Mathf.Approximately(v, endV) && Mathf.Approximately(bodyRenderer.material.GetFloat(Metallic), endMetallicValue))
+        {
+            _changeSkinColourCoroutine = null;
+            yield break;
+        }
+
+        while (timeElapsed < skinMetallicTransitionTime)
+        {
+            float t = timeElapsed / skinMetallicTransitionTime;
+            float currentMetallicValue = Mathf.Lerp(startMetallicValue, endMetallicValue, t);
+            float currentV = Mathf.Lerp(v, endV, t);
+            Color newColour = HSVToRGB(h, s, currentV);
+
+            _propertyBlock.SetFloat(Metallic, currentMetallicValue);
+            _propertyBlock.SetColor(BaseColour, newColour);
+            bodyRenderer.SetPropertyBlock(_propertyBlock);
+
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Ensure the final value is set exactly at the end
+        _propertyBlock.SetFloat(Metallic, endMetallicValue);
+        _propertyBlock.SetColor(BaseColour, HSVToRGB(h, s, endV));
+        bodyRenderer.SetPropertyBlock(_propertyBlock);
+        
+        _changeSkinColourCoroutine = null;
+    }
+
+    /// <summary>
+    /// Heals the target player by the given amount.
+    /// It also updates their health bar.
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="healAmount">The amount to heal the target player by.</param>
+    private void HandleHealTargetPlayerByAmount(string receivedAloeId, int healAmount)
+    {
+        if (_aloeId != receivedAloeId) return;
+        if (!_targetPlayer.IsNotNull) return;
+        
+        _targetPlayer.Value.health += healAmount;
+        if (HUDManager.Instance.localPlayer == _targetPlayer.Value)
+        {
+            HUDManager.Instance.UpdateHealthUI(GameNetworkManager.Instance.localPlayerController.health, false);
+            _targetPlayer.Value.MakeCriticallyInjured(false);
+        }
+            
+        BiodiversityPlugin.LogVerbose(() => $"Target player health after last heal: {_targetPlayer.Value.health}");
+    }
+
+    private IEnumerator ChangeTargetPlayerOffsets(TargetPlayerOffsetType offsetType, float duration = 0.5f)
+    {
+        (Vector3 newPositionOffset, Quaternion newRotationOffset) = _targetPlayerOffsetDictionary[offsetType];
+        Vector3 initialPositionOffset = _offsetPosition;
+        Quaternion initialRotationOffset = _offsetRotation;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration)
+        {
+            float t = elapsedTime / duration;
+            _offsetPosition = Vector3.Lerp(initialPositionOffset, newPositionOffset, t);
+            _offsetRotation = Quaternion.Slerp(initialRotationOffset, newRotationOffset, t);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        _offsetPosition = newPositionOffset;
+        _offsetRotation = newRotationOffset;
+    }
+
+    private void HandleTransitionToRunningForwardsAndCarryingPlayer(string receivedAloeId, float transitionDuration)
+    {
+        if (_aloeId != receivedAloeId) return;
+        BiodiversityPlugin.LogVerbose(() => $"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
+
+        if (_currentFakePlayerBodyRagdoll == null)
+        {
+            BiodiversityPlugin.Logger.LogError("The player body ragdoll is null, this should never happen.");
+            return;
+        }
+
+        if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
+        _changeTargetPlayerOffsets = StartCoroutine(
+            ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Carried, transitionDuration));
+
+        _currentFakePlayerBodyRagdoll.DetachLimbFromTransform("Neck");
+        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Root", ragdollGrabTarget);
+    }
+
+    private void HandleSpawnFakePlayerBodyRagdoll(string receivedAloeId,
+        NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
+    {
+        if (_aloeId != receivedAloeId) return;
+        BiodiversityPlugin.LogVerbose(() => $"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
+        
+        CleanupRagdoll();
+
+        if (!fakePlayerBodyRagdollNetworkObjectReference.TryGet(out NetworkObject fakePlayerBodyRagdollNetworkObject))
+        {
+            BiodiversityPlugin.Logger.LogError("Could not get the network object for the fake player body ragdoll.");
+            return; 
+        }
+        
+        _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollNetworkObject.GetComponent<FakePlayerBodyRagdoll>();
+        if (_currentFakePlayerBodyRagdoll == null)
+        {
+            BiodiversityPlugin.Logger.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
+            return;
+        }
+
+        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", ragdollGrabTarget);
+        UpdateRagdollVisibility();
+    }
+    
+    private void UpdateRagdollVisibility()
+    {
+        if (_currentFakePlayerBodyRagdoll == null) return;
+    
+        bool isLocalPlayer = GameNetworkManager.Instance.localPlayerController == _targetPlayer.Value;
+        _currentFakePlayerBodyRagdoll.bodyMeshRenderer.enabled = !isLocalPlayer;
+    }
+
+    /// <summary>
+    /// Sets the target player up to be in captivity.
+    /// It will muffle the player, drop all their items and freeze them.
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="setToInCaptivity">Whether to make them captive or not.</param>
+    private void HandleSetTargetPlayerInCaptivity(string receivedAloeId, bool setToInCaptivity)
+    {
+        if (_aloeId != receivedAloeId) return;
+        if (!_targetPlayer.IsNotNull)
+        {
+            _targetPlayerInCaptivity = false;
+            return;
+        }
+        
+        PlayerControllerB targetPlayer = _targetPlayer.Value;
+
+        if (setToInCaptivity) SetupCaptivity(targetPlayer);
+        else ReleaseCaptivity(targetPlayer);
+
+        _targetPlayerInCaptivity = setToInCaptivity;
+        BiodiversityPlugin.LogVerbose(() => $"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
+    }
+
+    private void SetupCaptivity(PlayerControllerB targetPlayer)
+    {
+        if (targetPlayer.inSpecialInteractAnimation && targetPlayer.currentTriggerInAnimationWith != null)
+            targetPlayer.currentTriggerInAnimationWith.CancelAnimationExternally();
+
+        targetPlayer.isCrouching = false;
+        targetPlayer.playerBodyAnimator.SetBool(PlayerCrouching, false);
+        HandleMuffleTargetPlayerVoice(_aloeId);
+        
+        targetPlayer.inSpecialInteractAnimation = true;
+        targetPlayer.inAnimationWithEnemy = _aloeServer.Value;
+        targetPlayer.isInElevator = false;
+        targetPlayer.isInHangarShipRoom = false;
+        
+        targetPlayer.ResetZAndXRotation();
+        targetPlayer.DropAllHeldItemsAndSync();
+
+        CorrectlySetTargetPlayerLocalRenderers(false, targetPlayer);
+    }
+
+    private void ReleaseCaptivity(PlayerControllerB targetPlayer)
+    {
+        CleanupRagdoll();
+        CorrectlySetTargetPlayerLocalRenderers(true, targetPlayer);
+        
+        // healingOrbEffect.Stop();
+        healingLightEffect.enabled = false;
+        _targetPlayer.Value.inSpecialInteractAnimation = false;
+        _targetPlayer.Value.inAnimationWithEnemy = null;
+        _targetPlayer.Value.ResetZAndXRotation();
+            
+        // Make sure the player is on a navmesh
+        Vector3 validPosition =
+            RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
+        _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
+            
+        HandleUnMuffleTargetPlayerVoice(_aloeId);
+    }
+
+    private void CorrectlySetTargetPlayerLocalRenderers(bool enable, PlayerControllerB targetPlayer)
+    {
+        if (GameNetworkManager.Instance.localPlayerController == targetPlayer)
+        {
+            GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = enable;
+            _playerVisorRenderers[targetPlayer.actualClientId].enabled = enable;
+        }
+        else
+        {
+            ToggleTargetPlayerLocalRenderers(enable);
+        }
+    }
+
+    private void CleanupRagdoll()
+    {
+        if (_currentFakePlayerBodyRagdoll == null) return;
+        BiodiversityPlugin.LogVerbose("_currentFakePlayerBodyRagdoll is not null. Destroying it.");
+        Destroy(_currentFakePlayerBodyRagdoll.gameObject);
+        _currentFakePlayerBodyRagdoll = null;
+    }
+
+    /// <summary>
+    /// Handles when the target player is able to escape by mashing their space bar.
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="canEscape">Whether to make the target player able to escape or not.</param>
+    private void HandleSetTargetPlayerAbleToEscape(string receivedAloeId, bool canEscape)
+    {
+        if (_aloeId != receivedAloeId) return;
+        if (!_targetPlayer.IsNotNull) return;
+        _targetPlayerCanEscape = canEscape;
+        _targetPlayer.Value.inSpecialInteractAnimation = true;
+
+        if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer.Value)
+            HUDManager.Instance.DisplayTip(
+                LangParser.GetTranslation("tooltip.header.aloe.escape"), 
+                LangParser.GetTranslation("tooltip.body.aloe.escape"),
+                false,
+                true,
+                "LC_AloeGrabTip");
+        BiodiversityPlugin.LogVerbose(() => $"Set {_targetPlayer.Value.playerUsername} able to escape");
+    }
+
+    /// <summary>
+    /// Increases the given player's fear level
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="targetInsanity">.</param>
+    /// <param name="playerClientId">.</param>
+    private void HandleIncreasePlayerFearLevel(string receivedAloeId, float targetInsanity, ulong playerClientId)
+    {
+        if (_aloeId != receivedAloeId) return;
+        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
+        if (player == null || player != GameNetworkManager.Instance.localPlayerController) return;
+        player.JumpToFearLevel(targetInsanity);
+        player.IncreaseFearLevelOverTime(0.8f);
+    }
+
+    /// <summary>
+    /// Muffles the target player's voice.
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    private void HandleMuffleTargetPlayerVoice(string receivedAloeId)
+    {
+        if (_aloeId != receivedAloeId) return;
+
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
+
+        BiodiversityPlugin.LogVerbose(() => $"Muffling {_targetPlayer.Value.playerUsername}");
+        _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 5f;
+        _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = true;
+        _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 500f;
+        _targetPlayer.Value.voiceMuffledByEnemy = true;
+    }
+
+    /// <summary>
+    /// Un-muffles the target player's voice.
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    private void HandleUnMuffleTargetPlayerVoice(string receivedAloeId)
+    {
+        if (_aloeId != receivedAloeId) return;
+
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
+
+        BiodiversityPlugin.LogVerbose(() => $"UnMuffling {_targetPlayer.Value.playerUsername}");
+        _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 1f;
+        _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = false;
+        _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 20000f;
+        _targetPlayer.Value.voiceMuffledByEnemy = false;
+    }
+
+    private void ToggleTargetPlayerLocalRenderers(bool setToEnabled)
+    {
+        if (!_targetPlayer.IsNotNull)
+        {
+            BiodiversityPlugin.Logger.LogDebug("Cannot toggle target player renderers because the target player variable is null.");
+            return;
+        }
+        
+        ulong targetPlayerId = _targetPlayer.Value.actualClientId;
+        List<Tuple<Component, bool>> cachedRenderers = _targetPlayerPerKeyCachedRenderers[targetPlayerId];
+        
+        if (cachedRenderers == null || cachedRenderers.Count == 0)
+        {
+            BiodiversityPlugin.Logger.LogWarning($"No renderer components cached for player ID {targetPlayerId}");
+            return;
+        }
+
+        for (int i = 0; i < cachedRenderers.Count; i++)
+        {
+            (Component component, bool isEnabledByDefault) = cachedRenderers[i];
+            if (component is Renderer rendererComponent)
+            {
+                rendererComponent.enabled = isEnabledByDefault && setToEnabled;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Plays the healing effect on the target player.
+    /// </summary>
+    /// <param name="receivedAloeId">The Aloe ID.</param>
+    /// <param name="totalHealingTime">The total time the healing vfx should play for.</param>
+    private void HandlePlayHealingVfx(string receivedAloeId, float totalHealingTime)
+    {
+        if (_aloeId != receivedAloeId) return;
+        
+        // healingOrbEffect.Stop();
+        // healingOrbEffect.SetFloat("Duration", totalHealingTime);
+        // healingOrbEffect.SendEvent("OnShowHealingOrb");
+        
+        healingLightEffect.enabled = true;
+        BiodiversityPlugin.LogVerbose("Playing HealingOrbVfx");
+        StartCoroutine(DisableHealingLightDelayed(totalHealingTime));
+    }
+
+    private IEnumerator DisableHealingLightDelayed(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        healingLightEffect.enabled = false;
+    }
+
+    private void HandleDamagePlayer(string receivedAloeId, ulong playerId, int damage)
+    {
+        if (_aloeId != receivedAloeId || !netcodeController.IsServer) return;
+        NullableObject<PlayerControllerB> playerToDamage = new(StartOfRound.Instance.allPlayerScripts[playerId]);
+        if (!playerToDamage.IsNotNull)
+        {
+            BiodiversityPlugin.Logger.LogError($"Cannot damage player with id {playerId}, because they do not exist.");
+            return;
+        }
+        BiodiversityPlugin.LogVerbose(() => $"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
+        playerToDamage.Value.DamagePlayer(damage, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.Value.turnCompass.forward * (-1 * 5));
+    }
+
+    /// <summary>
+    /// Plays a random footstep sound effect when the Aloe's foot touches the ground in an animation.
+    /// </summary>
+    public void OnAnimationEventPlayFootstepSfx()
+    {
+        BiodiversityPlugin.LogVerbose(() => $"Last footstep time: {_lastFootstepTime}");
+        _lastFootstepTime = 0;
+        
+        AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
+        aloeFootstepsSource.PlayOneShot(audioClipToPlay);
+        aloeFootstepsSource.pitch = Random.Range(aloeFootstepsSource.pitch - 0.1f, aloeFootstepsSource.pitch + 0.1f);
+        WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
+    }
+
+    private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
+    {
+        _targetPlayer.Value = newValue == BiodiverseAI.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
+        BiodiversityPlugin.LogVerbose(() => _targetPlayer.IsNotNull
+            ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
+            : "Changed target player to null.");
+    }
+
+    private void HandleBehaviourStateChanged(int oldValue, int newValue)
+    {
+        petalsRenderer.enabled = newValue is (int)AloeServerAI.AloeStates.HealingPlayer
+            or (int)AloeServerAI.AloeStates.CuddlingPlayer or (int)AloeServerAI.AloeStates.ChasingEscapedPlayer
+            or (int)AloeServerAI.AloeStates.AttackingPlayer;
+        
+        switch (newValue)
+        {
+            case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer when oldValue is not ((int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer):
+            {
+                BiodiversityPlugin.LogVerbose("Switching target player offset to cuddled.");
+                if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
+                _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Cuddled, 0.25f));
+                break;
+            }
+            
+            case (int)AloeServerAI.AloeStates.KidnappingPlayer when
+                oldValue is not (int)AloeServerAI.AloeStates.KidnappingPlayer:
+            {
+                _offsetPosition = Vector3.zero;
+                _offsetRotation = Quaternion.identity;
+                
+                BiodiversityPlugin.LogVerbose("Switching target player offset to dragged.");
+                if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
+                _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Dragged, 0.25f));
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// An animation event that gets triggered near the end of the death animation.
+    /// The function plays the poof particle effect and makes the Aloe invisible
+    /// </summary>
+    public void OnAnimationEventPlayPoofParticleEffect()
+    {
+        BiodiversityPlugin.LogVerbose(() => $"In {nameof(OnAnimationEventPlayPoofParticleEffect)}");
+        poofParticleSystem.Play();
+
+        bodyRenderer.enabled = false;
+        petalsRenderer.enabled = false;
+
+        // healingOrbEffect.Stop();
+        healingLightEffect.enabled = false;
+        aloeVoiceSource.Stop(true);
+        aloeFootstepsSource.Stop(true);
+
+        Destroy(scanNode.gameObject);
+        if (netcodeController.IsOwner)
+            StartCoroutine(DestroyAloeObjectAfterDuration(poofParticleSystem.main.duration));
+    }
+
+    /// <summary>
+    /// Destroys the entire Aloe object after a duration
+    /// </summary>
+    private IEnumerator DestroyAloeObjectAfterDuration(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        BiodiversityPlugin.LogVerbose("Destroying gameobject.");
+        Destroy(gameObject);
+    }
+
+    private void AddStateMachineBehaviours(Animator receivedAnimator)
+    {
+        AloeServerAI aloeServerAI = _aloeServer.Value;
+        StateMachineBehaviour[] behaviours = receivedAnimator.GetBehaviours<StateMachineBehaviour>();
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            StateMachineBehaviour behaviour = behaviours[i];
+            if (behaviour is BaseStateMachineBehaviour baseStateMachineBehaviour)
+            {
+                baseStateMachineBehaviour.Initialize(netcodeController, aloeServerAI, this);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Converts an RGB color to HSV and returns the original RGB color.
+    /// </summary>
+    /// <param name="rgb">The RGB color to convert.</param>
+    /// <param name="h">The hue component of the HSV color.</param>
+    /// <param name="s">The saturation component of the HSV color.</param>
+    /// <param name="v">The value component of the HSV color.</param>
+    /// <returns>The original RGB color.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
+    {
+        Color.RGBToHSV(rgb, out h, out s, out v);
+        return rgb;
+    }
+
+    /// <summary>
+    /// Converts HSV color components to an RGB color.
+    /// </summary>
+    /// <param name="h">The hue component of the HSV color.</param>
+    /// <param name="s">The saturation component of the HSV color.</param>
+    /// <param name="v">The value component of the HSV color.</param>
+    /// <returns>The RGB color corresponding to the given HSV components.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Color HSVToRGB(float h, float s, float v)
+    {
+        return Color.HSVToRGB(h, s, v);
+    }
+
+    private void ManuallyControlPlayerOffsets()
+    {
         const float moveAmount = 0.1f;
         const float rotationAmount = 5f;
         
@@ -374,595 +968,9 @@ public class AloeClient : MonoBehaviour
         
         if (Keyboard.current.numpadPlusKey.wasPressedThisFrame)
         {
-            BiodiversityPlugin.LogVerbose(
+            BiodiversityPlugin.LogVerbose(() => 
                 $"Offset Position: {_offsetPosition}, Offset Rotation: {_offsetRotation}, current position: {_targetPlayer.Value.transform.position}, bob: {transform.position + _offsetPosition}");
         }
-        */
-
-        if (_targetPlayerCanEscape)
-        {
-            switch (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value)
-            {
-                case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer:
-                {
-                    if (!_targetPlayer.IsNotNull) break;
-                    if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
-
-                    if (Keyboard.current.spaceKey.wasPressedThisFrame)
-                    {
-                        BiodiversityPlugin.LogVerbose($"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
-                        _currentEscapeChargeValue += escapeChargePerPress;
-                    }
-
-                    if (_currentEscapeChargeValue > 0) _currentEscapeChargeValue -= escapeChargeDecayRate * Time.deltaTime;
-                    else _currentEscapeChargeValue = 0;
-
-                    if (_currentEscapeChargeValue >= escapeChargeThreshold)
-                    {
-                        BiodiversityPlugin.LogVerbose("Triggering aloe escape");
-                        _currentEscapeChargeValue = 0;
-                        _targetPlayerCanEscape = false;
-                        netcodeController.TargetPlayerEscapedServerRpc(_aloeId);
-                        
-                        // healingOrbEffect.Stop();
-                        healingLightEffect.enabled = false;
-                    }
-
-                    break;
-                }
-            }
-        }
-        else 
-            _currentEscapeChargeValue = 0;
-        
-    }
-
-    private void LateUpdate()
-    {
-        // Animate the real target player's body
-        if (_targetPlayerInCaptivity && _targetPlayer.IsNotNull)
-        {
-            if (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.AloeStates.KidnappingPlayer
-                    or (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer &&
-                _targetPlayer.Value.inSpecialInteractAnimation)
-            {
-                _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
-                _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
-            }
-        }
-        
-        CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value); // such a shitty way of fixing a bug
-        UpdateRagdollVisibility(); // this too
-    }
-
-    /// <summary>
-    /// Handles what should happen to make the Aloe crush a player's head
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="playerClientId">The player's client id whose head will be crushed.</param>
-    private void HandleCrushPlayerAnimation(string receivedAloeId, ulong playerClientId)
-    {
-        if (_aloeId != receivedAloeId) return;
-
-        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
-        if (player == null) return;
-
-        StartCoroutine(CrushPlayerAnimation(player));
-    }
-
-    private IEnumerator CrushPlayerAnimation(PlayerControllerB player)
-    {
-        BiodiversityPlugin.LogVerbose($"Killing player: {player.name}");
-        if (player.inSpecialInteractAnimation &&
-            player.currentTriggerInAnimationWith != null)
-            player.currentTriggerInAnimationWith.CancelAnimationExternally();
-
-        player.isCrouching = false;
-        player.playerBodyAnimator.SetBool(PlayerCrouching, false);
-        yield return null;
-        
-        player.inSpecialInteractAnimation = true;
-        player.inAnimationWithEnemy = _aloeServer.Value;
-        player.isInElevator = false;
-        player.isInHangarShipRoom = false;
-        player.ResetZAndXRotation();
-        player.DropAllHeldItemsAndSync();
-        player.inSpecialInteractAnimation = true;
-        player.transform.LookAt(transform.position);
-        animator.SetTrigger(Crush);
-        yield return new WaitForSeconds(0.3f);
-        
-        player.KillPlayer(Vector3.zero, true, CauseOfDeath.Crushing, 1);
-    }
-    
-    private void HandleChangeAloeSkinColour(bool oldValue, bool newValue)
-    {
-        if (_changeSkinColourCoroutine != null) StopCoroutine(ChangeAloeSkinColour(newValue));
-        _propertyBlock ??= new MaterialPropertyBlock();
-        bodyRenderer.GetPropertyBlock(_propertyBlock);
-        _changeSkinColourCoroutine = StartCoroutine(ChangeAloeSkinColour(newValue));
-    }
-
-    /// <summary>
-    /// A coroutine for smoothly transitioning the Aloe's skin colour
-    /// </summary>
-    /// <param name="toDark">Whether her skin colour is going to a dark colour or not.</param>
-    /// <returns></returns>
-    private IEnumerator ChangeAloeSkinColour(bool toDark)
-    {
-        BiodiversityPlugin.LogVerbose($"Changing Aloe's skin to a {(toDark ? "dark" : "light")} colour");
-        float timeElapsed = 0f;
-        float startMetallicValue = toDark ? 0 : skinMetallicValueDark;
-        float endMetallicValue = toDark ? skinMetallicValueDark : 0;
-
-        Color currentColour = bodyRenderer.material.GetColor(BaseColour);
-        RGBToHSV(currentColour, out float h, out float s, out float v);
-        float endV = toDark ? 0.5f : 1f;
-
-        // Early exit if the skin colour is already the desired colour
-        if (Mathf.Approximately(v, endV) && Mathf.Approximately(bodyRenderer.material.GetFloat(Metallic), endMetallicValue))
-        {
-            _changeSkinColourCoroutine = null;
-            yield break;
-        }
-
-        while (timeElapsed < skinMetallicTransitionTime)
-        {
-            float t = timeElapsed / skinMetallicTransitionTime;
-            float currentMetallicValue = Mathf.Lerp(startMetallicValue, endMetallicValue, t);
-            float currentV = Mathf.Lerp(v, endV, t);
-            Color newColour = HSVToRGB(h, s, currentV);
-
-            _propertyBlock.SetFloat(Metallic, currentMetallicValue);
-            _propertyBlock.SetColor(BaseColour, newColour);
-            bodyRenderer.SetPropertyBlock(_propertyBlock);
-
-            timeElapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        // Ensure the final value is set exactly at the end
-        _propertyBlock.SetFloat(Metallic, endMetallicValue);
-        _propertyBlock.SetColor(BaseColour, HSVToRGB(h, s, endV));
-        bodyRenderer.SetPropertyBlock(_propertyBlock);
-        
-        _changeSkinColourCoroutine = null;
-    }
-
-    /// <summary>
-    /// Heals the target player by the given amount.
-    /// It also updates their health bar.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="healAmount">The amount to heal the target player by.</param>
-    private void HandleHealTargetPlayerByAmount(string receivedAloeId, int healAmount)
-    {
-        if (_aloeId != receivedAloeId) return;
-        if (!_targetPlayer.IsNotNull) return;
-        
-        _targetPlayer.Value.health += healAmount;
-        if (HUDManager.Instance.localPlayer == _targetPlayer.Value)
-        {
-            HUDManager.Instance.UpdateHealthUI(GameNetworkManager.Instance.localPlayerController.health, false);
-            _targetPlayer.Value.MakeCriticallyInjured(false);
-        }
-            
-        BiodiversityPlugin.LogVerbose($"Target player health after last heal: {_targetPlayer.Value.health}");
-    }
-
-    private IEnumerator ChangeTargetPlayerOffsets(TargetPlayerOffsetType offsetType, float duration = 0.5f)
-    {
-        (Vector3 newPositionOffset, Quaternion newRotationOffset) = _targetPlayerOffsetDictionary[offsetType];
-        Vector3 initialPositionOffset = _offsetPosition;
-        Quaternion initialRotationOffset = _offsetRotation;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < duration)
-        {
-            float t = elapsedTime / duration;
-            _offsetPosition = Vector3.Lerp(initialPositionOffset, newPositionOffset, t);
-            _offsetRotation = Quaternion.Slerp(initialRotationOffset, newRotationOffset, t);
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
-        _offsetPosition = newPositionOffset;
-        _offsetRotation = newRotationOffset;
-    }
-
-    private void HandleTransitionToRunningForwardsAndCarryingPlayer(string receivedAloeId, float transitionDuration)
-    {
-        if (_aloeId != receivedAloeId) return;
-        BiodiversityPlugin.LogVerbose($"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
-
-        if (_currentFakePlayerBodyRagdoll == null)
-        {
-            BiodiversityPlugin.Logger.LogError("The player body ragdoll is null, this should never happen.");
-            return;
-        }
-
-        if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
-        _changeTargetPlayerOffsets = StartCoroutine(
-            ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Carried, transitionDuration));
-
-        _currentFakePlayerBodyRagdoll.DetachLimbFromTransform("Neck");
-        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Root", ragdollGrabTarget);
-    }
-
-    private void HandleSpawnFakePlayerBodyRagdoll(string receivedAloeId,
-        NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
-    {
-        if (_aloeId != receivedAloeId) return;
-        BiodiversityPlugin.LogVerbose($"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
-        
-        CleanupRagdoll();
-
-        if (!fakePlayerBodyRagdollNetworkObjectReference.TryGet(out NetworkObject fakePlayerBodyRagdollNetworkObject))
-        {
-            BiodiversityPlugin.Logger.LogError("Could not get the network object for the fake player body ragdoll.");
-            return; 
-        }
-        
-        _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollNetworkObject.GetComponent<FakePlayerBodyRagdoll>();
-        if (_currentFakePlayerBodyRagdoll == null)
-        {
-            BiodiversityPlugin.Logger.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
-            return;
-        }
-
-        _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Neck", ragdollGrabTarget);
-        UpdateRagdollVisibility();
-    }
-    
-    private void UpdateRagdollVisibility()
-    {
-        if (_currentFakePlayerBodyRagdoll == null) return;
-    
-        bool isLocalPlayer = GameNetworkManager.Instance.localPlayerController == _targetPlayer.Value;
-        _currentFakePlayerBodyRagdoll.bodyMeshRenderer.enabled = !isLocalPlayer;
-    }
-
-    /// <summary>
-    /// Sets the target player up to be in captivity.
-    /// It will muffle the player, drop all their items and freeze them.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="setToInCaptivity">Whether to make them captive or not.</param>
-    private void HandleSetTargetPlayerInCaptivity(string receivedAloeId, bool setToInCaptivity)
-    {
-        if (_aloeId != receivedAloeId) return;
-        if (!_targetPlayer.IsNotNull)
-        {
-            _targetPlayerInCaptivity = false;
-            return;
-        }
-        
-        PlayerControllerB targetPlayer = _targetPlayer.Value;
-
-        if (setToInCaptivity) SetupCaptivity(targetPlayer);
-        else ReleaseCaptivity(targetPlayer);
-
-        _targetPlayerInCaptivity = setToInCaptivity;
-        BiodiversityPlugin.LogVerbose($"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
-    }
-
-    private void SetupCaptivity(PlayerControllerB targetPlayer)
-    {
-        if (targetPlayer.inSpecialInteractAnimation && targetPlayer.currentTriggerInAnimationWith != null)
-            targetPlayer.currentTriggerInAnimationWith.CancelAnimationExternally();
-
-        targetPlayer.isCrouching = false;
-        targetPlayer.playerBodyAnimator.SetBool(PlayerCrouching, false);
-        HandleMuffleTargetPlayerVoice(_aloeId);
-        
-        targetPlayer.inSpecialInteractAnimation = true;
-        targetPlayer.inAnimationWithEnemy = _aloeServer.Value;
-        targetPlayer.isInElevator = false;
-        targetPlayer.isInHangarShipRoom = false;
-        
-        targetPlayer.ResetZAndXRotation();
-        targetPlayer.DropAllHeldItemsAndSync();
-
-        CorrectlySetTargetPlayerLocalRenderers(false, targetPlayer);
-    }
-
-    private void ReleaseCaptivity(PlayerControllerB targetPlayer)
-    {
-        CleanupRagdoll();
-        CorrectlySetTargetPlayerLocalRenderers(true, targetPlayer);
-        
-        // healingOrbEffect.Stop();
-        healingLightEffect.enabled = false;
-        _targetPlayer.Value.inSpecialInteractAnimation = false;
-        _targetPlayer.Value.inAnimationWithEnemy = null;
-        _targetPlayer.Value.ResetZAndXRotation();
-            
-        // Make sure the player is on a navmesh
-        Vector3 validPosition =
-            RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
-        _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
-            
-        HandleUnMuffleTargetPlayerVoice(_aloeId);
-    }
-
-    private void CorrectlySetTargetPlayerLocalRenderers(bool enable, PlayerControllerB targetPlayer)
-    {
-        if (GameNetworkManager.Instance.localPlayerController == targetPlayer)
-        {
-            GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = enable;
-            _playerVisorRenderers[targetPlayer.actualClientId].enabled = enable;
-        }
-        else
-        {
-            ToggleTargetPlayerLocalRenderers(enable);
-        }
-    }
-
-    private void CleanupRagdoll()
-    {
-        if (_currentFakePlayerBodyRagdoll == null) return;
-        BiodiversityPlugin.LogVerbose("_currentFakePlayerBodyRagdoll is not null. Destroying it.");
-        Destroy(_currentFakePlayerBodyRagdoll.gameObject);
-        _currentFakePlayerBodyRagdoll = null;
-    }
-
-    /// <summary>
-    /// Handles when the target player is able to escape by mashing their space bar.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="canEscape">Whether to make the target player able to escape or not.</param>
-    private void HandleSetTargetPlayerAbleToEscape(string receivedAloeId, bool canEscape)
-    {
-        if (_aloeId != receivedAloeId) return;
-        if (!_targetPlayer.IsNotNull) return;
-        _targetPlayerCanEscape = canEscape;
-        _targetPlayer.Value.inSpecialInteractAnimation = true;
-
-        if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer.Value)
-            HUDManager.Instance.DisplayTip(
-                LangParser.GetTranslation("tooltip.header.aloe.escape"), 
-                LangParser.GetTranslation("tooltip.body.aloe.escape"),
-                false,
-                true,
-                "LC_AloeGrabTip");
-        BiodiversityPlugin.LogVerbose($"Set {_targetPlayer.Value.playerUsername} able to escape");
-    }
-
-    /// <summary>
-    /// Increases the given player's fear level
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="targetInsanity">.</param>
-    /// <param name="playerClientId">.</param>
-    private void HandleIncreasePlayerFearLevel(string receivedAloeId, float targetInsanity, ulong playerClientId)
-    {
-        if (_aloeId != receivedAloeId) return;
-        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
-        if (player == null || player != GameNetworkManager.Instance.localPlayerController) return;
-        player.JumpToFearLevel(targetInsanity);
-        player.IncreaseFearLevelOverTime(0.8f);
-    }
-
-    /// <summary>
-    /// Muffles the target player's voice.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    private void HandleMuffleTargetPlayerVoice(string receivedAloeId)
-    {
-        if (_aloeId != receivedAloeId) return;
-
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
-
-        BiodiversityPlugin.LogVerbose($"Muffling {_targetPlayer.Value.playerUsername}");
-        _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 5f;
-        _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = true;
-        _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 500f;
-        _targetPlayer.Value.voiceMuffledByEnemy = true;
-    }
-
-    /// <summary>
-    /// Un-muffles the target player's voice.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    private void HandleUnMuffleTargetPlayerVoice(string receivedAloeId)
-    {
-        if (_aloeId != receivedAloeId) return;
-
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
-
-        BiodiversityPlugin.LogVerbose($"UnMuffling {_targetPlayer.Value.playerUsername}");
-        _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 1f;
-        _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = false;
-        _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 20000f;
-        _targetPlayer.Value.voiceMuffledByEnemy = false;
-    }
-
-    private void ToggleTargetPlayerLocalRenderers(bool setToEnabled)
-    {
-        if (!_targetPlayer.IsNotNull)
-        {
-            BiodiversityPlugin.Logger.LogError("Cannot toggle target player renderers because the target player variable is null.");
-            return;
-        }
-        
-        ulong targetPlayerId = _targetPlayer.Value.actualClientId;
-        List<Tuple<Component, bool>> cachedRenderers = _targetPlayerPerKeyCachedRenderers[targetPlayerId];
-        
-        if (cachedRenderers == null || cachedRenderers.Count == 0)
-        {
-            BiodiversityPlugin.Logger.LogWarning($"No renderer components cached for player ID {targetPlayerId}");
-            return;
-        }
-
-        foreach ((Component component, bool isEnabledByDefault) in cachedRenderers)
-        {
-            if (component is Renderer rendererComponent)
-            {
-                rendererComponent.enabled = isEnabledByDefault && setToEnabled;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Plays the healing effect on the target player.
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    /// <param name="totalHealingTime">The total time the healing vfx should play for.</param>
-    private void HandlePlayHealingVfx(string receivedAloeId, float totalHealingTime)
-    {
-        if (_aloeId != receivedAloeId) return;
-        
-        // healingOrbEffect.Stop();
-        // healingOrbEffect.SetFloat("Duration", totalHealingTime);
-        // healingOrbEffect.SendEvent("OnShowHealingOrb");
-        
-        healingLightEffect.enabled = true;
-        BiodiversityPlugin.LogVerbose("Playing HealingOrbVfx");
-        StartCoroutine(DisableHealingLightDelayed(totalHealingTime));
-    }
-
-    private IEnumerator DisableHealingLightDelayed(float seconds)
-    {
-        yield return new WaitForSeconds(seconds);
-        healingLightEffect.enabled = false;
-    }
-
-    private void HandleDamagePlayer(string receivedAloeId, ulong playerId, int damage)
-    {
-        if (_aloeId != receivedAloeId || !netcodeController.IsServer) return;
-        NullableObject<PlayerControllerB> playerToDamage = new(StartOfRound.Instance.allPlayerScripts[playerId]);
-        if (!playerToDamage.IsNotNull)
-        {
-            BiodiversityPlugin.Logger.LogError($"Cannot damage player with id {playerId}, because they do not exist.");
-            return;
-        }
-        BiodiversityPlugin.LogVerbose($"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
-        playerToDamage.Value.DamagePlayer(damage, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.Value.turnCompass.forward * (-1 * 5));
-    }
-
-    /// <summary>
-    /// Plays a random footstep sound effect when the Aloe's foot touches the ground in an animation.
-    /// </summary>
-    public void OnAnimationEventPlayFootstepSfx()
-    {
-        BiodiversityPlugin.LogVerbose($"Last footstep time: {_lastFootstepTime}");
-        _lastFootstepTime = 0;
-        
-        AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
-        aloeFootstepsSource.PlayOneShot(audioClipToPlay);
-        aloeFootstepsSource.pitch = Random.Range(aloeFootstepsSource.pitch - 0.1f, aloeFootstepsSource.pitch + 0.1f);
-        WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
-    }
-
-    private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
-    {
-        _targetPlayer.Value = newValue == BiodiverseAI.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
-        BiodiversityPlugin.LogVerbose(_targetPlayer.IsNotNull
-            ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
-            : "Changed target player to null.");
-    }
-
-    private void HandleBehaviourStateChanged(int oldValue, int newValue)
-    {
-        petalsRenderer.enabled = newValue is (int)AloeServerAI.AloeStates.HealingPlayer
-            or (int)AloeServerAI.AloeStates.CuddlingPlayer or (int)AloeServerAI.AloeStates.ChasingEscapedPlayer
-            or (int)AloeServerAI.AloeStates.AttackingPlayer;
-        
-        switch (newValue)
-        {
-            case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer when oldValue is not ((int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer):
-            {
-                BiodiversityPlugin.LogVerbose("Switching target player offset to cuddled.");
-                if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
-                _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Cuddled, 0.25f));
-                break;
-            }
-            
-            case (int)AloeServerAI.AloeStates.KidnappingPlayer when
-                oldValue is not (int)AloeServerAI.AloeStates.KidnappingPlayer:
-            {
-                _offsetPosition = Vector3.zero;
-                _offsetRotation = Quaternion.identity;
-                
-                BiodiversityPlugin.LogVerbose("Switching target player offset to dragged.");
-                if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
-                _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Dragged, 0.25f));
-                break;
-            }
-        }
-    }
-
-    /// <summary>
-    /// An animation event that gets triggered near the end of the death animation.
-    /// The function plays the poof particle effect and makes the Aloe invisible
-    /// </summary>
-    public void OnAnimationEventPlayPoofParticleEffect()
-    {
-        BiodiversityPlugin.LogVerbose($"In {nameof(OnAnimationEventPlayPoofParticleEffect)}");
-        poofParticleSystem.Play();
-
-        bodyRenderer.enabled = false;
-        petalsRenderer.enabled = false;
-
-        // healingOrbEffect.Stop();
-        healingLightEffect.enabled = false;
-        aloeVoiceSource.Stop(true);
-        aloeFootstepsSource.Stop(true);
-
-        Destroy(scanNode.gameObject);
-        if (netcodeController.IsOwner)
-            StartCoroutine(DestroyAloeObjectAfterDuration(poofParticleSystem.main.duration));
-    }
-
-    /// <summary>
-    /// Destroys the entire Aloe object after a duration
-    /// </summary>
-    private IEnumerator DestroyAloeObjectAfterDuration(float duration)
-    {
-        yield return new WaitForSeconds(duration);
-        BiodiversityPlugin.LogVerbose("Destroying gameobject.");
-        Destroy(gameObject);
-    }
-
-    private void AddStateMachineBehaviours(Animator receivedAnimator)
-    {
-        AloeServerAI aloeServerAI = _aloeServer.Value;
-        StateMachineBehaviour[] behaviours = receivedAnimator.GetBehaviours<StateMachineBehaviour>();
-        foreach (StateMachineBehaviour behaviour in behaviours)
-        {
-            if (behaviour is BaseStateMachineBehaviour baseStateMachineBehaviour)
-            {
-                baseStateMachineBehaviour.Initialize(netcodeController, aloeServerAI, this);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Converts an RGB color to HSV and returns the original RGB color.
-    /// </summary>
-    /// <param name="rgb">The RGB color to convert.</param>
-    /// <param name="h">The hue component of the HSV color.</param>
-    /// <param name="s">The saturation component of the HSV color.</param>
-    /// <param name="v">The value component of the HSV color.</param>
-    /// <returns>The original RGB color.</returns>
-    private static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
-    {
-        Color.RGBToHSV(rgb, out h, out s, out v);
-        return rgb;
-    }
-
-    /// <summary>
-    /// Converts HSV color components to an RGB color.
-    /// </summary>
-    /// <param name="h">The hue component of the HSV color.</param>
-    /// <param name="s">The saturation component of the HSV color.</param>
-    /// <param name="v">The value component of the HSV color.</param>
-    /// <returns>The RGB color corresponding to the given HSV components.</returns>
-    private static Color HSVToRGB(float h, float s, float v)
-    {
-        return Color.HSVToRGB(h, s, v);
     }
 
     private void SubscribeToNetworkEvents()

@@ -5,6 +5,7 @@ using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
@@ -87,13 +88,20 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
     internal override void AIIntervalBehaviour()
     {
         List<PlayerControllerB> playersLookingAtAloe =
-            EnemyAIInstance.GetAllPlayersLookingAtPosition(EnemyAIInstance.eye.transform.position, playerViewWidth: 40f,
+            BiodiverseAI.GetAllPlayersLookingAtPositionPooled(EnemyAIInstance.eye.transform.position, playerViewWidth: 40f,
                 playerViewRange: 40);
-        foreach (PlayerControllerB player in playersLookingAtAloe)
+
+        for (int i = 0; i < playersLookingAtAloe.Count; i++)
         {
+            PlayerControllerB player = playersLookingAtAloe[i];
+            
+            EnemyAIInstance.LogVerbose($"Increasing fear for player {player.playerUsername}");
+            
             EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
                 EnemyAIInstance.BioId, 0.4f, player.actualClientId);
         }
+
+        ListPool<PlayerControllerB>.Release(playersLookingAtAloe);
     }
 
     private class TransitionToHealingPlayer(AloeServerAI enemyAIInstance)

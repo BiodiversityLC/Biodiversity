@@ -50,7 +50,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
         CachedAssemblies = new CachedList<Assembly>(() => AppDomain.CurrentDomain.GetAssemblies().ToList());
 
-        Logger.LogDebug("Creating base biodiversity config."); // Can't use LogVerbose here yet because we need the config to tell us whether verbose logging is enabled or not.
+        Logger.LogDebug(() => "Creating base biodiversity config."); // Can't use LogVerbose here yet because we need the config to tell us whether verbose logging is enabled or not.
         Config = new BiodiversityConfig(base.Config);
 
         LogVerbose("Creating Harmony instance...");
@@ -61,10 +61,10 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
         LangParser.Init();
 
-        LogVerbose("Patching netcode.");
+        LogVerbose("Patching netcode...");
         NetcodePatcher();
 
-        LogVerbose("Doing language stuff");
+        LogVerbose("Setting up the language translations...");
         LangParser.SetLanguage(Config.Language);
 
         LogVerbose(LangParser.GetTranslation("lang.test"));
@@ -104,8 +104,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
         ).ToList();
 
-        foreach (Type type in creatureHandlers)
+        for (int i = 0; i < creatureHandlers.Count; i++)
         {
+            Type type = creatureHandlers[i];
             bool creatureEnabled = base.Config.Bind("Creatures", type.Name, true).Value;
             if (!creatureEnabled)
             {
@@ -149,15 +150,17 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
         Type[] types = Assembly.GetExecutingAssembly().GetTypes();
 
-        foreach (Type type in types)
+        for (int i = 0; i < types.Length; i++)
         {
+            Type type = types[i];
             List<ModConditionalPatch> modConditionalAttrs =
                 type.GetCustomAttributes<ModConditionalPatch>(true).ToList();
-            
+
             if (modConditionalAttrs.Any())
             {
-                foreach (ModConditionalPatch modConditionalAttr in modConditionalAttrs)
+                for (int j = 0; j < modConditionalAttrs.Count; j++)
                 {
+                    ModConditionalPatch modConditionalAttr = modConditionalAttrs[j];
                     string assemblyName = modConditionalAttr.AssemblyName;
                     string targetClassName = modConditionalAttr.TargetClassName;
                     string targetMethodName = modConditionalAttr.TargetMethodName;
@@ -179,23 +182,33 @@ public class BiodiversityPlugin : BaseUnityPlugin
                         targetClass = otherModAssembly.GetType(targetClassName);
                     }
                     catch (Exception e) when (
-                        e is ArgumentException or ArgumentNullException or FileNotFoundException or FileLoadException or BadImageFormatException)
+                        e is ArgumentException or ArgumentNullException or FileNotFoundException or FileLoadException
+                            or BadImageFormatException)
                     {
-                        LogVerbose($"Could not patch because an exception occurred while getting the target class '{targetClassName}': {e.Message}");
+                        LogVerbose(
+                            $"Could not patch because an exception occurred while getting the target class '{targetClassName}': {e.Message}");
                         continue;
                     }
-                    
+
                     if (targetClass == null)
                     {
                         LogVerbose($"Could not patch because the target class '{targetClassName}' is null.");
                         continue;
                     }
-                    
+
                     const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
                                                BindingFlags.Instance;
-                    
+
                     // Get the target method; skip if null
-                    MethodInfo targetMethod = targetClass.GetMethods(flags).FirstOrDefault(m => m.Name == targetMethodName);
+                    MethodInfo targetMethod = null;
+                    for (int k = 0; k < targetClass.GetMethods(flags).Length; k++)
+                    {
+                        MethodInfo m = targetClass.GetMethods(flags)[k];
+                        if (m.Name != targetMethodName) continue;
+                        targetMethod = m;
+                        break;
+                    }
+                    
                     if (targetMethod == null)
                     {
                         LogVerbose($"Could not patch because the target method '{targetMethodName}' is null.");
@@ -204,17 +217,18 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
                     // Get the local patch method; skip if null
                     MethodInfo localPatchMethod;
-                    try 
+                    try
                     {
                         localPatchMethod = type.GetMethod(localPatchMethodName,
                             BindingFlags.NonPublic | BindingFlags.Static);
                     }
                     catch (Exception e) when (e is AmbiguousMatchException or ArgumentException)
                     {
-                        LogVerbose($"Could not patch because an exception occured while getting the local patch method '{localPatchMethodName}': {e.Message}");
+                        LogVerbose(
+                            $"Could not patch because an exception occured while getting the local patch method '{localPatchMethodName}': {e.Message}");
                         continue;
                     }
-                    
+
                     if (localPatchMethod == null)
                     {
                         LogVerbose(
@@ -264,8 +278,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
         foreach (Type type in types)
         {
             MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            foreach (MethodInfo method in methods)
+            for (int i = 0; i < methods.Length; i++)
             {
+                MethodInfo method = methods[i];
                 object[] attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
                 if (attributes.Length > 0)
                 {
@@ -295,6 +310,6 @@ public class BiodiversityPlugin : BaseUnityPlugin
     internal static void LogVerbose(object message)
     {
         if (Config.VerboseLogging)
-            Logger.LogDebug(message);
+            Logger.LogDebug(() => message);
     }
 }

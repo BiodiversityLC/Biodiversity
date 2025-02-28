@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using Biodiversity.Creatures.Aloe.Types;
 using GameNetcodeStuff;
+using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -122,8 +122,6 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     private void Start()
     {
         SubscribeToNetworkEvents();
-
-        //if (bodyMeshRenderer == null) bodyMeshRenderer = GetComponent<SkinnedMeshRenderer>();
     }
     
     /// <summary>
@@ -132,9 +130,13 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
-        
-        foreach (BodyPart bodyPart in bodyParts.Where(bodyPart => bodyPart.active))
+
+        for (int i = 0; i < bodyParts.Count; i++)
         {
+            BodyPart bodyPart = bodyParts[i];
+            if (!bodyPart.active)
+                continue;
+            
             if (bodyPart.attachedTo != null && matchPositionExactly)
                 ResetBodyPositionIfTooFarFromAttachment(bodyPart);
 
@@ -154,8 +156,12 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     {
         if (IsOwner)
         {
-            foreach (BodyPart bodyPart in bodyParts.Where(bodyPart => bodyPart.active))
+            for (int i = 0; i < bodyParts.Count; i++)
             {
+                BodyPart bodyPart = bodyParts[i];
+                if (!bodyPart.active)
+                    continue;
+                
                 if (bodyPart.attachedTo == null || bodyPart.attachedTo.parent == transform)
                 {
                     HandleDetachedLimb(bodyPart);
@@ -167,6 +173,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
             }
             
             // Use interpolation to reduce network load
+            // todo: copy the mirror network transform's logic and use that for more advanced interpolation stuff
             _networkPosition.Value = transform.position;
             _networkRotation.Value = transform.rotation;
         }
@@ -179,7 +186,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, _lastReceivedRotation, t);
         }
     }
-
+    
     /// <summary>
     /// Handles a limb that is detached from its attachment point.
     /// </summary>
@@ -266,14 +273,14 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     {
         if (!IsOwner) return;
         
-        foreach (BodyPart bodyPart in bodyParts.Where(
-                     bodyPart => Vector3.Distance(
-                                     bodyPart.limbRigidbody.position,
-                                     activeBodyPart.attachedTo.position) >
-                                 maxDistanceToReset))
+        for (int i = 0; i < bodyParts.Count; i++)
         {
-            _restBodyPartsTimer = 0f;
-            bodyPart.limbCollider.enabled = false;
+            BodyPart bodyPart = bodyParts[i];
+            if (Vector3.Distance(bodyPart.limbRigidbody.position, activeBodyPart.attachedTo.position) > maxDistanceToReset)
+            {
+                _restBodyPartsTimer = 0f;
+                bodyPart.limbCollider.enabled = false;
+            }
         }
     }
 
@@ -283,9 +290,10 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     private void EnableCollisionOnBodyParts()
     {
         if (!IsOwner) return;
-        
-        foreach (BodyPart bodyPart in bodyParts)
+
+        for (int i = 0; i < bodyParts.Count; i++)
         {
+            BodyPart bodyPart = bodyParts[i];
             bodyPart.limbCollider.enabled = true;
         }
     }
@@ -369,6 +377,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     /// </summary>
     /// <param name="oldPosition">The old position value.</param>
     /// <param name="newPosition">The new position value.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void OnNetworkPositionChanged(Vector3 oldPosition, Vector3 newPosition)
     {
         _lastReceivedPosition = newPosition;
@@ -380,6 +389,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     /// </summary>
     /// <param name="oldRotation">The old rotation value.</param>
     /// <param name="newRotation">The new rotation value.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void OnNetworkRotationChanged(Quaternion oldRotation, Quaternion newRotation)
     {
         _lastReceivedRotation = newRotation;

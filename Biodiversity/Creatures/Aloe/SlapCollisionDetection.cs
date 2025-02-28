@@ -1,6 +1,5 @@
 ﻿using GameNetcodeStuff;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -45,8 +44,17 @@ public class SlapCollisionDetection : MonoBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SlapEnemyServerRpc(int enemyIndex)
     {
-        EnemyAI enemyToDamage =
-            RoundManager.Instance.SpawnedEnemies.FirstOrDefault(enemy => enemy.thisEnemyIndex == enemyIndex);
+        EnemyAI enemyToDamage = null;
+        for (int i = 0; i < RoundManager.Instance.SpawnedEnemies.Count; i++)
+        {
+            EnemyAI enemy = RoundManager.Instance.SpawnedEnemies[i];
+            if (enemy.thisEnemyIndex == enemyIndex)
+            {
+                enemyToDamage = enemy;
+                break;
+            }
+        }
+
         enemyToDamage?.HitEnemy(AloeHandler.Instance.Config.SlapDamageEnemies,
             hitID: 998); // 998 is the Aloe's bestiary ID
 

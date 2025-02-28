@@ -31,8 +31,9 @@ internal static class StartOfRoundPatch
     [HarmonyPostfix]
     private static void GetAllPlayersMaxHealth(StartOfRound __instance)
     {
-        foreach (PlayerControllerB player in __instance.allPlayerScripts)
+        for (int i = 0; i < __instance.allPlayerScripts.Length; i++)
         {
+            PlayerControllerB player = __instance.allPlayerScripts[i];
             AloeSharedData.Instance.SetPlayerMaxHealth(player, player.health);
         }
     }

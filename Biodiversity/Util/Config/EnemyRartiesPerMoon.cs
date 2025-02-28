@@ -45,13 +45,15 @@ public class EnemyRaritiesPerMoon(
 		BiodiversityPlugin.LogVerbose($"{PatchedContent.ExtendedMods.Count} mods");
 		BiodiversityPlugin.LogVerbose($"{string.Join(", ", PatchedContent.AllLevelSceneNames)}");
 
-		foreach (ExtendedMod mod in PatchedContent.ExtendedMods) 
+		for (int i = 0; i < PatchedContent.ExtendedMods.Count; i++)
 		{
+			ExtendedMod mod = PatchedContent.ExtendedMods[i];
 			if (PatchedContent.VanillaMod == mod)
 				continue;
-			
-			foreach (ExtendedLevel level in mod.ExtendedLevels) 
+
+			for (int j = 0; j < mod.ExtendedLevels.Count; j++)
 			{
+				ExtendedLevel level = mod.ExtendedLevels[j];
 				string name = level.NumberlessPlanetName;
 				ModdedRarities[name] = file.Bind(
 					section,

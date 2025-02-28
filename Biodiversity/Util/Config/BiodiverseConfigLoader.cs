@@ -13,24 +13,29 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
         string currentHeader = "Misc";
         Type type = typeof(T);
         configFile.SaveOnConfigSet = false;
-        
-        foreach (PropertyInfo property in type.GetProperties())
+
+        for (int i = 0; i < type.GetProperties().Length; i++)
         {
+            PropertyInfo property = type.GetProperties()[i];
             try
             {
-                FieldInfo backingField = property.DeclaringType.GetField($"<{property.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                FieldInfo backingField = property.DeclaringType.GetField($"<{property.Name}>k__BackingField",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
 
                 if (backingField.GetCustomAttribute(typeof(NonSerializedAttribute)) != null) continue;
 
-                HeaderAttribute headerAttribute = (HeaderAttribute)backingField.GetCustomAttribute(typeof(HeaderAttribute));
+                HeaderAttribute headerAttribute =
+                    (HeaderAttribute)backingField.GetCustomAttribute(typeof(HeaderAttribute));
                 if (headerAttribute != null)
                 {
                     currentHeader = headerAttribute.header.Replace(" ", "");
                 }
 
-                string description = "This config option hasn't used [Tooltip] to set a description, so this default one will be here instead.";
-                TooltipAttribute tooltipAttribute = (TooltipAttribute)backingField.GetCustomAttribute(typeof(TooltipAttribute));
-                if (tooltipAttribute != null) 
+                string description =
+                    "This config option hasn't used [Tooltip] to set a description, so this default one will be here instead.";
+                TooltipAttribute tooltipAttribute =
+                    (TooltipAttribute)backingField.GetCustomAttribute(typeof(TooltipAttribute));
+                if (tooltipAttribute != null)
                 {
                     description = tooltipAttribute.tooltip;
                 }
@@ -49,10 +54,10 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
                 {
                     configDescription = new ConfigDescription(description);
                 }
-                
+
                 if (property.PropertyType == typeof(float))
                 {
-                    property.SetValue(this, 
+                    property.SetValue(this,
                         configFile.Bind(currentHeader, property.Name, (float)property.GetValue(this), configDescription)
                             .Value);
                 }

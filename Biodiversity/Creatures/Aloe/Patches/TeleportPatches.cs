@@ -1,8 +1,8 @@
 ﻿using Biodiversity.Creatures.Aloe.Types.Networking;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using GameNetcodeStuff;
 using HarmonyLib;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -23,8 +23,16 @@ internal static class TeleportPatches
         if (__instance == null) return;
 
         if (!AloeSharedData.Instance.IsPlayerKidnapBound(__instance)) return;
-        string aloeId = AloeSharedData.Instance.AloeBoundKidnaps
-            .FirstOrDefault(x => x.Value == __instance.actualClientId).Key;
+        KeyValuePair<string, ulong> first = new();
+        foreach (KeyValuePair<string, ulong> x in AloeSharedData.Instance.AloeBoundKidnaps)
+        {
+            if (x.Value != __instance.actualClientId) continue;
+            
+            first = x;
+            break;
+        }
+
+        string aloeId = first.Key;
 
         PlayerTeleportedMessage networkMessage = new() { BioId = aloeId, PlayerId = __instance.actualClientId };
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);

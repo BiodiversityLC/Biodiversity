@@ -19,7 +19,6 @@ internal class AloeSharedData
     private static AloeSharedData _instance;
 
     private readonly bool _hasRegisteredMessageHandlers;
-    private bool _hasAlreadyLoggedPlayerNullWarningMessage;
 
     public static AloeSharedData Instance
     {
@@ -129,40 +128,40 @@ internal class AloeSharedData
         return _aloeBoundStalks.Values.Any(p => p == player.actualClientId);
     }
 
-    private void SendBindRequestToServer(string bioId, ulong playerId, BindType bindType)
+    private static void SendBindRequestToServer(string bioId, ulong playerId, BindType bindType)
     {
         BiodiversityPlugin.LogVerbose($"Sending bind request to server: BioId: {bioId}, playerId: {playerId}, bindType: {bindType}");
         BindMessage networkMessage = new() { BioId = bioId, PlayerId = playerId, BindType = bindType};
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage($"Aloe_BindRequest", NetworkManager.ServerClientId, writer);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("Aloe_BindRequest", NetworkManager.ServerClientId, writer);
     }
     
-    private void SendUnbindRequestToServer(string bioId, BindType bindType)
+    private static void SendUnbindRequestToServer(string bioId, BindType bindType)
     {
         BiodiversityPlugin.LogVerbose($"Sending unbind request to server: BioId: {bioId}, bindType: {bindType}");
         UnbindMessage networkMessage = new() { BioId = bioId, BindType = bindType};
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage($"Aloe_UnbindRequest", NetworkManager.ServerClientId, writer);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("Aloe_UnbindRequest", NetworkManager.ServerClientId, writer);
     }
 
-    private void SendBindToClients(string bioId, ulong playerId, BindType bindType)
+    private static void SendBindToClients(string bioId, ulong playerId, BindType bindType)
     {
         BiodiversityPlugin.LogVerbose($"Sending bind request to clients: BioId: {bioId}, playerId: {playerId}, bindType: {bindType}");
         BindMessage networkMessage = new() { BioId = bioId, PlayerId = playerId, BindType = bindType };
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll($"Aloe_BindMessage", writer);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("Aloe_BindMessage", writer);
     }
     
-    private void SendUnbindToClients(string bioId, BindType bindType)
+    private static void SendUnbindToClients(string bioId, BindType bindType)
     {
         BiodiversityPlugin.LogVerbose($"Sending unbind request to clients: BioId: {bioId}, bindType: {bindType}");
         UnbindMessage networkMessage = new() { BioId = bioId, BindType = bindType };
         using FastBufferWriter writer = new(128, Allocator.Temp, 128);
         writer.WriteNetworkSerializable(networkMessage);
-        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll($"Aloe_UnbindMessage", writer);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("Aloe_UnbindMessage", writer);
     }
 
     private void RegisterMessageHandlers()
@@ -175,13 +174,13 @@ internal class AloeSharedData
         NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_PlayerTeleportedRequest", HandlePlayerTeleportedMessage);
     }
 
-    private void HandleBindRequest(ulong clientId, FastBufferReader reader)
+    private static void HandleBindRequest(ulong clientId, FastBufferReader reader)
     {
         reader.ReadNetworkSerializable(out BindMessage message);
         SendBindToClients(message.BioId, message.PlayerId, message.BindType);
     }
     
-    private void HandleUnbindRequest(ulong clientId, FastBufferReader reader)
+    private static void HandleUnbindRequest(ulong clientId, FastBufferReader reader)
     {
         reader.ReadNetworkSerializable(out UnbindMessage message);
         SendUnbindToClients(message.BioId, message.BindType);

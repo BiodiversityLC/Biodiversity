@@ -6,6 +6,7 @@ using Biodiversity.Util.Types;
 using GameNetcodeStuff;
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -169,16 +170,23 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         AudioSources = new Dictionary<string, AudioSource>();
 
         AloeClient aloeClient = GetComponent<AloeClient>();
-        
-        foreach (FieldInfo field in typeof(AloeClient).GetFields(
-                     BindingFlags.Public | 
-                     BindingFlags.NonPublic | 
-                     BindingFlags.Instance | 
-                     BindingFlags.DeclaredOnly))
+
+        for (int i = 0;
+             i < typeof(AloeClient).GetFields(
+                 BindingFlags.Public |
+                 BindingFlags.NonPublic |
+                 BindingFlags.Instance |
+                 BindingFlags.DeclaredOnly).Length;
+             i++)
         {
+            FieldInfo field = typeof(AloeClient).GetFields(
+                BindingFlags.Public |
+                BindingFlags.NonPublic |
+                BindingFlags.Instance |
+                BindingFlags.DeclaredOnly)[i];
             string key = field.Name;
             Type fieldType = field.FieldType;
-                
+
             LogVerbose($"Field name: {key}, field type: {fieldType}");
 
             // This code looks ugly because there are null checks inside each if statement.
@@ -726,6 +734,38 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         netcodeController.TargetPlayerClientId.Value = NullPlayerId;
         SwitchBehaviourState(AloeStates.Roaming);
     }
+    
+    /// <summary>
+    /// Finds and returns the player that is closest to the specified transform, considering a buffer distance.
+    /// </summary>
+    /// <param name="players">The list of players to search through.</param>
+    /// <param name="position">The vector to measure distances from.</param>
+    /// <param name="currentTargetPlayer">The current player being targeted.</param>
+    /// <param name="bufferDistance">The buffer distance to prevent constant target switching.</param>
+    /// <returns>The player that is closest to the specified transform within the buffer distance, or the closest player if none are within the buffer distance.</returns>
+    internal PlayerControllerB GetClosestPlayerFromListConsideringTargetPlayer(
+        List<PlayerControllerB> players, 
+        Vector3 position,
+        PlayerControllerB currentTargetPlayer, 
+        float bufferDistance = 1.5f)
+    {
+        PlayerControllerB closestPlayer = currentTargetPlayer;
+        float closestDistance = float.MaxValue;
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            PlayerControllerB player = players[i];
+            if (player == currentTargetPlayer) continue; // Skip the target player itself
+            float distance = Vector3.Distance(position, player.transform.position);
+            if (!(distance < closestDistance)) continue;
+            closestDistance = distance;
+            closestPlayer = player;
+        }
+
+        if (currentTargetPlayer == null) return closestPlayer;
+        float currentTargetPlayerDistance = Vector3.Distance(position, currentTargetPlayer.transform.position);
+        return Mathf.Abs(closestDistance - currentTargetPlayerDistance) < bufferDistance ? currentTargetPlayer : closestPlayer;
+    }
 
     /// <summary>
     /// Is called on a network event when player manages to escape by mashing keys on their keyboard.
@@ -771,8 +811,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     /// </summary>
     private void CalculateSpeed()
     {
-        if (!IsServer) return;
-        
         if (stunNormalizedTimer > 0 || 
             IsStaringAtTargetPlayer ||
             InSlapAnimation || inCrushHeadAnimation ||
@@ -790,17 +828,14 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     }
 
     /// <summary>
-    /// Makes the agent move by using interpolation to make the movement smooth
+    /// Makes the agent move by using <see cref="Mathf.SmoothStep"/> to make the movement smooth
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void MoveWithAcceleration()
     {
-        if (!IsServer) return;
-        
-        float speedAdjustment = Time.deltaTime / 2f;
-        agent.speed = Mathf.Lerp(agent.speed, AgentMaxSpeed, speedAdjustment);
-        
-        float accelerationAdjustment = Time.deltaTime;
-        agent.acceleration = Mathf.Lerp(agent.acceleration, AgentMaxAcceleration, accelerationAdjustment);
+        float t = Mathf.Clamp01(Time.deltaTime * 0.5f);
+        agent.speed = Mathf.SmoothStep(agent.speed, AgentMaxSpeed, t);
+        agent.acceleration = Mathf.SmoothStep(agent.acceleration, AgentMaxAcceleration, t);
     }
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
@@ -862,6 +897,9 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         
         agent.angularSpeed = AloeHandler.Instance.Config.AngularSpeed;
         agent.autoBraking = AloeHandler.Instance.Config.AutoBraking;
+        agent.height = AloeHandler.Instance.Config.NavMeshAgentHeight;
+        agent.radius = AloeHandler.Instance.Config.NavMeshAgentRadius;
+        agent.avoidancePriority = AloeHandler.Instance.Config.NavMeshAgentAvoidancePriority;
         
         AIIntervalTime = AloeHandler.Instance.Config.AiIntervalTime;
         
