@@ -14,7 +14,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	public bool FungiEnabled { get; private set; } = true;
 	
 	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:8,March:45,Artifice:10,Solace:80,Fray:32,Seichi:16,Olympus:15,Arelion:6,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8,Mycorditum:34,Phaedra:10,Pelagia:40,Derelect:21,Sorrow:24,Phuket:40,Rorm:18,Starship-13:25";
+	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:8,March:45,Artifice:10,Solace:80,Fray:32,Seichi:16,Olympus:15,Arelion:6,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8,Mycorditum:34,Phaedra:10,Pelagia:40,Derelect:21,Sorrow:24,Phuket:40,Rorm:18,Starship-13:25,Trite:8,Utril:42";
 	
 	[field: Tooltip("Normal speed of fungi.")]
 	[field: Range(3f, 20f)]
