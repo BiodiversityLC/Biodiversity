@@ -559,6 +559,8 @@ namespace Biodiversity.Creatures.Ogopogo
             enemyHP -= force;
             if (enemyHP <= 0)
             {
+                transform.position = new Vector3(transform.position.x, water.transform.position.y + 80, transform.position.z);
+                creatureAnimator.SetBool(Stun, false);
                 KillEnemyOnOwnerClient();
                 if (IsServer)
                     DisableIK();
@@ -580,6 +582,11 @@ namespace Biodiversity.Creatures.Ogopogo
 
             // Do this manually because the base code is disabled
             this.SyncPositionToClients();
+
+            if (isEnemyDead)
+            {
+                return;
+            }
 
             // handle stun
             if (stunNormalizedTimer > 0)
