@@ -9,7 +9,7 @@ namespace Biodiversity.Creatures.MicBird
 {
     public class MicBirdConfig(ConfigFile configFile) : BiodiverseConfigLoader<MicBirdConfig>(configFile) {
         [field: Tooltip("Spawn weight of the Boom bird on all moons.")]
-        public string BoomBirdRarity { get; private set; } = "Experimentation:22,Rend:32,Titan:15,Artifice:45,Atlantica:27,Fission-C:24,Gratar:10,Polarus:8,Seichi:8,Arelion:15,Fray:1,Sierra:21,Icebound:12,Humidity:26,Integrity:8,Vertigo:16,Vaporization:20,Timbrance:33,Rorm:25,Starship-13:25";
+        public string BoomBirdRarity { get; private set; } = "Experimentation:22,Rend:22,Artifice:45,Atlantica:27,Fission-C:24,Gratar:10,Polarus:8,Seichi:8,Arelion:15,Fray:1,Sierra:21,Icebound:12,Humidity:26,Integrity:8,Vertigo:16,Vaporization:20,Timbrance:33,Rorm:25,Starship-13:25,Filitrios:35,Cubatres:10";
 
         [field: Tooltip("Whether the Boom bird will spawn in games.")]
         public bool EnableBoomBird { get; private set; } = true;
