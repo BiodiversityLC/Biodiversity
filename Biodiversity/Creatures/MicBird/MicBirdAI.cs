@@ -7,6 +7,7 @@ using GameNetcodeStuff;
 using UnityEngine.AI;
 using Biodiversity.Util.SharedVariables;
 using BepInEx.Bootstrap;
+using System.Linq;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -121,8 +122,9 @@ namespace Biodiversity.Creatures.MicBird
             foreach (var plugin in Chainloader.PluginInfos)
             {
                 string GUID = plugin.Value.Metadata.GUID;
-                if (GUID == "mborsh.WiderShipMod" || GUID == "MelanieMelicious.2StoryShip" || GUID == "windblownleaves.problematicpilotry")
+                if (MicBirdHandler.Instance.compatGUIDS.Contains(GUID))
                 {
+                    BiodiversityPlugin.Logger.LogInfo("Micbird compat mode enabled.");
                     compatMode = true;
                     if (!sideSet) {
                         compatSide = Random.Range(0, 2) == 0;

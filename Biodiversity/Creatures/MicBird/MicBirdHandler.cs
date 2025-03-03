@@ -11,6 +11,8 @@ namespace Biodiversity.Creatures.MicBird
         internal MicBirdConfig Config { get; private set; }
         internal List<Pair<string, int>> weights { get; private set; }
         internal int totalweight { get; private set; }
+
+        internal string[] compatGUIDS { get; private set; }
         public MicBirdHandler()
         {
             Assets = new MicBirdAssets("biodiversity_micbird");
@@ -25,6 +27,8 @@ namespace Biodiversity.Creatures.MicBird
                 new Pair<string, int>("RADARBLINK", Config.RadarMalfunctionWeight),
                 new Pair<string, int>("LIGHTSOUT", Config.LightsOutMalfunctionWeight)
             };
+
+            compatGUIDS = Config.CompatabilityModeGuids.Split(',');
 
             //BiodiversityPlugin.Logger.LogInfo(totalweight);
 
