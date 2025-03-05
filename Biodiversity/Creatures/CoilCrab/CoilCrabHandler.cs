@@ -44,18 +44,18 @@ namespace Biodiversity.Creatures.CoilCrab
             string[] stormyConfig = Config.CoilCrabRarityStormy.Split(',');
             foreach (string moonConfig in stormyConfig)
             {
-                BiodiversityPlugin.Logger.LogInfo(moonConfig);
+                //BiodiversityPlugin.LogVerbose(moonConfig);
                 string[] splitMoonConfig = moonConfig.Split(":");
 
                 if (splitMoonConfig.Length != 2)
                 {
-                    BiodiversityPlugin.Logger.LogInfo($"Coil crab parser couldn't parse {moonConfig}");
+                    BiodiversityPlugin.LogVerbose($"Coil crab parser couldn't parse {moonConfig}");
                     continue;
                 }
 
                 string name = splitMoonConfig[0];
 
-                BiodiversityPlugin.Logger.LogInfo(name);
+                //BiodiversityPlugin.LogVerbose(name);
 
                 int weight;
 
@@ -65,7 +65,7 @@ namespace Biodiversity.Creatures.CoilCrab
                 }
                 catch
                 {
-                    BiodiversityPlugin.Logger.LogInfo($"Coil crab parser couldn't find a weight for moon: {name}");
+                    BiodiversityPlugin.LogVerbose($"Coil crab parser couldn't find a weight for moon: {name}");
                     weight = 0;
                 }
 
@@ -80,7 +80,7 @@ namespace Biodiversity.Creatures.CoilCrab
 
                 if (splitMoonConfig.Length != 2)
                 {
-                    BiodiversityPlugin.Logger.LogInfo($"Coil crab parser couldn't parse {moonConfig}");
+                    BiodiversityPlugin.LogVerbose($"Coil crab parser couldn't parse {moonConfig}");
                     continue;
                 }
 
@@ -93,7 +93,7 @@ namespace Biodiversity.Creatures.CoilCrab
                 }
                 catch
                 {
-                    BiodiversityPlugin.Logger.LogInfo($"Coil crab parser couldn't find a weight for moon: {name}");
+                    BiodiversityPlugin.LogVerbose($"Coil crab parser couldn't find a weight for moon: {name}");
                     weight = 0;
                 }
 
@@ -104,8 +104,8 @@ namespace Biodiversity.Creatures.CoilCrab
 
             List<int> swk = new List<int>(StormyWeights.Values);
 
-            BiodiversityPlugin.Logger.LogInfo(wk[0]);
-            BiodiversityPlugin.Logger.LogInfo(swk[0]);
+            //BiodiversityPlugin.LogVerbose(wk[0]);
+            //BiodiversityPlugin.LogVerbose(swk[0]);
         }
     }
 }

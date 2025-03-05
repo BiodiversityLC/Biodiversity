@@ -12,7 +12,7 @@ namespace Biodiversity.Patches
         [HarmonyPatch(nameof(RoundManager.PredictAllOutsideEnemies)), HarmonyPrefix]
         internal static void CoilCrabSpawnWeights(RoundManager __instance)
         {
-            BiodiversityPlugin.Logger.LogInfo("The thing is running");
+            BiodiversityPlugin.LogVerbose("Setting Coil crab dynamic weights");
 
             // assume that the level is vanilla then switch to modded naming if needed
             string levelName = __instance.currentLevel.name;
@@ -26,7 +26,7 @@ namespace Biodiversity.Patches
             levelName = levelName.Remove(levelName.Length - "Level".Length);
             // I don't care if I can write a number instead of using the .Length property. I would just rather have it easy to read.
 
-            BiodiversityPlugin.Logger.LogInfo($"The name of the level (For the Coil-Crab debug): {levelName}");
+            BiodiversityPlugin.LogVerbose($"The name of the level (For the Coil-Crab debug): {levelName}");
 
 
             SpawnableEnemyWithRarity crab = null;
@@ -40,7 +40,7 @@ namespace Biodiversity.Patches
 
             if (crab == null)
             {
-                BiodiversityPlugin.Logger.LogInfo("Coil crab was not added in the non-stormy config so the crab will not be enabled on this moon.");
+                BiodiversityPlugin.LogVerbose("Coil crab was not added in the non-stormy config so the crab will not be enabled on this moon.");
             }
 
             if (crab != null)
@@ -54,7 +54,7 @@ namespace Biodiversity.Patches
                     else
                     {
                         crab.rarity = 0;
-                        BiodiversityPlugin.Logger.LogInfo("Coil Crab dynamic weights were set to zero because the stormy weights did not include the current moon.");
+                        BiodiversityPlugin.LogVerbose("Coil Crab dynamic weights were set to zero because the stormy weights did not include the current moon.");
                     }
                 }
                 else
@@ -66,7 +66,7 @@ namespace Biodiversity.Patches
                     else
                     {
                         crab.rarity = 0;
-                        BiodiversityPlugin.Logger.LogInfo("Coil Crab dynamic weights were set to zero because the non-stormy weights did not include the current moon.");
+                        BiodiversityPlugin.LogVerbose("Coil Crab dynamic weights were set to zero because the non-stormy weights did not include the current moon.");
                     }
                 }
             }

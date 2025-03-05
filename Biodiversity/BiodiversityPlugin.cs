@@ -310,6 +310,6 @@ public class BiodiversityPlugin : BaseUnityPlugin
     internal static void LogVerbose(object message)
     {
         if (Config.VerboseLogging)
-            Logger.LogDebug(() => message);
+            Logger.LogDebug(message);
     }
 }

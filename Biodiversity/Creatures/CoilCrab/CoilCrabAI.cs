@@ -145,7 +145,7 @@ namespace Biodiversity.Creatures.CoilCrab
 
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
 
-            BiodiversityPlugin.Logger.LogInfo("Hit by " + force + " damage.");
+            BiodiversityPlugin.LogVerbose("Coil crab hit by " + force + " damage.");
 
             if (force == 6)
             {
