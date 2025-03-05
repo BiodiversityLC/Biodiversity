@@ -40,6 +40,10 @@ namespace Biodiversity.Creatures.MicBird
         [field: Tooltip("Chance (in percent) of canceling an inverse teleport when a malfunction occurs.")]
         public int InverseTeleportCancelChance { get; private set; } = 25;
 
+        //Misc
+        [field: Tooltip("Audio volume in percent of the default volume.")]
+        public int AudioVolume { get; private set; } = 100;
+
         [field: Tooltip("Compatablility mode GUIDs. Put GUIDs of mods that cause the Boom Bird not to path to the top of the ship in here.")]
         public string CompatabilityModeGuids { get; private set; } = "MelanieMelicious.2StoryShip,windblownleaves.problematicpilotry";
     }

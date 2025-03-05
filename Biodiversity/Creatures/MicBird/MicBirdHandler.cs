@@ -30,15 +30,11 @@ namespace Biodiversity.Creatures.MicBird
 
             compatGUIDS = Config.CompatabilityModeGuids.Split(',');
 
-            //BiodiversityPlugin.Logger.LogInfo(totalweight);
-
             int weightadd = 0;
             foreach (var weight in weights)
             {
                 weightadd += weight.Second;
                 weight.Second = weightadd;
-
-                //BiodiversityPlugin.Logger.LogInfo($"{weight.Second}:{weight.First}");
             }
 
             TranslateTerminalNode(Assets.MicBirdTerminalNode);

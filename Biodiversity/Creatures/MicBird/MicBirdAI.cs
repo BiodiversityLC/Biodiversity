@@ -119,12 +119,14 @@ namespace Biodiversity.Creatures.MicBird
 
             spawnPosition = transform.position;
 
+            creatureVoice.volume = (MicBirdHandler.Instance.Config.AudioVolume / 100f) * creatureVoice.volume;
+
             foreach (var plugin in Chainloader.PluginInfos)
             {
                 string GUID = plugin.Value.Metadata.GUID;
                 if (MicBirdHandler.Instance.compatGUIDS.Contains(GUID))
                 {
-                    BiodiversityPlugin.Logger.LogInfo("Micbird compat mode enabled.");
+                    BiodiversityPlugin.LogVerbose("Micbird compat mode enabled.");
                     compatMode = true;
                     if (!sideSet) {
                         compatSide = Random.Range(0, 2) == 0;
@@ -389,7 +391,7 @@ namespace Biodiversity.Creatures.MicBird
             base.DetectNoise(noisePosition, noiseLoudness, timesPlayedInOneSpot, noiseID);
             if (currentBehaviourStateIndex == (int)State.RADARBOOSTER) return;
 
-            BiodiversityPlugin.Logger.LogInfo("The bird heard a sound with id " + noiseID + ". And noise Loundness of " + noiseLoudness + ".");
+            BiodiversityPlugin.LogVerbose("The Micbird heard a sound with id " + noiseID + ". And noise Loundness of " + noiseLoudness + ".");
             if (noiseID == 75 && noiseLoudness >= 0.8 && enemyType.numberSpawned <= 2)
             {
                 StartRunOnServerServerRpc(20);
@@ -403,7 +405,7 @@ namespace Biodiversity.Creatures.MicBird
             if (hitID == 1 && IsServer)
             {
                 if (IsServer && enemyHP > 0) creatureAnimator.SetTrigger("Hurt");
-                BiodiversityPlugin.Logger.LogInfo("Hit by shovel");
+                BiodiversityPlugin.LogVerbose("Micbird hit by shovel");
                 agent.speed = 0;
                 agent.velocity = Vector3.zero;
                 enemyHP -= force;
@@ -466,7 +468,7 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     if (!wanderingAlready)
                     {
-                        BiodiversityPlugin.Logger.LogInfo("Started wandering");
+                        BiodiversityPlugin.LogVerbose("Micbird started wandering");
                         StartSearch(transform.position, wander);
                         wanderingAlready = true;
                     }
@@ -541,7 +543,8 @@ namespace Biodiversity.Creatures.MicBird
                         {
                             AtDestination = true;
                         }
-                    } else
+                    }
+                    else
                     {
                         if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1)), transform.position) < 10)
                         {
@@ -551,7 +554,7 @@ namespace Biodiversity.Creatures.MicBird
 
                     if (AtDestination)
                     {
-                        BiodiversityPlugin.Logger.LogInfo("Perching");
+                        BiodiversityPlugin.LogVerbose("Micbird perching");
                         SwitchToBehaviourClientRpc((int)State.PERCH);
                     }
                     break;
@@ -564,7 +567,7 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     if (callTimer <= 0)
                     {
-                        BiodiversityPlugin.Logger.LogInfo("Calling");
+                        BiodiversityPlugin.LogVerbose("Calling (Micbird)");
                         SwitchToBehaviourClientRpc((int)State.CALL);
                     }
                     if (idleTimer <= 0)
@@ -586,7 +589,7 @@ namespace Biodiversity.Creatures.MicBird
 
 
                     PlayVoiceClientRpc((int)SoundID.CALL, 0);
-                    BiodiversityPlugin.Logger.LogInfo("Caw I'm a bird!");
+                    BiodiversityPlugin.LogVerbose("Caw I'm a bird! (Micbird called)");
 
                     spawnMicBird();
 
@@ -622,11 +625,11 @@ namespace Biodiversity.Creatures.MicBird
 
                     if (malfunctionName == "")
                     {
-                        BiodiversityPlugin.Logger.LogInfo("Something is not working.");
+                        BiodiversityPlugin.LogVerbose("Something is not working. (Micbird)");
                     }
 
                     malfunction = Enum.Parse<MalfunctionID>(malfunctionName);
-                    BiodiversityPlugin.Logger.LogInfo("Setting malfunction to " + malfunction.ToString());
+                    BiodiversityPlugin.LogVerbose("Setting Micbird malfunction to " + malfunction.ToString());
                     switch (malfunction)
                     {
                         case MalfunctionID.WALKIE:
@@ -646,7 +649,7 @@ namespace Biodiversity.Creatures.MicBird
                             baseMalfunctionInterval = 0.66f;
                             break;
                         default:
-                            BiodiversityPlugin.Logger.LogInfo("Something is not working. (2)");
+                            BiodiversityPlugin.LogVerbose("Something is not working. (2) (Micbird)");
                             break;
                     }
                     malfunctionInterval = baseMalfunctionInterval;
@@ -663,7 +666,14 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     break;
                 case (int)State.RADARBOOSTER:
-                    creatureAnimator.SetInteger("ID", 4);
+                    if (Vector3.Distance(distractedRadarBoosterItem.transform.position, transform.position) >= 2)
+                    {
+                        creatureAnimator.SetInteger("ID", 1);
+                    }
+                    else {
+                        creatureAnimator.SetInteger("ID", 4);
+                    }
+
                     if (agent.speed != 3)
                     {
                         agent.speed = 3;
@@ -672,6 +682,7 @@ namespace Biodiversity.Creatures.MicBird
 
                     if (!CheckLineOfSightForPosition(distractedRadarBoosterItem.transform.position, 60f, 40, 5f))
                     {
+                        setDestCalledAlready = false;
                         SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
                     }
 
