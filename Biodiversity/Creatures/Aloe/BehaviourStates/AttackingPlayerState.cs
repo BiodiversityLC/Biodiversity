@@ -48,9 +48,11 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, Al
     internal override void OnStateExit()
     {
         base.OnStateExit();
-        EnemyAIInstance.netcodeController.TargetPlayerClientId.Value =
-            EnemyAIInstance.BackupTargetPlayer.actualClientId;
-        EnemyAIInstance.BackupTargetPlayer = null;
+        if (EnemyAIInstance.BackupTargetPlayer != null)
+        {
+            EnemyAIInstance.netcodeController.TargetPlayerClientId.Value = EnemyAIInstance.BackupTargetPlayer.actualClientId;
+            EnemyAIInstance.BackupTargetPlayer = null;
+        }
     }
 
     private class TransitionToChasingEscapedPlayer(
