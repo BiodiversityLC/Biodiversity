@@ -15,6 +15,9 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
 
     [field: NonSerialized] public string Language { get; private set; } = "en";
 
+    [field: Tooltip("The stab is real.")]
+    public bool StabIsReal { get; private set; } = false;
+
     internal BiodiversityConfig(ConfigFile configFile) : base(configFile)
     {
         AcceptableValueList<string> acceptableLanguages = LangParser.Languages.IsNotNull
