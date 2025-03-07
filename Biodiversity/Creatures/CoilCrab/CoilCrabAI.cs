@@ -54,6 +54,17 @@ namespace Biodiversity.Creatures.CoilCrab
                 validValues = false;
             }
 
+            foreach (Item item in StartOfRound.Instance.allItemsList.itemsList)
+            {
+                if (item.name == "Shovel")
+                {
+                    CoilCrabHandler.Instance.Assets.CoilShellItem.pocketSFX = item.pocketSFX;
+                    CoilCrabHandler.Instance.Assets.CoilShellItem.grabSFX = item.grabSFX;
+                    BiodiversityPlugin.LogVerbose("Found the select sfx for the shovel.");
+                    break;
+                }
+            }
+
             string[] minMax = CoilCrabHandler.Instance.Config.ItemValue.Split(',');
             int min;
             int max;
