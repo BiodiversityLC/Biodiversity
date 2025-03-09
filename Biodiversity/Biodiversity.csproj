@@ -68,7 +68,6 @@
 
     <ItemGroup>
       <Folder Include="3rdParty\" />
-      <Folder Include="Patches\" />
       <Folder Include="Util\Scripts\" />
     </ItemGroup>
 

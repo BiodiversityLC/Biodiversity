@@ -1,7 +1,4 @@
 ﻿using GameNetcodeStuff;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 using Unity.Netcode;
 using UnityEngine;
@@ -52,17 +49,6 @@ namespace Biodiversity.Creatures.CoilCrab
             {
                 BiodiversityPlugin.Logger.LogWarning("Item values config is invalid defaulting to default values.");
                 validValues = false;
-            }
-
-            foreach (Item item in StartOfRound.Instance.allItemsList.itemsList)
-            {
-                if (item.name == "Shovel")
-                {
-                    CoilCrabHandler.Instance.Assets.CoilShellItem.pocketSFX = item.pocketSFX;
-                    CoilCrabHandler.Instance.Assets.CoilShellItem.grabSFX = item.grabSFX;
-                    BiodiversityPlugin.LogVerbose("Found the select sfx for the shovel.");
-                    break;
-                }
             }
 
             string[] minMax = CoilCrabHandler.Instance.Config.ItemValue.Split(',');

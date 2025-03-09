@@ -71,7 +71,5 @@ namespace Biodiversity.Patches
                 }
             }
         }
-
-
     }
 }
