@@ -19,7 +19,7 @@ namespace Biodiversity.Creatures.CoilCrab
         public string CoilCrabRarity { get; private set; } = "Offense:35,Rend:8,Titan:0,Artifice:12,Asteroid-13:9,Junic:18,Atlantica:2,Gratar:8,Fission:20,Oldred:20,Prominence:10,Seichi:4,Torus:38,Tundaria:19,Starship-13:22,Demetrica:10";
 
         [field: Tooltip("Explosion damage range")]
-        public float DamageRange { get; private set; } = 6;
+        public float DamageRange { get; private set; } = 7;
 
         [field: Tooltip("Explosion kill range")]
         public float KillRange { get; private set; } = 3;
