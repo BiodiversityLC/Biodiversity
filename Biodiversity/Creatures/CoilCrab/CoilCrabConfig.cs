@@ -25,7 +25,7 @@ namespace Biodiversity.Creatures.CoilCrab
         public int MaxSpawns { get; private set; } = 5;
 
         [field: Tooltip("Explosion damage range")]
-        public float DamageRange { get; private set; } = 6;
+        public float DamageRange { get; private set; } = 7;
 
         [field: Tooltip("Explosion kill range")]
         public float KillRange { get; private set; } = 3;
