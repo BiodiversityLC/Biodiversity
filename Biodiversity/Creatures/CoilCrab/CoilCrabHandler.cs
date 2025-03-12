@@ -26,6 +26,9 @@ namespace Biodiversity.Creatures.CoilCrab
             StormyWeights = new Dictionary<string, int>();
             Weights = new Dictionary<string, int>();
 
+            Assets.CoilCrabEnemy.PowerLevel = Config.PowerLevel;
+            Assets.CoilCrabEnemy.MaxCount = Config.MaxSpawns;
+
             ParseWeights();
 
             LethalLib.Modules.Items.RegisterScrap(Assets.CoilShellItem, 0, LethalLib.Modules.Levels.LevelTypes.None);

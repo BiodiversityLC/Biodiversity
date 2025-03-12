@@ -12,7 +12,7 @@ namespace Biodiversity.Patches
         {
             foreach (Item item in StartOfRound.Instance.allItemsList.itemsList)
             {
-                if (item.name == "Shovel")
+                if (item.name == "ComedyMask")
                 {
                     CoilCrabHandler.Instance.Assets.CoilShellItem.pocketSFX = item.pocketSFX;
                     CoilCrabHandler.Instance.Assets.CoilShellItem.grabSFX = item.grabSFX;

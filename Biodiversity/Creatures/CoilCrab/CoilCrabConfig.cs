@@ -18,6 +18,12 @@ namespace Biodiversity.Creatures.CoilCrab
         [field: Tooltip("Spawn weight of the Coil Crab on all moons when it is not stormy.")]
         public string CoilCrabRarity { get; private set; } = "Offense:35,Rend:8,Titan:0,Artifice:12,Asteroid-13:9,Junic:18,Atlantica:2,Gratar:8,Fission:20,Oldred:20,Prominence:10,Seichi:4,Torus:38,Tundaria:19,Starship-13:22,Demetrica:10";
 
+        [field: Tooltip("Power level of the Coil Crab")]
+        public float PowerLevel { get; private set; } = 1;
+
+        [field: Tooltip("The number of maximum Coil Crab spawns.")]
+        public int MaxSpawns { get; private set; } = 5;
+
         [field: Tooltip("Explosion damage range")]
         public float DamageRange { get; private set; } = 6;
 

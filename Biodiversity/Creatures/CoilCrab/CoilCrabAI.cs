@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Unity.Netcode;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.CoilCrab
 {
@@ -20,6 +21,8 @@ namespace Biodiversity.Creatures.CoilCrab
         public ScanNodeProperties ScanNode;
 
         public AudioClip DeathSound;
+        public AudioClip CrabStop;
+        public AudioClip CrabShock;
 
         private float explodeTimer = 0;
 
@@ -88,9 +91,22 @@ namespace Biodiversity.Creatures.CoilCrab
             Landmine.SpawnExplosion(explosionPosition, true, killRange, damageRange, nonLethalDamage);
         }
 
+        [ClientRpc]
+        public void StopMovingSoundClientRpc()
+        {
+            creatureVoice.PlayOneShot(CrabStop);
+        }
+
+        [ClientRpc]
+        public void ExplodeSoundClientRpc()
+        {
+            creatureVoice.PlayOneShot(CrabShock);
+        }
+
         public void CustomKillEnemy()
         {
             KillEnemy();
+            creatureAnimator.SetInteger("StopAnim", 0);
             creatureVoice.PlayOneShot(DeathSound);
             ScanNode.gameObject.GetComponent<Collider>().enabled = true;
         }
@@ -166,6 +182,11 @@ namespace Biodiversity.Creatures.CoilCrab
             }
         }
 
+        public void StopAnim()
+        {
+            creatureAnimator.SetInteger("StopAnim", Random.Range(1, 4));
+        }
+
         public override void DoAIInterval()
         {
             base.DoAIInterval();
@@ -186,9 +207,14 @@ namespace Biodiversity.Creatures.CoilCrab
             //Stop if selected player is inside
             if (selectedPlayer.isInsideFactory)
             {
+                if (agent.speed != 0)
+                {
+                    StopMovingSoundClientRpc();
+                }
                 agent.speed = 0;
                 agent.angularSpeed = 0;
                 creatureAnimator.SetBool("Walking", false);
+                StopAnim();
                 SetDestinationToPosition(transform.position);
                 return;
             }
@@ -204,22 +230,35 @@ namespace Biodiversity.Creatures.CoilCrab
                         agent.angularSpeed = 120;
                         creatureAnimator.SetBool("Walking", true);
                         creatureAnimator.SetBool("Exploding", false);
+                        creatureAnimator.SetInteger("StopAnim", 0);
                         SetDestinationToPosition(RoundManager.Instance.GetNavMeshPosition(selectedPlayer.transform.position, RoundManager.Instance.navHit, 2.75f));
                     } else
                     {
+                        if (agent.speed != 0)
+                        {
+                            StopMovingSoundClientRpc();
+                        }
                         agent.speed = 0;
                         agent.angularSpeed = 0;
                         creatureAnimator.SetBool("Walking", false);
                         creatureAnimator.SetBool("Exploding", false);
+                        StopAnim();
                         SetDestinationToPosition(transform.position);
                     }
                     break;
                 case (int)State.EXPLODE:
+
+                    if (agent.acceleration != CoilCrabHandler.Instance.Config.RunSpeed * 1.6f)
+                    {
+                        ExplodeSoundClientRpc();
+                    }
+
                     // Do not touch the magic 1.6f
                     agent.acceleration = CoilCrabHandler.Instance.Config.RunSpeed * 1.6f;
                     agent.speed = CoilCrabHandler.Instance.Config.RunSpeed;
                     agent.angularSpeed = 120;
                     creatureAnimator.SetBool("Walking", true);
+                    creatureAnimator.SetInteger("StopAnim", 0);
                     SetDestinationToPosition(RoundManager.Instance.GetNavMeshPosition(selectedPlayer.transform.position, RoundManager.Instance.navHit, 2.75f));
 
                     if (explodeTimer <= 0)
