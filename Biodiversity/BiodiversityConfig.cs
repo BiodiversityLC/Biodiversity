@@ -3,6 +3,7 @@ using System.Linq;
 using BepInEx.Configuration;
 using Biodiversity.Util.Config;
 using Biodiversity.Util.Lang;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Biodiversity;
@@ -17,6 +18,8 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
 
     [field: Tooltip("The stab is real.")]
     public bool StabIsReal { get; private set; } = false;
+    
+    private readonly List<string> _enabledCreatures = [];
 
     internal BiodiversityConfig(ConfigFile configFile) : base(configFile)
     {
@@ -33,5 +36,24 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
                 "Some languages may also need FontPatcher(https://thunderstore.io/c/lethal-company/p/LeKAKiD/FontPatcher/)\\n",
                 acceptableLanguages)
         ).Value;
+    }
+
+    internal void AddEnabledCreature(string creatureName)
+    {
+        _enabledCreatures.Add(creatureName);
+    }
+
+    internal bool IsCreatureEnabled(string creatureName)
+    {
+        for (int i = 0; i < _enabledCreatures.Count; i++)
+        {
+            string enabledCreature = _enabledCreatures[i];
+            if (enabledCreature == creatureName)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

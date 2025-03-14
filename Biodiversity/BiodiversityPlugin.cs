@@ -50,7 +50,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
         CachedAssemblies = new CachedList<Assembly>(() => AppDomain.CurrentDomain.GetAssemblies().ToList());
 
-        Logger.LogDebug(() => "Creating base biodiversity config."); // Can't use LogVerbose here yet because we need the config to tell us whether verbose logging is enabled or not.
+        Logger.LogDebug("Creating base biodiversity config."); // Can't use LogVerbose here yet because we need the config to tell us whether verbose logging is enabled or not.
         Config = new BiodiversityConfig(base.Config);
 
         LogVerbose("Creating Harmony instance...");
@@ -107,15 +107,19 @@ public class BiodiversityPlugin : BaseUnityPlugin
         for (int i = 0; i < creatureHandlers.Count; i++)
         {
             Type type = creatureHandlers[i];
-            bool creatureEnabled = base.Config.Bind("Creatures", type.Name, true).Value;
+            string creatureName = type.Name;
+            bool creatureEnabled = base.Config.Bind("Creatures", creatureName, true).Value;
+            
             if (!creatureEnabled)
             {
-                LogVerbose($"{type.Name} was skipped because it's disabled.");
+                LogVerbose($"{creatureName} was skipped because it's disabled.");
                 continue;
             }
-
-            LogVerbose($"Creating {type.Name}");
+            
+            LogVerbose($"Creating {creatureName}");
             type.GetConstructor([])?.Invoke([]);
+            
+            Config.AddEnabledCreature(creatureName.Replace("Handler", ""));
         }
 
         LogVerbose($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
@@ -153,6 +157,18 @@ public class BiodiversityPlugin : BaseUnityPlugin
         for (int i = 0; i < types.Length; i++)
         {
             Type type = types[i];
+
+            var creatureAttr = type.GetCustomAttribute<CreaturePatchAttribute>();
+            if (creatureAttr != null)
+            {
+                bool creatureEnabled = Config?.IsCreatureEnabled(creatureAttr.CreatureName) ?? true;
+                if (!creatureEnabled)
+                {
+                    LogVerbose($"Skipping patches for creature '{creatureAttr.CreatureName}' because it is disabled in config.");
+                    continue;
+                }
+            }
+            
             List<ModConditionalPatch> modConditionalAttrs =
                 type.GetCustomAttributes<ModConditionalPatch>(true).ToList();
 

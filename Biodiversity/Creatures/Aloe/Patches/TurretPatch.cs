@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Biodiversity.Util.Attributes;
+using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 
@@ -8,6 +9,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// This class is for Turret Patches.
 /// It makes sure the player doesn't get shot by a turret when they are being kidnapped.
 /// </summary>
+[CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(Turret))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class TurretPatch

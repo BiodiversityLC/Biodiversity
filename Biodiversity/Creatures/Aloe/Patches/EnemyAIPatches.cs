@@ -1,10 +1,12 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
 
+[CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(EnemyAI))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class EnemyAIPatches

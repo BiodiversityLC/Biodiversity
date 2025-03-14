@@ -13,6 +13,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// Seamines are from the mod "Surfaced".
 /// It makes sure the Aloe and the player don't get blown up if the Aloe goes over a seamine while kidnapping.
 /// </summary>
+[CreaturePatch("Aloe")]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 [UsedImplicitly]
 [ModConditionalPatch("Surfaced", "Seamine", "OnTriggerEnter", "PrefixTriggerEntry", HarmonyPatchType.Prefix)]

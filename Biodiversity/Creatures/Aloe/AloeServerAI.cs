@@ -350,7 +350,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             return;
         }
 
-        LogVerbose(
+        LogDebug(
             $"Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}' in {GetType().Name}.");
 
         if (interrupt) selectedAudioSource.Stop();
@@ -828,14 +828,16 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     }
 
     /// <summary>
-    /// Makes the agent move by using <see cref="Mathf.SmoothStep"/> to make the movement smooth
+    /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void MoveWithAcceleration()
     {
-        float t = Mathf.Clamp01(Time.deltaTime * 0.5f);
-        agent.speed = Mathf.SmoothStep(agent.speed, AgentMaxSpeed, t);
-        agent.acceleration = Mathf.SmoothStep(agent.acceleration, AgentMaxAcceleration, t);
+        float speedAdjustment = Time.deltaTime / 2f;
+        agent.speed = Mathf.Lerp(agent.speed, AgentMaxSpeed, speedAdjustment);
+        
+        float accelerationAdjustment = Time.deltaTime;
+        agent.acceleration = Mathf.Lerp(agent.acceleration, AgentMaxAcceleration, accelerationAdjustment);
     }
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)

@@ -46,7 +46,8 @@ public class FungiAI : BiodiverseAI {
 		speedBoostTime -= Time.deltaTime;
 		agent.speed = speedBoostTime > 0 ? Config.FungiBoostedSpeed : Config.FungiNormalSpeed;
         
-		if(!isStunned && wanderRoutine == null || !wanderRoutine.inProgress) {
+		if (!isStunned && wanderRoutine == null || !wanderRoutine.inProgress) 
+		{
 			LogVerbose("[Fungi] Starting new search.");
 			StartSearch(transform.position, wanderRoutine);
 		}

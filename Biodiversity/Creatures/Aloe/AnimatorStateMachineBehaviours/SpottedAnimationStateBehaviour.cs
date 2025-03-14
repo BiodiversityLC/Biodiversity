@@ -13,7 +13,6 @@ internal class SpottedAnimationStateBehaviour : BaseStateMachineBehaviour
                 "creatureVoice",
                     true, true, false, true);
         }
-            
     }
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)

@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
@@ -9,6 +10,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
 
+[CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(PlayerControllerB))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class TeleportPatches

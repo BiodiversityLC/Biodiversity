@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Biodiversity.Util.Attributes;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using DunGen;
 using HarmonyLib;
@@ -11,6 +12,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// A class of patches for the DungeonGenerator class.
 /// It finds the bracken room in the dungeon if there is one
 /// </summary>
+[CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(DungeonGenerator))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class DungeonGenPatch

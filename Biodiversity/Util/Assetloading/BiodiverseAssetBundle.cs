@@ -37,7 +37,16 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
                 (LoadFromBundleAttribute)field.GetCustomAttribute(typeof(LoadFromBundleAttribute));
             if (loadInstruction == null) continue;
 
-            field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
+            try
+            {
+                field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
+            }
+            catch (ArgumentException e)
+            {
+                BiodiversityPlugin.Logger.LogError($"Failed to load asset bundle {filePath}: {e.Message}");
+                continue;
+            }
+            
         }
 
         // todo: fix this; the cachedList isnt being used properly because its just being reset every time this function is called
@@ -96,8 +105,10 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
     {
         List<Item> items = [];
 
-        foreach (Object asset in bundle.LoadAllAssets())
+        Object[] assets = bundle.LoadAllAssets();
+        for (int i = 0; i < assets.Length; i++)
         {
+            Object asset = assets[i];
             if (asset is Item item)
                 items.Add(item);
         }

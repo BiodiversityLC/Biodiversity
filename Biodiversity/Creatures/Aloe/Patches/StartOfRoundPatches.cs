@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Biodiversity.Util.Attributes;
+using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 
@@ -7,6 +8,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// <summary>
 /// A class of patches for the StartOfRound class.
 /// </summary>
+[CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(StartOfRound))]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class StartOfRoundPatch

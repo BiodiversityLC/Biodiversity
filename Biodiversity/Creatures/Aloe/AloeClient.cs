@@ -196,11 +196,11 @@ public class AloeClient : MonoBehaviour
                         continue;
                     }
 
-                    BiodiversityPlugin.LogVerbose(() => $"Found transform for renderer: {rendererTuple.Item1}");
+                    BiodiversityPlugin.LogVerbose($"Found transform for renderer: {rendererTuple.Item1}");
 
                     if (rendererTransform.GetComponent(rendererTuple.Item2) is Renderer rendererComponent)
                     {
-                        BiodiversityPlugin.LogVerbose(() =>
+                        BiodiversityPlugin.LogVerbose(
                             $"Found {nameof(rendererComponent)} component for renderer: {rendererTuple.Item1}");
                         rendererComponents.Add(new Tuple<Component, bool>(rendererComponent,
                             rendererComponent.enabled));
@@ -273,6 +273,7 @@ public class AloeClient : MonoBehaviour
         animator.SetBool(Dead, netcodeController.AnimationParamDead.Value);
         
         _lastFootstepTime += Time.deltaTime;
+        _timeSinceTargetPlayerNullLog += Time.deltaTime;
 
         // ManuallyControlPlayerOffsets();
 
@@ -287,7 +288,7 @@ public class AloeClient : MonoBehaviour
 
                     if (Keyboard.current.spaceKey.wasPressedThisFrame)
                     {
-                        BiodiversityPlugin.LogVerbose(() => $"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
+                        BiodiversityPlugin.LogVerbose($"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
                         _currentEscapeChargeValue += escapeChargePerPress;
                     }
 
@@ -313,8 +314,6 @@ public class AloeClient : MonoBehaviour
         {
             _currentEscapeChargeValue = 0;  
         }
-            
-        
     }
 
     private void LateUpdate()
@@ -329,10 +328,10 @@ public class AloeClient : MonoBehaviour
                 _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
                 _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
             }
+            
+            CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value); // such a shitty way of fixing a bug
+            UpdateRagdollVisibility(); // this too
         }
-        
-        CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value); // such a shitty way of fixing a bug
-        UpdateRagdollVisibility(); // this too
     }
 
     /// <summary>
@@ -352,7 +351,7 @@ public class AloeClient : MonoBehaviour
 
     private IEnumerator CrushPlayerAnimation(PlayerControllerB player)
     {
-        BiodiversityPlugin.LogVerbose(() => $"Killing player: {player.name}");
+        BiodiversityPlugin.LogVerbose($"Killing player: {player.name}");
         if (player.inSpecialInteractAnimation &&
             player.currentTriggerInAnimationWith != null)
             player.currentTriggerInAnimationWith.CancelAnimationExternally();
@@ -390,7 +389,7 @@ public class AloeClient : MonoBehaviour
     /// <returns></returns>
     private IEnumerator ChangeAloeSkinColour(bool toDark)
     {
-        BiodiversityPlugin.LogVerbose(() => $"Changing Aloe's skin to a {(toDark ? "dark" : "light")} colour");
+        BiodiversityPlugin.LogVerbose($"Changing Aloe's skin to a {(toDark ? "dark" : "light")} colour");
         float timeElapsed = 0f;
         float startMetallicValue = toDark ? 0 : skinMetallicValueDark;
         float endMetallicValue = toDark ? skinMetallicValueDark : 0;
@@ -447,7 +446,7 @@ public class AloeClient : MonoBehaviour
             _targetPlayer.Value.MakeCriticallyInjured(false);
         }
             
-        BiodiversityPlugin.LogVerbose(() => $"Target player health after last heal: {_targetPlayer.Value.health}");
+        BiodiversityPlugin.LogVerbose($"Target player health after last heal: {_targetPlayer.Value.health}");
     }
 
     private IEnumerator ChangeTargetPlayerOffsets(TargetPlayerOffsetType offsetType, float duration = 0.5f)
@@ -473,7 +472,7 @@ public class AloeClient : MonoBehaviour
     private void HandleTransitionToRunningForwardsAndCarryingPlayer(string receivedAloeId, float transitionDuration)
     {
         if (_aloeId != receivedAloeId) return;
-        BiodiversityPlugin.LogVerbose(() => $"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
+        BiodiversityPlugin.LogVerbose($"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
 
         if (_currentFakePlayerBodyRagdoll == null)
         {
@@ -493,7 +492,7 @@ public class AloeClient : MonoBehaviour
         NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
     {
         if (_aloeId != receivedAloeId) return;
-        BiodiversityPlugin.LogVerbose(() => $"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
+        BiodiversityPlugin.LogVerbose($"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
         
         CleanupRagdoll();
 
@@ -543,7 +542,7 @@ public class AloeClient : MonoBehaviour
         else ReleaseCaptivity(targetPlayer);
 
         _targetPlayerInCaptivity = setToInCaptivity;
-        BiodiversityPlugin.LogVerbose(() => $"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
+        BiodiversityPlugin.LogVerbose($"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
     }
 
     private void SetupCaptivity(PlayerControllerB targetPlayer)
@@ -625,7 +624,7 @@ public class AloeClient : MonoBehaviour
                 false,
                 true,
                 "LC_AloeGrabTip");
-        BiodiversityPlugin.LogVerbose(() => $"Set {_targetPlayer.Value.playerUsername} able to escape");
+        BiodiversityPlugin.LogVerbose($"Set {_targetPlayer.Value.playerUsername} able to escape");
     }
 
     /// <summary>
@@ -654,7 +653,7 @@ public class AloeClient : MonoBehaviour
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
 
-        BiodiversityPlugin.LogVerbose(() => $"Muffling {_targetPlayer.Value.playerUsername}");
+        BiodiversityPlugin.LogVerbose($"Muffling {_targetPlayer.Value.playerUsername}");
         _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 5f;
         _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = true;
         _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 500f;
@@ -672,18 +671,28 @@ public class AloeClient : MonoBehaviour
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
 
-        BiodiversityPlugin.LogVerbose(() => $"UnMuffling {_targetPlayer.Value.playerUsername}");
+        BiodiversityPlugin.LogVerbose($"UnMuffling {_targetPlayer.Value.playerUsername}");
         _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 1f;
         _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = false;
         _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 20000f;
         _targetPlayer.Value.voiceMuffledByEnemy = false;
     }
 
+    private float _timeSinceTargetPlayerNullLog;
+    private int _targetPlayerNullCounter;
+
     private void ToggleTargetPlayerLocalRenderers(bool setToEnabled)
     {
         if (!_targetPlayer.IsNotNull)
         {
-            BiodiversityPlugin.Logger.LogDebug("Cannot toggle target player renderers because the target player variable is null.");
+            _targetPlayerNullCounter++;
+            if (_timeSinceTargetPlayerNullLog > 60)
+            {
+                BiodiversityPlugin.Logger.LogWarning($"Cannot toggle target player renderers because the target player variable is null. Times this has happened since the last message: {_targetPlayerNullCounter}, which was {_timeSinceTargetPlayerNullLog} seconds ago.");
+                _targetPlayerNullCounter = 0;
+                _timeSinceTargetPlayerNullLog = 0;
+            }
+            
             return;
         }
         
@@ -739,7 +748,7 @@ public class AloeClient : MonoBehaviour
             BiodiversityPlugin.Logger.LogError($"Cannot damage player with id {playerId}, because they do not exist.");
             return;
         }
-        BiodiversityPlugin.LogVerbose(() => $"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
+        BiodiversityPlugin.LogVerbose($"Damaging player {playerToDamage.Value.playerUsername} for {damage} damage!");
         playerToDamage.Value.DamagePlayer(damage, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.Value.turnCompass.forward * (-1 * 5));
     }
 
@@ -748,7 +757,7 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     public void OnAnimationEventPlayFootstepSfx()
     {
-        BiodiversityPlugin.LogVerbose(() => $"Last footstep time: {_lastFootstepTime}");
+        BiodiversityPlugin.LogVerbose($"Last footstep time: {_lastFootstepTime}");
         _lastFootstepTime = 0;
         
         AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
@@ -760,7 +769,7 @@ public class AloeClient : MonoBehaviour
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
         _targetPlayer.Value = newValue == BiodiverseAI.NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
-        BiodiversityPlugin.LogVerbose(() => _targetPlayer.IsNotNull
+        BiodiversityPlugin.LogVerbose( _targetPlayer.IsNotNull
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
             : "Changed target player to null.");
     }
@@ -801,7 +810,6 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     public void OnAnimationEventPlayPoofParticleEffect()
     {
-        BiodiversityPlugin.LogVerbose(() => $"In {nameof(OnAnimationEventPlayPoofParticleEffect)}");
         poofParticleSystem.Play();
 
         bodyRenderer.enabled = false;
@@ -968,7 +976,7 @@ public class AloeClient : MonoBehaviour
         
         if (Keyboard.current.numpadPlusKey.wasPressedThisFrame)
         {
-            BiodiversityPlugin.LogVerbose(() => 
+            BiodiversityPlugin.LogVerbose(
                 $"Offset Position: {_offsetPosition}, Offset Rotation: {_offsetRotation}, current position: {_targetPlayer.Value.transform.position}, bob: {transform.position + _offsetPosition}");
         }
     }

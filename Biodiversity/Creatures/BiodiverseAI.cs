@@ -330,7 +330,8 @@ public abstract class BiodiverseAI : EnemyAI
 
                         break;
                     }
-                
+
+                    case PathStatus.ValidButInLos:
                     case PathStatus.Invalid:
                     case PathStatus.Unknown:
                         break;

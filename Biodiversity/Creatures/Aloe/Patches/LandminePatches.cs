@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
@@ -10,6 +11,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// This class is for Landmine patches.
 /// It makes sure the Aloe and the player don't get blown up if the Aloe goes over a landmine while kidnapping.
 /// </summary>
+[CreaturePatch("Aloe")]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 [HarmonyPatch(typeof(Landmine))]
 internal static class LandminePatch
