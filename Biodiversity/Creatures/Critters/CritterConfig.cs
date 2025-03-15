@@ -42,7 +42,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 
 	[field: Tooltip("The distance a player has to be from a LeafBoy for him to get scared.")]
 	[field: Range(1f, 20f)] 
-	public float LeafBoyScaryPlayerDistance { get; private set; } = 6f;
+	public float LeafBoyScaryPlayerDistance { get; private set; } = 3f;
 
 	[field: Tooltip("The normal speed of a LeafBoy.")]
 	[field: Range(0.5f, 20f)]
