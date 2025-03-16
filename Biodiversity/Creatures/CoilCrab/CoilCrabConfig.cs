@@ -44,6 +44,6 @@ namespace Biodiversity.Creatures.CoilCrab
 
 
         [field: Tooltip("Item value. format: Min:(minimum number),Max:(maximum number)")]
-        public string ItemValue { get; private set; } = "Min:60,Max:95";
+        public string ItemValue { get; private set; } = "Min:42,Max:75";
     }
 }
