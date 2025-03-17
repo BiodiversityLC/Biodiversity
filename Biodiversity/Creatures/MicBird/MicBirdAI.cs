@@ -687,7 +687,7 @@ namespace Biodiversity.Creatures.MicBird
                         creatureAnimator.SetInteger("ID", 1);
                     }
                     else {
-                        creatureAnimator.SetInteger("ID", 4);
+                        creatureAnimator.SetInteger("ID", 5);
                     }
 
                     if (agent.speed != 3)
