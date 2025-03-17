@@ -14,7 +14,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	public bool FungiEnabled { get; private set; } = true;
 	
 	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string FungiRarity { get; private set; } = "Experimentation:80,Adamance:8,March:45,Artifice:10,Solace:80,Fray:32,Seichi:16,Olympus:15,Arelion:6,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8,Mycorditum:34,Phaedra:10,Pelagia:40,Derelect:21,Sorrow:24,Phuket:40,Rorm:18,Starship-13:25,Trite:8,Utril:42";
+	public string FungiRarity { get; private set; } = "Experimentation:80,March:45,Artifice:10,Solace:80,Fray:32,Seichi:16,Olympus:15,Arelion:6,Hydro:38,Collateral:8,Corrosion:5,Icebound:20,USC Vortex:8,Mycorditum:34,Phaedra:10,Pelagia:40,Derelect:21,Sorrow:24,Phuket:40,Rorm:18,Starship-13:25,Trite:8,Utril:42";
 	
 	[field: Tooltip("Normal speed of fungi.")]
 	[field: Range(3f, 20f)]
@@ -38,11 +38,11 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	public bool LeafBoyEnabled { get; private set; } = true;
 	
 	[field: Tooltip("Spawn weight of the Leaf boys on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:15,Assurance:85,Offense:5,Artifice:2,Rend:5,Seichi:10,Fray:300,Vertigo:5,Integrity:25,Collateral:10,Hydro:38,Brutality:15,USC Vortex:12,Phaedra:35,Valiance:28,Natit:8,Starship-13:30,Motra:8,Filitrios:4,Utril:8";
+	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:15,Assurance:85,Artifice:2,Rend:5,Seichi:10,Fray:300,Vertigo:5,Integrity:25,Collateral:10,Hydro:38,Brutality:15,USC Vortex:12,Phaedra:35,Valiance:28,Natit:8,Starship-13:30,Motra:8,Filitrios:4,Utril:8";
 
 	[field: Tooltip("The distance a player has to be from a LeafBoy for him to get scared.")]
 	[field: Range(1f, 20f)] 
-	public float LeafBoyScaryPlayerDistance { get; private set; } = 6f;
+	public float LeafBoyScaryPlayerDistance { get; private set; } = 3f;
 
 	[field: Tooltip("The normal speed of a LeafBoy.")]
 	[field: Range(0.5f, 20f)]
