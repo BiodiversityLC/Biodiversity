@@ -1,9 +1,11 @@
 ﻿using Biodiversity.Creatures.CoilCrab;
+using Biodiversity.Util.Attributes;
 using HarmonyLib;
 
 
 namespace Biodiversity.Patches
 {
+    [CreaturePatch("CoilCrab")]
     [HarmonyPatch(typeof(StartOfRound))]
     internal class CoilCrabStartOfRoundPatch
     {

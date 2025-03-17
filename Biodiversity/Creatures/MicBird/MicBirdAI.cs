@@ -77,6 +77,7 @@ namespace Biodiversity.Creatures.MicBird
         private float roamTimer = 10;
         // Sound vars stop here
 
+        // Basic mechanic vars
         private float callTimer = 30;
         private float malfunctionInterval = 0;
         private float baseMalfunctionInterval = 0;
@@ -86,21 +87,28 @@ namespace Biodiversity.Creatures.MicBird
         MalfunctionID malfunction;
         Vector3 targetPos = Vector3.zero;
 
+        // Wander vars
         private AISearchRoutine wander = new AISearchRoutine();
         private bool wanderingAlready = false;
         private float wanderTimer = 1f;
         private static System.Random spawnRandom;
 
+        // Distraction vars
         RadarBoosterItem distractedRadarBoosterItem = null;
         float distractionTimer = 0;
-        
+        float defaultStoppingDistance;
+
+        // Number of times the malfunction will occur
         private int malfunctionTimes = 0;
 
+        // Used for leader mechanic
         private static MicBirdAI firstSpawned = null;
 
+        // Spawn anim
         private float spawnTimer = 2f;
         private bool spawnDone = false;
 
+        // Compatibility mode
         private bool hurt = false;
         private bool compatMode = false;
         private static bool sideSet = false;
@@ -120,6 +128,8 @@ namespace Biodiversity.Creatures.MicBird
             spawnPosition = transform.position;
 
             creatureVoice.volume = (MicBirdHandler.Instance.Config.AudioVolume / 100f) * creatureVoice.volume;
+
+            defaultStoppingDistance = agent.stoppingDistance;
 
             foreach (var plugin in Chainloader.PluginInfos)
             {
@@ -394,6 +404,7 @@ namespace Biodiversity.Creatures.MicBird
             BiodiversityPlugin.LogVerbose("The Micbird heard a sound with id " + noiseID + ". And noise Loundness of " + noiseLoudness + ".");
             if (noiseID == 75 && noiseLoudness >= 0.8 && enemyType.numberSpawned <= 2)
             {
+                agent.speed = 5.4f;
                 StartRunOnServerServerRpc(20);
             }
         }
@@ -449,6 +460,11 @@ namespace Biodiversity.Creatures.MicBird
                     SyncRadarBoosterClientRpc(new NetworkObjectReference(maybeRadar.GetComponent<NetworkObject>()));
                     SwitchToBehaviourClientRpc((int)State.RADARBOOSTER);
                 }
+            }
+
+            if (currentBehaviourStateIndex != (int)State.RADARBOOSTER)
+            {
+                agent.stoppingDistance = defaultStoppingDistance;
             }
 
             switch (currentBehaviourStateIndex)
@@ -666,7 +682,7 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     break;
                 case (int)State.RADARBOOSTER:
-                    if (Vector3.Distance(distractedRadarBoosterItem.transform.position, transform.position) >= 2)
+                    if (Vector3.Distance(distractedRadarBoosterItem.transform.position, transform.position) >= 2 + MicBirdHandler.Instance.Config.RadarBoosterStopDistance)
                     {
                         creatureAnimator.SetInteger("ID", 1);
                     }
@@ -678,6 +694,9 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         agent.speed = 3;
                     }
+
+
+                    agent.stoppingDistance = MicBirdHandler.Instance.Config.RadarBoosterStopDistance;
                     agent.SetDestination(distractedRadarBoosterItem.transform.position);
 
                     if (!CheckLineOfSightForPosition(distractedRadarBoosterItem.transform.position, 60f, 40, 5f))
@@ -686,7 +705,7 @@ namespace Biodiversity.Creatures.MicBird
                         SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
                     }
 
-                    if (Vector3.Distance(transform.position, distractedRadarBoosterItem.transform.position) <= 2 && distractionTimer <= 0)
+                    if (Vector3.Distance(transform.position, distractedRadarBoosterItem.transform.position) <= 2 + agent.stoppingDistance && distractionTimer <= 0)
                     {
                         distractionTimer = Random.Range(1f, 10f);
 

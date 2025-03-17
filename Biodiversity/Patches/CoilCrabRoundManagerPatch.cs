@@ -1,10 +1,12 @@
 ﻿using Biodiversity.Creatures.CoilCrab;
+using Biodiversity.Util.Attributes;
 using HarmonyLib;
 using LethalLib.Modules;
 using System;
 
 namespace Biodiversity.Patches
 {
+    [CreaturePatch("CoilCrab")]
     [HarmonyPatch(typeof(RoundManager))]
     internal static class CoilCrabRoundManagerPatch
     {

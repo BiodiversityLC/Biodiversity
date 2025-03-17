@@ -37,6 +37,8 @@ namespace Biodiversity.Creatures.MicBird
                 weight.Second = weightadd;
             }
 
+            Assets.MicBirdEnemyType.PowerLevel = Config.PowerLevel;
+
             TranslateTerminalNode(Assets.MicBirdTerminalNode);
             RegisterEnemyWithConfig(
                 Config.EnableBoomBird,

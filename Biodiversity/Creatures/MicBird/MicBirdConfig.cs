@@ -11,6 +11,9 @@ namespace Biodiversity.Creatures.MicBird
         [field: Tooltip("Spawn weight of the Boom bird on all moons.")]
         public string BoomBirdRarity { get; private set; } = "Experimentation:22,Rend:22,Artifice:45,Atlantica:27,Fission-C:24,Gratar:10,Polarus:8,Seichi:8,Arelion:15,Fray:1,Sierra:21,Icebound:12,Humidity:26,Integrity:8,Vertigo:16,Vaporization:20,Timbrance:33,Rorm:25,Starship-13:25,Filitrios:35,Cubatres:10";
 
+        [field: Tooltip("Power level of the Coil Crab")]
+        public float PowerLevel { get; private set; } = 1;
+
         [field: Tooltip("Whether the Boom bird will spawn in games.")]
         public bool EnableBoomBird { get; private set; } = true;
 
@@ -19,6 +22,9 @@ namespace Biodiversity.Creatures.MicBird
 
         [field: Tooltip("Maximum time between roam/idle sounds")]
         public int BoomBirdIdleMaxTime { get; private set; } = 35;
+
+        [field: Tooltip("The stop distance for the radar boosters.")]
+        public float RadarBoosterStopDistance { get; private set; } = 3f;
 
         // Malfunction configs
         [field: Tooltip("Weight of the walkie malfunction")]
