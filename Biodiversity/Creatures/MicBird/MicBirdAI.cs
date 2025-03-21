@@ -75,6 +75,15 @@ namespace Biodiversity.Creatures.MicBird
 
         private float idleTimer = 10;
         private float roamTimer = 10;
+
+        // malfunction sound variables
+        private static AudioSource radarScreenAudio;
+        private static AudioSource shipDoorsAudio;
+
+        public AudioClip radarMalClip;
+        public AudioClip teleporterMalClip;
+        public AudioClip shipDoorsMalClip;
+        public AudioClip radarBoosterMalClip;
         // Sound vars stop here
 
         // Basic mechanic vars
@@ -112,7 +121,7 @@ namespace Biodiversity.Creatures.MicBird
         private bool hurt = false;
         private bool compatMode = false;
         private static bool sideSet = false;
-        private static bool compatSide = false; // I don't care what false and tru map to it works. The middle node is turned all weird so forward is either left or right.
+        private static bool compatSide = false; // I don't care what false and true map to it works. The middle node is turned all weird so forward is either left or right.
 
         public override void Start()
         {
@@ -122,7 +131,11 @@ namespace Biodiversity.Creatures.MicBird
                 firstSpawned = this;
                 UpdateNumberSpawnedClientRpc(1);
                 spawnRandom = new System.Random(StartOfRound.Instance.randomMapSeed + 22);
+
+                radarScreenAudio = GameObject.Find("StartGameLever").GetComponent<AudioSource>();
+                shipDoorsAudio = GameObject.Find("HangarDoorAudioSource").GetComponent<AudioSource>();
             }
+
             wander.randomized = true;
 
             spawnPosition = transform.position;
@@ -225,9 +238,11 @@ namespace Biodiversity.Creatures.MicBird
                         ToggleAllWalkiesOutsideClientRpc();
                         break;
                     case MalfunctionID.SHIPDOORS:
+                        PlayMalfunctionSoundClientRpc(4);
                         ToggleShipDoorsClientRpc();
                         break;
                     case MalfunctionID.RADARBLINK:
+                        PlayMalfunctionSoundClientRpc(0);
                         StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(true);
                         break;
                     case MalfunctionID.LIGHTSOUT:
@@ -287,6 +302,34 @@ namespace Biodiversity.Creatures.MicBird
             }
 
             creatureVoice.PlayOneShot(audio);
+        }
+
+        [ClientRpc]
+        public void PlayMalfunctionSoundClientRpc(int id)
+        {
+            switch (id)
+            {
+                // radar
+                case 0:
+                    radarScreenAudio.PlayOneShot(radarMalClip);
+                    break;
+                // teleporter
+                case 1:
+                    shipDoorsAudio.PlayOneShot(teleporterMalClip);
+                    break;
+                // inverseTeleporter
+                case 2:
+                    shipDoorsAudio.PlayOneShot(teleporterMalClip);
+                    break;
+                // radar booster
+                case 3:
+                    distractedRadarBoosterItem.GetComponent<AudioSource>().PlayOneShot(radarBoosterMalClip);
+                    break;
+                // doors
+                case 4:
+                    shipDoorsAudio.PlayOneShot(teleporterMalClip);
+                    break;
+            }
         }
 
 
@@ -616,6 +659,7 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         if (TeleporterStatus.Teleporting)
                         {
+                            PlayMalfunctionSoundClientRpc(1);
                             CancelTeleportClientRpc();
                         }
                     }
@@ -624,6 +668,7 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         if (TeleporterStatus.TeleportingInverse)
                         {
+                            PlayMalfunctionSoundClientRpc(2);
                             CancelInverseTeleportClientRpc();
                         }
                     }
@@ -710,6 +755,8 @@ namespace Biodiversity.Creatures.MicBird
                         distractionTimer = Random.Range(1f, 10f);
 
                         TurnRadarBoosterOnClientRpc();
+
+                        PlayMalfunctionSoundClientRpc(3);
 
                         if (Random.Range(0, 2) == 0)
                         {
