@@ -70,6 +70,9 @@ namespace Biodiversity.Creatures.MicBird
         // Step sounds
         [SerializeField] public AudioClip[] stepSounds;
 
+        // Singing sounds
+        [SerializeField] public AudioClip[] singSounds;
+
         // Used for checking which step sounds to play depending on if it is running or not.
         public bool running = false;
 

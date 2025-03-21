@@ -40,6 +40,11 @@ namespace Biodiversity.Creatures.MicBird
             }
         }
 
+        public void Sing()
+        {
+            mainAI.creatureVoice.PlayOneShot(mainAI.singSounds[Random.Range(0, mainAI.singSounds.Length)]);
+        }
+
         public void EndHurt(string s)
         {
             BiodiversityPlugin.Logger.LogInfo(s);
