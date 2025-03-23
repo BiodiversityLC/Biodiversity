@@ -49,7 +49,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     
     [field: Tooltip("The max speed of the Aloe when she's stalking a player.")]
     [field: Range(0.01f, 500f)]
-    public float StalkingMaxSpeed { get; private set; } = 7f;
+    public float StalkingMaxSpeed { get; private set; } = 10f;
     
     [field: Tooltip("The max acceleration of the Aloe when she's stalking a player.")]
     [field: Range(0.01f, 500f)]
