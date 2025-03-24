@@ -498,12 +498,13 @@ namespace Biodiversity.Creatures.MicBird
 
             if (!spawnDone) return;
 
-            GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 10f, null, null);
+            GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 20f, null, null);
             if (maybeRadar)
             {
                 if (maybeRadar.GetComponent<GrabbableObject>().GetType() == typeof(RadarBoosterItem))
                 {
-                    if (!maybeRadar.GetComponent<RadarBoosterItem>().isInShipRoom)
+                    RadarBoosterItem radar = maybeRadar.GetComponent<RadarBoosterItem>();
+                    if (!radar.isInShipRoom && !radar.isPocketed)
                     {
                         SyncRadarBoosterClientRpc(new NetworkObjectReference(maybeRadar.GetComponent<NetworkObject>()));
                         SwitchToBehaviourClientRpc((int)State.RADARBOOSTER);
@@ -750,7 +751,7 @@ namespace Biodiversity.Creatures.MicBird
                     agent.stoppingDistance = MicBirdHandler.Instance.Config.RadarBoosterStopDistance;
                     agent.SetDestination(distractedRadarBoosterItem.transform.position);
 
-                    if (!CheckLineOfSightForPosition(distractedRadarBoosterItem.transform.position, 60f, 40, 10f) || distractedRadarBoosterItem.isInShipRoom)
+                    if (!CheckLineOfSightForPosition(distractedRadarBoosterItem.transform.position, 60f, 40, 20f) || distractedRadarBoosterItem.isInShipRoom || distractedRadarBoosterItem.isPocketed)
                     {
                         setDestCalledAlready = false;
                         SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
