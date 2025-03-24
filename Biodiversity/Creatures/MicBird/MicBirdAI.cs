@@ -498,13 +498,16 @@ namespace Biodiversity.Creatures.MicBird
 
             if (!spawnDone) return;
 
-            GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 5f, null, null);
+            GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 10f, null, null);
             if (maybeRadar)
             {
                 if (maybeRadar.GetComponent<GrabbableObject>().GetType() == typeof(RadarBoosterItem))
                 {
-                    SyncRadarBoosterClientRpc(new NetworkObjectReference(maybeRadar.GetComponent<NetworkObject>()));
-                    SwitchToBehaviourClientRpc((int)State.RADARBOOSTER);
+                    if (!maybeRadar.GetComponent<RadarBoosterItem>().isInShipRoom)
+                    {
+                        SyncRadarBoosterClientRpc(new NetworkObjectReference(maybeRadar.GetComponent<NetworkObject>()));
+                        SwitchToBehaviourClientRpc((int)State.RADARBOOSTER);
+                    }
                 }
             }
 
@@ -735,7 +738,7 @@ namespace Biodiversity.Creatures.MicBird
                         creatureAnimator.SetInteger("ID", 1);
                     }
                     else {
-                        creatureAnimator.SetInteger("ID", 5);
+                        creatureAnimator.SetInteger("ID", 4);
                     }
 
                     if (agent.speed != 3)
@@ -747,7 +750,7 @@ namespace Biodiversity.Creatures.MicBird
                     agent.stoppingDistance = MicBirdHandler.Instance.Config.RadarBoosterStopDistance;
                     agent.SetDestination(distractedRadarBoosterItem.transform.position);
 
-                    if (!CheckLineOfSightForPosition(distractedRadarBoosterItem.transform.position, 60f, 40, 5f))
+                    if (!CheckLineOfSightForPosition(distractedRadarBoosterItem.transform.position, 60f, 40, 10f) || distractedRadarBoosterItem.isInShipRoom)
                     {
                         setDestCalledAlready = false;
                         SwitchToBehaviourClientRpc((int)State.GOTOSHIP);
@@ -760,6 +763,8 @@ namespace Biodiversity.Creatures.MicBird
                         TurnRadarBoosterOnClientRpc();
 
                         PlayMalfunctionSoundClientRpc(3);
+
+                        creatureAnimator.SetTrigger("Dance");
 
                         if (Random.Range(0, 2) == 0)
                         {
