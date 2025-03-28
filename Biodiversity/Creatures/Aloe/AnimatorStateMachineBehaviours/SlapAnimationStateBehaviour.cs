@@ -2,7 +2,7 @@
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
-internal class SlapAnimationStateBehaviour : BaseStateMachineBehaviour
+internal class SlapAnimationStateBehaviour : AloeStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {

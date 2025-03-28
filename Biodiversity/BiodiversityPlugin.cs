@@ -12,7 +12,7 @@ using System.Linq;
 using System.Reflection;
 using Biodiversity.Creatures;
 using Biodiversity.Util.Attributes;
-using Biodiversity.Util.Types;
+using Biodiversity.Creatures.StateMachine;
 using UnityEngine;
 using HarmonyPatchType = HarmonyLib.HarmonyPatchType;
 

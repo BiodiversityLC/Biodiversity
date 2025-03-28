@@ -1,10 +1,9 @@
-﻿using Biodiversity.Creatures;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Util.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Biodiversity.Util.Types;
+namespace Biodiversity.Creatures.StateMachine;
 
 /// <summary>
 /// Represents a base state for managing AI behaviors in a state machine.

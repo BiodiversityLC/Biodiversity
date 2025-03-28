@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Biodiversity.Util.Types
+namespace Biodiversity.Creatures.StateMachine
 {
     //There are no mutable tuples in C# for some reason.
     public class Pair<T1, T2>

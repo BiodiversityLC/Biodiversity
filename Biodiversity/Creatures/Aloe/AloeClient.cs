@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 using Biodiversity.Util.Lang;
-using Biodiversity.Util.Types;
+using Biodiversity.Creatures.StateMachine;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using System.Diagnostics.CodeAnalysis;
@@ -842,7 +842,7 @@ public class AloeClient : MonoBehaviour
         for (int i = 0; i < behaviours.Length; i++)
         {
             StateMachineBehaviour behaviour = behaviours[i];
-            if (behaviour is BaseStateMachineBehaviour baseStateMachineBehaviour)
+            if (behaviour is AloeStateMachineBehaviour baseStateMachineBehaviour)
             {
                 baseStateMachineBehaviour.Initialize(netcodeController, aloeServerAI, this);
             }

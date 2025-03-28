@@ -1,6 +1,6 @@
 ﻿using Biodiversity.Patches;
 using Biodiversity.Util.Attributes;
-using Biodiversity.Util.Types;
+using Biodiversity.Creatures.StateMachine;
 using System;
 using System.Collections.Generic;
 using System.Reflection;

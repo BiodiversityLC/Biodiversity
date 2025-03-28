@@ -2,7 +2,7 @@
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
-internal class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
+internal class SpawnAnimationStateBehaviour : AloeStateMachineBehaviour
 {
     private static readonly int Spawning = Animator.StringToHash("Spawning");
 
@@ -10,6 +10,6 @@ internal class SpawnAnimationStateBehaviour : BaseStateMachineBehaviour
     {
         animator.SetBool(Spawning, false);
         BiodiversityPlugin.LogVerbose("Spawn animation complete.");
-        if (AloeServerAIInstance.IsServer) AloeServerAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.Roaming);
+        if (AloeServerAIInstance.IsServer) AloeServerAIInstance.OnSpawnAnimationComplete();
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Biodiversity.Util.Types;
+namespace Biodiversity.Creatures.StateMachine;
 
 /// <summary>
 /// Provides a mechanism to cache the result of a function and retrieve it efficiently on subsequent accesses.

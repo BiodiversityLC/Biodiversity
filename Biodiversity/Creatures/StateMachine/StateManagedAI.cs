@@ -1,9 +1,10 @@
 ﻿using Biodiversity.Util.Attributes;
-using Biodiversity.Util.Types;
+using Biodiversity.Creatures.StateMachine;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Unity.Netcode;
+using UnityEngine;
 
 namespace Biodiversity.Creatures;
 
@@ -39,6 +40,16 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// </summary>
     private readonly Dictionary<TState, BehaviourState<TState, TEnemyAI>> _stateDictionary = new();
 
+    /// <summary>
+    /// A dictionary containing arrays of <see cref="AudioClip"/>s, indexed by category name.
+    /// </summary>
+    protected Dictionary<string, AudioClip[]> AudioClips { get; set; } = new();
+    
+    /// <summary>
+    /// A dictionary containing <see cref="AudioSource"/> components, indexed by category name.
+    /// </summary>
+    protected Dictionary<string, AudioSource> AudioSources { get; set; } = new();
+    
     public override void Start()
     {
         base.Start();
@@ -255,6 +266,160 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         {
             LogError($"State {newState} was not found in the StateDictionary. This should not happen.");
         }
+    }
+    
+    /// <summary>
+    /// Requests the server to play a specific category of audio clip on a designated <see cref="UnityEngine.AudioSource"/>.
+    /// It will randomly select an audio clip from the array of clips assigned to that particular audio  .
+    /// This method ensures that the selected audio clip is synchronized across all clients.
+    /// </summary>
+    /// <param name="audioClipType">
+    /// A string identifier representing the type/category of the audio clip to be played 
+    /// (e.g., "Stun", "Laugh", "Ambient").
+    /// </param>
+    /// <param name="audioSourceType">
+    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played 
+    /// (e.g., "CreatureVoice", "CreatureSFX", "Footsteps").
+    /// </param>
+    /// <param name="interrupt">
+    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted 
+    /// before playing the new audio clip.
+    /// </param>
+    /// <param name="audibleInWalkieTalkie">
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// to players using walkie-talkies.
+    /// </param>
+    /// <param name="audibleByEnemies">
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// actions.
+    /// </param>
+    /// <param name="slightlyVaryPitch">
+    /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
+    /// </param>
+    [ServerRpc]
+    internal void PlayRandomAudioClipTypeServerRpc(
+        string audioClipType,
+        string audioSourceType,
+        bool interrupt = false,
+        bool audibleInWalkieTalkie = true,
+        bool audibleByEnemies = false,
+        bool slightlyVaryPitch = false)
+    {
+        // Validate audio clip type
+        if (!AudioClips.TryGetValue(audioClipType, out AudioClip[] clipArr))
+        {
+            LogError($"Audio Clip Type '{audioClipType}' not defined for {GetType().Name}.");
+            return;
+        }
+
+        int numberOfClips = clipArr.Length;
+
+        if (numberOfClips == 0)
+        {
+            LogError($"No audio clips available for type '{audioClipType}' in {GetType().Name}.");
+            return;
+        }
+
+        // Validate audio source type
+        if (!AudioSources.ContainsKey(audioSourceType))
+        {
+            LogError($"Audio Source Type '{audioSourceType}' not defined for {GetType().Name}.");
+            return;
+        }
+
+        // Select a random clip index
+        int clipIndex = UnityEngine.Random.Range(0, numberOfClips);
+        PlayAudioClipTypeClientRpc(audioClipType, audioSourceType, clipIndex, interrupt, audibleInWalkieTalkie,
+            audibleByEnemies, slightlyVaryPitch);
+    }
+
+    /// <summary>
+    /// Plays the selected audio clip on the specified <see cref="UnityEngine.AudioSource"/> across all clients.
+    /// This method is invoked by the server to ensure synchronized audio playback.
+    /// </summary>
+    /// <param name="audioClipType">
+    /// A string identifier representing the type/category of the audio clip to be played 
+    /// (e.g., "Stun", "Chase", "Ambient").
+    /// </param>
+    /// <param name="audioSourceType">
+    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played 
+    /// (e.g., "CreatureVoice", "CreatureSfx", "Footsteps").
+    /// </param>
+    /// <param name="clipIndex">
+    /// The index of the <see cref="AudioClip"/> within the array corresponding to <paramref name="audioClipType"/> 
+    /// that should be played.
+    /// </param>
+    /// <param name="interrupt">
+    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted 
+    /// before playing the new audio clip.
+    /// </param>
+    /// <param name="audibleInWalkieTalkie">
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// to players using walkie-talkies.
+    /// </param>
+    /// <param name="audibleByEnemies">
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// actions.
+    /// </param>
+    /// <param name="slightlyVaryPitch">
+    /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
+    /// </param>
+    [ClientRpc]
+    private void PlayAudioClipTypeClientRpc(
+        string audioClipType,
+        string audioSourceType,
+        int clipIndex,
+        bool interrupt = false,
+        bool audibleInWalkieTalkie = true,
+        bool audibleByEnemies = false,
+        bool slightlyVaryPitch = false)
+    {
+        // Validate audio clip type
+        if (!AudioClips.ContainsKey(audioClipType))
+        {
+            LogError($"Audio Clip Type '{audioClipType}' not defined on client for {GetType().Name}.");
+            return;
+        }
+
+        // Validate audio source type
+        if (!AudioSources.ContainsKey(audioSourceType))
+        {
+            LogError($"Audio Source Type '{audioSourceType}' not defined on client for {GetType().Name}.");
+            return;
+        }
+
+        AudioClip[] clips = AudioClips[audioClipType];
+        if (clipIndex < 0 || clipIndex >= clips.Length)
+        {
+            LogError($"Invalid clip index {clipIndex} for type '{audioClipType}' in {GetType().Name}.");
+            return;
+        }
+
+        AudioClip clipToPlay = clips[clipIndex];
+        if (clipToPlay == null)
+        {
+            LogError($"Audio clip at index {clipIndex} for type '{audioClipType}' is null in {GetType().Name}.");
+            return;
+        }
+
+        AudioSource selectedAudioSource = AudioSources[audioSourceType];
+        if (selectedAudioSource == null)
+        {
+            LogError($"Audio Source '{audioSourceType}' is null in {GetType().Name}.");
+            return;
+        }
+
+        LogDebug(
+            $"Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}' in {GetType().Name}.");
+
+        if (interrupt) selectedAudioSource.Stop();
+        if (slightlyVaryPitch) selectedAudioSource.pitch = UnityEngine.Random.Range(selectedAudioSource.pitch - 0.1f, selectedAudioSource.pitch + 0.1f);
+        
+        selectedAudioSource.PlayOneShot(clipToPlay);
+        
+        if (audibleInWalkieTalkie)
+            WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
+        if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
     }
 
     /// <summary>

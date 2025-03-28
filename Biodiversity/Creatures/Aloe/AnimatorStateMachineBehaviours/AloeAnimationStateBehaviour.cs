@@ -1,10 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using UnityEngine;
+﻿using Biodiversity.Util.Animation;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-internal class BaseStateMachineBehaviour : StateMachineBehaviour
+public class AloeStateMachineBehaviour : BaseAnimationStateBehaviour
 {
     protected AloeNetcodeController NetcodeController;
     protected AloeServerAI AloeServerAIInstance;
