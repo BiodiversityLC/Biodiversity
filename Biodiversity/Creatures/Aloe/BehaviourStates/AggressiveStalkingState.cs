@@ -21,7 +21,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
     {
         Transitions =
         [
-            new TransitionToAvoidingPlayer(EnemyAIInstance),
+            new TransitionToAvoidingPlayer(EnemyAIInstance, this),
             new TransitionToPassiveRoaming(EnemyAIInstance, this)
         ];
     }
@@ -110,14 +110,19 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
         }
     }
 
-    private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance)
+    private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance,
+        AggressiveStalkingState aggressiveStalkingState)
         : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
 
         internal override bool ShouldTransitionBeTaken()
         {
-            // Check if a player sees the aloe
+            // If the ForceGrabOnceInAnimation config is enabled and the Aloe is currently in her kidnap/grab animation, then we just don't transition to the avoiding player state.
+            if (aggressiveStalkingState._inGrabAnimation && AloeHandler.Instance.Config.ForceGrabOnceInAnimation)
+                return false;
+            
+            // Check if a player sees the Aloe
             _playerLookingAtAloe = BiodiverseAI.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
             return _playerLookingAtAloe != null;
         }

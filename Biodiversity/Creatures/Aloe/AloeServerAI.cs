@@ -349,7 +349,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         if (isEnemyDead) return;
         
         AloeStates currentAloeStateType = CurrentState.GetStateType();
-        if (currentAloeStateType is AloeStates.Dead || _takeDamageCooldown > 0) return;
+        if (_takeDamageCooldown > 0 || currentAloeStateType is AloeStates.Dead) return;
 
         PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.hitSfx.ToString(), "creatureVoice", false, true, false, true);
         enemyHP -= force;

@@ -158,7 +158,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         {
             Type type = types[i];
 
-            var creatureAttr = type.GetCustomAttribute<CreaturePatchAttribute>();
+            CreaturePatchAttribute creatureAttr = type.GetCustomAttribute<CreaturePatchAttribute>();
             if (creatureAttr != null)
             {
                 bool creatureEnabled = Config?.IsCreatureEnabled(creatureAttr.CreatureName) ?? true;

@@ -567,28 +567,28 @@ public abstract class BiodiverseAI : EnemyAI
 
     internal void LogInfo(object message)
     {
-        BiodiversityPlugin.Logger.LogInfo(() => $"{GetLogPrefix()} {message}");
+        BiodiversityPlugin.Logger.LogInfo($"{GetLogPrefix()} {message}");
     }
 
     internal void LogVerbose(object message)
     {
         if (BiodiversityPlugin.Config.VerboseLogging)
-            BiodiversityPlugin.Logger.LogDebug(() => $"{GetLogPrefix()} {message}");
+            BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
     }
 
     internal void LogDebug(object message)
     {
-        BiodiversityPlugin.Logger.LogDebug(() => $"{GetLogPrefix()} {message}");
+        BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
     }
 
     internal void LogError(object message)
     {
-        BiodiversityPlugin.Logger.LogError(() => $"{GetLogPrefix()} {message}");
+        BiodiversityPlugin.Logger.LogError($"{GetLogPrefix()} {message}");
     }
 
     internal void LogWarning(object message)
     {
-        BiodiversityPlugin.Logger.LogWarning(() => $"{GetLogPrefix()} {message}");
+        BiodiversityPlugin.Logger.LogWarning($"{GetLogPrefix()} {message}");
     }
 
     protected virtual string GetLogPrefix()

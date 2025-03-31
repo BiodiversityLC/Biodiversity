@@ -160,6 +160,15 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     #endregion
 
+    #region AlternativeBehaviours
+
+    [field: Header("Alternative Behaviours")]
+    
+    [field: Tooltip("If true, then the Aloe WILL NOT run away if looked at while she's in her kidnap animation.")]
+    public bool ForceGrabOnceInAnimation { get; private set; } = true;
+
+    #endregion
+
     #region AdvancedSettings
 
     [field: Header("Advanced Settings")]
@@ -182,5 +191,5 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     #endregion
 
-
+    
 }

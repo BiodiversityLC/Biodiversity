@@ -260,8 +260,9 @@ internal class AloeSharedData
             if (_insideAINodes.Count == 0)
             {
                 GameObject[] insideAINodes = GameObject.FindGameObjectsWithTag("AINode");
-                foreach (GameObject node in insideAINodes)
+                for (int i = 0; i < insideAINodes.Length; i++)
                 {
+                    GameObject node = insideAINodes[i];
                     _insideAINodes.Add(node);
                 }
             }
@@ -277,8 +278,9 @@ internal class AloeSharedData
             if (_outsideAINodes.Count == 0)
             {
                 GameObject[] outsideAINodes = GameObject.FindGameObjectsWithTag("OutsideAINode");
-                foreach (GameObject node in outsideAINodes)
+                for (int i = 0; i < outsideAINodes.Length; i++)
                 {
+                    GameObject node = outsideAINodes[i];
                     _outsideAINodes.Add(node);
                 }
             }
@@ -300,8 +302,9 @@ internal class AloeSharedData
                 brackenRoomTransform.position + new Vector3(-0.2f, 0f, -1.09f)
             ];
 
-            foreach (Vector3 node in nodes)
+            for (int i = 0; i < nodes.Count; i++)
             {
+                Vector3 node = nodes[i];
                 _brackenRoomAloeNodes.Add(new BrackenRoomAloeNode(node));
             }
         }
