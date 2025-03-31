@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Biodiversity.Creatures.StateMachine;
+namespace Biodiversity.Util.DataStructures;
 
 /// <summary>
 /// Provides a caching mechanism for storing a list of computed values.

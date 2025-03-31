@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types.Networking;
-using Biodiversity.Creatures.StateMachine;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System;
 using System.Reflection;

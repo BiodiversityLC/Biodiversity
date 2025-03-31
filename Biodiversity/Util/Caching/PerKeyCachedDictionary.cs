@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Biodiversity.Creatures.StateMachine;
+namespace Biodiversity.Util.DataStructures;
 
 /// <summary>
 /// Provides a caching mechanism for storing computed values associated with specific keys.

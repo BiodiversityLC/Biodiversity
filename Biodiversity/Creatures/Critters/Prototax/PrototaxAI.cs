@@ -30,8 +30,6 @@ public class PrototaxAI : StateManagedAI<PrototaxAI.PrototaxStates, PrototaxAI>
     internal float AgentMaxAcceleration;
     internal float AgentMaxSpeed;
     private float _takeDamageCooldown;
-    
-    protected override 
 
     internal void SpewAnimationComplete()
     {

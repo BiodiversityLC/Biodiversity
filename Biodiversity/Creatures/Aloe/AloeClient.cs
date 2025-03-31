@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
 using Biodiversity.Util.Lang;
-using Biodiversity.Creatures.StateMachine;
+using Biodiversity.Util.DataStructures;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using System.Diagnostics.CodeAnalysis;

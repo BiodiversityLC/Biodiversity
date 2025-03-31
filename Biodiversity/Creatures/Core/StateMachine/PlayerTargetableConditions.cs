@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Biodiversity.Creatures.StateMachine;
+namespace Biodiversity.Util.DataStructures;
 
 public class PlayerTargetableConditions
 {

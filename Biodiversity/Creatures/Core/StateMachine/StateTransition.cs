@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Biodiversity.Creatures;
+using System;
 
-namespace Biodiversity.Creatures.StateMachine;
+namespace Biodiversity.Util.DataStructures;
 
 /// <summary>
 /// Represents a transition between two states in an AI's state machine.
 /// This abstract class defines the structure for evaluating whether a transition should occur and what the next state should be.
 /// </summary>
 /// <typeparam name="TState">The type of the state, typically an enum representing different AI states.</typeparam>
-/// <typeparam name="TEnemyAI">The type of the AI that manages the states, typically a subclass of <see cref="StateManagedAI{TState, TEnemyAI}"/>.</typeparam>
+/// <typeparam name="TEnemyAI">The type of the AI that manages the states, typically a subclass of <see cref="StateManagedAI{TState,TEnemyAI}"/>.</typeparam>
 public abstract class StateTransition<TState, TEnemyAI>
     where TState : Enum
     where TEnemyAI : StateManagedAI<TState, TEnemyAI>

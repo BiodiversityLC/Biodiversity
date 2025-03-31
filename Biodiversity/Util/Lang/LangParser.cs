@@ -1,4 +1,4 @@
-﻿using Biodiversity.Creatures.StateMachine;
+﻿using Biodiversity.Util.DataStructures;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Collections.Generic;

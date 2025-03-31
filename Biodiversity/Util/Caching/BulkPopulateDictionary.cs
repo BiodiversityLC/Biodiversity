@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Biodiversity.Creatures.StateMachine;
+namespace Biodiversity.Util.DataStructures;
 
 /// <summary>
 /// A specialized dictionary that bulk populates key-value pairs on the first access to any key.

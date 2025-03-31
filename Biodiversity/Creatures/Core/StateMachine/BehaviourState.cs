@@ -1,16 +1,17 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Creatures;
+using Biodiversity.Util.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Biodiversity.Creatures.StateMachine;
+namespace Biodiversity.Util.DataStructures;
 
 /// <summary>
 /// Represents a base state for managing AI behaviors in a state machine.
 /// This is an abstract class that can be inherited to define specific states for an AI.
 /// </summary>
 /// <typeparam name="TState">The type of the state, typically an enum representing different AI states.</typeparam>
-/// <typeparam name="TEnemyAI">The type of the AI that manages the states, typically a subclass of <see cref="StateManagedAI{TState, TEnemyAI}"/>.</typeparam>
+/// <typeparam name="TEnemyAI">The type of the AI that manages the states, typically a subclass of <see cref="StateManagedAI{TState,TEnemyAI}"/>.</typeparam>
 public abstract class BehaviourState<TState, TEnemyAI>
     where TState : Enum
     where TEnemyAI : StateManagedAI<TState, TEnemyAI>

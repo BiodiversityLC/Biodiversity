@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Biodiversity.Creatures.StateMachine;
+namespace Biodiversity.Util.DataStructures;
 
 /// <summary>
 /// Represents an object that can hold a value of type <typeparamref name="T"/> or be null, with an indicator to check if the value is non-null.

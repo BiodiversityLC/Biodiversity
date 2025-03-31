@@ -1,4 +1,4 @@
-﻿using Biodiversity.Creatures.StateMachine;
+﻿using Biodiversity.Util.DataStructures;
 using System;
 using System.Collections;
 using Unity.Netcode;

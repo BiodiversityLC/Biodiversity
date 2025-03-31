@@ -1,5 +1,5 @@
 ﻿using Biodiversity.Util;
-using Biodiversity.Creatures.StateMachine;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;

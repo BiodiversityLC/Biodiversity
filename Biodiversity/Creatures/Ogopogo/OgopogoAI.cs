@@ -1,5 +1,5 @@
 ﻿using Biodiversity.Util.Scripts;
-using Biodiversity.Creatures.StateMachine;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using LethalLib.Modules;
 using System;

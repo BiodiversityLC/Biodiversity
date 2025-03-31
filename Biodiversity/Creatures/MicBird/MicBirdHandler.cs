@@ -1,7 +1,5 @@
-﻿using Biodiversity.Creatures.StateMachine;
-using System;
+﻿using Biodiversity.Util.DataStructures;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Biodiversity.Creatures.MicBird
 {

@@ -69,7 +69,6 @@
     <ItemGroup>
       <Folder Include="3rdParty\" />
       <Folder Include="Util\Scripts\" />
-      <Folder Include="Util\Types\" />
     </ItemGroup>
 
     <!-- Netcode Patcher Post-Build Event -->
