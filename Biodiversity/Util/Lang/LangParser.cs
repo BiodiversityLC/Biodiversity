@@ -1,5 +1,4 @@
-﻿using Biodiversity.Util.DataStructures;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
@@ -8,8 +7,8 @@ using System.Reflection;
 namespace Biodiversity.Util.Lang;
 internal static class LangParser
 {
-    internal static NullableObject<Dictionary<string, string>> Languages { get; private set; } = new();
-    private static NullableObject<Dictionary<string, object>> LoadedLanguage { get; set; } = new();
+    internal static Dictionary<string, string> Languages { get; private set; }
+    private static Dictionary<string, object> LoadedLanguage { get; set; }
 
     internal static void Init()
     {
@@ -20,11 +19,10 @@ internal static class LangParser
             BiodiversityPlugin.Logger.LogWarning($"Could not find {defsJsonFilename}, and therefore cannot do translations.");
             return;
         }
-        
         using StreamReader reader = new(stream);
         string result = reader.ReadToEnd();
 
-        Languages.Value = JsonConvert.DeserializeObject<Dictionary<string, string>>(result);
+        Languages = JsonConvert.DeserializeObject<Dictionary<string, string>>(result);
     }
 
     private static Dictionary<string, object> LoadLanguage(string id)
@@ -44,18 +42,18 @@ internal static class LangParser
 
     internal static void SetLanguage(string id)
     {
-        LoadedLanguage.Value = LoadLanguage(id);
+        LoadedLanguage = LoadLanguage(id);
     }
 
     internal static string GetTranslation(string translation)
     {
-        if (!LoadedLanguage.IsNotNull)
+        if (LoadedLanguage == null)
         {
             BiodiversityPlugin.Logger.LogDebug($"Cannot translate message due to translations not being loaded: {translation}");
             return GetTranslation("lang.missing").Replace("<translation_id>", translation);
         }
         
-        if (LoadedLanguage.Value.TryGetValue(translation, out object result))  return (string)result;
+        if (LoadedLanguage.TryGetValue(translation, out object result)) return (string)result;
         if (translation == "lang.missing") 
         {
             BiodiversityPlugin.Logger.LogError("LANG.MISSING IS MISSING!!!!!  THIS IS BAD!! VERY BAD!!");
@@ -67,13 +65,13 @@ internal static class LangParser
 
     internal static JArray GetTranslationSet(string translation) 
     {
-        if (!LoadedLanguage.IsNotNull)
+        if (LoadedLanguage == null)
         {
             BiodiversityPlugin.Logger.LogDebug($"Cannot translate message due to translations not being loaded: {translation}");
             return [GetTranslation("lang.missing").Replace("<translation_id>", translation)];
         }
         
-        if (LoadedLanguage.Value.TryGetValue(translation, out object result)) 
+        if (LoadedLanguage.TryGetValue(translation, out object result)) 
         {
             BiodiversityPlugin.Logger.LogInfo(result.GetType());
             return result as JArray;

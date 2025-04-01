@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using Biodiversity.Patches;
+using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -16,7 +17,11 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler>
         Assets.EnemyType.PowerLevel = Config.PowerLevel;
         Assets.EnemyType.MaxCount = Config.MaxAmount;
 
-        if (Assets.FakePlayerBodyRagdollPrefab == null)
+        if (Assets.FakePlayerBodyRagdollPrefab != null)
+        {
+            GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(Assets.FakePlayerBodyRagdollPrefab);
+        }
+        else
         {
             BiodiversityPlugin.Logger.LogError("FakePlayerBodyRagdollPrefab is null.");
         }

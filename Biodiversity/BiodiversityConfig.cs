@@ -19,12 +19,12 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
     [field: Tooltip("The stab is real.")]
     public bool StabIsReal { get; private set; } = false;
     
-    private readonly List<string> _enabledCreatures = [];
+    private readonly HashSet<string> _enabledCreatures = [];
 
     internal BiodiversityConfig(ConfigFile configFile) : base(configFile)
     {
-        AcceptableValueList<string> acceptableLanguages = LangParser.Languages.IsNotNull
-            ? new AcceptableValueList<string>(LangParser.Languages.Value.Keys.ToArray())
+        AcceptableValueList<string> acceptableLanguages = LangParser.Languages != null
+            ? new AcceptableValueList<string>(LangParser.Languages.Keys.ToArray())
             : new AcceptableValueList<string>("en", "es", "de", "ru");
 
         Language = configFile.Bind(
@@ -45,15 +45,6 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
 
     internal bool IsCreatureEnabled(string creatureName)
     {
-        for (int i = 0; i < _enabledCreatures.Count; i++)
-        {
-            string enabledCreature = _enabledCreatures[i];
-            if (enabledCreature == creatureName)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return _enabledCreatures.Contains(creatureName);
     }
 }

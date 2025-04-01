@@ -62,6 +62,7 @@ internal abstract class BiodiverseAIHandler<T> where T : BiodiverseAIHandler<T>
     {
         Dictionary<Levels.LevelTypes, int> spawnRateByLevelType = new();
         Dictionary<string, int> spawnRateByCustomLevelType = new();
+        
         foreach (string entry in configMoonRarity.Split(',').Select(s => s.Trim()))
         {
             string[] entryParts = entry.Split(':');

@@ -7,19 +7,27 @@ namespace Biodiversity.Patches;
 [HarmonyPatch(typeof(GameNetworkManager))]
 internal static class GameNetworkManagerPatch 
 {
-    internal static readonly List<GameObject> NetworkPrefabsToRegister = [];
+    internal static readonly HashSet<GameObject> NetworkPrefabsToRegister = [];
 
     [HarmonyPatch(nameof(GameNetworkManager.Start)), HarmonyPrefix]
     private static void AddNetworkPrefabs() 
     {
         BiodiversityPlugin.Instance.FinishLoading();
-        
-        foreach(GameObject prefab in NetworkPrefabsToRegister) 
+
+        if (NetworkPrefabsToRegister.Count > 0)
         {
-            NetworkManager.Singleton.AddNetworkPrefab(prefab);
-            BiodiversityPlugin.LogVerbose($"Registered {prefab.name} as a network prefab.");
+            BiodiversityPlugin.LogVerbose($"Registering {NetworkPrefabsToRegister.Count} network prefabs...");
+            
+            foreach (GameObject prefab in NetworkPrefabsToRegister)
+            {
+                if (prefab == null) continue;
+                NetworkManager.Singleton.AddNetworkPrefab(prefab);
+                BiodiversityPlugin.LogVerbose($"Registered {prefab.name} as a network prefab.");
+            }
+
+            BiodiversityPlugin.LogVerbose($"Successfully registered {NetworkPrefabsToRegister.Count} network prefabs.");
         }
-        
-        BiodiversityPlugin.LogVerbose($"Succesfully registered {NetworkPrefabsToRegister.Count} network prefabs.");
+
+        NetworkPrefabsToRegister.Clear();
     }
 }

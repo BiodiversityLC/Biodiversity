@@ -56,12 +56,19 @@ public class BiodiversityPlugin : BaseUnityPlugin
         LogVerbose("Creating Harmony instance...");
         _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
-        LogVerbose("Running Harmony patches...");
-        ApplyPatches();
+        LogVerbose("Applying essential Harmony patches...");
+        try
+        {
+            _harmony.CreateClassProcessor(typeof(Patches.GameNetworkManagerPatch)).Patch();
+            LogVerbose("Successfully patched GameNetworkManager.");
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"Failed to apply GameNetworkManagerPatch: {e}");
+        }
 
         LangParser.Init();
-
-        LogVerbose("Patching netcode...");
+        
         NetcodePatcher();
 
         LogVerbose("Setting up the language translations...");
@@ -92,23 +99,26 @@ public class BiodiversityPlugin : BaseUnityPlugin
     internal void FinishLoading()
     {
         Stopwatch timer = Stopwatch.StartNew();
+        LogVerbose("Starting FinishLoading...");
+        
         VanillaEnemies.Init();
-
+        
         // why does unity not let you preload video clips like audio clips.
         LogVerbose("Loading VideoClip bundle.");
         LoadBundle("biodiversity_video_clips");
-
-        LogVerbose("Registering the silly little creatures.");
+        
+        LogVerbose("Registering the silly little creatures and config stuff.");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType is { IsGenericType: true }
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
         ).ToList();
-
+        
+        int enabledCreatureCount = 0;
         for (int i = 0; i < creatureHandlers.Count; i++)
         {
             Type type = creatureHandlers[i];
             string creatureName = type.Name;
-            bool creatureEnabled = base.Config.Bind("Creatures", creatureName, true).Value;
+            bool creatureEnabled = base.Config.Bind("Creatures", creatureName, true, $"Enable/disable the {creatureName}").Value;
             
             if (!creatureEnabled)
             {
@@ -117,20 +127,29 @@ public class BiodiversityPlugin : BaseUnityPlugin
             }
             
             LogVerbose($"Creating {creatureName}");
-            type.GetConstructor([])?.Invoke([]);
-            
-            Config.AddEnabledCreature(creatureName.Replace("Handler", ""));
+            try
+            {
+                type.GetConstructor([])?.Invoke([]);
+                Config.AddEnabledCreature(creatureName);
+                enabledCreatureCount++;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError($"Failed to instantiate creature handler {creatureName}: {e}");
+            }
         }
-
-        LogVerbose($"Sucessfully setup {creatureHandlers.Count} silly creatures!");
+        
+        ApplyPatches();
+        
+        LogVerbose($"Sucessfully setup {enabledCreatureCount} silly creatures!");
         timer.Stop();
-
+        
         (string, string) quote = SillyQuotes[UnityEngine.Random.Range(0, SillyQuotes.Length)];
         Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
         LogVerbose(
             $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
     }
-
+    
     /// <summary>
     /// Applies Harmony patches dynamically based on attributes found in the current assembly.
     /// </summary>
@@ -151,27 +170,32 @@ public class BiodiversityPlugin : BaseUnityPlugin
         {
             modAssemblies.TryAdd(assembly.GetName().Name, assembly);
         }
-
+        
         Type[] types = Assembly.GetExecutingAssembly().GetTypes();
-
+        
         for (int i = 0; i < types.Length; i++)
         {
             Type type = types[i];
 
+            if (type == typeof(Patches.GameNetworkManagerPatch))
+                continue;
+            
             CreaturePatchAttribute creatureAttr = type.GetCustomAttribute<CreaturePatchAttribute>();
             if (creatureAttr != null)
             {
-                bool creatureEnabled = Config?.IsCreatureEnabled(creatureAttr.CreatureName) ?? true;
+                bool creatureEnabled = Config.IsCreatureEnabled(creatureAttr.CreatureName);
                 if (!creatureEnabled)
                 {
-                    LogVerbose($"Skipping patches for creature '{creatureAttr.CreatureName}' because it is disabled in config.");
+                    LogVerbose($"Skipping patches in type '{type.FullName}' for creature '{creatureAttr.CreatureName}' because its disabled in config.");
                     continue;
                 }
+
+                LogVerbose($"Patches in type '{type.FullName}' for creature '{creatureAttr.CreatureName}' are ENABLED.");
             }
             
             List<ModConditionalPatch> modConditionalAttrs =
                 type.GetCustomAttributes<ModConditionalPatch>(true).ToList();
-
+            
             if (modConditionalAttrs.Any())
             {
                 for (int j = 0; j < modConditionalAttrs.Count; j++)
@@ -182,17 +206,17 @@ public class BiodiversityPlugin : BaseUnityPlugin
                     string targetMethodName = modConditionalAttr.TargetMethodName;
                     string localPatchMethodName = modConditionalAttr.LocalPatchMethodName;
                     HarmonyPatchType patchType = modConditionalAttr.PatchType;
-
+                    
                     // Check if the required mod is installed; skip if not found
                     if (!modAssemblies.TryGetValue(assemblyName, out Assembly otherModAssembly))
                         continue;
-
+                    
                     LogVerbose(
                         $"Mod {assemblyName} is installed! Patching {targetClassName}.{targetMethodName} with {localPatchMethodName}");
-
+                    
                     // Get the target class; skip if null
                     Type targetClass;
-
+                    
                     try
                     {
                         targetClass = otherModAssembly.GetType(targetClassName);
@@ -282,7 +306,14 @@ public class BiodiversityPlugin : BaseUnityPlugin
                 object[] harmonyPatchAttrs = type.GetCustomAttributes(typeof(HarmonyPatch), false);
                 if (harmonyPatchAttrs.Length > 0)
                 {
-                    _harmony.CreateClassProcessor(type).Patch();
+                    try
+                    {
+                        _harmony.CreateClassProcessor(type).Patch();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError($"Failed to apply Harmony patch(es) for type '{type.FullName}': {e}");
+                    }
                 }
             }
         }
@@ -290,18 +321,46 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     private static void NetcodePatcher()
     {
-        IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetLoadableTypes();
-        foreach (Type type in types)
+        try
         {
-            MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            for (int i = 0; i < methods.Length; i++)
+            IEnumerable<Type> types = Assembly.GetExecutingAssembly().GetLoadableTypes();
+            foreach (Type type in types)
             {
-                MethodInfo method = methods[i];
-                object[] attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                if (attributes.Length > 0)
+                MethodInfo[] methods =
+                    type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+
+                for (int i = 0; i < methods.Length; i++)
                 {
-                    method.Invoke(null, null);
+                    MethodInfo method = methods[i];
+
+                    if (!Attribute.IsDefined(method, typeof(RuntimeInitializeOnLoadMethodAttribute)))
+                        continue;
+
+                    // Needed because patching the network stuff in the generic StateManagedAI class produces an error
+                    if (method.ContainsGenericParameters)
+                    {
+                        Logger.LogWarning(
+                            $"Skipping generic method {type.FullName}.{method.Name} with [RuntimeInitializeOnLoadMethod] attribute.");
+                        continue;
+                    }
+
+                    try
+                    {
+                        method.Invoke(null, null);
+                    }
+                    catch (Exception invokeException)
+                    {
+                        Logger.LogError($"Error invoking method {type.FullName}.{method.Name}: {invokeException}");
+                    }
                 }
+            }
+        }
+        catch (ReflectionTypeLoadException reflectionException)
+        {
+            Logger.LogError($"[NetcodePatcher] Error loading types from assembly: {reflectionException}");
+            foreach (Exception loaderException in reflectionException.LoaderExceptions.Where(e => e != null))
+            {
+                Logger.LogError($"[NetcodePatcher] Loader Exception: {loaderException.Message}");
             }
         }
     }
