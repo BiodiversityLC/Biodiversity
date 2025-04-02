@@ -40,6 +40,7 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
 
     internal void AddEnabledCreature(string creatureName)
     {
+        BiodiversityPlugin.LogVerbose("Adding enabled creature: " + creatureName);
         _enabledCreatures.Add(creatureName);
     }
 

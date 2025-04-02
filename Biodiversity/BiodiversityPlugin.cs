@@ -120,11 +120,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
             string creatureName = type.Name;
 
             DisableEnemyByDefaultAttribute dis = type.GetCustomAttribute<DisableEnemyByDefaultAttribute>();
-            bool enableByDefault = false;
-            if (dis == null)
-            {
-                enableByDefault = true;
-            }
+            bool enableByDefault = dis == null;
 
             bool creatureEnabled = base.Config.Bind("Creatures", creatureName, enableByDefault, $"Enable/disable the {creatureName}").Value;
             
@@ -138,7 +134,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
             try
             {
                 type.GetConstructor([])?.Invoke([]);
-                Config.AddEnabledCreature(creatureName);
+                Config.AddEnabledCreature(creatureName.Replace("Handler", ""));
                 enabledCreatureCount++;
             }
             catch (Exception e)
@@ -381,10 +377,20 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
     internal static AssetBundle LoadBundle(string assetBundleName)
     {
-        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(
-            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
-            throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "AssetBundles",
-            assetBundleName));
+        AssetBundle bundle;
+        try
+        {
+            bundle = AssetBundle.LoadFromFile(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
+                throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "AssetBundles",
+                assetBundleName));
+        }
+        catch (Exception e)
+        {
+            Logger.LogWarning($"Could not load assetbundle: {e}");
+            return null;
+        }
+        
         
         LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
         return bundle;
