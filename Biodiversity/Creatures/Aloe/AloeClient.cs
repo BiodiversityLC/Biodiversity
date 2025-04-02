@@ -575,7 +575,7 @@ public class AloeClient : MonoBehaviour
         _targetPlayer.Value.inSpecialInteractAnimation = false;
         _targetPlayer.Value.inAnimationWithEnemy = null;
         _targetPlayer.Value.ResetZAndXRotation();
-            
+        
         // Make sure the player is on a navmesh
         Vector3 validPosition =
             RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
@@ -757,7 +757,7 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     public void OnAnimationEventPlayFootstepSfx()
     {
-        BiodiversityPlugin.LogVerbose($"Last footstep time: {_lastFootstepTime}");
+        if (_lastFootstepTime < 0.25f) return;
         _lastFootstepTime = 0;
         
         AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];

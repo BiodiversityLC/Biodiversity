@@ -1,6 +1,8 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Patches;
+using Biodiversity.Util.Attributes;
 using System;
 using System.Reflection;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Video;
 using Object = UnityEngine.Object;
@@ -51,6 +53,18 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
         for (int i = 0; i < assets.Length; i++)
         {
             Object asset = assets[i];
+
+            if (asset is GameObject gameObject)
+            {
+                if (gameObject.GetComponent<NetworkObject>() != null)
+                {
+                    if (GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject))
+                    {
+                        BiodiversityPlugin.LogVerbose($"Adding NetworkPrefab '{gameObject.name}' from bundle '{filePath}' to registration queue.");
+                    }
+                }
+            }
+            
             // if (asset is GameObject gameObject)
             // {
             //     if (gameObject.GetComponent<NetworkObject>() == null) continue;
@@ -66,7 +80,7 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
             
             if (asset is VideoClip videoClip)
             {
-                BiodiversityPlugin.Logger.LogError(
+                BiodiversityPlugin.Logger.LogWarning(
                     $"VideoClip: '{videoClip.name}' is being loaded from '{typeof(T).Name}' instead of the dedicated video clip bundle. It will not work correctly.");
             }
         }
