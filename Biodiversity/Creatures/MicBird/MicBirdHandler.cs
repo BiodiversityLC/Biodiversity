@@ -1,8 +1,10 @@
-﻿using Biodiversity.Util.DataStructures;
+﻿using Biodiversity.Util.Attributes;
+using Biodiversity.Util.DataStructures;
 using System.Collections.Generic;
 
 namespace Biodiversity.Creatures.MicBird
 {
+    [DisableEnemyByDefault]
     internal class MicBirdHandler : BiodiverseAIHandler<MicBirdHandler>
     {
         internal MicBirdAssets Assets { get; private set; }

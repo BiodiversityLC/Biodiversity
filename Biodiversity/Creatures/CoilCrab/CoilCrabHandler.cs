@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.MicBird;
+using Biodiversity.Util.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -7,6 +8,7 @@ using UnityEngine.ProBuilder;
 
 namespace Biodiversity.Creatures.CoilCrab
 {
+    [DisableEnemyByDefault]
     internal class CoilCrabHandler : BiodiverseAIHandler<CoilCrabHandler>
     {
         internal CoilCrabAssets Assets { get; private set; }

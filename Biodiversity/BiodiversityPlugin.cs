@@ -118,7 +118,15 @@ public class BiodiversityPlugin : BaseUnityPlugin
         {
             Type type = creatureHandlers[i];
             string creatureName = type.Name;
-            bool creatureEnabled = base.Config.Bind("Creatures", creatureName, true, $"Enable/disable the {creatureName}").Value;
+
+            DisableEnemyByDefaultAttribute dis = type.GetCustomAttribute<DisableEnemyByDefaultAttribute>();
+            bool enableByDefault = false;
+            if (dis == null)
+            {
+                enableByDefault = true;
+            }
+
+            bool creatureEnabled = base.Config.Bind("Creatures", creatureName, enableByDefault, $"Enable/disable the {creatureName}").Value;
             
             if (!creatureEnabled)
             {

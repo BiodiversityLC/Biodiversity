@@ -272,8 +272,14 @@ namespace Biodiversity.Creatures.Ogopogo
 
                 if (playerGrabbed.Value.playerClientId == GameNetworkManager.Instance.localPlayerController.playerClientId)
                 {
-                    playerGrabbed.Value.thisPlayerModelArms.enabled = false;
-                    playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = false;
+                    try
+                    {
+                        playerGrabbed.Value.thisPlayerModelArms.enabled = false;
+                        playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = false;
+                    }
+                    catch {
+                        // Somehow players joined after the match
+                    }
                 }
 
                 /*
@@ -285,8 +291,13 @@ namespace Biodiversity.Creatures.Ogopogo
                 */
             } else
             {
-                GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
-                playerVisorRenderers[GameNetworkManager.Instance.localPlayerController.actualClientId].enabled = true;
+                try
+                {
+                    GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
+                    playerVisorRenderers[GameNetworkManager.Instance.localPlayerController.actualClientId].enabled = true;
+                } catch {
+                    // players joined after the match started
+                }
             }
         }
 
@@ -600,7 +611,7 @@ namespace Biodiversity.Creatures.Ogopogo
             if (RoundManager.Instance.currentDungeonType == 4 && mineshaftAudioTimer < 0)
             {
                 PlayVoiceClientRpc(3);
-                mineshaftAudioTimer = Random.Range(25, 36);
+                mineshaftAudioTimer = Random.Range(OgopogoHandler.Instance.Config.OgopogoAmbienceMin, OgopogoHandler.Instance.Config.OgopogoAmbienceMax);
             }
 
             creatureAnimator.SetBool(Stun, false);
