@@ -89,7 +89,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
 
         internal override void OnTransition()
         {
-            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
+            EnemyAIInstance.AvoidingPlayer.Set(_playerLookingAtAloe);
         }
     }
 

@@ -10,7 +10,7 @@ internal class DragPlayerAnimationStateBehaviour : AloeStateMachineBehaviour
         BiodiversityPlugin.LogVerbose("Grab player animation complete.");
         if (!AloeServerAIInstance.IsServer) return;
 
-        if (!AloeServerAIInstance.ActualTargetPlayer.IsNotNull ||
+        if (!AloeServerAIInstance.ActualTargetPlayer.HasValue ||
             PlayerUtil.IsPlayerDead(AloeServerAIInstance.ActualTargetPlayer.Value) ||
             !AloeServerAIInstance.ActualTargetPlayer.Value.isInsideFactory)
             AloeServerAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.Roaming);

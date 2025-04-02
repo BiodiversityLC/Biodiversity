@@ -1,9 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace Biodiversity.Util.DataStructures;
 
-internal struct CachedNullable<T>
+/// <summary>
+/// Represents a value of type <typeparamref name="T"/> that caches its non-default state.
+/// Optimized for scenarios where the validity state is checked frequently but the value is set less often.
+/// Use this struct to avoid repeated expensive checks, such as the overloaded '==' operator on UnityEngine.Object.
+/// </summary>
+/// <remarks>
+/// This is a struct to avoid heap allocations.
+/// When <typeparamref name="T"/> is a UnityEngine.Object, setting the Value performs the potentially expensive
+/// Unity lifetime check once. Subsequent checks read the cached boolean state.
+/// For value types, this behaves similarly to Nullable (T?), but caches the check explicitly.
+/// </remarks>
+/// <typeparam name="T">The type of the value being held.</typeparam>
+internal struct CachedNullable<T> : IEquatable<CachedNullable<T>>
 {
     private T _value;
     private bool _hasValue;
@@ -54,6 +67,17 @@ internal struct CachedNullable<T>
     }
     
     /// <summary>
+    /// Resets this instance to its default state (no value).
+    /// Equivalent to calling Set(default(T)).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset()
+    {
+        _value = default;
+        _hasValue = false;
+    }
+    
+    /// <summary>
     /// Gets the value if <see cref="HasValue"/> is true, otherwise returns default(T).
     /// </summary>
     /// <returns>The value if valid, otherwise default(T).</returns>
@@ -81,11 +105,7 @@ internal struct CachedNullable<T>
 
     public override bool Equals(object obj)
     {
-        if (obj is not CachedNullable<T> other) return false;
-        if (!_hasValue && !other._hasValue) return true;
-        if (_hasValue != other._hasValue) return false;
-        return EqualityComparer<T>.Default.Equals(_value, other._value);
-
+        return obj is CachedNullable<T> other && Equals(other);
     }
 
     public override int GetHashCode()
@@ -104,4 +124,12 @@ internal struct CachedNullable<T>
     public static bool operator !=(CachedNullable<T> left, T right) => !(left == right);
     public static bool operator ==(T left, CachedNullable<T> right) => right == left; // Reuse logic
     public static bool operator !=(T left, CachedNullable<T> right) => !(right == left);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool Equals(CachedNullable<T> other)
+    {
+        if (!_hasValue && !other._hasValue) return true;
+        if (_hasValue != other._hasValue) return false;
+        return EqualityComparer<T>.Default.Equals(_value, other._value);
+    }
 }

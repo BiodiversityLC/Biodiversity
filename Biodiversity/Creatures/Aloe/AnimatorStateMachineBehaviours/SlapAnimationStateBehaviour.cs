@@ -18,6 +18,6 @@ internal class SlapAnimationStateBehaviour : AloeStateMachineBehaviour
         AloeClientInstance.slapCollisionDetection.DisableSlap();
         if (!AloeServerAIInstance.IsServer) return;
         AloeServerAIInstance.InSlapAnimation = false;
-        AloeServerAIInstance.SlappingPlayer.Value = null;
+        AloeServerAIInstance.SlappingPlayer.Reset();
     }
 }

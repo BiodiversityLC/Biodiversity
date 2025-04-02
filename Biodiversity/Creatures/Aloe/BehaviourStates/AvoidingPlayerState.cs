@@ -13,7 +13,7 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 [State(AloeServerAI.AloeStates.AvoidingPlayer)]
 internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
 {
-    private readonly NullableObject<PlayerControllerB> _playerLookingAtAloe = new();
+    private CachedNullable<PlayerControllerB> _playerLookingAtAloe;
 
     private float _avoidPlayerIntervalTimer;
     private float _avoidPlayerTimerTotal;
@@ -62,7 +62,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         // Make the Aloe stay still until the spotted animation is finished
         if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
         {
-            if (EnemyAIInstance.AvoidingPlayer.IsNotNull)
+            if (EnemyAIInstance.AvoidingPlayer.HasValue)
             {
                 EnemyAIInstance.LookAtPosition(EnemyAIInstance.AvoidingPlayer.Value.transform.position);
             }
@@ -80,10 +80,10 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
             return;
 
-        _playerLookingAtAloe.Value = BiodiverseAI.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
-        if (_playerLookingAtAloe.IsNotNull)
+        _playerLookingAtAloe.Set(BiodiverseAI.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position));
+        if (_playerLookingAtAloe.HasValue)
         {
-            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe.Value;
+            EnemyAIInstance.AvoidingPlayer.Set(_playerLookingAtAloe.Value);
         }
 
         float waitTimer = 5f;
@@ -92,7 +92,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         _shouldTransitionToAttacking = false;
 
         BiodiverseAI.PathStatus pathStatus = BiodiverseAI.PathStatus.Unknown;
-        Transform farAwayNode = EnemyAIInstance.AvoidingPlayer.IsNotNull
+        Transform farAwayNode = EnemyAIInstance.AvoidingPlayer.HasValue
             ? BiodiverseAI.GetFarthestValidNodeFromPosition(
                 pathStatus: out pathStatus,
                 agent: EnemyAIInstance.agent,
@@ -118,7 +118,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         }
         else
         {
-            if (EnemyAIInstance.AvoidingPlayer.IsNotNull) _shouldTransitionToAttacking = true;
+            if (EnemyAIInstance.AvoidingPlayer.HasValue) _shouldTransitionToAttacking = true;
         }
 
         _avoidPlayerIntervalTimer = waitTimer;
@@ -127,7 +127,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
     internal override void OnStateExit()
     {
         base.OnStateExit();
-        EnemyAIInstance.AvoidingPlayer.Value = null;
+        EnemyAIInstance.AvoidingPlayer.Reset();
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
     }
 
@@ -152,7 +152,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
             
             return distanceToClosestPlayer > 35f &&
                    avoidingPlayerState._avoidPlayerTimerTotal >= 5f &&
-                   !avoidingPlayerState._playerLookingAtAloe.IsNotNull;
+                   !avoidingPlayerState._playerLookingAtAloe.HasValue;
         }
 
         internal override AloeServerAI.AloeStates NextState()
