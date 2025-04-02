@@ -114,7 +114,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     
     [field: Tooltip("The radius in meters the Aloe is allowed roam from her favourite spot.")]
     [field: Range(45f, 500f)]
-    public float RoamingRadius { get; private set; } = 50f;
+    public float RoamingRadius { get; private set; } = 25f;
     
     [field: Tooltip("The required health a player needs to be or lower for the Aloe to stalk them.")]
     [field: Range(1, 100)]
