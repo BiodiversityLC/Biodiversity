@@ -45,10 +45,10 @@ public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<Ogopo
 	public string OgopogoWanderDisable { get; private set; } = "VowLevel,Submersion,Gorgonzola,Natit,Bozoros,Phaedra";
 
 	[field: Tooltip("Ogopogo mineshaft ambient min timer.")]
-	public float OgopogoAmbienceMin { get; private set; } = 25;
+	public float OgopogoAmbienceMin { get; private set; } = 90;
 
     [field: Tooltip("Ogopogo mineshaft ambient max timer.")]
-    public float OgopogoAmbienceMax { get; private set; } = 36;
+    public float OgopogoAmbienceMax { get; private set; } = 600;
 
     [field: Tooltip("Spawn weight of the Vermin on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
 	public string VerminRarity { get; private set; } = "All:100";
