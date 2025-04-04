@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 
@@ -40,6 +41,28 @@ public class LeafyBoiAI : BiodiverseAI {
             if(_state == value) return;
             LogVerbose($"Updating state: {_state} -> {value}");
             _state = value;
+        }
+    }
+
+    enum SOUNDID
+    {
+        SCARED,
+        BARK
+    }
+
+    [ClientRpc]
+    public void PlaySFXClientRpc(int id, int rand)
+    {
+        switch (id)
+        {
+            case (int)(SOUNDID.SCARED):
+                creatureSFX.PlayOneShot(scaredSFX[rand]);
+                WalkieTalkie.TransmitOneShotAudio(creatureSFX, scaredSFX[rand]);
+                break;
+            case (int)(SOUNDID.BARK):
+                creatureSFX.PlayOneShot(randomBarkSFX[rand]);
+                WalkieTalkie.TransmitOneShotAudio(creatureSFX, randomBarkSFX[rand]);
+                break;
         }
     }
 
@@ -95,22 +118,23 @@ public class LeafyBoiAI : BiodiverseAI {
     public override void Update() 
     {
         base.Update();
+
+        timeUntilNextStepAudibleSound -= Time.deltaTime;
+        if (timeUntilNextStepAudibleSound < 0)
+        {
+            timeUntilNextStepAudibleSound = Random.Range(3f, 6f);
+            RoundManager.Instance.PlayAudibleNoise(transform.position);
+        }
+
+        if (!IsServer) return;
+
         timeSinceSeenPlayer += Time.deltaTime;
 
         timeUntilNextBarkSFX -= Time.deltaTime;
         if (timeUntilNextBarkSFX < 0) 
         {
             timeUntilNextBarkSFX = Random.Range(40f, 90f);
-            AudioClip clip = randomBarkSFX[Random.Range(0, randomBarkSFX.Length)];
-            creatureSFX.PlayOneShot(clip);
-            WalkieTalkie.TransmitOneShotAudio(creatureSFX, clip);
-            RoundManager.Instance.PlayAudibleNoise(transform.position);
-        }
-
-        timeUntilNextStepAudibleSound -= Time.deltaTime;
-        if (timeUntilNextStepAudibleSound < 0) 
-        {
-            timeUntilNextStepAudibleSound = Random.Range(3f, 6f);
+            PlaySFXClientRpc((int)SOUNDID.BARK, Random.Range(0, randomBarkSFX.Length));
             RoundManager.Instance.PlayAudibleNoise(transform.position);
         }
     }
@@ -137,10 +161,7 @@ public class LeafyBoiAI : BiodiverseAI {
             timeSinceSeenPlayer = 0;
 
             if (State == AIState.WANDERING) {
-                AudioClip clip = scaredSFX[Random.Range(0, scaredSFX.Length)];
-                LogVerbose($"playing scared clip: {clip.name}");
-                creatureSFX.PlayOneShot(clip);
-                WalkieTalkie.TransmitOneShotAudio(creatureSFX, clip);
+                PlaySFXClientRpc((int)SOUNDID.SCARED, Random.Range(0, scaredSFX.Length));
                 RoundManager.Instance.PlayAudibleNoise(transform.position);
             }
             
