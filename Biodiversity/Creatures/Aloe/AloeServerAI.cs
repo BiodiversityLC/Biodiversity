@@ -53,9 +53,9 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         Dead,
     }
 
-    internal readonly NullableObject<PlayerControllerB> ActualTargetPlayer = new();
-    internal readonly NullableObject<PlayerControllerB> AvoidingPlayer = new();
-    internal readonly NullableObject<PlayerControllerB> SlappingPlayer = new();
+    internal CachedNullable<PlayerControllerB> ActualTargetPlayer;
+    internal CachedNullable<PlayerControllerB> AvoidingPlayer;
+    internal CachedNullable<PlayerControllerB> SlappingPlayer;
     internal PlayerControllerB BackupTargetPlayer;
     
     internal Vector3 FavouriteSpot;
@@ -262,7 +262,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         const float turnSpeed = 5f;
 
         if (inCrushHeadAnimation) return;
-        if (InSlapAnimation && SlappingPlayer.IsNotNull)
+        if (InSlapAnimation && SlappingPlayer.HasValue)
         {
             LookAtPosition(SlappingPlayer.Value.transform.position);
         }
@@ -359,7 +359,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         {
             if (currentAloeStateType is AloeStates.Spawning) return;
 
-            NullableObject<PlayerControllerB> playerWhoHitMe = new(playerWhoHit);
+            CachedNullable<PlayerControllerB> playerWhoHitMe = new(playerWhoHit);
             
             StateData stateData = new();
             stateData.Add("overridePlaySpottedAnimation", true);
@@ -368,18 +368,18 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             {
                 case AloeStates.Roaming or AloeStates.AvoidingPlayer or AloeStates.PassiveStalking or AloeStates.AggressiveStalking:
                 {
-                    if (playerWhoHitMe.IsNotNull)
+                    if (playerWhoHitMe.HasValue)
                     {
                         if (currentAloeStateType is not (AloeStates.Roaming or AloeStates.AvoidingPlayer) || enemyHP <= AloeHandler.Instance.Config.Health / 2)
                         {
                             LogVerbose("Triggering bitch slap.");
-                            SlappingPlayer.Value = playerWhoHitMe.Value;
+                            SlappingPlayer.Set(playerWhoHitMe.Value);
                             netcodeController.SetAnimationTriggerClientRpc(BioId, AloeClient.Slap);
                         }
                         else 
                             LogVerbose($"Did not trigger bitch slap. Current health: {enemyHP}. Health needed to trigger slap: {AloeHandler.Instance.Config.Health / 2}");
                         
-                        AvoidingPlayer.Value = playerWhoHitMe.Value;
+                        AvoidingPlayer.Set(playerWhoHitMe.Value);
                         stateData.Add("hitByEnemy", false);
                     }
                     else
@@ -395,7 +395,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
                 
                 case AloeStates.KidnappingPlayer or AloeStates.HealingPlayer or AloeStates.CuddlingPlayer:
                 {
-                    if (playerWhoHitMe.IsNotNull)
+                    if (playerWhoHitMe.HasValue)
                     {
                         SetTargetPlayerInCaptivity(false);
                         BackupTargetPlayer = ActualTargetPlayer.Value;
@@ -416,7 +416,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
 
                 case AloeStates.ChasingEscapedPlayer:
                 {
-                    if (playerWhoHitMe.IsNotNull)
+                    if (playerWhoHitMe.HasValue)
                     {
                         BackupTargetPlayer = ActualTargetPlayer.Value;
                         netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
@@ -435,7 +435,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
                 
                 case AloeStates.AttackingPlayer:
                 {
-                    if (playerWhoHitMe.IsNotNull && ActualTargetPlayer.Value != playerWhoHitMe.Value)
+                    if (playerWhoHitMe.HasValue && ActualTargetPlayer.Value != playerWhoHitMe.Value)
                     {
                         netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
                     }
@@ -484,12 +484,13 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         StateData stateData = new();
         stateData.Add("overridePlaySpottedAnimation", true);
         
-        NullableObject<PlayerControllerB> stunnedByPlayer2 = new(setStunnedByPlayer);
+        CachedNullable<PlayerControllerB> stunnedByPlayer2 = new(setStunnedByPlayer);
         switch (currentAloeState)
         { 
             case AloeStates.Spawning or AloeStates.Roaming or AloeStates.PassiveStalking or AloeStates.AggressiveStalking:
             {
-                if (stunnedByPlayer2.IsNotNull) AvoidingPlayer.Value = stunnedByPlayer2.Value;
+                if (stunnedByPlayer2.HasValue)
+                    AvoidingPlayer.Set(stunnedByPlayer2.Value);
                 
                 SwitchBehaviourState(AloeStates.AvoidingPlayer, initData: stateData);
                 break;
@@ -498,7 +499,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             case AloeStates.KidnappingPlayer or AloeStates.HealingPlayer or AloeStates.CuddlingPlayer:
             {
                 SetTargetPlayerInCaptivity(false);
-                if (stunnedByPlayer2.IsNotNull)
+                if (stunnedByPlayer2.HasValue)
                 {
                     BackupTargetPlayer = ActualTargetPlayer.Value;
                     netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
@@ -506,7 +507,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
                 }
                 else
                 {
-                    AvoidingPlayer.Value = null;
+                    AvoidingPlayer.Reset();
                     SwitchBehaviourState(AloeStates.AvoidingPlayer, initData: stateData);
                 }
                 
@@ -515,7 +516,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             
             case AloeStates.AttackingPlayer:
             {
-                if (!stunnedByPlayer2.IsNotNull) break;
+                if (!stunnedByPlayer2.HasValue) break;
 
                 if (ActualTargetPlayer.Value != setStunnedByPlayer)
                     netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
@@ -532,7 +533,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     public void SetTargetPlayerInCaptivity(bool setToInCaptivity)
     {
         if (!IsServer) return;
-        if (!ActualTargetPlayer.IsNotNull) return;
+        if (!ActualTargetPlayer.HasValue) return;
         if (setToInCaptivity)
         {
             if (!AloeSharedData.Instance.IsAloeKidnapBound(this))
@@ -553,7 +554,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     public void SetTargetPlayerEscapedByTeleportation()
     {
         if (!IsServer) return;
-        if (!ActualTargetPlayer.IsNotNull)
+        if (!ActualTargetPlayer.HasValue)
         {
             LogWarning($"{nameof(SetTargetPlayerEscapedByTeleportation)} called, but the target player object is null.");
             return;
@@ -684,10 +685,10 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        ActualTargetPlayer.Value = newValue == NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue];
+        ActualTargetPlayer.Set(newValue == NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue]);
         targetPlayer = ActualTargetPlayer.Value;
-        LogVerbose(ActualTargetPlayer.IsNotNull
-            ? $"Changed target player to {ActualTargetPlayer.Value?.playerUsername}."
+        LogVerbose(ActualTargetPlayer.HasValue
+            ? $"Changed target player to {ActualTargetPlayer.Value.playerUsername}."
             : "Changed target player to null.");
     }
 

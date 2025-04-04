@@ -43,7 +43,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
     internal override void AIIntervalBehaviour()
     {
         _isPlayerReachable = true;
-        if (!EnemyAIInstance.ActualTargetPlayer.IsNotNull) return;
+        if (!EnemyAIInstance.ActualTargetPlayer.HasValue) return;
 
         // See if the aloe can stare at the player
         if (Vector3.Distance(
@@ -114,7 +114,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
 
         internal override void OnTransition()
         {
-            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
+            EnemyAIInstance.AvoidingPlayer.Set(_playerLookingAtAloe);
             EnemyAIInstance.TimesFoundSneaking++;
 
             // Greatly increase fear level if the player turns around to see the Aloe starting at them

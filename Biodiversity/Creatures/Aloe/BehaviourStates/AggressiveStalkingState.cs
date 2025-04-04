@@ -134,7 +134,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
 
         internal override void OnTransition()
         {
-            EnemyAIInstance.AvoidingPlayer.Value = _playerLookingAtAloe;
+            EnemyAIInstance.AvoidingPlayer.Set(_playerLookingAtAloe);
             EnemyAIInstance.TimesFoundSneaking++;
         }
     }
