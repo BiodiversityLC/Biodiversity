@@ -1,23 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Biodiversity.Util.Attributes;
 
-namespace Biodiversity.Creatures.Beetler
+namespace Biodiversity.Creatures.Beetler;
+
+[DisableEnemyByDefault]
+internal class BeetlerHandler : BiodiverseAIHandler<BeetlerHandler>
 {
-    internal class BeetlerHandler : BiodiverseAIHandler<BeetlerHandler>
+    internal BeetlerAssets Assets { get; private set; }
+
+    internal BeetlerConfig Config { get; private set; }
+
+    public BeetlerHandler()
     {
-        internal BeetlerAssets Assets { get; private set; }
+        Assets = new BeetlerAssets("biodiversity_beetler");
 
-        internal BeetlerConfig Config { get; private set; }
+        Config = new BeetlerConfig(BiodiversityPlugin.Instance.CreateConfig("beetler"));
 
-        public BeetlerHandler()
-        {
-            Assets = new BeetlerAssets("biodiversity_beetler");
-
-            Config = new BeetlerConfig(BiodiversityPlugin.Instance.CreateConfig("beetler"));
-
-            // Register butlet
-            RegisterEnemyWithConfig(Config.EnableBeetler, "All:0", Assets.ButtletEnemy, Assets.ButtletTerminalNode, Assets.ButtletTerminalKeyword);
-        }
+        // Register butlet
+        RegisterEnemyWithConfig(Config.EnableBeetler, "All:0", Assets.ButtletEnemy, Assets.ButtletTerminalNode, Assets.ButtletTerminalKeyword);
     }
 }
