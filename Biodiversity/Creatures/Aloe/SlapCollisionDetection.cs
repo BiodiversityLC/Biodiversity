@@ -65,6 +65,11 @@ public class SlapCollisionDetection : MonoBehaviour
     private void SlapEnemyClientRpc(int enemyIndex)
     {
         _enemiesAlreadyHitBySlap.Add(enemyIndex);
+        
+        if (_playedSlapSfx) return;
+        _playedSlapSfx = true;
+        slapAudioSource.PlayOneShot(slapSfx);
+        WalkieTalkie.TransmitOneShotAudio(slapAudioSource, slapSfx, slapAudioSource.volume);
     }
 
     [ServerRpc(RequireOwnership = false)]

@@ -10,24 +10,6 @@ namespace Biodiversity.Creatures.Aloe;
 public class FakePlayerBodyRagdoll : NetworkBehaviour
 {
     /// <summary>
-    /// This enum is for the vanilla DeadPlayerInfo body parts variable
-    /// </summary>
-    public enum DeadPlayerBodyParts
-    {
-        Neck = 0,
-        LowerRightArm = 1,
-        LowerLeftArm = 2,
-        RightShin = 3,
-        LeftShin = 4,
-        Torso = 5,
-        Root = 6,
-        RightThigh = 7,
-        LeftThigh = 8,
-        UpperLeftArm = 9,
-        UpperRightArm = 10,
-    }
-    
-    /// <summary>
     /// The skinned mesh renderer for the body mesh.
     /// </summary>
     [Tooltip("The SkinnedMeshRenderer component used to render the body mesh.")]
@@ -108,6 +90,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     
     private readonly NetworkVariable<Vector3> _networkPosition = new();
     private readonly NetworkVariable<Quaternion> _networkRotation = new();
+    
+    private readonly Dictionary<string, BodyPart> _bodyPartMap = new();
 
     private void OnEnable()
     {
@@ -122,6 +106,12 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     private void Start()
     {
         SubscribeToNetworkEvents();
+
+        foreach (BodyPart bodyPart in bodyParts)
+        {
+            if (!string.IsNullOrEmpty(bodyPart.name))
+                _bodyPartMap.Add(bodyPart.name, bodyPart);
+        }
     }
     
     /// <summary>
@@ -321,13 +311,8 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     public void AttachLimbToTransform(string bodyPartName, Transform transformToAttachTo, bool retainVelocity = false)
     {
         if (!IsOwner) return;
-        
-        BodyPart bodyPart = bodyParts.Find(bp => bp.name == bodyPartName);
-        if (bodyPart == null)
-        {
-            // BiodiversityPlugin.LogVerbose($"Body part name {bodyPartName} does not exist, cannot attach limb.");
-            return;
-        }
+
+        if (!_bodyPartMap.TryGetValue(bodyPartName, out BodyPart bodyPart)) return;
         
         // If the given transform is null, detach the limb instead as a failsafe
         if (transformToAttachTo == null)
@@ -357,8 +342,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     {
         if (!IsOwner) return;
         
-        BodyPart bodyPart = bodyParts.Find(bp => bp.name == bodyPartName);
-        if (bodyPart == null) return;
+        if (!_bodyPartMap.TryGetValue(bodyPartName, out BodyPart bodyPart)) return;
 
         bodyPart.active = false;
         bodyPart.attachedTo = null;

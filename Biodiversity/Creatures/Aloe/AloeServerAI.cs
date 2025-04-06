@@ -693,8 +693,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
 
     #endregion
     
-    
-    
     /// <summary>
     /// Calculates the agents speed depending on whether the Aloe is stunned/dead/not dead
     /// </summary>
@@ -792,7 +790,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         }
 
         // Select a random clip index
-        int clipIndex = UnityEngine.Random.Range(0, clipArr.Length);
+        int clipIndex = Random.Range(0, clipArr.Length);
         PlayAudioClipTypeClientRpc(audioClipType, audioSourceType, clipIndex, interrupt, audibleInWalkieTalkie,
             audibleByEnemies, slightlyVaryPitch);
     }
@@ -826,7 +824,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     /// actions.
     /// </param>
     /// <param name="slightlyVaryPitch">
-    /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
+    /// Whether to slightly vary the pitch between the original pitch +/- 0.1.
     /// </param>
     [ClientRpc]
     private void PlayAudioClipTypeClientRpc(
@@ -864,17 +862,20 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             return;
         }
 
-        LogDebug(
+        LogVerbose(
             $"Client: Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}'.");
 
+        float oldPitch = selectedAudioSource.pitch;
+        
         if (interrupt && selectedAudioSource.isPlaying) selectedAudioSource.Stop();
-        if (slightlyVaryPitch) selectedAudioSource.pitch = UnityEngine.Random.Range(selectedAudioSource.pitch - 0.1f, selectedAudioSource.pitch + 0.1f);
+        if (slightlyVaryPitch) selectedAudioSource.pitch = Random.Range(oldPitch - 0.1f, oldPitch + 0.1f);
         
         selectedAudioSource.PlayOneShot(clipToPlay);
         
-        if (audibleInWalkieTalkie)
-            WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
+        if (audibleInWalkieTalkie) WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
         if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
+
+        if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
     }
 
     /// <summary>

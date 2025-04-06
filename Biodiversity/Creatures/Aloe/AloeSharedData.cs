@@ -42,10 +42,17 @@ internal class AloeSharedData
     }
 
     private readonly ConcurrentDictionary<string, ulong> _aloeBoundKidnaps = new();
-    private readonly ConcurrentDictionary<AloeServerAI, PlayerControllerB> _aloeBoundKidnapsServer = new();
+    private readonly ConcurrentDictionary<ulong, string> _kidnappedPlayerToAloe = new();
+    
     private readonly ConcurrentDictionary<string, ulong> _aloeBoundStalks = new();
+    private readonly ConcurrentDictionary<ulong, string> _stalkedPlayerToAloe = new();
+    
+    private readonly ConcurrentDictionary<AloeServerAI, PlayerControllerB> _aloeBoundKidnapsServer = new();
+    
     private readonly ConcurrentDictionary<ulong, int> _playersMaxHealth = new();
+    
     private readonly List<BrackenRoomAloeNode> _brackenRoomAloeNodes = [];
+    
     private readonly ConcurrentBag<GameObject> _insideAINodes = [];
     private readonly ConcurrentBag<GameObject> _outsideAINodes = [];
 
@@ -54,17 +61,7 @@ internal class AloeSharedData
     public IReadOnlyDictionary<string, ulong> AloeBoundKidnaps => _aloeBoundKidnaps;
     public IReadOnlyDictionary<string, ulong> AloeBoundStalks => _aloeBoundStalks;
     public IReadOnlyDictionary<ulong, int> PlayersMaxHealth => _playersMaxHealth;
-    
-    public IReadOnlyList<BrackenRoomAloeNode> BrackenRoomAloeNodes
-    {
-        get
-        {
-            lock (Padlock)
-            {
-                return new List<BrackenRoomAloeNode>(_brackenRoomAloeNodes);
-            }
-        }
-    }
+    public IReadOnlyList<BrackenRoomAloeNode> BrackenRoomAloeNodes => _brackenRoomAloeNodes.AsReadOnly();
     
     public void Bind(AloeServerAI serverAI, PlayerControllerB player, BindType bindType)
     {
@@ -99,8 +96,7 @@ internal class AloeSharedData
 
         return _aloeBoundKidnaps.ContainsKey(serverAI.BioId);
     }
-
-    [SuppressMessage("ReSharper", "LoopCanBeConvertedToQuery")]
+    
     public bool IsPlayerKidnapBound(PlayerControllerB player)
     {
         if (player == null)
@@ -109,12 +105,7 @@ internal class AloeSharedData
                 "The given player object instance is null, cannot determine whether they are kidnap bound.");
         }
         
-        foreach (KeyValuePair<string, ulong> keyValuePair in _aloeBoundKidnaps)
-        {
-            if (keyValuePair.Value == player.actualClientId) return true;
-        }
-
-        return false;
+        return _kidnappedPlayerToAloe.ContainsKey(player.actualClientId);
     }
     
     public bool IsPlayerStalkBound(PlayerControllerB player)
@@ -125,7 +116,7 @@ internal class AloeSharedData
                 "The given player object instance is null, cannot determine whether they are stalk bound.");
         }
 
-        return _aloeBoundStalks.Values.Any(p => p == player.actualClientId);
+        return _stalkedPlayerToAloe.ContainsKey(player.actualClientId);
     }
 
     private static void SendBindRequestToServer(string bioId, ulong playerId, BindType bindType)
@@ -166,7 +157,7 @@ internal class AloeSharedData
 
     private void RegisterMessageHandlers()
     {
-        BiodiversityPlugin.LogVerbose("Registering message handlers.");
+        BiodiversityPlugin.LogVerbose($"Registering message handlers for {nameof(AloeSharedData)}.");
         NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindMessage", HandleBindMessage);
         NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_UnbindMessage", HandleUnbindMessage);
         NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindRequest", HandleBindRequest);
@@ -195,9 +186,11 @@ internal class AloeSharedData
         {
             case BindType.Kidnap:
                 _aloeBoundKidnaps.TryAdd(message.BioId, message.PlayerId);
+                _kidnappedPlayerToAloe.TryAdd(message.PlayerId, message.BioId);
                 break;
             case BindType.Stalk:
                 _aloeBoundStalks.TryAdd(message.BioId, message.PlayerId);
+                _stalkedPlayerToAloe.TryAdd(message.PlayerId, message.BioId);
                 break;
         }
     }
@@ -210,10 +203,12 @@ internal class AloeSharedData
         switch (message.BindType)
         {
             case BindType.Kidnap:
-                _aloeBoundKidnaps.TryRemove(message.BioId, out _);
+                if (_aloeBoundKidnaps.TryRemove(message.BioId, out ulong playerId))
+                    _kidnappedPlayerToAloe.TryRemove(playerId, out _);
                 break;
             case BindType.Stalk:
-                _aloeBoundStalks.TryRemove(message.BioId, out _);
+                if (_aloeBoundStalks.TryRemove(message.BioId, out ulong stalkedPlayerId)) 
+                    _stalkedPlayerToAloe.TryRemove(stalkedPlayerId, out _);
                 break;
         }
     }
@@ -243,7 +238,8 @@ internal class AloeSharedData
     {
         if (player == null)
         {
-            throw new ArgumentNullException(nameof(player), "The provided player is null, cannot get max health.");
+            BiodiversityPlugin.Logger.LogWarning($"The provided player is null, we will assume that their max health is 100.");
+            return 100;
         }
         
         _playersMaxHealth.TryGetValue(player.actualClientId, out int maxHealth);
@@ -339,7 +335,9 @@ internal class AloeSharedData
         {
             _brackenRoomAloeNodes.Clear();
             _aloeBoundKidnaps.Clear();
+            _kidnappedPlayerToAloe.Clear();
             _aloeBoundStalks.Clear();
+            _stalkedPlayerToAloe.Clear();
             _playersMaxHealth.Clear();
             _insideAINodes.Clear();
             _outsideAINodes.Clear();
