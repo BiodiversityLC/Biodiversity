@@ -54,9 +54,11 @@ public abstract class BiodiverseAI : EnemyAI
     /// <returns>Returns <c>true</c> if there is at least one player within the specified distance.</returns>
     protected static bool IsPlayerCloseByToPosition(Vector3 position, float playerDetectionRange)
     {
-        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        PlayerControllerB[] players = StartOfRound.Instance.allPlayerScripts;
+        
+        for (int i = 0; i < players.Length; i++)
         {
-            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+            PlayerControllerB player = players[i];
             if (!PlayerUtil.IsPlayerDead(player) &&
                 Vector3.Distance(player.transform.position, position) <= playerDetectionRange) return true;
         }
@@ -71,16 +73,10 @@ public abstract class BiodiverseAI : EnemyAI
                (!agent.hasPath && agent.velocity.sqrMagnitude == 0f);
     }
 
-    protected static Vector3 GetRandomPositionOnNavMesh(Vector3 position, float radius = 10f)
+    protected static Vector3 GetRandomPositionOnNavMesh(Vector3 origin, float radius = 10f)
     {
-        return RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(position, radius, layerMask: -1,
-            randomSeed: new System.Random());
-    }
-
-    protected Vector3 GetRandomPositionNearPlayer(PlayerControllerB player, float radius = 15f, float minDistance = 0f)
-    {
-        return GetRandomPositionOnNavMesh(player.transform.position + Random.insideUnitSphere * radius +
-                                          Random.onUnitSphere * minDistance);
+        return RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(origin, radius, layerMask: -1,
+            randomSeed: new System.Random(Random.Range(int.MinValue, int.MaxValue)));
     }
 
     /// <summary>
@@ -110,58 +106,36 @@ public abstract class BiodiverseAI : EnemyAI
     }
 
     /// <summary>
-    /// Converts a <see cref="PathStatus"/> value to a boolean.
-    /// </summary>
-    /// <param name="status">The path status to convert.</param>
-    /// <returns>
-    /// <c>true</c> if the path status is <see cref="PathStatus.Valid"/> or <see cref="PathStatus.ValidButInLos"/>;
-    /// otherwise, <c>false</c>.
-    /// </returns>
-    internal static bool PathStatusToBool(PathStatus status)
-    {
-        return status is PathStatus.Valid or PathStatus.ValidButInLos;
-    }
-
-    /// <summary>
     /// Checks if the AI can construct a valid path to the given position.
     /// </summary>
     /// <param name="agent">The NavMeshAgent to construct the path for.</param>
-    /// <param name="position">The target position to path to.</param>
+    /// <param name="targetPosition">The target position to path to.</param>
     /// <param name="checkLineOfSight">Whether to check if any segment of the path is obstructed by line of sight.</param>
-    /// <param name="bufferDistance">The buffer distance within which the path is considered valid without further checks.</param>
+    /// <param name="nearEnoughDistance">The buffer distance within which the path is considered valid without further checks.</param>
     /// <returns>Returns true if the agent can path to the position within the buffer distance or if a valid path exists; otherwise, false.</returns>
     internal static PathStatus IsPathValid(
         NavMeshAgent agent,
-        Vector3 position,
+        Vector3 targetPosition,
         bool checkLineOfSight = false,
-        float bufferDistance = 0f)
+        float nearEnoughDistance = 0f)
     {
+        if (!agent.isOnNavMesh) return PathStatus.Invalid;
+        
         // Check if the desired location is within the buffer distance
-        if (Vector3.Distance(agent.transform.position, position) <= bufferDistance)
-        {
-            //LogDebug(logSource, $"Target position {position} is within buffer distance {bufferDistance}.");
+        if (Vector3.Distance(agent.transform.position, targetPosition) <= nearEnoughDistance)
             return PathStatus.Valid;
-        }
 
         NavMeshPath path = new();
 
-        // Calculate path to the target position
-        if (!agent.CalculatePath(position, path) || path.corners.Length == 0)
-        {
+        // Calculate path to the target position and check if it's complete before continuing
+        if (!agent.CalculatePath(targetPosition, path) || path.status != NavMeshPathStatus.PathComplete || path.corners.Length == 0)
             return PathStatus.Invalid;
-        }
-
-        // Check if the path is complete
-        if (path.status != NavMeshPathStatus.PathComplete)
-        {
-            return PathStatus.Invalid;
-        }
 
         // Check if any segment of the path is intersected by line of sight
         if (checkLineOfSight)
         {
             if (Vector3.Distance(path.corners[^1],
-                    RoundManager.Instance.GetNavMeshPosition(position, RoundManager.Instance.navHit, 2.7f)) > 1.5)
+                    RoundManager.Instance.GetNavMeshPosition(targetPosition, RoundManager.Instance.navHit, 2.7f)) > 1.5)
                 return PathStatus.ValidButInLos;
 
             for (int i = 1; i < path.corners.Length; ++i)
@@ -176,7 +150,7 @@ public abstract class BiodiverseAI : EnemyAI
             {
                 PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
                 if (PlayerUtil.IsPlayerDead(player)) continue;
-                if (player.HasLineOfSightToPosition(position, 70f, 80, 1)) return PathStatus.ValidButInLos;
+                if (player.HasLineOfSightToPosition(targetPosition, 70f, 80, 1)) return PathStatus.ValidButInLos;
             }
         }
 
@@ -275,78 +249,78 @@ public abstract class BiodiverseAI : EnemyAI
         bool allowFallbackIfBlocked,
         float bufferDistance)
     {
+        if (givenAiNodes == null)
+        {
+            pathStatus = PathStatus.Invalid;
+            return null;
+        }
+        
         HashSet<GameObject> ignoredNodesSet = CollectionPool<HashSet<GameObject>, GameObject>.Get();
         if (ignoredAINodes != null)
         {
-            for (int i=0; i < ignoredAINodes.Count; i++)
+            for (int i = 0; i < ignoredAINodes.Count; i++)
             {
                 ignoredNodesSet.Add(ignoredAINodes[i]);
             }
         }
         
-        List<GameObject> aiNodes = ListPool<GameObject>.Get();
+        List<GameObject> candidateNodes = ListPool<GameObject>.Get();
         foreach (GameObject node in givenAiNodes)
         {
             if (ignoredNodesSet.Contains(node)) continue;
             if (Vector3.Distance(position, node.transform.position) <= bufferDistance) continue;
-            aiNodes.Add(node);
+            candidateNodes.Add(node);
         }
         
         CollectionPool<HashSet<GameObject>, GameObject>.Release(ignoredNodesSet);
 
-        aiNodes.Sort((a, b) =>
+        if (candidateNodes.Count == 0)
         {
-            float distanceA = Vector3.Distance(position, a.transform.position);
-            float distanceB = Vector3.Distance(position, b.transform.position);
-            return findClosest ? distanceA.CompareTo(distanceB) : distanceB.CompareTo(distanceA);
-        });
-
-        try
-        {
-            for (int i = 0; i < aiNodes.Count; i++)
-            {
-                GameObject node = aiNodes[i];
-                pathStatus = IsPathValid(agent, node.transform.position, checkLineOfSight);
-                switch (pathStatus)
-                {
-                    case PathStatus.Valid:
-                        return node.transform;
-                
-                    case PathStatus.ValidButInLos when allowFallbackIfBlocked:
-                    {
-                        // Try to find another valid node without checking line of sight
-                        for (int j = 0; j < aiNodes.Count; j++)
-                        {
-                            GameObject fallbackNode = aiNodes[j];
-                            if (fallbackNode == node) continue;
-                    
-                            PathStatus fallbackStatus = IsPathValid(agent, fallbackNode.transform.position);
-                            if (fallbackStatus == PathStatus.Valid)
-                            {
-                                pathStatus = PathStatus.ValidButInLos;
-                                return fallbackNode.transform;
-                            }
-                        }
-
-                        break;
-                    }
-
-                    case PathStatus.ValidButInLos:
-                    case PathStatus.Invalid:
-                    case PathStatus.Unknown:
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(pathStatus), pathStatus, null);
-                }
-            }
-
+            ListPool<GameObject>.Release(candidateNodes);
             pathStatus = PathStatus.Invalid;
             return null;
         }
+
+        candidateNodes.Sort((a, b) =>
+        {
+            float squareDistanceA = (a.transform.position - position).sqrMagnitude;
+            float squareDistanceB = (b.transform.position - position).sqrMagnitude;
+            return findClosest ? squareDistanceA.CompareTo(squareDistanceB) : squareDistanceB.CompareTo(squareDistanceA);
+        });
+
+        Transform bestNode = null;
+        pathStatus = PathStatus.Invalid;
+
+        try
+        {
+            for (int i = 0; i < candidateNodes.Count; i++)
+            {
+                GameObject node = candidateNodes[i];
+                PathStatus currentPathStatus = IsPathValid(agent, node.transform.position, checkLineOfSight);
+
+                if (currentPathStatus == PathStatus.Valid)
+                {
+                    pathStatus = PathStatus.Valid;
+                    bestNode = node.transform;
+                    break;
+                }
+
+                if (currentPathStatus == PathStatus.ValidButInLos && allowFallbackIfBlocked)
+                {
+                    if (bestNode == null)
+                    {
+                        pathStatus = PathStatus.ValidButInLos;
+                        bestNode = node.transform;
+                        // Dont break here, keep searching for a better node and keep this one as a potential fallback
+                    }
+                }
+            }
+
+            return bestNode;
+        }
         finally
         {
-            ListPool<GameObject>.Release(aiNodes);
+            ListPool<GameObject>.Release(candidateNodes);
         }
     }
     
@@ -368,32 +342,34 @@ public abstract class BiodiverseAI : EnemyAI
     {
         PlayerControllerB closestPlayer = null;
         float closestDistance = float.MaxValue;
-        
-        foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
-        {
-            if (!PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
-            if (player == currentVisiblePlayer) continue;
 
-            if (!DoesEyeHaveLineOfSightToPosition(player.transform.position, eyeTransform, width, range)) continue;
+        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        {
+            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+            
+            if (player == currentVisiblePlayer) continue;
+            if (!PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
+            if (!DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eyeTransform, width, range)) continue;
+            
             float distance = Vector3.Distance(eyeTransform.position, player.transform.position);
             if (!(distance < closestDistance)) continue;
 
             closestPlayer = player;
             closestDistance = distance;
         }
-        
+
         // If the current visible player is still within the buffer distance, continue targeting it
         if (currentVisiblePlayer != null)
         {
             float currentTargetDistance = Vector3.Distance(eyeTransform.position, currentVisiblePlayer.transform.position);
             if (Mathf.Abs(closestDistance - currentTargetDistance) < bufferDistance)
             {
-                LogVerbose($"Current visible player {currentVisiblePlayer.name} remains within buffer distance");
+                //LogVerbose($"Current visible player {currentVisiblePlayer.name} remains within buffer distance");
                 return currentVisiblePlayer;
             }
         }
 
-        LogVerbose(closestPlayer != null ? $"New closest player: {closestPlayer.name}" : "No visible player found");
+        //LogVerbose(closestPlayer != null ? $"New closest player: {closestPlayer.name}" : "No visible player found");
         return closestPlayer;
     }
     
@@ -439,8 +415,7 @@ public abstract class BiodiverseAI : EnemyAI
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
             
-            if (isThereAPlayerToIgnore && ignorePlayer == player) continue;
-            if (PlayerUtil.IsPlayerDead(player) || !player.isInsideFactory) continue;
+            if (PlayerUtil.IsPlayerDead(player) || (isThereAPlayerToIgnore && player == ignorePlayer) || !player.isInsideFactory) continue;
             if (!player.HasLineOfSightToPosition(position, 60f)) continue;
             
             float distance = Vector3.Distance(position, player.transform.position);
@@ -506,18 +481,24 @@ public abstract class BiodiverseAI : EnemyAI
         int playerViewRange = 60)
     {
         PlayerControllerB[] allPlayers = StartOfRound.Instance.allPlayerScripts;
+        players.Clear();
         bool shouldIgnore = ignorePlayer != null;
         
         for (int i = 0; i < allPlayers.Length; i++)
         {
             PlayerControllerB player = allPlayers[i];
-            if (shouldIgnore && ignorePlayer == player) continue;
-            if (PlayerUtil.IsPlayerDead(player)) continue;
+            
+            if (PlayerUtil.IsPlayerDead(player) || (shouldIgnore && ignorePlayer == player)) continue;
             if (player.HasLineOfSightToPosition(position, playerViewWidth, playerViewRange))
                 players.Add(player);
         }
         return players;
     }
+    
+    // todo: review the functionality of this function, it seems a bit stupid
+    // PlayerUtil.IsPlayerDead is used to check if the inputted player is gucci, but then we use
+    // PlayerTargetableConditions.IsPlayerTargetable(player) later on in the function aswell??
+    // I think I made this for the Aloe's stalking pathing, and gave the function a dumbass name, so yea review it
     
     /// <summary>
     /// Detects whether the player is reachable by the AI via a path.
@@ -538,13 +519,7 @@ public abstract class BiodiverseAI : EnemyAI
         bool requireLineOfSight = false)
     {
         if (PlayerUtil.IsPlayerDead(player))
-        {
-            // Just a debugging check
-            if (BiodiversityPlugin.Config.VerboseLogging && player == null) 
-                LogVerbose("Player is not reachable because the player object is null.");
             return false;
-        }
-        
         
         float currentDistance = Vector3.Distance(transform.position, player.transform.position);
         float optimalDistance = currentDistance;
@@ -565,31 +540,19 @@ public abstract class BiodiverseAI : EnemyAI
 
     #region Logging
 
-    internal void LogInfo(object message)
-    {
-        BiodiversityPlugin.Logger.LogInfo($"{GetLogPrefix()} {message}");
-    }
+    internal void LogInfo(object message) => BiodiversityPlugin.Logger?.LogInfo($"{GetLogPrefix()} {message}");
 
     internal void LogVerbose(object message)
     {
-        if (BiodiversityPlugin.Config.VerboseLogging)
+        if (BiodiversityPlugin.Config?.VerboseLogging ?? false)
             BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
     }
 
-    internal void LogDebug(object message)
-    {
-        BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
-    }
+    internal void LogDebug(object message) => BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
 
-    internal void LogError(object message)
-    {
-        BiodiversityPlugin.Logger.LogError($"{GetLogPrefix()} {message}");
-    }
+    internal void LogError(object message) => BiodiversityPlugin.Logger.LogError($"{GetLogPrefix()} {message}");
 
-    internal void LogWarning(object message)
-    {
-        BiodiversityPlugin.Logger.LogWarning($"{GetLogPrefix()} {message}");
-    }
+    internal void LogWarning(object message) => BiodiversityPlugin.Logger.LogWarning($"{GetLogPrefix()} {message}");
 
     protected virtual string GetLogPrefix()
     {

@@ -11,8 +11,9 @@ namespace Biodiversity.Util.DataStructures;
 /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
 public class PerKeyCachedDictionary<TKey, TValue>
 {
-    protected readonly Dictionary<TKey, NullableObject<TValue>> Cache = new();
+    protected readonly Dictionary<TKey, CachedNullable<TValue>> Cache = new();
     private readonly Func<TKey, TValue> _computeValueFunction;
+    private readonly object _lock = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PerKeyCachedDictionary{TKey,TValue}"/> class with the specified function to compute values.
@@ -49,10 +50,10 @@ public class PerKeyCachedDictionary<TKey, TValue>
     {
         get
         {
-            if (Cache.TryGetValue(key, out NullableObject<TValue> cachedValue) && cachedValue.IsNotNull)
+            if (Cache.TryGetValue(key, out CachedNullable<TValue> cachedValue) && cachedValue.HasValue)
                 return cachedValue.Value;
             
-            cachedValue = new NullableObject<TValue>(_computeValueFunction(key));
+            cachedValue = new CachedNullable<TValue>(_computeValueFunction(key));
             Cache[key] = cachedValue;
 
             return cachedValue.Value;
@@ -69,8 +70,8 @@ public class PerKeyCachedDictionary<TKey, TValue>
     /// </remarks>
     public void Reset(TKey key)
     {
-        if (Cache.TryGetValue(key, out NullableObject<TValue> value))
-            value.Value = default;
+        if (Cache.TryGetValue(key, out CachedNullable<TValue> value))
+            value.Reset();
     }
 
     /// <summary>

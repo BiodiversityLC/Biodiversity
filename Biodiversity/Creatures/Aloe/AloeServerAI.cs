@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System;
@@ -102,7 +103,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         CollectAudioClipsAndSources();
         
         PlayerTargetableConditions.AddCondition(player => player.isInsideFactory);
-        PlayerTargetableConditions.AddCondition(player => !(player.sinkingValue >= 0.7300000190734863));
+        PlayerTargetableConditions.AddCondition(player => player.sinkingValue < 0.7300000190734863);
         PlayerTargetableConditions.AddCondition(player => !AloeSharedData.Instance.IsPlayerKidnapBound(player));
         
         LogVerbose("Aloe Spawned!");
@@ -152,10 +153,12 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     
     /// <summary>
     /// Collects all <see cref="AudioClip"/> and <see cref="AudioSource"/> fields defined on the object.
-    /// Then it populates the <see cref="AudioClips"/> and <see cref="AudioSources"/> dictionaries based on field names and values.
+    /// Then it populates the <see cref="AloeServerAI.AudioClips"/> and <see cref="AloeServerAI.AudioSources"/> dictionaries based on field names and values.
     /// </summary>
     private void CollectAudioClipsAndSources()
     {
+        LogVerbose($"In {nameof(CollectAudioClipsAndSources)}");
+        
         AudioClips = new Dictionary<string, AudioClip[]>();
         AudioSources = new Dictionary<string, AudioSource>();
 
@@ -174,9 +177,10 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
                 BindingFlags.NonPublic |
                 BindingFlags.Instance |
                 BindingFlags.DeclaredOnly)[i];
+            
             string key = field.Name;
             Type fieldType = field.FieldType;
-
+            
             LogVerbose($"Field name: {key}, field type: {fieldType}");
 
             // This code looks ugly because there are null checks inside each if statement.
@@ -351,7 +355,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         AloeStates currentAloeStateType = CurrentState.GetStateType();
         if (_takeDamageCooldown > 0 || currentAloeStateType is AloeStates.Dead) return;
 
-        PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.hitSfx.ToString(), "creatureVoice", false, true, false, true);
+        PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.hitSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(), false, true, false, true);
         enemyHP -= force;
         _takeDamageCooldown = 0.03f;
         
@@ -477,7 +481,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         if (currentAloeState is AloeStates.Dead) return;
 
         _inStunAnimation = true;
-        PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.stunSfx.ToString(), creatureVoice.ToString(), true, true, false, true);
+        PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.stunSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(), true, true, false, true);
         netcodeController.AnimationParamStunned.Value = true;
         netcodeController.AnimationParamHealing.Value = false;
 
@@ -642,12 +646,54 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         Quaternion lookRotation = Quaternion.LookRotation(direction);
         transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * rotationSpeed);
     }
+    
+    #region Animation State Callbacks
 
-    public void OnSpawnAnimationComplete()
+    public void OnSpawnAnimationStateExit()
     {
+        LogVerbose("Spawn animation complete.");
+        if (!IsServer) return;
         if (CurrentState.GetStateType() is AloeStates.Spawning)
             SwitchBehaviourState(AloeStates.Roaming);
     }
+
+    public void OnSpottedAnimationStateEnter()
+    {
+        if (!IsServer) return;
+        PlayRandomAudioClipTypeServerRpc(
+            AloeClient.AudioClipTypes.interruptedHealingSfx.ToString(),
+            AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(),
+            true, true, false, true);
+    }
+
+    public void OnSpottedAnimationStateExit()
+    {
+        LogVerbose("Spotted animation complete.");
+        if (!IsServer) return;
+        netcodeController.HasFinishedSpottedAnimation.Value = true;
+    }
+
+    public void OnDragPlayerAnimationStateEnter()
+    {
+        LogVerbose("Grab player animation complete.");
+        if (!IsServer) return;
+
+        if (!ActualTargetPlayer.HasValue ||
+            PlayerUtil.IsPlayerDead(ActualTargetPlayer.Value) ||
+            !ActualTargetPlayer.Value.isInsideFactory)
+        {
+            SwitchBehaviourState(AloeStates.Roaming);
+        }
+        else
+        {
+            GrabTargetPlayer(); 
+        }
+            
+    }
+
+    #endregion
+    
+    
     
     /// <summary>
     /// Calculates the agents speed depending on whether the Aloe is stunned/dead/not dead
@@ -690,6 +736,145 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         LogVerbose(ActualTargetPlayer.HasValue
             ? $"Changed target player to {ActualTargetPlayer.Value.playerUsername}."
             : "Changed target player to null.");
+    }
+    
+    /// <summary>
+    /// Requests the server to play a specific category of audio clip on a designated <see cref="UnityEngine.AudioSource"/>.
+    /// It will randomly select an audio clip from the array of clips assigned to that particular audio  .
+    /// This method ensures that the selected audio clip is synchronized across all clients.
+    /// </summary>
+    /// <param name="audioClipType">
+    /// A string identifier representing the type/category of the audio clip to be played 
+    /// (e.g., "Stun", "Laugh", "Ambient").
+    /// </param>
+    /// <param name="audioSourceType">
+    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played 
+    /// (e.g., "CreatureVoice", "CreatureSFX", "Footsteps").
+    /// </param>
+    /// <param name="interrupt">
+    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted 
+    /// before playing the new audio clip.
+    /// </param>
+    /// <param name="audibleInWalkieTalkie">
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// to players using walkie-talkies.
+    /// </param>
+    /// <param name="audibleByEnemies">
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// actions.
+    /// </param>
+    /// <param name="slightlyVaryPitch">
+    /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
+    /// </param>
+    [ServerRpc]
+    internal void PlayRandomAudioClipTypeServerRpc(
+        string audioClipType,
+        string audioSourceType,
+        bool interrupt = false,
+        bool audibleInWalkieTalkie = true,
+        bool audibleByEnemies = false,
+        bool slightlyVaryPitch = false)
+    {
+        // Validate audio clip type
+        if (!AudioClips.TryGetValue(audioClipType, out AudioClip[] clipArr) || clipArr == null || clipArr.Length == 0)
+        {
+            LogWarning($"Audio Clip Type '{audioClipType}' not found, is null, or empty.");
+            return;
+        }
+
+        // Validate audio source type
+        // is there a way around doing this null check every time?
+        // maybe wrap the audio sources in the dictionary with a cached nullable? 
+        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource source) || source == null)
+        {
+            LogWarning($"Audio Source Type '{audioSourceType}' not found or null.");
+            return;
+        }
+
+        // Select a random clip index
+        int clipIndex = UnityEngine.Random.Range(0, clipArr.Length);
+        PlayAudioClipTypeClientRpc(audioClipType, audioSourceType, clipIndex, interrupt, audibleInWalkieTalkie,
+            audibleByEnemies, slightlyVaryPitch);
+    }
+
+    /// <summary>
+    /// Plays the selected audio clip on the specified <see cref="UnityEngine.AudioSource"/> across all clients.
+    /// This method is invoked by the server to ensure synchronized audio playback.
+    /// </summary>
+    /// <param name="audioClipType">
+    /// A string identifier representing the type/category of the audio clip to be played 
+    /// (e.g., "Stun", "Chase", "Ambient").
+    /// </param>
+    /// <param name="audioSourceType">
+    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played 
+    /// (e.g., "CreatureVoice", "CreatureSfx", "Footsteps").
+    /// </param>
+    /// <param name="clipIndex">
+    /// The index of the <see cref="AudioClip"/> within the array corresponding to <paramref name="audioClipType"/> 
+    /// that should be played.
+    /// </param>
+    /// <param name="interrupt">
+    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted 
+    /// before playing the new audio clip.
+    /// </param>
+    /// <param name="audibleInWalkieTalkie">
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// to players using walkie-talkies.
+    /// </param>
+    /// <param name="audibleByEnemies">
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// actions.
+    /// </param>
+    /// <param name="slightlyVaryPitch">
+    /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
+    /// </param>
+    [ClientRpc]
+    private void PlayAudioClipTypeClientRpc(
+        string audioClipType,
+        string audioSourceType,
+        int clipIndex,
+        bool interrupt = false,
+        bool audibleInWalkieTalkie = true,
+        bool audibleByEnemies = false,
+        bool slightlyVaryPitch = false)
+    {
+        // Validate audio clip type
+        if (!AudioClips.TryGetValue(audioClipType, out AudioClip[] clipArr) || clipArr == null || clipArr.Length == 0)
+        {
+            LogWarning($"Client: Audio Clip Type '{audioClipType}' not found, is null, or empty.");
+            return;
+        }
+        
+        if (clipIndex < 0 || clipIndex >= clipArr.Length)
+        {
+            LogWarning($"Client: Invalid clip index {clipIndex} received for type '{audioClipType}' (Count: {clipArr.Length}).");
+            return;
+        }
+
+        AudioClip clipToPlay = clipArr[clipIndex];
+        if (clipToPlay == null)
+        {
+            LogWarning($"Client: Audio clip at index {clipIndex} for type '{audioClipType}' is null.");
+            return;
+        }
+        
+        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource selectedAudioSource) || selectedAudioSource == null)
+        {
+            LogWarning($"Client: Audio Source Type '{audioSourceType}' not found or is null.");
+            return;
+        }
+
+        LogDebug(
+            $"Client: Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}'.");
+
+        if (interrupt && selectedAudioSource.isPlaying) selectedAudioSource.Stop();
+        if (slightlyVaryPitch) selectedAudioSource.pitch = UnityEngine.Random.Range(selectedAudioSource.pitch - 0.1f, selectedAudioSource.pitch + 0.1f);
+        
+        selectedAudioSource.PlayOneShot(clipToPlay);
+        
+        if (audibleInWalkieTalkie)
+            WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
+        if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
     }
 
     /// <summary>

@@ -58,11 +58,12 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
         EnemyAIInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(EnemyAIInstance.BioId, fakePlayerBodyRagdollNetworkObject);
         EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(EnemyAIInstance.BioId, false);
         EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(EnemyAIInstance.BioId, 3f, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
-        EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.snatchAndDragSfx.ToString(), "creatureVoice", false, true, false, true);
+        EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
+            AloeClient.AudioClipTypes.snatchAndDragSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(), false, true, false, true);
 
         if (BiodiverseAI.IsPathValid(
                 agent: EnemyAIInstance.agent,
-                position: EnemyAIInstance.FavouriteSpot) != BiodiverseAI.PathStatus.Valid)
+                targetPosition: EnemyAIInstance.FavouriteSpot) != BiodiverseAI.PathStatus.Valid)
         {
             EnemyAIInstance.LogWarning("When initializing kidnapping, no path was found to the Aloe's favourite spot.");
             EnemyAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.HealingPlayer);

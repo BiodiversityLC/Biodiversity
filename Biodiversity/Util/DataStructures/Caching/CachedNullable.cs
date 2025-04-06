@@ -16,7 +16,7 @@ namespace Biodiversity.Util.DataStructures;
 /// For value types, this behaves similarly to Nullable (T?), but caches the check explicitly.
 /// </remarks>
 /// <typeparam name="T">The type of the value being held.</typeparam>
-internal struct CachedNullable<T> : IEquatable<CachedNullable<T>>
+public struct CachedNullable<T> : IEquatable<CachedNullable<T>>
 {
     private T _value;
     private bool _hasValue;

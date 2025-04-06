@@ -26,6 +26,18 @@ public class StateData
         return default;
     }
 
+    public bool TryGet<T>(string key, out T value)
+    {
+        if (_data.TryGetValue(key, out object objValue) && objValue is T typedValue)
+        {
+            value = typedValue;
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
     public bool ContainsKey(string key)
     {
         return _data.ContainsKey(key);

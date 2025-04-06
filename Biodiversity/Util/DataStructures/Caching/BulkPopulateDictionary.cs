@@ -11,7 +11,7 @@ namespace Biodiversity.Util.DataStructures;
 /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
 public class BulkPopulateDictionary<TKey, TValue> : PerKeyCachedDictionary<TKey, TValue>
 {
-    private readonly Action<Dictionary<TKey, NullableObject<TValue>>> _populateFunction;
+    private readonly Action<Dictionary<TKey, CachedNullable<TValue>>> _populateFunction;
     private bool _isPopulated;
 
     /// <summary>
@@ -26,7 +26,7 @@ public class BulkPopulateDictionary<TKey, TValue> : PerKeyCachedDictionary<TKey,
     /// <exception cref="ArgumentNullException">
     /// Thrown if <paramref name="populateFunction"/> is <c>null</c>.
     /// </exception>
-    public BulkPopulateDictionary(Action<Dictionary<TKey, NullableObject<TValue>>> populateFunction)
+    public BulkPopulateDictionary(Action<Dictionary<TKey, CachedNullable<TValue>>> populateFunction)
         : base(_ => default!) // We override this, so base function doesn't matter.
     {
         _populateFunction = populateFunction ?? throw new ArgumentNullException(nameof(populateFunction));
@@ -57,7 +57,7 @@ public class BulkPopulateDictionary<TKey, TValue> : PerKeyCachedDictionary<TKey,
             }
 
             // Try to retrieve the value
-            if (Cache.TryGetValue(key, out NullableObject<TValue> cachedValue) && cachedValue.IsNotNull)
+            if (Cache.TryGetValue(key, out CachedNullable<TValue> cachedValue) && cachedValue.HasValue)
             {
                 return cachedValue.Value;
             }

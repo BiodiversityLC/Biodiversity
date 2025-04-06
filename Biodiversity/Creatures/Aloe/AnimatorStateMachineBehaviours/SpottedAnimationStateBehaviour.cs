@@ -6,18 +6,11 @@ internal class SpottedAnimationStateBehaviour : AloeStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        if (AloeServerAIInstance.IsServer)
-        {
-            AloeServerAIInstance.PlayRandomAudioClipTypeServerRpc(
-                AloeClient.AudioClipTypes.interruptedHealingSfx.ToString(),
-                "creatureVoice",
-                    true, true, false, true);
-        }
+        AloeServerAIInstance.OnSpottedAnimationStateEnter();
     }
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        BiodiversityPlugin.LogVerbose("Spotted animation complete.");
-        if (AloeServerAIInstance.IsServer) NetcodeController.HasFinishedSpottedAnimation.Value = true;
+        AloeServerAIInstance.OnSpottedAnimationStateExit();
     }
 }

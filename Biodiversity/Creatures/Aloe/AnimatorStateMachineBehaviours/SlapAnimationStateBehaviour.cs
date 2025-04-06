@@ -6,7 +6,7 @@ internal class SlapAnimationStateBehaviour : AloeStateMachineBehaviour
 {
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        BiodiversityPlugin.LogVerbose("Started slap animation.");
+        //BiodiversityPlugin.LogVerbose("Started slap animation.");
         AloeClientInstance.slapCollisionDetection.EnableSlap();
         if (!AloeServerAIInstance.IsServer) return;
         AloeServerAIInstance.InSlapAnimation = true;
@@ -14,7 +14,7 @@ internal class SlapAnimationStateBehaviour : AloeStateMachineBehaviour
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        BiodiversityPlugin.LogVerbose("Finished slap animation.");
+        //BiodiversityPlugin.LogVerbose("Finished slap animation.");
         AloeClientInstance.slapCollisionDetection.DisableSlap();
         if (!AloeServerAIInstance.IsServer) return;
         AloeServerAIInstance.InSlapAnimation = false;
