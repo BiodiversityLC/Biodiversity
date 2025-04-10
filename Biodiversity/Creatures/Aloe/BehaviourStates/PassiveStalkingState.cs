@@ -42,6 +42,8 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
 
     internal override void AIIntervalBehaviour()
     {
+        base.AIIntervalBehaviour();
+        
         _isPlayerReachable = true;
         if (!EnemyAIInstance.ActualTargetPlayer.HasValue) return;
 
@@ -54,11 +56,6 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
                 EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position,
                 StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
         {
-            // if (!EnemyAIInstance.IsStaringAtTargetPlayer)
-            // {
-            //     EnemyAIInstance.LogVerbose("Aloe is staring at player");
-            // }
-            
             EnemyAIInstance.moveTowardsDestination = false;
             EnemyAIInstance.movingTowardsTargetPlayer = false;
             EnemyAIInstance.IsStaringAtTargetPlayer = true;
@@ -120,8 +117,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.AloeStates, Al
             // Greatly increase fear level if the player turns around to see the Aloe starting at them
             if (EnemyAIInstance.IsStaringAtTargetPlayer &&
                 EnemyAIInstance.ActualTargetPlayer.Value == EnemyAIInstance.AvoidingPlayer.Value)
-                EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
-                    EnemyAIInstance.BioId, 0.8f, EnemyAIInstance.AvoidingPlayer.Value.playerClientId);
+                EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(0.8f, EnemyAIInstance.AvoidingPlayer.Value.playerClientId);
 
             EnemyAIInstance.IsStaringAtTargetPlayer = false;
         }

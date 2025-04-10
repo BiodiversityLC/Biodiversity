@@ -21,8 +21,6 @@ namespace Biodiversity.Creatures.Aloe;
 
 public class AloeClient : MonoBehaviour
 {
-    private string _aloeId;
-
     private static readonly int Metallic = Shader.PropertyToID("_Metallic");
     private static readonly int BaseColour = Shader.PropertyToID("_BaseColor");
 
@@ -323,7 +321,7 @@ public class AloeClient : MonoBehaviour
                         BiodiversityPlugin.LogVerbose("Triggering aloe escape");
                         _currentEscapeChargeValue = 0;
                         _targetPlayerCanEscape = false;
-                        netcodeController.TargetPlayerEscapedServerRpc(_aloeId);
+                        netcodeController.TargetPlayerEscapedServerRpc();
                         
                         // healingOrbEffect.Stop();
                         healingLightEffect.enabled = false;
@@ -360,12 +358,9 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Handles what should happen to make the Aloe crush a player's head
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="playerClientId">The player's client id whose head will be crushed.</param>
-    private void HandleCrushPlayerAnimation(string receivedAloeId, ulong playerClientId)
+    private void HandleCrushPlayerAnimation(ulong playerClientId)
     {
-        if (_aloeId != receivedAloeId) return;
-
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
         if (player == null) return;
 
@@ -455,11 +450,9 @@ public class AloeClient : MonoBehaviour
     /// Heals the target player by the given amount.
     /// It also updates their health bar.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="healAmount">The amount to heal the target player by.</param>
-    private void HandleHealTargetPlayerByAmount(string receivedAloeId, int healAmount)
+    private void HandleHealTargetPlayerByAmount(int healAmount)
     {
-        if (_aloeId != receivedAloeId) return;
         if (!_targetPlayer.HasValue) return;
         
         _targetPlayer.Value.health += healAmount;
@@ -492,9 +485,8 @@ public class AloeClient : MonoBehaviour
         _offsetRotation = newRotationOffset;
     }
 
-    private void HandleTransitionToRunningForwardsAndCarryingPlayer(string receivedAloeId, float transitionDuration)
+    private void HandleTransitionToRunningForwardsAndCarryingPlayer(float transitionDuration)
     {
-        if (_aloeId != receivedAloeId) return;
         BiodiversityPlugin.LogVerbose($"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
 
         if (_currentFakePlayerBodyRagdoll == null)
@@ -511,10 +503,8 @@ public class AloeClient : MonoBehaviour
         _currentFakePlayerBodyRagdoll.AttachLimbToTransform("Root", ragdollGrabTarget);
     }
 
-    private void HandleSpawnFakePlayerBodyRagdoll(string receivedAloeId,
-        NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
+    private void HandleSpawnFakePlayerBodyRagdoll(NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
     {
-        if (_aloeId != receivedAloeId) return;
         BiodiversityPlugin.LogVerbose($"In {nameof(HandleSpawnFakePlayerBodyRagdoll)}");
         
         CleanupRagdoll();
@@ -550,9 +540,8 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="setToInCaptivity">Whether to make them captive or not.</param>
-    private void HandleSetTargetPlayerInCaptivity(string receivedAloeId, bool setToInCaptivity)
+    private void HandleSetTargetPlayerInCaptivity(bool setToInCaptivity)
     {
-        if (_aloeId != receivedAloeId) return;
         if (!_targetPlayer.HasValue)
         {
             _targetPlayerInCaptivity = false;
@@ -575,7 +564,7 @@ public class AloeClient : MonoBehaviour
 
         targetPlayer.isCrouching = false;
         targetPlayer.playerBodyAnimator.SetBool(PlayerCrouching, false);
-        HandleMuffleTargetPlayerVoice(_aloeId);
+        HandleMuffleTargetPlayerVoice();
         
         targetPlayer.inSpecialInteractAnimation = true;
         targetPlayer.inAnimationWithEnemy = _aloeServer.Value;
@@ -604,7 +593,7 @@ public class AloeClient : MonoBehaviour
             RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
         _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
             
-        HandleUnMuffleTargetPlayerVoice(_aloeId);
+        HandleUnMuffleTargetPlayerVoice();
     }
 
     private void CorrectlySetTargetPlayerLocalRenderers(bool enable, PlayerControllerB targetPlayer)
@@ -631,11 +620,9 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Handles when the target player is able to escape by mashing their space bar.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="canEscape">Whether to make the target player able to escape or not.</param>
-    private void HandleSetTargetPlayerAbleToEscape(string receivedAloeId, bool canEscape)
+    private void HandleSetTargetPlayerAbleToEscape(bool canEscape)
     {
-        if (_aloeId != receivedAloeId) return;
         if (!_targetPlayer.HasValue) return;
         _targetPlayerCanEscape = canEscape;
         _targetPlayer.Value.inSpecialInteractAnimation = true;
@@ -653,12 +640,10 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Increases the given player's fear level
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="targetInsanity">.</param>
     /// <param name="playerClientId">.</param>
-    private void HandleIncreasePlayerFearLevel(string receivedAloeId, float targetInsanity, ulong playerClientId)
+    private void HandleIncreasePlayerFearLevel(float targetInsanity, ulong playerClientId)
     {
-        if (_aloeId != receivedAloeId) return;
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
         if (player == null || player != GameNetworkManager.Instance.localPlayerController) return;
         player.JumpToFearLevel(targetInsanity);
@@ -668,11 +653,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Muffles the target player's voice.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    private void HandleMuffleTargetPlayerVoice(string receivedAloeId)
+    private void HandleMuffleTargetPlayerVoice()
     {
-        if (_aloeId != receivedAloeId) return;
-
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
 
@@ -686,11 +668,8 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Un-muffles the target player's voice.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    private void HandleUnMuffleTargetPlayerVoice(string receivedAloeId)
+    private void HandleUnMuffleTargetPlayerVoice()
     {
-        if (_aloeId != receivedAloeId) return;
-
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
         if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
 
@@ -741,12 +720,9 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Plays the healing effect on the target player.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="totalHealingTime">The total time the healing vfx should play for.</param>
-    private void HandlePlayHealingVfx(string receivedAloeId, float totalHealingTime)
+    private void HandlePlayHealingVfx(float totalHealingTime)
     {
-        if (_aloeId != receivedAloeId) return;
-        
         healingLightEffect.enabled = true;
         BiodiversityPlugin.LogVerbose("Playing HealingOrbVfx");
         StartCoroutine(DisableHealingLightDelayed(totalHealingTime));
@@ -758,9 +734,9 @@ public class AloeClient : MonoBehaviour
         healingLightEffect.enabled = false;
     }
 
-    private void HandleDamagePlayer(string receivedAloeId, ulong playerId, int damage)
+    private void HandleDamagePlayer(ulong playerId, int damage)
     {
-        if (_aloeId != receivedAloeId || !netcodeController.IsServer) return;
+        if (!netcodeController.IsServer) return;
         PlayerControllerB playerToDamage = StartOfRound.Instance.allPlayerScripts[playerId];
         
         if (PlayerUtil.IsPlayerDead(playerToDamage))
@@ -1004,8 +980,7 @@ public class AloeClient : MonoBehaviour
     private void SubscribeToNetworkEvents()
     {
         if (_networkEventsSubscribed) return;
-
-        netcodeController.OnSyncAloeId += HandleSyncAloeId;
+        
         netcodeController.OnInitializeConfigValues += HandleInitializeConfigValues;
         netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
         netcodeController.OnMuffleTargetPlayerVoice += HandleMuffleTargetPlayerVoice;
@@ -1031,8 +1006,7 @@ public class AloeClient : MonoBehaviour
     private void UnsubscribeFromNetworkEvents()
     {
         if (!_networkEventsSubscribed) return;
-
-        netcodeController.OnSyncAloeId -= HandleSyncAloeId;
+        
         netcodeController.OnInitializeConfigValues -= HandleInitializeConfigValues;
         netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
         netcodeController.OnMuffleTargetPlayerVoice -= HandleMuffleTargetPlayerVoice;
@@ -1058,36 +1032,20 @@ public class AloeClient : MonoBehaviour
     /// <summary>
     /// Sets a trigger in the animator
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="parameter">The name of the trigger in the animator.</param>
-    private void HandleSetAnimationTrigger(string receivedAloeId, int parameter)
+    private void HandleSetAnimationTrigger(int parameter)
     {
-        if (_aloeId != receivedAloeId) return;
         animator.SetTrigger(parameter);
     }
 
     /// <summary>
     /// Sets the configurable variables to their value in the player's config
     /// </summary>
-    private void HandleInitializeConfigValues(string receivedAloeId)
+    private void HandleInitializeConfigValues()
     {
-        if (_aloeId != receivedAloeId) return;
-        
         escapeChargePerPress = AloeHandler.Instance.Config.EscapeChargePerPress;
         escapeChargeDecayRate = AloeHandler.Instance.Config.EscapeChargeDecayRate;
         escapeChargeThreshold = AloeHandler.Instance.Config.EscapeChargeThreshold;
         skinMetallicTransitionTime = AloeHandler.Instance.Config.DarkSkinTransitionTime;
-    }
-
-    /// <summary>
-    /// Syncs The Aloe ID with the server
-    /// </summary>
-    /// <param name="id">The Aloe ID.</param>
-    private void HandleSyncAloeId(string id)
-    {
-        //todo: delete this
-        _aloeId = id;
-
-        BiodiversityPlugin.LogVerbose("Successfully synced aloe id.");
     }
 }

@@ -23,21 +23,23 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, Al
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-
+        
         EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.AttackingPlayerMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.AttackingPlayerMaxAcceleration;
         EnemyAIInstance.openDoorSpeedMultiplier = 2f;
-
+        
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
-
+        
         _isPlayerTargetable = true;
     }
-
+    
     internal override void AIIntervalBehaviour()
     {
-        if (EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
+        base.AIIntervalBehaviour();
+        
+        if (EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer))
         {
             EnemyAIInstance.movingTowardsTargetPlayer = true;
             _isPlayerTargetable = true;
@@ -66,8 +68,7 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, Al
                     EnemyAIInstance.transform.position) <= 1.5f)) return !attackingPlayerState._isPlayerTargetable;
 
             EnemyAIInstance.LogVerbose("Player is close to aloe! Killing them!");
-            EnemyAIInstance.netcodeController.CrushPlayerClientRpc(
-                EnemyAIInstance.BioId, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+            EnemyAIInstance.netcodeController.CrushPlayerClientRpc(EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
 
             return true;
         }

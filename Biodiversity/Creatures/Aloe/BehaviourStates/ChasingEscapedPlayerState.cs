@@ -37,7 +37,7 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
             AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(),
             true, true, false, true);
         
-        EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId, AloeClient.Stand);
+        EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.Stand);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
@@ -48,15 +48,19 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
 
     internal override void UpdateBehaviour()
     {
+        base.UpdateBehaviour();
+        
         WaitBeforeChasingTimer -= Time.deltaTime;
     }
 
     internal override void AIIntervalBehaviour()
     {
+        base.AIIntervalBehaviour();
+        
         _isPlayerTargetable = true;
         if (WaitBeforeChasingTimer <= 0)
         {
-            if (EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
+            if (EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(EnemyAIInstance.ActualTargetPlayer))
             {
                 EnemyAIInstance.movingTowardsTargetPlayer = true;
             }
@@ -86,9 +90,7 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
                     EnemyAIInstance.transform.position) > 1.5f) return false;
 
             EnemyAIInstance.LogVerbose("Player is close to aloe! Kidnapping him now.");
-            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(
-                EnemyAIInstance.BioId,
-                AloeClient.Grab);
+            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.Grab);
             return true;
         }
 

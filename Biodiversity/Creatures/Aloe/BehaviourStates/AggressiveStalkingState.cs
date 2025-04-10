@@ -70,7 +70,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.AloeStates,
                 EnemyAIInstance.LogVerbose("Player is close to aloe! Kidnapping him now");
                 EnemyAIInstance.agent.speed = 0f;
                 EnemyAIInstance.agent.acceleration = 0f;
-                EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId, AloeClient.Grab);
+                EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.Grab);
                 _inGrabAnimation = true;
             }
 

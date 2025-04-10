@@ -86,7 +86,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         if (!IsServer) return;
         
         SetTargetPlayerInCaptivity(false);
-        AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(FavouriteSpot);
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+            AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(FavouriteSpot);
         UnsubscribeFromNetworkEvents();
     }
 
@@ -97,7 +98,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         
         SubscribeToNetworkEvents();
         
-        netcodeController.SyncAloeIdClientRpc(BioId);
         agent.updateRotation = false;
         
         CollectAudioClipsAndSources();
@@ -296,7 +296,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         Vector3 forwardDirection = agent.velocity.normalized;
         Quaternion initialRotation = transform.rotation;
         Quaternion targetRotation = Quaternion.LookRotation(forwardDirection);
-        netcodeController.TransitionToRunningForwardsAndCarryingPlayerClientRpc(BioId, transitionDuration);
+        netcodeController.TransitionToRunningForwardsAndCarryingPlayerClientRpc(transitionDuration);
         float elapsedTime = 0f;
 
         while (elapsedTime < transitionDuration)
@@ -323,7 +323,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
                 if (((ChasingEscapedPlayerState)CurrentState).WaitBeforeChasingTimer > 0) break;
                 
                 LogVerbose("Player is touching the aloe! Kidnapping him now.");
-                netcodeController.SetAnimationTriggerClientRpc(BioId, AloeClient.Grab);
+                netcodeController.SetAnimationTriggerClientRpc(AloeClient.Grab);
                 SwitchBehaviourState(AloeStates.KidnappingPlayer);
                 break;
             }
@@ -331,7 +331,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             case AloeStates.AttackingPlayer:
             {
                 LogVerbose("Player is touching the aloe! Killing them!");
-                netcodeController.CrushPlayerClientRpc(BioId, ActualTargetPlayer.Value.actualClientId);
+                netcodeController.CrushPlayerClientRpc(ActualTargetPlayer.Value.actualClientId);
                 SwitchBehaviourState(AloeStates.ChasingEscapedPlayer);
                 break;
             }
@@ -378,7 +378,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
                         {
                             LogVerbose("Triggering bitch slap.");
                             SlappingPlayer.Set(playerWhoHitMe.Value);
-                            netcodeController.SetAnimationTriggerClientRpc(BioId, AloeClient.Slap);
+                            netcodeController.SetAnimationTriggerClientRpc(AloeClient.Slap);
                         }
                         else 
                             LogVerbose($"Did not trigger bitch slap. Current health: {enemyHP}. Health needed to trigger slap: {AloeHandler.Instance.Config.Health / 2}");
@@ -538,6 +538,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     {
         if (!IsServer) return;
         if (!ActualTargetPlayer.HasValue) return;
+        
         if (setToInCaptivity)
         {
             if (!AloeSharedData.Instance.IsAloeKidnapBound(this))
@@ -549,7 +550,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
                 AloeSharedData.Instance.Unbind(this, BindType.Kidnap);
         }
         
-        netcodeController.SetTargetPlayerInCaptivityClientRpc(BioId, setToInCaptivity);
+        netcodeController.SetTargetPlayerInCaptivityClientRpc(setToInCaptivity);
     }
 
     /// <summary>
@@ -571,7 +572,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         if (AloeSharedData.Instance.IsPlayerStalkBound(ActualTargetPlayer.Value))
             AloeSharedData.Instance.Unbind(this, BindType.Stalk);
         SetTargetPlayerInCaptivity(false);
-            
+        
         netcodeController.TargetPlayerClientId.Value = NullPlayerId;
         SwitchBehaviourState(AloeStates.Roaming);
     }
@@ -611,8 +612,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     /// <summary>
     /// Is called on a network event when player manages to escape by mashing keys on their keyboard.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    private void HandleTargetPlayerEscaped(string receivedAloeId)
+    private void HandleTargetPlayerEscaped()
     {
         if (!IsServer) return;
         
@@ -656,7 +656,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         if (CurrentState.GetStateType() is AloeStates.Spawning)
             SwitchBehaviourState(AloeStates.Roaming);
     }
-
+    
     public void OnSpottedAnimationStateEnter()
     {
         if (!IsServer) return;
@@ -665,14 +665,14 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
             AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(),
             true, true, false, true);
     }
-
+    
     public void OnSpottedAnimationStateExit()
     {
         LogVerbose("Spotted animation complete.");
         if (!IsServer) return;
         netcodeController.HasFinishedSpottedAnimation.Value = true;
     }
-
+    
     public void OnDragPlayerAnimationStateEnter()
     {
         LogVerbose("Grab player animation complete.");
@@ -781,7 +781,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         }
 
         // Validate audio source type
-        // is there a way around doing this null check every time?
+        // todo: is there a way around doing this null check every time?
         // maybe wrap the audio sources in the dictionary with a cached nullable? 
         if (!AudioSources.TryGetValue(audioSourceType, out AudioSource source) || source == null)
         {
@@ -934,6 +934,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         
         AIIntervalTime = AloeHandler.Instance.Config.AiIntervalTime;
         
-        netcodeController.InitializeConfigValuesClientRpc(BioId);
+        netcodeController.InitializeConfigValuesClientRpc();
     }
 }

@@ -8,7 +8,7 @@ namespace Biodiversity.Creatures.Aloe;
 [Serializable]
 public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg)
 {
-    #region SpawnSettings
+    #region Spawn Settings
     [field: Header("Spawn Settings")]
     
     [field: Tooltip("Whether the Aloe will spawn in games.")]
@@ -27,7 +27,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     
     #endregion
     
-    #region MovementSettings
+    #region Movement Settings
     
     [field: Header("Movement Settings")]
     
@@ -96,7 +96,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     
     #endregion
 
-    #region GeneralSettings
+    #region General Settings
 
     [field: Header("General Settings")]
     
@@ -155,21 +155,25 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Tooltip("Whether landmines and seamines will blow up if the Aloe moves over one while carrying a player.")]
     public bool LandminesBlowUpAloe { get; private set; } = false;
 
-    // [field: Tooltip("Whether to use an alternative behaviour for the Aloe where she will damage players instead of heal them. To adjust the amount of damage she does, just adjust the `TimeItTakesToFullyHealPlayer` parameter.")]
-    // public bool DamageInsteadOfHeal { get; private set; } = false;
-
     #endregion
 
-    #region AlternativeBehaviours
+    #region Alternative Behaviours
 
     [field: Header("Alternative Behaviours")]
     
     [field: Tooltip("If true, then the Aloe WILL NOT run away if looked at while she's in her kidnap animation.")]
     public bool ForceGrabOnceInAnimation { get; private set; } = true;
+    
+    [field: Tooltip("Whether to use an alternative behaviour for the Aloe where she will damage players instead of heal them. To adjust the amount of damage she does (per second), just adjust the `DamageDeltPerSecondInsteadOfHealing` setting.")]
+    public bool DamageInsteadOfHeal { get; private set; } = false;
+    
+    [field: Tooltip("If `DamageInsteadOfHeal` is enabled, then this controls the amount of damage the Aloe does per second to the captee.")]
+    [field: Range(0.000001f, 1000f)]
+    public float DamageDeltPerSecondInsteadOfHealing { get; private set; } = 1f;
 
     #endregion
 
-    #region AdvancedSettings
+    #region Advanced Settings
 
     [field: Header("Advanced Settings")]
     
@@ -190,6 +194,4 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     public int NavMeshAgentAvoidancePriority { get; private set; } = 50;
 
     #endregion
-
-    
 }
