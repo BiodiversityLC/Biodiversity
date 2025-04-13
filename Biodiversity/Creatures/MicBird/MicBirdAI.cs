@@ -2,12 +2,14 @@
 using UnityEngine;
 using Unity.Netcode;
 using Random = UnityEngine.Random;
-using Object = UnityEngine.Object;
 using GameNetcodeStuff;
 using UnityEngine.AI;
 using Biodiversity.Util.SharedVariables;
 using BepInEx.Bootstrap;
+using Biodiversity.Creatures.Aloe;
+using Biodiversity.Util.DataStructures;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -96,8 +98,8 @@ namespace Biodiversity.Creatures.MicBird
         private float runTimer = 0;
         private Vector3 spawnPosition;
         private bool setDestCalledAlready = false;
-        MalfunctionID malfunction;
-        Vector3 targetPos = Vector3.zero;
+        private MalfunctionID malfunction;
+        private Vector3 targetPos = Vector3.zero;
 
         // Wander vars
         private AISearchRoutine wander = new AISearchRoutine();
@@ -106,9 +108,9 @@ namespace Biodiversity.Creatures.MicBird
         private static System.Random spawnRandom;
 
         // Distraction vars
-        RadarBoosterItem distractedRadarBoosterItem = null;
-        float distractionTimer = 0;
-        float defaultStoppingDistance;
+        private RadarBoosterItem distractedRadarBoosterItem = null;
+        private float distractionTimer = 0;
+        private float defaultStoppingDistance;
 
         // Number of times the malfunction will occur
         private int malfunctionTimes = 0;
@@ -125,10 +127,21 @@ namespace Biodiversity.Creatures.MicBird
         private bool compatMode = false;
         private static bool sideSet = false;
         private static bool compatSide = false; // I don't care what false and true map to it works. The middle node is turned all weird so forward is either left or right.
+        private static readonly int Closed = Animator.StringToHash("Closed");
+        private static readonly int Hurt = Animator.StringToHash("Hurt");
+        private static readonly int Die = Animator.StringToHash("Die");
+        private static readonly int DeadAlready = Animator.StringToHash("DeadAlready");
+        private static readonly int ID = Animator.StringToHash("ID");
+        private static readonly int CallID = Animator.StringToHash("CallID");
+        private static readonly int Dance = Animator.StringToHash("Dance");
 
+        private CachedValue<HangarShipDoor> hangarShipDoor;
+        private CachedValue<ShipLights> hangarShipLights;
+        
         public override void Start()
         {
             base.Start();
+            
             if (firstSpawned == null)
             {
                 firstSpawned = this;
@@ -163,6 +176,9 @@ namespace Biodiversity.Creatures.MicBird
             }
 
             HoarderBugAI.RefreshGrabbableObjectsInMapList();
+
+            hangarShipDoor = new CachedValue<HangarShipDoor>(FindObjectOfType<HangarShipDoor>);
+            hangarShipLights = new CachedValue<ShipLights>(FindObjectOfType<ShipLights>);
 
             if (!IsServer) return;
             PlayVoiceClientRpc((int)SoundID.SPAWN, 0);
@@ -249,7 +265,7 @@ namespace Biodiversity.Creatures.MicBird
                         StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(true);
                         break;
                     case MalfunctionID.LIGHTSOUT:
-                        FindObjectOfType<ShipLights>().ToggleShipLights();
+                        hangarShipLights.Value.ToggleShipLights();
                         break;
                     case MalfunctionID.NONE:
                         ranMalfunction = false;
@@ -343,7 +359,7 @@ namespace Biodiversity.Creatures.MicBird
             foreach (WalkieTalkie walkie in walkies)
             {
                 if (walkie.isInFactory) return;
-                if (walkie.walkieTalkieLight.enabled == true)
+                if (walkie.walkieTalkieLight.enabled)
                 {
                     walkie.SwitchWalkieTalkieOn(false);
                     continue;
@@ -356,15 +372,13 @@ namespace Biodiversity.Creatures.MicBird
         public void ToggleShipDoorsClientRpc()
         {
             if (StartOfRound.Instance.shipIsLeaving) return;
-
-
-            HangarShipDoor door = FindObjectOfType<HangarShipDoor>();
-            if (door.shipDoorsAnimator.GetBool("Closed"))
+            
+            if (hangarShipDoor.Value.shipDoorsAnimator.GetBool(Closed))
             {
-                door.shipDoorsAnimator.SetBool("Closed", false);
+                hangarShipDoor.Value.shipDoorsAnimator.SetBool(Closed, false);
                 return;
             }
-            door.shipDoorsAnimator.SetBool("Closed", true);
+            hangarShipDoor.Value.shipDoorsAnimator.SetBool(Closed, true);
         }
 
         [ClientRpc]
@@ -374,28 +388,39 @@ namespace Biodiversity.Creatures.MicBird
         }
 
         [ClientRpc]
-        public void SyncRadarBoosterClientRpc(NetworkObjectReference radarBooster) {
-            NetworkObject obj = null;
-            radarBooster.TryGet(out obj);
+        public void SyncRadarBoosterClientRpc(NetworkObjectReference radarBooster) 
+        {
+            radarBooster.TryGet(out NetworkObject obj);
             distractedRadarBoosterItem = obj.gameObject.GetComponent<RadarBoosterItem>();
         }
 
-        private int negativeRandom(int min, int maxExclusive)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // This replaces calls to the function negativeRandom() with the code inside negativeRandom()
+        /* E.g., instead of:
+         *
+         * print("deez nuts");
+         * int randomNum = negativeRandom(1, 50);
+         *
+         * It changes to:
+         *
+         * print("deez nuts");
+         * int randomNum = Random.Range(1, 50) * (Random.Range(0, 2) == 0 ? 1 : -1);
+         */
+        // It's a small performance improvement that should only be used on very simple and small functions like this one
+        private static int negativeRandom(int min, int maxExclusive)
         {
-            return Random.Range(min, maxExclusive) * ((Random.Range(0, 2) == 0) ? 1 : -1);
+            return Random.Range(min, maxExclusive) * (Random.Range(0, 2) == 0 ? 1 : -1);
         }
 
         private void spawnMicBird()
         {
             if (MicBirdHandler.Instance.Assets.MicBirdEnemyType.numberSpawned >= 9) return;
-            GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag("OutsideAINode");
+            GameObject[] spawnPoints = AloeSharedData.Instance.GetOutsideAINodes(); // I'll create a new class in the future, but for now just use this Aloe one that caches the outside AI nodes
 
-            Vector3 vector = GameObject.FindGameObjectsWithTag("OutsideAINode")[spawnRandom.Next(0, spawnPoints.Length)].transform.position;
+            Vector3 vector = spawnPoints[spawnRandom.Next(0, spawnPoints.Length)].transform.position;
             vector = RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(vector, 10f, default(NavMeshHit), spawnRandom, RoundManager.Instance.GetLayermaskForEnemySizeLimit(enemyType));
             vector = RoundManager.Instance.PositionWithDenialPointsChecked(vector, spawnPoints, enemyType);
-
-
-            GameObject bird = Object.Instantiate<GameObject>(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, vector, Quaternion.Euler(Vector3.zero));
+            
+            GameObject bird = Instantiate(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, vector, Quaternion.Euler(Vector3.zero));
             bird.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             RoundManager.Instance.SpawnedEnemies.Add(bird.GetComponent<EnemyAI>());
             UpdateNumberSpawnedClientRpc(enemyType.numberSpawned + 1);
@@ -461,7 +486,7 @@ namespace Biodiversity.Creatures.MicBird
 
             if (hitID == 1 && IsServer)
             {
-                if (IsServer && enemyHP > 0) creatureAnimator.SetTrigger("Hurt");
+                if (IsServer && enemyHP > 0) creatureAnimator.SetTrigger(Hurt);
                 BiodiversityPlugin.LogVerbose("Micbird hit by shovel");
                 agent.speed = 0;
                 agent.velocity = Vector3.zero;
@@ -477,8 +502,8 @@ namespace Biodiversity.Creatures.MicBird
                 enemyType.numberSpawned--;
                 if (IsServer)
                 {
-                    creatureAnimator.SetTrigger("Die"); 
-                    creatureAnimator.SetBool("DeadAlready", true);
+                    creatureAnimator.SetTrigger(Die); 
+                    creatureAnimator.SetBool(DeadAlready, true);
                 }
             }
 
@@ -520,7 +545,7 @@ namespace Biodiversity.Creatures.MicBird
             switch (currentBehaviourStateIndex)
             {
                 case (int)State.WANDER:
-                    creatureAnimator.SetInteger("ID", 1);
+                    creatureAnimator.SetInteger(ID, 1);
 
                     if (agent.speed != 3)
                     {
@@ -556,9 +581,8 @@ namespace Biodiversity.Creatures.MicBird
 
                     break;
                 case (int)State.GOTOSHIP:
-                    creatureAnimator.SetInteger("ID", 1);
-
-
+                    creatureAnimator.SetInteger(ID, 1);
+                    
                     if (wanderingAlready)
                     {
                         StopSearch(wander);
@@ -585,16 +609,28 @@ namespace Biodiversity.Creatures.MicBird
                     {
                         if (firstSpawned == this)
                         {
-                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1));
+                            /*
+                             * The order of multiplication matters (for performance) when u are multiplying things like vectors and matricies.
+                             * 
+                             * The previous calculation was `15 * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1)`,
+                             * which multiplies 15 by the 3 values in the transform.forward vector, and then multiplies that resulting vector again by 1 or -1.
+                             * So in total you have 6 multiplication operations.
+                             *
+                             * With the new version you multiply 15 by 1 or -1 first, and then you multiply that with the vector,
+                             * which results in only 4 multiplication operations.
+                             *
+                             * Apologies if this seems like im being nitpicky, its not my intention :)
+                             *
+                             * Also your IDE should warn you when your order of the multiplication thingies is "unoptimal"
+                             */
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (StartOfRound.Instance.shipBounds.transform.forward * (15 * (compatSide ? 1 : -1)));
                         }
                         else
                         {
-                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (Random.Range(13, 19) * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1)) + (negativeRandom(2, 6) * StartOfRound.Instance.shipBounds.transform.right);
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (StartOfRound.Instance.shipBounds.transform.forward * (Random.Range(13, 19) * (compatSide ? 1 : -1))) + (negativeRandom(2, 6) * StartOfRound.Instance.shipBounds.transform.right);
                         }
                     }
-
-
-
+                    
                     if (!setDestCalledAlready)
                     {
                         setDestCalledAlready = true;
@@ -612,7 +648,7 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     else
                     {
-                        if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + (15 * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1)), transform.position) < 10)
+                        if (Vector3.Distance(StartOfRound.Instance.middleOfShipNode.position + (StartOfRound.Instance.shipBounds.transform.forward * (15 * (compatSide ? 1 : -1))), transform.position) < 10)
                         {
                             AtDestination = true;
                         }
@@ -625,7 +661,7 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     break;
                 case (int)State.PERCH:
-                    creatureAnimator.SetInteger("ID", 2);
+                    creatureAnimator.SetInteger(ID, 2);
 
                     if (agent.speed != 3)
                     {
@@ -643,14 +679,14 @@ namespace Biodiversity.Creatures.MicBird
                     }
                     break;
                 case (int)State.CALL:
-                    creatureAnimator.SetInteger("ID", 3);
+                    creatureAnimator.SetInteger(ID, 3);
                     if (firstSpawned == this)
                     {
-                        creatureAnimator.SetInteger("CallID", 2);
+                        creatureAnimator.SetInteger(CallID, 2);
                     }
                     else
                     {
-                        creatureAnimator.SetInteger("CallID", Random.RandomRangeInt(0, 2));
+                        creatureAnimator.SetInteger(CallID, Random.RandomRangeInt(0, 2));
                     }
 
 
@@ -660,8 +696,7 @@ namespace Biodiversity.Creatures.MicBird
                     spawnMicBird();
 
                     callTimer = 60;
-
-
+                    
                     if (Random.Range(1, 101) <= MicBirdHandler.Instance.Config.TeleportCancelChance)
                     {
                         if (TeleporterStatus.Teleporting)
@@ -697,7 +732,7 @@ namespace Biodiversity.Creatures.MicBird
                     }
 
                     malfunction = Enum.Parse<MalfunctionID>(malfunctionName);
-                    BiodiversityPlugin.LogVerbose("Setting Micbird malfunction to " + malfunction.ToString());
+                    BiodiversityPlugin.LogVerbose("Setting Micbird malfunction to " + malfunction);
                     switch (malfunction)
                     {
                         case MalfunctionID.WALKIE:
@@ -726,28 +761,27 @@ namespace Biodiversity.Creatures.MicBird
                 case (int)State.RUN:
                     if (Mathf.Sqrt(Mathf.Pow(agent.velocity.x, 2) + Mathf.Pow(agent.velocity.z, 2)) < 0.2f)
                     {
-                        creatureAnimator.SetInteger("ID", 4);
+                        creatureAnimator.SetInteger(ID, 4);
                     }
                     else
                     {
-                        creatureAnimator.SetInteger("ID", 1);
+                        creatureAnimator.SetInteger(ID, 1);
                     }
                     break;
                 case (int)State.RADARBOOSTER:
                     if (Vector3.Distance(distractedRadarBoosterItem.transform.position, transform.position) >= 2 + MicBirdHandler.Instance.Config.RadarBoosterStopDistance)
                     {
-                        creatureAnimator.SetInteger("ID", 1);
+                        creatureAnimator.SetInteger(ID, 1);
                     }
                     else {
-                        creatureAnimator.SetInteger("ID", 4);
+                        creatureAnimator.SetInteger(ID, 4);
                     }
 
                     if (agent.speed != 3)
                     {
                         agent.speed = 3;
                     }
-
-
+                    
                     agent.stoppingDistance = MicBirdHandler.Instance.Config.RadarBoosterStopDistance;
                     agent.SetDestination(distractedRadarBoosterItem.transform.position);
 
@@ -765,7 +799,7 @@ namespace Biodiversity.Creatures.MicBird
 
                         PlayMalfunctionSoundClientRpc(3);
 
-                        creatureAnimator.SetTrigger("Dance");
+                        creatureAnimator.SetTrigger(Dance);
 
                         if (Random.Range(0, 2) == 0)
                         {
