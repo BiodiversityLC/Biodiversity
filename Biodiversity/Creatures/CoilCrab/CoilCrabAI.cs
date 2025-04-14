@@ -6,8 +6,62 @@ using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.CoilCrab
 {
-    internal class CoilCrabAI : BiodiverseAI
+    internal class CoilCrabAI : BiodiverseAI, IVisibleThreat
     {
+
+        ThreatType IVisibleThreat.type
+        {
+            get
+            {
+                // I guess coil crabs are baboon hawks also
+                return ThreatType.BaboonHawk;
+            }
+        }
+
+        int IVisibleThreat.SendSpecialBehaviour(int id)
+        {
+            return 0;
+        }
+
+        int IVisibleThreat.GetThreatLevel(Vector3 seenByPosition)
+        {
+            if (isEnemyDead) { return 0; }
+            return 1;
+        }
+
+        int IVisibleThreat.GetInterestLevel()
+        {
+            return 0;
+        }
+
+        Transform IVisibleThreat.GetThreatLookTransform()
+        {
+            return null;
+        }
+
+        Transform IVisibleThreat.GetThreatTransform()
+        {
+            return transform;
+        }
+
+        Vector3 IVisibleThreat.GetThreatVelocity()
+        {
+            if (base.IsOwner)
+            {
+                return agent.velocity;
+            }
+            return Vector3.zero;
+        }
+
+        float IVisibleThreat.GetVisibility()
+        {
+            if (isEnemyDead) { return 0; }
+            return 1;
+        }
+
+
+
+
         private enum State
         {
             CREEP,

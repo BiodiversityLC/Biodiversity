@@ -11,8 +11,60 @@ using System.Linq;
 
 namespace Biodiversity.Creatures.MicBird
 {
-    internal class MicBirdAI : BiodiverseAI, INoiseListener
+    internal class MicBirdAI : BiodiverseAI, INoiseListener, IVisibleThreat
     {
+        ThreatType IVisibleThreat.type
+        {
+            get
+            {
+                // I can't find a better way to do this so I guess the game will think they're baboon hawks
+                return ThreatType.BaboonHawk;
+            }
+        }
+
+        int IVisibleThreat.SendSpecialBehaviour(int id)
+        {
+            return 0;
+        }
+
+        int IVisibleThreat.GetThreatLevel(Vector3 seenByPosition)
+        {
+            if (isEnemyDead) { return 0; }
+            return 1;
+        }
+
+        int IVisibleThreat.GetInterestLevel()
+        {
+            return 0;
+        }
+
+        Transform IVisibleThreat.GetThreatLookTransform()
+        {
+            return eye;
+        }
+
+        Transform IVisibleThreat.GetThreatTransform()
+        {
+            return transform;
+        }
+
+        Vector3 IVisibleThreat.GetThreatVelocity()
+        {
+            if (base.IsOwner)
+            {
+                return agent.velocity;
+            }
+            return Vector3.zero;
+        }
+
+        float IVisibleThreat.GetVisibility()
+        {
+            if (isEnemyDead) { return 0; }
+            return 1;
+        }
+
+
+
         private enum State
         {
             WANDER,
@@ -120,6 +172,9 @@ namespace Biodiversity.Creatures.MicBird
         private float spawnTimer = 2f;
         private bool spawnDone = false;
 
+        // Despawn anim
+        private bool leaving = false;
+
         // Compatibility mode
         private bool hurt = false;
         private bool compatMode = false;
@@ -182,7 +237,13 @@ namespace Biodiversity.Creatures.MicBird
 
 
         public override void Update()
-        { 
+        {
+            if (StartOfRound.Instance.shipIsLeaving && IsServer && !leaving)
+            {
+                creatureAnimator.SetTrigger("Leave");
+                leaving = true;
+            }
+
             base.Update();
 
             if (spawnTimer >= 0)
@@ -459,7 +520,7 @@ namespace Biodiversity.Creatures.MicBird
         {
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
 
-            if (hitID == 1 && IsServer)
+            if (IsServer)
             {
                 if (IsServer && enemyHP > 0) creatureAnimator.SetTrigger("Hurt");
                 BiodiversityPlugin.LogVerbose("Micbird hit by shovel");
