@@ -21,4 +21,9 @@ public class PlayerTargetableConditions
     {
         return player != null && _conditions.All(condition => condition(player));
     }
+
+    public bool IsPlayerTargetable(CachedNullable<PlayerControllerB> player)
+    {
+        return player.HasValue && _conditions.All(condition => condition(player.Value));
+    }
 }

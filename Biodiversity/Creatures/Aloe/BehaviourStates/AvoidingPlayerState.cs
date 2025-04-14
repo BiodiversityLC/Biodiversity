@@ -50,8 +50,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         else
         {
             ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
-            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.BioId,
-                AloeClient.Spotted);
+            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.Spotted);
         }
 
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
@@ -59,6 +58,8 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
 
     internal override void UpdateBehaviour()
     {
+        base.UpdateBehaviour();
+        
         // Make the Aloe stay still until the spotted animation is finished
         if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
         {
@@ -77,6 +78,8 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
 
     internal override void AIIntervalBehaviour()
     {
+        base.AIIntervalBehaviour();
+        
         if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
             return;
 

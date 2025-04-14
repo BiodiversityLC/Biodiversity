@@ -30,6 +30,8 @@ internal class CuddlingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
 
     internal override void AIIntervalBehaviour()
     {
+        base.AIIntervalBehaviour();
+        
         PlayerControllerB tempPlayer = BiodiverseAI.GetClosestPlayerLookingAtPosition(
             EnemyAIInstance.eye.transform.position,
             ignorePlayer: EnemyAIInstance.ActualTargetPlayer.Value);

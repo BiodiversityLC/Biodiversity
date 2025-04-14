@@ -13,125 +13,111 @@ public class AloeNetcodeController : NetworkBehaviour
     internal readonly NetworkVariable<bool> AnimationParamHealing = new();
     internal readonly NetworkVariable<bool> AnimationParamStunned = new();
     internal readonly NetworkVariable<bool> AnimationParamDead = new();
-
-    internal event Action<string> OnSyncAloeId;
-    internal event Action<string> OnInitializeConfigValues;
-    internal event Action<string, int> OnSetAnimationTrigger;
-    internal event Action<string, float, ulong> OnIncreasePlayerFearLevel;
-    internal event Action<string> OnMuffleTargetPlayerVoice;
-    internal event Action<string> OnUnMuffleTargetPlayerVoice;
-    internal event Action<string, int> OnHealTargetPlayerByAmount;
-    internal event Action<string> OnTargetPlayerEscaped;
-    internal event Action<string, bool> OnSetTargetPlayerInCaptivity;
-    internal event Action<string, bool> OnSetTargetPlayerAbleToEscape;
-    internal event Action<string, float> OnPlayHealingVfx;
-    internal event Action<string, ulong> OnCrushPlayerNeck;
-    internal event Action<string, float> OnTransitionToRunningForwardsAndCarryingPlayer;
-    internal event Action<string, NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
-    internal event Action<string, ulong, int> OnDamagePlayer;
-
+    
+    internal event Action OnInitializeConfigValues;
+    internal event Action<int> OnSetAnimationTrigger;
+    internal event Action<float, ulong> OnIncreasePlayerFearLevel;
+    internal event Action OnMuffleTargetPlayerVoice;
+    internal event Action OnUnMuffleTargetPlayerVoice;
+    internal event Action<int> OnHealTargetPlayerByAmount;
+    internal event Action OnTargetPlayerEscaped;
+    internal event Action<bool> OnSetTargetPlayerInCaptivity;
+    internal event Action<bool> OnSetTargetPlayerAbleToEscape;
+    internal event Action<float> OnPlayHealingVfx;
+    internal event Action<ulong> OnCrushPlayerNeck;
+    internal event Action<float> OnTransitionToRunningForwardsAndCarryingPlayer;
+    internal event Action<NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
+    internal event Action<ulong, int> OnDamagePlayer;
+    
     [ClientRpc]
-    internal void DamagePlayerClientRpc(string receivedAloeId, ulong playerId, int damage)
+    internal void DamagePlayerClientRpc(ulong playerId, int damage)
     {
-        OnDamagePlayer?.Invoke(receivedAloeId, playerId, damage);
+        OnDamagePlayer?.Invoke(playerId, damage);
     }
 
     [ClientRpc]
-    internal void SpawnFakePlayerBodyRagdollClientRpc(string receivedAloeId,
-        NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
+    internal void SpawnFakePlayerBodyRagdollClientRpc(NetworkObjectReference fakePlayerBodyRagdollNetworkObjectReference)
     {
-        OnSpawnFakePlayerBodyRagdoll?.Invoke(receivedAloeId, fakePlayerBodyRagdollNetworkObjectReference);
+        OnSpawnFakePlayerBodyRagdoll?.Invoke(fakePlayerBodyRagdollNetworkObjectReference);
     }
 
     [ClientRpc]
-    internal void TransitionToRunningForwardsAndCarryingPlayerClientRpc(string receivedAloeId, float transitionDuration)
+    internal void TransitionToRunningForwardsAndCarryingPlayerClientRpc(float transitionDuration)
     {
-        OnTransitionToRunningForwardsAndCarryingPlayer?.Invoke(receivedAloeId, transitionDuration);
+        OnTransitionToRunningForwardsAndCarryingPlayer?.Invoke(transitionDuration);
     }
 
     [ClientRpc]
-    internal void CrushPlayerClientRpc(string receivedAloeId, ulong playerClientId)
+    internal void CrushPlayerClientRpc(ulong playerClientId)
     {
-        OnCrushPlayerNeck?.Invoke(receivedAloeId, playerClientId);
+        OnCrushPlayerNeck?.Invoke(playerClientId);
     }
 
     [ClientRpc]
-    internal void PlayHealingVfxClientRpc(string receivedAloeId, float totalHealingTime)
+    internal void PlayHealingVfxClientRpc(float totalHealingTime)
     {
-        OnPlayHealingVfx?.Invoke(receivedAloeId, totalHealingTime);
+        OnPlayHealingVfx?.Invoke(totalHealingTime);
     }
 
     [ClientRpc]
-    internal void SetTargetPlayerAbleToEscapeClientRpc(string receivedAloeId, bool canEscape)
+    internal void SetTargetPlayerAbleToEscapeClientRpc(bool canEscape)
     {
-        OnSetTargetPlayerAbleToEscape?.Invoke(receivedAloeId, canEscape);
+        OnSetTargetPlayerAbleToEscape?.Invoke(canEscape);
     }
 
     [ClientRpc]
-    internal void SetTargetPlayerInCaptivityClientRpc(string receivedAloeId, bool setToInCaptivity)
+    internal void SetTargetPlayerInCaptivityClientRpc(bool setToInCaptivity)
     {
-        OnSetTargetPlayerInCaptivity?.Invoke(receivedAloeId, setToInCaptivity);
+        OnSetTargetPlayerInCaptivity?.Invoke(setToInCaptivity);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    internal void TargetPlayerEscapedServerRpc(string receivedAloeId)
+    internal void TargetPlayerEscapedServerRpc()
     {
-        OnTargetPlayerEscaped?.Invoke(receivedAloeId);
+        OnTargetPlayerEscaped?.Invoke();
     }
 
     [ClientRpc]
-    internal void HealTargetPlayerByAmountClientRpc(string receivedAloeId, int healAmount)
+    internal void HealTargetPlayerByAmountClientRpc(int healAmount)
     {
-        OnHealTargetPlayerByAmount?.Invoke(receivedAloeId, healAmount);
+        OnHealTargetPlayerByAmount?.Invoke(healAmount);
     }
 
     [ClientRpc]
-    internal void UnMuffleTargetPlayerVoiceClientRpc(string receivedAloeId)
+    internal void UnMuffleTargetPlayerVoiceClientRpc()
     {
-        OnUnMuffleTargetPlayerVoice?.Invoke(receivedAloeId);
+        OnUnMuffleTargetPlayerVoice?.Invoke();
     }
 
     [ClientRpc]
-    internal void MuffleTargetPlayerVoiceClientRpc(string receivedAloeId)
+    internal void MuffleTargetPlayerVoiceClientRpc()
     {
-        OnMuffleTargetPlayerVoice?.Invoke(receivedAloeId);
+        OnMuffleTargetPlayerVoice?.Invoke();
     }
 
     [ClientRpc]
-    internal void IncreasePlayerFearLevelClientRpc(string receivedAloeId, float targetInsanity, ulong playerClientId)
+    internal void IncreasePlayerFearLevelClientRpc(float targetInsanity, ulong playerClientId)
     {
-        OnIncreasePlayerFearLevel?.Invoke(receivedAloeId, targetInsanity, playerClientId);
+        OnIncreasePlayerFearLevel?.Invoke(targetInsanity, playerClientId);
     }
 
     /// <summary>
     /// Invokes the set animator trigger event
     /// This uses the trigger function on an animator object
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
     [ClientRpc]
-    internal void SetAnimationTriggerClientRpc(string receivedAloeId, int animationId)
+    internal void SetAnimationTriggerClientRpc(int animationId)
     {
-        OnSetAnimationTrigger?.Invoke(receivedAloeId, animationId);
+        OnSetAnimationTrigger?.Invoke(animationId);
     }
 
     /// <summary>
     /// Invokes the initialize config values event
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     [ClientRpc]
-    internal void InitializeConfigValuesClientRpc(string receivedAloeId)
+    internal void InitializeConfigValuesClientRpc()
     {
-        OnInitializeConfigValues?.Invoke(receivedAloeId);
-    }
-
-    /// <summary>
-    /// Invokes the update aloe id event
-    /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
-    [ClientRpc]
-    internal void SyncAloeIdClientRpc(string receivedAloeId)
-    {
-        OnSyncAloeId?.Invoke(receivedAloeId);
+        OnInitializeConfigValues?.Invoke();
     }
 }

@@ -311,7 +311,6 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     public void AttachLimbToTransform(string bodyPartName, Transform transformToAttachTo, bool retainVelocity = false)
     {
         if (!IsOwner) return;
-
         if (!_bodyPartMap.TryGetValue(bodyPartName, out BodyPart bodyPart)) return;
         
         // If the given transform is null, detach the limb instead as a failsafe
@@ -341,7 +340,6 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     public void DetachLimbFromTransform(string bodyPartName, bool retainVelocity = false)
     {
         if (!IsOwner) return;
-        
         if (!_bodyPartMap.TryGetValue(bodyPartName, out BodyPart bodyPart)) return;
 
         bodyPart.active = false;

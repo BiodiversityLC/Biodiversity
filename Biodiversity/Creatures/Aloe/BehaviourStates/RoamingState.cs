@@ -47,6 +47,8 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
 
     internal override void AIIntervalBehaviour()
     {
+        base.AIIntervalBehaviour();
+        
         // Check if the aloe has reached her favourite spot, so she can start roaming from that position
         if (!_reachedFavouriteSpotForRoaming &&
             Vector3.Distance(EnemyAIInstance.FavouriteSpot, EnemyAIInstance.transform.position) <= 4)

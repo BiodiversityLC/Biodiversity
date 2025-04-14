@@ -55,9 +55,9 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
         fakePlayerBodyRagdollNetworkObject.Spawn();
 
         EnemyAIInstance.SetTargetPlayerInCaptivity(true);
-        EnemyAIInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(EnemyAIInstance.BioId, fakePlayerBodyRagdollNetworkObject);
-        EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(EnemyAIInstance.BioId, false);
-        EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(EnemyAIInstance.BioId, 3f, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+        EnemyAIInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(fakePlayerBodyRagdollNetworkObject);
+        EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(false);
+        EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(3f, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
             AloeClient.AudioClipTypes.snatchAndDragSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(), false, true, false, true);
 
@@ -75,12 +75,13 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
 
     internal override void UpdateBehaviour()
     {
+        base.UpdateBehaviour();
+        
         _dragPlayerTimer -= Time.deltaTime;
         if (_dragPlayerTimer <= 0 && !EnemyAIInstance.HasTransitionedToRunningForwardsAndCarryingPlayer)
         {
             _dragPlayerTimer = float.MaxValue; // Better than adding ANOTHER bool value to this if statement (because we only want the code inside this if statement to trigger once)
-            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(
-                EnemyAIInstance.BioId, AloeClient.KidnapRun);
+            EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.KidnapRun);
 
             EnemyAIInstance.StartCoroutine(EnemyAIInstance.TransitionToRunningForwardsAndCarryingPlayer(0.3f));
         }
@@ -88,6 +89,8 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
 
     internal override void AIIntervalBehaviour()
     {
+        base.AIIntervalBehaviour();
+        
         List<PlayerControllerB> playersLookingAtAloe =
             BiodiverseAI.GetAllPlayersLookingAtPositionPooled(EnemyAIInstance.eye.transform.position, playerViewWidth: 40f,
                 playerViewRange: 40);
@@ -98,8 +101,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
             
             EnemyAIInstance.LogVerbose($"Increasing fear for player {player.playerUsername}");
             
-            EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(
-                EnemyAIInstance.BioId, 0.4f, player.actualClientId);
+            EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(0.4f, player.actualClientId);
         }
 
         ListPool<PlayerControllerB>.Release(playersLookingAtAloe);
