@@ -8,10 +8,11 @@ using UnityEngine.AI;
 using Biodiversity.Util.SharedVariables;
 using BepInEx.Bootstrap;
 using System.Linq;
+using Biodiversity.Creatures.Aloe;
 
 namespace Biodiversity.Creatures.MicBird
 {
-    internal class MicBirdAI : BiodiverseAI, INoiseListener, IVisibleThreat
+    internal class MicBirdAI : BiodiverseAI, IVisibleThreat
     {
         ThreatType IVisibleThreat.type
         {
@@ -139,6 +140,8 @@ namespace Biodiversity.Creatures.MicBird
         public AudioClip teleporterMalClip;
         public AudioClip shipDoorsMalClip;
         public AudioClip radarBoosterMalClip;
+        public AudioClip lightsOn;
+        public AudioClip lightsOff;
         // Sound vars stop here
 
         // Basic mechanic vars
@@ -310,7 +313,10 @@ namespace Biodiversity.Creatures.MicBird
                         StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(true);
                         break;
                     case MalfunctionID.LIGHTSOUT:
-                        FindObjectOfType<ShipLights>().ToggleShipLights();
+                        ShipLights lights = FindObjectOfType<ShipLights>();
+                        lights.ToggleShipLights();
+
+                        if (!lights.areLightsOn) PlayMalfunctionSoundClientRpc(5); else PlayMalfunctionSoundClientRpc(6);
                         break;
                     case MalfunctionID.NONE:
                         ranMalfunction = false;
@@ -375,7 +381,7 @@ namespace Biodiversity.Creatures.MicBird
             {
                 // radar
                 case 0:
-                    radarScreenAudio.PlayOneShot(radarMalClip);
+                    if (!GameNetworkManager.Instance.localPlayerController.isInsideFactory) radarScreenAudio.PlayOneShot(radarMalClip);
                     break;
                 // teleporter
                 case 1:
@@ -392,6 +398,14 @@ namespace Biodiversity.Creatures.MicBird
                 // doors
                 case 4:
                     shipDoorsAudio.PlayOneShot(teleporterMalClip);
+                    break;
+                // light on
+                case 5:
+                    shipDoorsAudio.PlayOneShot(lightsOn);
+                    break;
+                // light off
+                case 6:
+                    shipDoorsAudio.PlayOneShot(lightsOff);
                     break;
             }
         }
@@ -449,14 +463,14 @@ namespace Biodiversity.Creatures.MicBird
         private void spawnMicBird()
         {
             if (MicBirdHandler.Instance.Assets.MicBirdEnemyType.numberSpawned >= 9) return;
-            GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag("OutsideAINode");
+            GameObject[] spawnPoints = AloeSharedData.Instance.GetOutsideAINodes();
 
-            Vector3 vector = GameObject.FindGameObjectsWithTag("OutsideAINode")[spawnRandom.Next(0, spawnPoints.Length)].transform.position;
+            Vector3 vector = spawnPoints[spawnRandom.Next(0, spawnPoints.Length)].transform.position;
             vector = RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(vector, 10f, default(NavMeshHit), spawnRandom, RoundManager.Instance.GetLayermaskForEnemySizeLimit(enemyType));
             vector = RoundManager.Instance.PositionWithDenialPointsChecked(vector, spawnPoints, enemyType);
 
 
-            GameObject bird = Object.Instantiate<GameObject>(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, vector, Quaternion.Euler(Vector3.zero));
+            GameObject bird = Instantiate(MicBirdHandler.Instance.Assets.MicBirdEnemyType.enemyPrefab, vector, Quaternion.Euler(Vector3.zero));
             bird.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             RoundManager.Instance.SpawnedEnemies.Add(bird.GetComponent<EnemyAI>());
             UpdateNumberSpawnedClientRpc(enemyType.numberSpawned + 1);
@@ -562,12 +576,13 @@ namespace Biodiversity.Creatures.MicBird
             GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 20f, null, null);
             if (maybeRadar)
             {
-                if (maybeRadar.GetComponent<GrabbableObject>().GetType() == typeof(RadarBoosterItem))
+                GrabbableObject item = maybeRadar.GetComponent<GrabbableObject>();
+                if (item.GetType() == typeof(RadarBoosterItem))
                 {
-                    RadarBoosterItem radar = maybeRadar.GetComponent<RadarBoosterItem>();
+                    RadarBoosterItem radar = (RadarBoosterItem)item;
                     if (!radar.isInShipRoom && !radar.isPocketed)
                     {
-                        SyncRadarBoosterClientRpc(new NetworkObjectReference(maybeRadar.GetComponent<NetworkObject>()));
+                        SyncRadarBoosterClientRpc(new NetworkObjectReference(item.NetworkObject));
                         SwitchToBehaviourClientRpc((int)State.RADARBOOSTER);
                     }
                 }
