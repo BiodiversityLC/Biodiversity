@@ -756,11 +756,15 @@ public class AloeClient : MonoBehaviour
     {
         if (_lastFootstepTime < 0.25f) return;
         _lastFootstepTime = 0;
+
+        float oldPitch = aloeFootstepsSource.pitch;
         
         AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
+        aloeFootstepsSource.pitch = Random.Range(oldPitch - 0.1f, oldPitch + 0.1f);
         aloeFootstepsSource.PlayOneShot(audioClipToPlay);
-        aloeFootstepsSource.pitch = Random.Range(aloeFootstepsSource.pitch - 0.1f, aloeFootstepsSource.pitch + 0.1f);
         WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
+
+        aloeFootstepsSource.pitch = oldPitch;
     }
 
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
@@ -827,7 +831,7 @@ public class AloeClient : MonoBehaviour
     private IEnumerator DestroyAloeObjectAfterDuration(float duration)
     {
         yield return new WaitForSeconds(duration);
-        BiodiversityPlugin.LogVerbose("Destroying gameobject.");
+        BiodiversityPlugin.LogVerbose($"Destroying AloeClient gameobject.");
         Destroy(gameObject);
     }
 
