@@ -172,6 +172,7 @@ public class AloeClient : MonoBehaviour
     private float _currentEscapeChargeValue;
     private float _agentCurrentSpeed;
     private float _lastFootstepTime;
+    private float _defaultFoostepAudioSourcePitch;
 
     private void Awake()
     {
@@ -278,6 +279,8 @@ public class AloeClient : MonoBehaviour
         AddStateMachineBehaviours(animator);
 
         animator.SetBool(Spawning, true);
+
+        _defaultFoostepAudioSourcePitch = aloeFootstepsSource.pitch;
     }
     
     private void Update()
@@ -756,15 +759,11 @@ public class AloeClient : MonoBehaviour
     {
         if (_lastFootstepTime < 0.25f) return;
         _lastFootstepTime = 0;
-
-        float oldPitch = aloeFootstepsSource.pitch;
         
         AudioClip audioClipToPlay = stepsSfx[Random.Range(0, stepsSfx.Length)];
-        aloeFootstepsSource.pitch = Random.Range(oldPitch - 0.1f, oldPitch + 0.1f);
+        aloeFootstepsSource.pitch = Random.Range(_defaultFoostepAudioSourcePitch - 0.1f, _defaultFoostepAudioSourcePitch + 0.1f);
         aloeFootstepsSource.PlayOneShot(audioClipToPlay);
         WalkieTalkie.TransmitOneShotAudio(aloeFootstepsSource, audioClipToPlay, aloeFootstepsSource.volume);
-
-        aloeFootstepsSource.pitch = oldPitch;
     }
 
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)

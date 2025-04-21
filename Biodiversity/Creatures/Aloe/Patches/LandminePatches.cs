@@ -14,6 +14,7 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 [CreaturePatch("Aloe")]
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 [HarmonyPatch(typeof(Landmine))]
+[HarmonyPriority(Priority.High)]
 internal static class LandminePatch
 {
     [HarmonyPatch(nameof(Landmine.OnTriggerEnter))]
@@ -27,8 +28,8 @@ internal static class LandminePatch
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
             return false;
 
-        PlayerControllerB component = other.gameObject.GetComponent<PlayerControllerB>();
-        if (!PlayerUtil.IsPlayerDead(component) && AloeSharedData.Instance.IsPlayerKidnapBound(component))
+        PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
+        if (player != null && AloeSharedData.Instance.IsPlayerKidnapBound(player))
             return false;
 
         return true;
@@ -45,8 +46,8 @@ internal static class LandminePatch
         if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
             return false;
 
-        PlayerControllerB component = other.gameObject.GetComponent<PlayerControllerB>();
-        if (!PlayerUtil.IsPlayerDead(component) && AloeSharedData.Instance.IsPlayerKidnapBound(component))
+        PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
+        if (player != null && AloeSharedData.Instance.IsPlayerKidnapBound(player))
             return false;
 
         return true;
