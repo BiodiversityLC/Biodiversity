@@ -7,7 +7,7 @@ public struct GenericScrapItem(
     string assetName,
     string itemName,
     string rarity = "All:2",
-    float weight = 5f,
+    float weight = 1f,
     int minimumValue = 20,
     int maximumValue = 60)
 {

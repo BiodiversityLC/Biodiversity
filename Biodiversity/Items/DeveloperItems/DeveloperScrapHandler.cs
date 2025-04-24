@@ -36,7 +36,7 @@ internal class DeveloperScrapHandler : BiodiverseAIHandler<DeveloperScrapHandler
                 Item item = (Item)field.GetValue(Assets);
 
                 item.isScrap = true;
-                item.weight = Mathf.Max(0, Mathf.Ceil(scrapItem.Weight / 105 + 1)) / 100;
+                item.weight = scrapItem.Weight;
                 item.minValue = scrapItem.MinimumValue;
                 item.maxValue = scrapItem.MaximumValue;
 

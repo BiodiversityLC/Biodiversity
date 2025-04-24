@@ -10,5 +10,5 @@ public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<Devel
 {
     [field: Header("Developer Items Settings")]
     
-    public GenericScrapItem RubberDuck { get; private set; } = new("NethersomeDuckItemData", "Nethersomes duck");
+    public GenericScrapItem RubberDuck { get; private set; } = new("NethersomeDuckItemData", "Nethersomes duck", weight: 1.05f);
 }
