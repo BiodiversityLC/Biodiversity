@@ -21,6 +21,10 @@ namespace Biodiversity.Creatures.Ogopogo
             Goingdown,
             Reset
         }
+        
+        private static readonly int AnimID = Animator.StringToHash("AnimID");
+        private static readonly int Stun = Animator.StringToHash("Stun");
+        private const int roomLayerMask = 1 << 8; /**Bitmasks are weird. This references layer 8 which is "Room"**/
 
         // Variables related to water
         private QuicksandTrigger water;
@@ -85,8 +89,6 @@ namespace Biodiversity.Creatures.Ogopogo
         public Transform MapDot;
 
         public EasyIK IK;
-        private static readonly int AnimID = Animator.StringToHash("AnimID");
-        private static readonly int Stun = Animator.StringToHash("Stun");
 
         private Vector3 SavedGrabPos = Vector3.zero;
 
@@ -154,24 +156,32 @@ namespace Biodiversity.Creatures.Ogopogo
 
                 bool usedPredefinedPos = false;
 
-                Dictionary<string, Vector3[]> Levels = new Dictionary<string, Vector3[]> { 
-                    { "VowLevel", new[]{ new Vector3(-104.800003f, -22.0610008f, 110.330002f), new Vector3(27f, -22.0610008f, -61.2000008f) } },
-                    { "AdamanceLevel", new[]{ new Vector3(58.1199989f, -11.04f, -1.85000002f), new Vector3(52.0800018f, -11.04f, -12.5900002f) } }
+                Dictionary<string, Vector3[]> Levels = new()
+                { 
+                    { "VowLevel", [
+                            new Vector3(-104.800003f, -22.0610008f, 110.330002f), 
+                            new Vector3(27f, -22.0610008f, -61.2000008f)
+                        ]
+                    },
+                    { "AdamanceLevel", [
+                            new Vector3(58.1199989f, -11.04f, -1.85000002f), 
+                            new Vector3(52.0800018f, -11.04f, -12.5900002f)
+                        ]
+                    }
                 };
 
-                if (Levels.ContainsKey(StartOfRound.Instance.currentLevel.name))
+                if (Levels.TryGetValue(StartOfRound.Instance.currentLevel.name, out Vector3[] posVectors))
                 {
                     //BiodiversityPlugin.Logger.LogInfo("The thing is working");
                     usedPredefinedPos = true;
-                    Vector3[] PosVectors = Levels[StartOfRound.Instance.currentLevel.name];
-                    int numberOfPos = PosVectors.Count();
+                    int numberOfPos = posVectors.Length;
 
                     int random = Random.Range(0, numberOfPos);
 
-                    transform.position = PosVectors[random];
+                    transform.position = posVectors[random];
                 }
 
-                foreach (var waterd in waters)
+                foreach (QuicksandTrigger waterd in waters)
                 {
                     if (usedPredefinedPos)
                     {
@@ -186,7 +196,7 @@ namespace Biodiversity.Creatures.Ogopogo
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                BiodiversityPlugin.Logger.LogError(ex);
             }
 
             // Set default y pos of audio
@@ -199,8 +209,14 @@ namespace Biodiversity.Creatures.Ogopogo
             RaycastPos.position = new Vector3(transform.position.x, collider.bounds.max.y, transform.position.z);
 
             playerVisorRenderers = new PerKeyCachedDictionary<ulong, MeshRenderer>(playerId =>
-                StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
-                    .GetComponentsInChildren<MeshRenderer>()[0]);
+            {
+                PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
+                if (player != null && player.localVisor != null)
+                {
+                    return player.localVisor.gameObject.GetComponentInChildren<MeshRenderer>();
+                }
+                return null;
+            });
         }
 
         public override void Update()
@@ -240,7 +256,7 @@ namespace Biodiversity.Creatures.Ogopogo
             }
 
             // Set eye position to handle stun. (Calculated on both client and server)
-            if (currentBehaviourStateIndex == (int)State.Wandering || currentBehaviourStateIndex == (int)State.Chasing)
+            if (currentBehaviourStateIndex is (int)State.Wandering or (int)State.Chasing)
             {
                 eye.position = defaultEye.transform.position;
                 eye.rotation = defaultEye.transform.rotation;
@@ -263,7 +279,6 @@ namespace Biodiversity.Creatures.Ogopogo
                 _playerDistances[player.playerClientId] = Distance2d(StartOfRound.Instance.shipBounds.gameObject, player.gameObject);
             }
 
-
             // Move the grabbed player
             if (playerGrabbed.IsNotNull)
             {
@@ -277,7 +292,8 @@ namespace Biodiversity.Creatures.Ogopogo
                         playerGrabbed.Value.thisPlayerModelArms.enabled = false;
                         playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = false;
                     }
-                    catch {
+                    catch 
+                    {
                         // Somehow players joined after the match
                     }
                 }
@@ -289,13 +305,15 @@ namespace Biodiversity.Creatures.Ogopogo
                     playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = true;
                 }
                 */
-            } else
+            } 
+            else
             {
                 try
                 {
                     GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
                     playerVisorRenderers[GameNetworkManager.Instance.localPlayerController.actualClientId].enabled = true;
-                } catch {
+                } catch 
+                {
                     // players joined after the match started
                 }
             }
@@ -305,7 +323,7 @@ namespace Biodiversity.Creatures.Ogopogo
         public void FixedUpdate()
         {
             wallInFront = CheckForWall();
-            dropRaycast = Physics.Raycast(GrabPos.position, Vector3.down, 20f, 1 << 8 /**Bitmasks are weird. This references layer 8 which is "Room"**/);
+            dropRaycast = Physics.Raycast(GrabPos.position, Vector3.down, 20f, roomLayerMask);
         }
 
         // Set wander position. (Only matters when run on server)
@@ -351,22 +369,21 @@ namespace Biodiversity.Creatures.Ogopogo
         // Check if players are within a certain range
         private bool PlayerCheck(float range)
         {
-            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            float rangeSq = range * range;
+            
+            PlayerControllerB[] players = StartOfRound.Instance.allPlayerScripts;
+            for (int i = 0; i < players.Length; i++)
             {
+                PlayerControllerB player = players[i];
                 // BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
-                if (Distance2d(player.gameObject, gameObject) < range &&
+                if (Distance2dSq(player.gameObject, gameObject) < rangeSq &&
                     (player.transform.position.y >= transform.position.y ||
-                     currentBehaviourStateIndex == (int)State.Rising) && !player.isInsideFactory && _playerDistances[player.playerClientId] > 15)
+                     currentBehaviourStateIndex == (int)State.Rising) && !player.isInsideFactory &&
+                    _playerDistances[player.playerClientId] > 15)
                     return true;
             }
 
             return false;
-        }
-
-        // 2d distance formula
-        private static float Distance2d(GameObject obj1, GameObject obj2)
-        {
-            return Mathf.Sqrt(Mathf.Pow(obj1.transform.position.x - obj2.transform.position.x, 2f) + Mathf.Pow(obj1.transform.position.z - obj2.transform.position.z, 2f));
         }
 
         // Check if a position is in a collider's 2d space
@@ -390,13 +407,13 @@ namespace Biodiversity.Creatures.Ogopogo
         // Rise at given speed. Enemy AI already updates position across client so no need for RPC
         private void Rise(float speed)
         {
-            transform.Translate(Vector3.up * speed * Time.deltaTime);
+            transform.Translate(Vector3.up * (speed * Time.deltaTime));
         }
 
         // Go down at given speed. Same as above
         private void GoDown(float speed)
         {
-            transform.Translate(Vector3.down * speed * Time.deltaTime);
+            transform.Translate(Vector3.down * (speed * Time.deltaTime));
         }
 
         // Update the IK object forward along the spline.

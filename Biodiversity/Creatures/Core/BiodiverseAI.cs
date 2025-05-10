@@ -537,6 +537,24 @@ public abstract class BiodiverseAI : EnemyAI
         // LogVerbose($"Is player reachable: {isReachable}");
         return isReachable;
     }
+    
+    protected static float Distance2d(GameObject obj1, GameObject obj2)
+    {
+        float deltaX = obj1.transform.position.x - obj2.transform.position.x;
+        float deltaZ = obj1.transform.position.z - obj2.transform.position.z;
+        return Mathf.Sqrt(deltaX * deltaX + deltaZ * deltaZ);
+        
+        // Its a slightly faster way of doing this:
+        // return Mathf.Sqrt(Mathf.Pow(obj1.transform.position.x - obj2.transform.position.x, 2f) + Mathf.Pow(obj1.transform.position.z - obj2.transform.position.z, 2f));
+    }
+    
+    // 2d squared distance formula (cheaper for comparisons)
+    protected static float Distance2dSq(GameObject obj1, GameObject obj2)
+    {
+        float deltaX = obj1.transform.position.x - obj2.transform.position.x;
+        float deltaZ = obj1.transform.position.z - obj2.transform.position.z;
+        return deltaX * deltaX + deltaZ * deltaZ;
+    }
 
     #region Logging
 
