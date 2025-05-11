@@ -176,12 +176,6 @@ internal class VerminAI : BiodiverseAI
         return ret;
     }
 
-    // 2d distance formula
-    private static float Distance2d(GameObject obj1, GameObject obj2)
-    {
-        return Mathf.Sqrt(Mathf.Pow(obj1.transform.position.x - obj2.transform.position.x, 2f) + Mathf.Pow(obj1.transform.position.z - obj2.transform.position.z, 2f));
-    }
-
     private static bool Collision(Vector3 pos, Collider col)
     {
         return col.bounds.Contains(pos);
