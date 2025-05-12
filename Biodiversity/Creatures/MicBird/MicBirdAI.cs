@@ -178,6 +178,11 @@ namespace Biodiversity.Creatures.MicBird
         // Despawn anim
         private bool leaving = false;
 
+        // Despawn when stuck
+        private bool despawnEarly = false;
+        private int numberofupdatesstuck = 0;
+        private float leaveTimer = 0f;
+
         // Compatibility mode
         private bool hurt = false;
         private bool compatMode = false;
@@ -230,7 +235,7 @@ namespace Biodiversity.Creatures.MicBird
         {
             base.OnDestroy();
 
-            if (firstSpawned != null)
+            if (firstSpawned != null && !despawnEarly)
             {
                 firstSpawned = null;
                 UpdateNumberSpawnedClientRpc(0);
@@ -245,6 +250,16 @@ namespace Biodiversity.Creatures.MicBird
             {
                 creatureAnimator.SetTrigger("Leave");
                 leaving = true;
+            }
+
+            if (despawnEarly)
+            {
+                leaveTimer -= Time.deltaTime;
+
+                if (leaveTimer <= 0)
+                {
+                    Destroy(gameObject);
+                }
             }
 
             base.Update();
@@ -573,7 +588,29 @@ namespace Biodiversity.Creatures.MicBird
 
             if (!spawnDone) return;
 
-            GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 20f, null, null);
+            if (!agent.hasPath && (currentBehaviourStateIndex == (int)State.WANDER || currentBehaviourStateIndex == (int)State.GOTOSHIP))
+            {
+                if (numberofupdatesstuck >= 10)
+                {
+                    BiodiversityPlugin.LogVerbose($"Boombird despawning because it has been stuck for {AIIntervalTime * numberofupdatesstuck} seconds.");
+                    despawnEarly = true;
+                    KillEnemyClientRpc(false);
+                    creatureAnimator.SetTrigger("LeaveEarly");
+                    foreach (AnimationClip anim in creatureAnimator.runtimeAnimatorController.animationClips)
+                    {
+                        if (anim.name == "LeaveEarly")
+                        {
+                            leaveTimer = anim.length;
+                        }
+                    }
+                }
+                numberofupdatesstuck++;
+            } else
+            {
+                numberofupdatesstuck = 0;
+            }
+
+                GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 20f, null, null);
             if (maybeRadar)
             {
                 GrabbableObject item = maybeRadar.GetComponent<GrabbableObject>();
