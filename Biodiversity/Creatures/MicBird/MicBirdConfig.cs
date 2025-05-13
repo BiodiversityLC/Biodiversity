@@ -6,7 +6,7 @@ namespace Biodiversity.Creatures.MicBird
 {
     public class MicBirdConfig(ConfigFile configFile) : BiodiverseConfigLoader<MicBirdConfig>(configFile) {
         [field: Tooltip("Spawn weight of the Boom bird on all moons.")]
-        public string BoomBirdRarity { get; private set; } = "Experimentation:22,Adamance:15,Rend:5,Artifice:45,Atlantica:27,Fission-C:24,Gratar:10,Polarus:8,Seichi:8,Arelion:15,Fray:1,Sierra:21,Icebound:12,Humidity:38,Integrity:8,Vertigo:16,Vaporization:20,Timbrance:50,Rorm:25,Starship-13:25,Filitrios:35,Cubatres:10,Dirge:10";
+        public string BoomBirdRarity { get; private set; } = "Experimentation:22,Adamance:15,Rend:5,Artifice:45,Atlantica:27,Fission-C:24,Gratar:10,Polarus:8,Seichi:8,Arelion:15,Fray:1,Sierra:21,Icebound:12,Humidity:38,Integrity:8,Vertigo:16,Vaporization:20,Timbrance:50,Rorm:25,Starship-13:25,Filitrios:35,Cubatres:10,Dirge:10,Kanie:5,Bilge:10,Acheron:5,Chronos:8";
 
         [field: Tooltip("Power level of the Coil Crab")]
         public float PowerLevel { get; private set; } = 1;
