@@ -26,7 +26,7 @@ internal class CoilCrabHandler : BiodiverseAIHandler<CoilCrabHandler>
 
         ParseWeights();
 
-        LethalLib.Modules.Items.RegisterScrap(Assets.CoilShellItem, 0, LethalLib.Modules.Levels.LevelTypes.None);
+        RegisterScrapWithRuntimeIconSupport(Assets.CoilShellItem, new Dictionary<LethalLib.Modules.Levels.LevelTypes, int> {{LethalLib.Modules.Levels.LevelTypes.All, 0}}, new Dictionary<string, int> { });
 
         TranslateTerminalNode(Assets.CoilCrabTerminalNode);
         RegisterEnemyWithConfig(

@@ -1,4 +1,5 @@
-﻿using Biodiversity.Patches;
+﻿using BepInEx.Bootstrap;
+using Biodiversity.Patches;
 using Biodiversity.Util.Lang;
 using LethalLib.Modules;
 using System;
@@ -47,7 +48,26 @@ internal abstract class BiodiverseAIHandler<T> where T : BiodiverseAIHandler<T>
     {
         (Dictionary<Levels.LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) =
             ConfigParsing(configMoonRarity);
-        LethalLib.Modules.Items.RegisterScrap(scrap, spawnRateByLevelType, spawnRateByCustomLevelType);
+        RegisterScrapWithRuntimeIconSupport(scrap, spawnRateByLevelType, spawnRateByCustomLevelType);
+    }
+
+    protected static void RegisterScrapWithRuntimeIconSupport(Item spawnableItem, Dictionary<Levels.LevelTypes, int> levelRarities, Dictionary<string, int> customLevelRarities)
+    {
+        bool removeIcon = false;
+        foreach (string plugin in Chainloader.PluginInfos.Keys)
+        {
+            if (plugin == "com.github.lethalcompanymodding.runtimeicons")
+            {
+                removeIcon = true;
+            }
+        }
+
+        if (removeIcon)
+        {
+            spawnableItem.itemIcon = null;
+        }
+
+        LethalLib.Modules.Items.RegisterScrap(spawnableItem, levelRarities, customLevelRarities);
     }
 
     protected void RegisterShopItemWithConfig(bool enabledScrap, Item item, TerminalNode terminalNode, int itemCost,
