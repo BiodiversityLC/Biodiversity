@@ -40,6 +40,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         ("death for you and your bloodline", "Monty"),
         ("the fiend is watching... NOT VERY SIGMA!!", "Rolevote"),
         ("we love fat bitches(gender neutral) and body representation for fat bitches(still gender neutral)", "TiltedHat"),
+        ("Aloehood is a spectrum", "Ccode"),
     ];
 
     private void Awake()
