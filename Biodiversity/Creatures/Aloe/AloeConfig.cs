@@ -174,7 +174,6 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     #endregion
 
     #region Advanced Settings
-
     [field: Header("Advanced Settings")]
     
     [field: Tooltip("How often (in seconds) the Aloe updates its logic. Higher values increase performance but slow down reaction times.")]

@@ -68,6 +68,7 @@
 
     <ItemGroup>
       <Folder Include="3rdParty\" />
+      <Folder Include="Creatures\WaxSoldier\BehaviourStates\" />
       <Folder Include="Util\Scripts\" />
     </ItemGroup>
 

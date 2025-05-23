@@ -541,7 +541,6 @@ public class AloeClient : MonoBehaviour
     /// Sets the target player up to be in captivity.
     /// It will muffle the player, drop all their items and freeze them.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="setToInCaptivity">Whether to make them captive or not.</param>
     private void HandleSetTargetPlayerInCaptivity(bool setToInCaptivity)
     {
@@ -614,7 +613,7 @@ public class AloeClient : MonoBehaviour
 
     private void CleanupRagdoll()
     {
-        if (_currentFakePlayerBodyRagdoll == null) return;
+        if (!_currentFakePlayerBodyRagdoll) return;
         BiodiversityPlugin.LogVerbose("_currentFakePlayerBodyRagdoll is not null. Destroying it.");
         Destroy(_currentFakePlayerBodyRagdoll.gameObject);
         _currentFakePlayerBodyRagdoll = null;
@@ -658,8 +657,8 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     private void HandleMuffleTargetPlayerVoice()
     {
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
+        if (!_targetPlayer.Value.currentVoiceChatAudioSource) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (!_targetPlayer.Value.currentVoiceChatAudioSource) return;
 
         BiodiversityPlugin.LogVerbose($"Muffling {_targetPlayer.Value.playerUsername}");
         _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 5f;
@@ -673,8 +672,8 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     private void HandleUnMuffleTargetPlayerVoice()
     {
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
+        if (!_targetPlayer.Value.currentVoiceChatAudioSource) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (!_targetPlayer.Value.currentVoiceChatAudioSource) return;
 
         BiodiversityPlugin.LogVerbose($"UnMuffling {_targetPlayer.Value.playerUsername}");
         _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 1f;
