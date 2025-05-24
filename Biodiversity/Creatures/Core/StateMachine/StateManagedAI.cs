@@ -1,7 +1,9 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.DataStructures;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Unity.Netcode;
 using UnityEngine;
@@ -10,33 +12,180 @@ namespace Biodiversity.Creatures;
 
 /// <summary>
 /// An abstract base class for AI components that manage and transition between different behavior states.
-/// This class provides a state management system where each state is represented by a <see cref="BehaviourState{TState,TEnemyAI}"/> object,
-/// and transitions between states are managed by a dictionary of state types to state instances.
-///
-/// This class makes the creation of an AI a bit more complicated initially; however, it makes debugging and management of the AI significantly easier.
+/// This class provides a robust, reflection-based state machine system where each state is represented by a
+/// <see cref="BehaviourState{TState,TEnemyAI}"/> object. Transitions between states are managed based on
+/// defined conditions within each state.
 /// </summary>
-/// <typeparam name="TState">An enumeration that represents the various states that the AI can be in.</typeparam>
-/// <typeparam name="TEnemyAI">The specific AI class that inherits from <see cref="StateManagedAI{TState, TEnemyAI}"/>.</typeparam>
+/// <remarks>
+/// <para>
+/// This state machine pattern enhances modularity and simplifies the management of complex AI behaviors.
+/// States are discovered at runtime using reflection by looking for classes derived from
+/// <see cref="BehaviourState{TState,TEnemyAI}"/> and decorated with the <see cref="StateAttribute"/>.
+/// </para>
+/// <para>
+/// To optimize performance, discovered state types and their constructors are cached statically per
+/// unique combination of <see cref="TState"/> and <see cref="TEnemyAI"/>.
+/// This means reflection overhead is incurred only once when the first AI of a specific type initializes.
+/// </para>
+/// <para>
+/// Networking: The current state index is synchronized using a <see cref="NetworkVariable{T}"/>,
+/// allowing client-side logic (e.g., animations, effects) to react to server-driven state changes.
+/// All core state logic and transitions execute exclusively on the server.
+/// </para>
+/// </remarks>
+/// <typeparam name="TState">An enumeration (Enum) that defines the possible states for this AI.</typeparam>
+/// <typeparam name="TEnemyAI">The concrete AI class that inherits from this <see cref="StateManagedAI{TState, TEnemyAI}"/>.</typeparam>
 public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     where TState : Enum
     where TEnemyAI : StateManagedAI<TState, TEnemyAI>
 {
     /// <summary>
-    /// The current active state of the AI.
+    /// Provides a static cache for state types and their constructors, specific to each
+    /// combination of the class's generic type parameters <see cref="TState"/> and <see cref="TEnemyAI"/>.
+    /// This significantly reduces reflection overhead after the initial setup.
+    /// </summary>
+    [SuppressMessage("ReSharper", "StaticMemberInGenericType",
+        Justification = "The static members in StateCache are intentionally specific to the generic type parameters TState and TEnemyAI. " +
+                        "This ensures that each unique combination of AI state enum and AI enemy type gets its own distinct cache " +
+                        "for its BehaviourState types and constructors. This is the desired behavior for type-safe, " +
+                        "performant state discovery and instantiation per AI specialization.")]
+    private static class StateCache
+    {
+        /// <summary>
+        /// Gets a dictionary mapping state enum values (of type <see cref="TState"/>) to their corresponding <see cref="Type"/>
+        /// of the <see cref="BehaviourState{TState,TEnemyAI}"/> implementation.
+        /// Populated during the first initialization for this specific <see cref="TState"/> and <see cref="TEnemyAI"/> combination.
+        /// </summary>
+        public static Dictionary<TState, Type> StateTypes { get; private set; }
+        
+        /// <summary>
+        /// Gets a dictionary mapping <see cref="Type"/> of the <see cref="BehaviourState{TState,TEnemyAI}"/> implementation
+        /// to its <see cref="ConstructorInfo"/>. This constructor is expected to take a single parameter of type <see cref="TEnemyAI"/>.
+        /// Populated during the first initialization for this specific <see cref="TState"/> and <see cref="TEnemyAI"/> combination.
+        /// </summary>
+        public static Dictionary<Type, ConstructorInfo> StateConstructors { get; private set; }
+        
+        /// <summary>
+        /// Gets a value indicating whether this specific <see cref="StateCache"/> (for this <see cref="TState"/>, <see cref="TEnemyAI"/> pair)
+        /// has been initialized.
+        /// </summary>
+        public static bool IsInitialized { get; private set; }
+
+        /// <summary>
+        /// Initializes the state cache if it hasn't been already for this specific combination of <see cref="TState"/> and <see cref="TEnemyAI"/>.
+        /// This method uses reflection to find all relevant <see cref="BehaviourState{TState,TEnemyAI}"/> implementations
+        /// within specified assemblies, validates them, and stores their types and constructors.
+        /// This method is thread-safe using a lock for the initialization block.
+        /// </summary>
+        public static void InitializeIfNeeded()
+        {
+            if (IsInitialized) return;
+            lock (typeof(StateCache)) // Ensures thread safety during initialization
+            {
+                if (IsInitialized) return; // Double check lock
+                
+                StateTypes = new Dictionary<TState, Type>();
+                StateConstructors = new Dictionary<Type, ConstructorInfo>();
+
+                Type stateBehaviourBaseType = typeof(BehaviourState<TState, TEnemyAI>);
+                Type enemyAiType = typeof(TEnemyAI);
+
+                for (int i = 0; i < BiodiversityPlugin.CachedAssemblies.Value.Count; i++)
+                {
+                    Assembly assembly = BiodiversityPlugin.CachedAssemblies.Value[i];
+                    if (!assembly.FullName.Contains("Biodiversity")) continue;
+
+                    try
+                    {
+                        foreach (Type type in assembly.GetLoadableTypes())
+                        {
+                            if (!type.IsAbstract && type.IsSubclassOf(stateBehaviourBaseType))
+                            {
+                                StateAttribute attribute = type.GetCustomAttribute<StateAttribute>();
+                                if (attribute == null)
+                                {
+                                    BiodiversityPlugin.Logger.LogError(
+                                        $"[StateCache<{typeof(TEnemyAI).Name}>] State type {type.FullName} is missing a StateAttribute");
+                                    continue;
+                                }
+
+                                TState stateValue;
+                                try
+                                {
+                                    stateValue = (TState)attribute.StateType;
+                                }
+                                catch (InvalidCastException)
+                                {
+                                    BiodiversityPlugin.Logger.LogError(
+                                        $"[StateCache<{typeof(TEnemyAI).Name}>] StateAttribute on {type.Name} does not match expected enum type {typeof(TState).Name}.");
+                                    continue;
+                                }
+
+                                ConstructorInfo constructor = type.GetConstructor([enemyAiType]);
+                                if (constructor == null)
+                                {
+                                    BiodiversityPlugin.Logger.LogError(
+                                        $"[StateCache<{typeof(TEnemyAI).Name}>] No constructor matching ({enemyAiType.Name}) found for state type {type.Name}.");
+                                    continue;
+                                }
+
+                                if (!StateTypes.TryAdd(stateValue, type))
+                                {
+                                    BiodiversityPlugin.Logger.LogError(
+                                        $"[StateCache<{typeof(TEnemyAI).Name}>] Duplicate state enum value {stateValue} detected for type {type.Name} (Already mapped to {StateTypes[stateValue].Name}).");
+                                    continue;
+                                }
+
+                                // Cache the constructor along with the type
+                                StateConstructors.Add(type, constructor);
+
+                                BiodiversityPlugin.LogVerbose(
+                                    $"[StateCache<{typeof(TEnemyAI).Name}>] Cached state {stateValue} -> {type.Name}");
+                            }
+                        }
+                    }
+                    catch (ReflectionTypeLoadException e)
+                    {
+                        BiodiversityPlugin.Logger.LogError(
+                            $"[StateCache<{typeof(TEnemyAI).Name}>] Failed to load types from assembly {assembly.FullName}: {e.Message}");
+                    }
+                    catch (Exception e)
+                    {
+                        BiodiversityPlugin.Logger.LogError($"[StateCache<{typeof(TEnemyAI).Name}>] Error processing assembly {assembly.FullName}: {e}");
+                    }
+                }
+                
+                BiodiversityPlugin.Logger.LogInfo($"[StateCache<{typeof(TEnemyAI).Name}>] Initialized with {StateTypes.Count} states.");
+                IsInitialized = true;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Gets the current active behavior state instance of the AI. This state is an implementation of <see cref="BehaviourState{TState,TEnemyAI}"/>.
+    /// This is <c>null</c> if no state is active or before initialization.
     /// </summary>
     protected BehaviourState<TState, TEnemyAI> CurrentState;
     
-    // for compatibility with vanilla, this really shouldnt be public
+    /// <summary>
+    /// Network-synchronized variable holding the integer representation of the current AI state (which is of enum type <see cref="TState"/>).
+    /// Primarily used for synchronizing state information to clients for visual or non-gameplay logic.
+    /// Marked as public for (and only for) vanilla compatibility or external systems needing to read the raw state index,
+    /// though direct manipulation from outside this class is discouraged.
+    /// </summary>
     public readonly NetworkVariable<int> NetworkCurrentBehaviourStateIndex = new();
     
     /// <summary>
-    /// The previous state of the AI before the current state.
+    /// Gets the behavior state instance (an implementation of <see cref="BehaviourState{TState,TEnemyAI}"/>)
+    /// that was active before the <see cref="CurrentState"/>.
+    /// This is <c>null</c> if the AI has not transitioned from a previous state yet.
     /// </summary>
     protected internal BehaviourState<TState, TEnemyAI> PreviousState;
 
     /// <summary>
-    /// A dictionary mapping each <typeparamref name="TState"/> to its corresponding <see cref="BehaviourState{TState, TEnemyAI}"/> instance.
-    /// This dictionary is populated in <see cref="ConstructStateDictionary"/> by reflecting over all types derived from <see cref="BehaviourState{TState, TEnemyAI}"/>.
+    /// A dictionary mapping each <see cref="TState"/> enum value to its instantiated
+    /// <see cref="BehaviourState{TState,TEnemyAI}"/> object for this specific AI instance.
+    /// This dictionary is populated by <see cref="ConstructStateDictionary"/> during this AI's <see cref="Start"/> method.
     /// </summary>
     private readonly Dictionary<TState, BehaviourState<TState, TEnemyAI>> _stateDictionary = new();
 
@@ -50,6 +199,11 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// </summary>
     protected Dictionary<string, AudioSource> AudioSources { get; set; } = new();
     
+    /// <summary>
+    /// Called when the script instance is being loaded.
+    /// Initializes the base <see cref="BiodiverseAI"/> and, if on the server,
+    /// constructs the state dictionary and transitions to the initial state determined by <see cref="DetermineInitialState"/>.
+    /// </summary>
     public override void Start()
     {
         base.Start();
@@ -62,7 +216,9 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Executes <see cref="BehaviourState{TState, TEnemyAI}.UpdateBehaviour"/> on the current state if <see cref="ShouldRunUpdate"/> returns true.
+    /// Called every frame, if the MonoBehaviour is enabled.
+    /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.UpdateBehaviour"/> method of the <see cref="CurrentState"/>
+    /// if <see cref="ShouldRunUpdate"/> returns <c>true</c>.
     /// </summary>
     public override void Update()
     {
@@ -73,9 +229,10 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Invoked at AI-defined intervals <see cref="EnemyAI.AIIntervalTime"/>.
-    /// Executes the <see cref="BehaviourState{TState, TEnemyAI}.AIIntervalBehaviour"/> for the current state.
-    /// Also checks for state transitions by evaluating each transition in the current state's transition list.
+    /// Called at fixed intervals defined by <c>EnemyAI.AIIntervalTime</c> (from a base class, not shown).
+    /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.AIIntervalBehaviour"/> of the <see cref="CurrentState"/>
+    /// and then checks for any valid state transitions defined in the current state.
+    /// This is the primary driver for state changes.
     /// </summary>
     public override void DoAIInterval()
     {
@@ -98,7 +255,9 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Executes <see cref="BehaviourState{TState, TEnemyAI}.LateUpdateBehaviour"/> on the current state if <see cref="ShouldRunLateUpdate"/> returns true.
+    /// Called every frame after all <see cref="Update"/> functions have been called.
+    /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.LateUpdateBehaviour"/> method of the <see cref="CurrentState"/>
+    /// if <see cref="ShouldRunLateUpdate"/> returns <c>true</c>.
     /// </summary>
     protected virtual void LateUpdate()
     {
@@ -107,160 +266,108 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
     
     /// <summary>
-    /// Constructs the state dictionary by discovering all non-abstract subclasses of 
-    /// <see cref="BehaviourState&lt;TState, TEnemyAI&gt;"/> that are decorated with the <see cref="StateAttribute"/> attribute.
-    /// This method uses reflection to locate these subclasses, retrieve their associated <typeparamref name="TState"/> values,
-    /// and instantiate them using their constructors.
+    /// Populates the instance-specific <see cref="_stateDictionary"/> by creating instances of
+    /// state types found in the <see cref="StateCache"/>. The state types are implementations of <see cref="BehaviourState{TState,TEnemyAI}"/>.
+    /// This method is called once during <see cref="Start"/> for each AI instance.
     /// </summary>
-    /// <remarks>
-    /// This method relies on the <see cref="StateAttribute"/> to associate each subclass of 
-    /// <see cref="BehaviourState&lt;TState, TEnemyAI&gt;"/> with a specific <typeparamref name="TState"/> value.
-    /// Classes without the <see cref="StateAttribute"/> are skipped during the discovery process.
-    /// </remarks>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown if a state subclass is missing a required constructor or if instantiation fails.
-    /// </exception>
-    /// <example>
-    /// Example of a valid subclass:
-    /// <code>
-    /// [State(MyStateEnum.SomeState)]
-    /// public class SomeState : BehaviourState&lt;MyStateEnum, MyEnemyAI&gt;
-    /// {
-    ///     public SomeState(MyEnemyAI enemyAiInstance) : base(enemyAiInstance)
-    ///     {
-    ///     }
-    /// }
-    /// </code>
-    /// </example>
-    /// <seealso cref="StateAttribute"/>
     private void ConstructStateDictionary()
     {
         if (!IsServer) return;
         
-        // todo: cache stuff in this function because reflection is bad. Make sure to use a separate class because static thingies in generic classes (in this case) is bad.
-        List<Type> stateTypes = [];
-        for (int i = 0; i < BiodiversityPlugin.CachedAssemblies.Value.Count; i++)
-        {
-            Assembly assembly = BiodiversityPlugin.CachedAssemblies.Value[i];
-            if (!assembly.FullName.Contains("Biodiversity")) continue;
+        StateCache.InitializeIfNeeded(); // Ensure the static cache is initialized once per TState/TEnemyAI combo
+        _stateDictionary.Clear();
 
-            Type[] types;
-            try
+        foreach ((TState stateValue, Type stateType) in StateCache.StateTypes)
+        {
+            if (!StateCache.StateConstructors.TryGetValue(stateType, out ConstructorInfo constructor))
             {
-                types = assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException e)
-            {
-                LogVerbose($"Failed to load types from assembly {assembly.FullName}: {e.Message}");
+                // This should ideally not happen if InitializeIfNeeded worked correctly
+                LogError($"Constructor cache miss for state type {stateType.Name}. Skipping state {stateValue}.");
                 continue;
             }
 
-            for (int j = 0; j < types.Length; j++)
+            try
             {
-                Type type = types[j];
-                if (type.IsSubclassOf(typeof(BehaviourState<TState, TEnemyAI>)) && !type.IsAbstract)
-                {
-                    stateTypes.Add(type);
-                }
+                // Create an instance using the cached constructor
+                BehaviourState<TState, TEnemyAI> stateInstance =
+                    (BehaviourState<TState, TEnemyAI>)constructor.Invoke([(TEnemyAI)this]);
+
+                // Add the instance to this AI's dictionary
+                _stateDictionary.Add(stateValue, stateInstance);
+
+                LogVerbose($"Instantiated state {stateValue} ({stateType.Name}) for this AI instance.");
+            }
+            catch (Exception e)
+            {
+                LogError($"Failed to instantiate state {stateType.Name} using cached constructor: {e}");
             }
         }
-
-        foreach (Type stateType in stateTypes)
-        {
-
-            StateAttribute attribute = stateType.GetCustomAttribute<StateAttribute>();
-            if (attribute == null)
-            {
-                LogError($"State type {stateType.FullName} is missing a StateAttribute");
-                continue;
-            }
-
-            TState stateValue;
-            try
-            {
-                stateValue = (TState)attribute.StateType;
-            }
-            catch (InvalidCastException)
-            {
-                LogError($"StateAttribute on {stateType.Name} does not match expected type {typeof(TState).Name}.");
-                continue;
-            }
-            
-            // Log constructors for debugging
-            ConstructorInfo[] constructors = stateType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            foreach (ConstructorInfo ctor in constructors)
-            {
-                LogInfo($"Constructor found for {stateType.Name}: {ctor}");
-                // LogVerbose($"Constructor found for {stateType.Name}: {ctor}");
-            }
-            
-            ConstructorInfo constructor = stateType.GetConstructor([typeof(TEnemyAI)]);
-            if (constructor == null)
-            {
-                LogError($"No valid matching constructor found for {stateType.Name}.");
-                continue;
-            }
-
-            try
-            {
-                // Create an instance of this state by invoking the constructor
-                BehaviourState<TState, TEnemyAI> stateInstance = (BehaviourState<TState, TEnemyAI>)constructor.Invoke([(TEnemyAI)this]);
-
-                // Add the state to the dictionary if not already present
-                if (!_stateDictionary.TryAdd(stateValue, stateInstance))
-                {
-                    LogError($"State {stateValue} already exists in the dictionary.");
-                }
-                else
-                {
-                    LogInfo($"State {stateValue} was added successfully.");
-                    // LogVerbose($"State {stateValue} was added successfully.");
-                }
-                    
-            }
-            catch (Exception ex)
-            {
-                LogError($"Failed to instantiate {stateType.Name}: {ex.Message}");
-            }
-        }
+        LogVerbose($"Constructed state dictionary for this instance with {_stateDictionary.Count} states.");
     }
 
     /// <summary>
-    /// Switches the current state of the AI to a new state.
-    /// If the transition is valid, the current state's exit logic is called, followed by the entry logic of the new state.
+    /// Transitions the AI to a new behavior state.
+    /// This involves calling <see cref="BehaviourState{TState,TEnemyAI}.OnStateExit"/> on the current state (if any),
+    /// then <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/> on the new state.
+    /// The <see cref="NetworkCurrentBehaviourStateIndex"/> is updated to reflect the new state.
+    /// The <paramref name="stateTransition"/>'s <c>OnTransition</c> method is called if provided.
     /// </summary>
-    /// <param name="newState">The new state to switch to, represented by a <typeparamref name="TState"/> value.</param>
-    /// <param name="stateTransition">The transition triggering the state change.</param>
-    /// <param name="initData">Optional initialization data passed to the new state on entry.</param>
+    /// <param name="newState">The enum value of the <see cref="TState"/> to transition to.</param>
+    /// <param name="stateTransition">The <see cref="StateTransition{TState,TEnemyAI}"/> object that triggered this state change, if applicable.
+    /// Its <c>OnTransition</c> method will be called.</param>
+    /// <param name="initData">Optional <see cref="StateData"/> to pass to the <c>OnStateEnter</c>
+    /// method of the new state. If the state's <c>OnStateEnter</c> method signature uses <c>ref StateData</c>,
+    /// then <paramref name="initData"/> will be passed by reference.
+    /// </param>
     internal void SwitchBehaviourState(
         TState newState,
         StateTransition<TState, TEnemyAI> stateTransition = null,
         StateData initData = null)
     {
         if (!IsServer) return;
-        if (CurrentState != null)
+        
+        BehaviourState<TState, TEnemyAI> previousStateInstance = CurrentState;
+        if (previousStateInstance != null)
         {
-            LogVerbose($"Exiting state {CurrentState.GetStateType()}.");
+            LogVerbose($"Exiting state {previousStateInstance.GetStateType()}.");
+
+            try
+            {
+                previousStateInstance.OnStateExit();
+            }
+            catch (Exception e)
+            {
+                LogError($"Exception during OnStateExit for {previousStateInstance.GetStateType()}: {e}");
+            }
             
-            CurrentState.OnStateExit();
-            PreviousState = CurrentState;
-            previousBehaviourStateIndex = currentBehaviourStateIndex;
+            PreviousState = previousStateInstance;
+            previousBehaviourStateIndex = Convert.ToInt32(previousStateInstance.GetStateType());
             
             stateTransition?.OnTransition();
         }
         else
         {
             LogVerbose("Could not exit the current state; it is null.");
+            PreviousState = null;
+            previousBehaviourStateIndex = -1;
         }
 
         if (_stateDictionary.TryGetValue(newState, out BehaviourState<TState, TEnemyAI> newStateInstance))
         {
             CurrentState = newStateInstance;
             currentBehaviourStateIndex = Convert.ToInt32(newState);
-            NetworkCurrentBehaviourStateIndex.Value = currentBehaviourStateIndex;
-            LogVerbose($"Entering state {newState}.");
+            ExtensionMethods.ChangeNetworkVar(NetworkCurrentBehaviourStateIndex, currentBehaviourStateIndex);
             
-            CurrentState.OnStateEnter(ref initData);
+            LogVerbose($"Entering state {newState}.");
+
+            try
+            {
+                CurrentState.OnStateEnter(ref initData);
+            }
+            catch (Exception e)
+            {
+                LogError($"Exception during OnStateEnter for {newState}: {e}");
+            }
             
             LogVerbose($"Successfully switched to behaviour state {newState}");
         }
