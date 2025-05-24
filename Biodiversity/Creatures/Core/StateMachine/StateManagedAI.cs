@@ -69,7 +69,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         /// Gets a value indicating whether this specific <see cref="StateCache"/> (for this <see cref="TState"/>, <see cref="TEnemyAI"/> pair)
         /// has been initialized.
         /// </summary>
-        public static bool IsInitialized { get; private set; }
+        private static bool IsInitialized { get; set; }
 
         /// <summary>
         /// Initializes the state cache if it hasn't been already for this specific combination of <see cref="TState"/> and <see cref="TEnemyAI"/>.
@@ -289,8 +289,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             try
             {
                 // Create an instance using the cached constructor
-                BehaviourState<TState, TEnemyAI> stateInstance =
-                    (BehaviourState<TState, TEnemyAI>)constructor.Invoke([(TEnemyAI)this]);
+                BehaviourState<TState, TEnemyAI> stateInstance = (BehaviourState<TState, TEnemyAI>)constructor.Invoke([(TEnemyAI)this]);
 
                 // Add the instance to this AI's dictionary
                 _stateDictionary.Add(stateValue, stateInstance);
