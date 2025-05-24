@@ -33,8 +33,8 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
         EnemyAIInstance.openDoorSpeedMultiplier = 2f;
         
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
-            AloeClient.AudioClipTypes.chaseSfx.ToString(),
-            AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(),
+            nameof(AloeClient.AudioClipTypes.chaseSfx),
+            nameof(AloeClient.AudioSourceTypes.aloeVoiceSource),
             true, true, false, true);
         
         EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.Stand);

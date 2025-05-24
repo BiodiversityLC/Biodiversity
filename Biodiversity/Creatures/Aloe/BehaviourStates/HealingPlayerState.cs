@@ -62,7 +62,7 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
         float totalHealingTime = (playerMaxHealth - EnemyAIInstance.ActualTargetPlayer.Value.health) / healingRate;
         EnemyAIInstance.netcodeController.PlayHealingVfxClientRpc(totalHealingTime);
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
-            AloeClient.AudioClipTypes.healingSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString());
+            nameof(AloeClient.AudioClipTypes.healingSfx), nameof(AloeClient.AudioSourceTypes.aloeVoiceSource));
         EnemyAIInstance.ActualTargetPlayer.Value
             .HealServerRpc(); // Doesn't actually heal them, just makes them not bleed anymore
     }

@@ -59,7 +59,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
         EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(false);
         EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(3f, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
-            AloeClient.AudioClipTypes.snatchAndDragSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(), false, true, false, true);
+            nameof(AloeClient.AudioClipTypes.snatchAndDragSfx), nameof(AloeClient.AudioSourceTypes.aloeVoiceSource), false, true, false, true);
 
         if (BiodiverseAI.IsPathValid(
                 agent: EnemyAIInstance.agent,

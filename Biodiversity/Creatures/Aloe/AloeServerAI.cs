@@ -27,14 +27,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 2f;
     
 #pragma warning disable 0649
-    [Header("Transforms")] [Space(5f)] 
-    [SerializeField] private Transform rootTransform;
-    [SerializeField] private Transform headBone;
-
-    [Header("Colliders")] [Space(5f)]
-    [SerializeField] private Collider bodyCollider;
-    [SerializeField] private SphereCollider slapCollider;
-    
     [Header("Controllers")] [Space(5f)] 
     public AloeNetcodeController netcodeController;
 #pragma warning restore 0649
@@ -210,35 +202,32 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         _mainEntrancePosition = RoundManager.FindMainEntrancePosition(true);
         Vector3 brackenRoomAloeNode = AloeSharedData.Instance.OccupyBrackenRoomAloeNode();
 
-        // Check if the Aloe is outside, and if she is then teleport her back inside
+        // Make sure the Aloe has the correct AI nodes assigned
         {
             Vector3 enemyPos = transform.position;
             Vector3 closestOutsideNode = Vector3.positiveInfinity;
             Vector3 closestInsideNode = Vector3.positiveInfinity;
             
-            IEnumerable<Vector3> insideNodePositions = AloeUtils.FindInsideAINodePositions();
-            IEnumerable<Vector3> outsideNodePositions = AloeUtils.FindOutsideAINodePositions();
+            GameObject[] outsideAINodes = AloeSharedData.Instance.GetOutsideAINodes();
+            GameObject[] insideAINodes = AloeSharedData.Instance.GetInsideAINodes();
 
-            foreach (Vector3 pos in outsideNodePositions)
+            for (int i = 0; i < outsideAINodes.Length; i++)
             {
-                if ((pos - enemyPos).sqrMagnitude < (closestOutsideNode - enemyPos).sqrMagnitude)
-                {
-                    closestOutsideNode = pos;
-                }
-            }
-        
-            foreach (Vector3 pos in insideNodePositions)
-            {
-                if ((pos - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
-                {
-                    closestInsideNode = pos;
-                }
+                GameObject node = outsideAINodes[i];
+                Vector3 nodePos = node.transform.position;
+                if ((nodePos - enemyPos).sqrMagnitude < (closestOutsideNode - enemyPos).sqrMagnitude)
+                    closestOutsideNode = nodePos;
             }
 
-            if ((closestOutsideNode - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
+            for (int i = 0; i < insideAINodes.Length; i++)
             {
-                allAINodes = AloeSharedData.Instance.GetOutsideAINodes();
+                GameObject node = insideAINodes[i];
+                Vector3 nodePos = node.transform.position;
+                if ((nodePos - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
+                    closestInsideNode = nodePos;
             }
+
+            allAINodes = (closestOutsideNode - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude ? outsideAINodes : insideAINodes;
         }
 
         //_favouriteSpot = brackenRoomAloeNode;
@@ -355,7 +344,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         AloeStates currentAloeStateType = CurrentState.GetStateType();
         if (_takeDamageCooldown > 0 || currentAloeStateType is AloeStates.Dead) return;
 
-        PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.hitSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(), false, true, false, true);
+        PlayRandomAudioClipTypeServerRpc(nameof(AloeClient.AudioClipTypes.hitSfx), nameof(AloeClient.AudioSourceTypes.aloeVoiceSource), false, true, false, true);
         enemyHP -= force;
         _takeDamageCooldown = 0.03f;
         
@@ -481,7 +470,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
         if (currentAloeState is AloeStates.Dead) return;
 
         _inStunAnimation = true;
-        PlayRandomAudioClipTypeServerRpc(AloeClient.AudioClipTypes.stunSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(), true, true, false, true);
+        PlayRandomAudioClipTypeServerRpc(nameof(AloeClient.AudioClipTypes.stunSfx), nameof(AloeClient.AudioSourceTypes.aloeVoiceSource), true, true, false, true);
         netcodeController.AnimationParamStunned.Value = true;
         netcodeController.AnimationParamHealing.Value = false;
 
@@ -661,8 +650,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.AloeStates, AloeServerAI
     {
         if (!IsServer) return;
         PlayRandomAudioClipTypeServerRpc(
-            AloeClient.AudioClipTypes.interruptedHealingSfx.ToString(),
-            AloeClient.AudioSourceTypes.aloeVoiceSource.ToString(),
+            nameof(AloeClient.AudioClipTypes.interruptedHealingSfx),
+            nameof(AloeClient.AudioSourceTypes.aloeVoiceSource),
             true, true, false, true);
     }
     
