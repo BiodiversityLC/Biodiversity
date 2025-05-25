@@ -7,8 +7,8 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
-[State(AloeServerAI.AloeStates.AttackingPlayer)]
-internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
+[State(AloeServerAI.States.AttackingPlayer)]
+internal class AttackingPlayerState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     private bool _isPlayerTargetable;
 
@@ -60,7 +60,7 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, Al
     private class TransitionToChasingEscapedPlayer(
         AloeServerAI enemyAIInstance,
         AttackingPlayerState attackingPlayerState)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         internal override bool ShouldTransitionBeTaken()
         {
@@ -73,9 +73,9 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.AloeStates, Al
             return true;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
-            return AloeServerAI.AloeStates.ChasingEscapedPlayer;
+            return AloeServerAI.States.ChasingEscapedPlayer;
         }
     }
 }

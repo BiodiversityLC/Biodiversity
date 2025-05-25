@@ -11,8 +11,8 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
-[State(AloeServerAI.AloeStates.KidnappingPlayer)]
-internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
+[State(AloeServerAI.States.KidnappingPlayer)]
+internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     private float _dragPlayerTimer;
 
@@ -66,7 +66,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
                 targetPosition: EnemyAIInstance.FavouriteSpot) != BiodiverseAI.PathStatus.Valid)
         {
             EnemyAIInstance.LogWarning("When initializing kidnapping, no path was found to the Aloe's favourite spot.");
-            EnemyAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.HealingPlayer);
+            EnemyAIInstance.SwitchBehaviourState(AloeServerAI.States.HealingPlayer);
             return;
         }
 
@@ -108,16 +108,16 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.AloeStates, A
     }
 
     private class TransitionToHealingPlayer(AloeServerAI enemyAIInstance)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         internal override bool ShouldTransitionBeTaken()
         {
             return Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.FavouriteSpot) <= 2;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
-            return AloeServerAI.AloeStates.HealingPlayer;
+            return AloeServerAI.States.HealingPlayer;
         }
     }
 }

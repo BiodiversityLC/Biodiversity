@@ -305,7 +305,7 @@ public class AloeClient : MonoBehaviour
         {
             switch (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value)
             {
-                case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer:
+                case (int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer:
                 {
                     if (!_targetPlayer.HasValue) break;
                     if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
@@ -345,8 +345,8 @@ public class AloeClient : MonoBehaviour
         // Animate the real target player's body
         if (_targetPlayerInCaptivity && _targetPlayer.HasValue)
         {
-            if (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.AloeStates.KidnappingPlayer
-                    or (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer &&
+            if (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.States.KidnappingPlayer
+                    or (int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer &&
                 _targetPlayer.Value.inSpecialInteractAnimation)
             {
                 _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
@@ -775,13 +775,13 @@ public class AloeClient : MonoBehaviour
 
     private void HandleBehaviourStateChanged(int oldValue, int newValue)
     {
-        petalsRenderer.enabled = newValue is (int)AloeServerAI.AloeStates.HealingPlayer
-            or (int)AloeServerAI.AloeStates.CuddlingPlayer or (int)AloeServerAI.AloeStates.ChasingEscapedPlayer
-            or (int)AloeServerAI.AloeStates.AttackingPlayer;
+        petalsRenderer.enabled = newValue is (int)AloeServerAI.States.HealingPlayer
+            or (int)AloeServerAI.States.CuddlingPlayer or (int)AloeServerAI.States.ChasingEscapedPlayer
+            or (int)AloeServerAI.States.AttackingPlayer;
         
         switch (newValue)
         {
-            case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer when oldValue is not ((int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer):
+            case (int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer when oldValue is not ((int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer):
             {
                 BiodiversityPlugin.LogVerbose("Switching target player offset to cuddled.");
                 if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
@@ -789,8 +789,8 @@ public class AloeClient : MonoBehaviour
                 break;
             }
             
-            case (int)AloeServerAI.AloeStates.KidnappingPlayer when
-                oldValue is not (int)AloeServerAI.AloeStates.KidnappingPlayer:
+            case (int)AloeServerAI.States.KidnappingPlayer when
+                oldValue is not (int)AloeServerAI.States.KidnappingPlayer:
             {
                 _offsetPosition = Vector3.zero;
                 _offsetRotation = Quaternion.identity;

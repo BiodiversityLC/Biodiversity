@@ -7,8 +7,8 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
-[State(AloeServerAI.AloeStates.ChasingEscapedPlayer)]
-internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
+[State(AloeServerAI.States.ChasingEscapedPlayer)]
+internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     public float WaitBeforeChasingTimer;
 
@@ -81,7 +81,7 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
     private class TransitionToKidnappingPlayer(
         AloeServerAI enemyAIInstance,
         ChasingEscapedPlayerState chasingEscapedPlayerState)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         internal override bool ShouldTransitionBeTaken()
         {
@@ -94,25 +94,25 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.AloeState
             return true;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
-            return AloeServerAI.AloeStates.KidnappingPlayer;
+            return AloeServerAI.States.KidnappingPlayer;
         }
     }
 
     private class TransitionToPassiveRoaming(
         AloeServerAI enemyAIInstance,
         ChasingEscapedPlayerState chasingEscapedPlayerState)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         internal override bool ShouldTransitionBeTaken()
         {
             return !chasingEscapedPlayerState._isPlayerTargetable;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
-            return AloeServerAI.AloeStates.Roaming;
+            return AloeServerAI.States.Roaming;
         }
     }
 }

@@ -10,8 +10,8 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
-[State(AloeServerAI.AloeStates.AvoidingPlayer)]
-internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
+[State(AloeServerAI.States.AvoidingPlayer)]
+internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     private CachedNullable<PlayerControllerB> _playerLookingAtAloe;
 
@@ -135,7 +135,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
     }
 
     private class TransitionToPreviousState(AloeServerAI enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         internal override bool ShouldTransitionBeTaken()
         {
@@ -158,14 +158,14 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
                    !avoidingPlayerState._playerLookingAtAloe.HasValue;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
             return EnemyAIInstance.PreviousState.GetStateType();
         }
     }
 
     private class TransitionToAttackingState(AloeServerAI enemyAIInstance, AvoidingPlayerState avoidingPlayerState)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         internal override bool ShouldTransitionBeTaken()
         {
@@ -173,9 +173,9 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
                    avoidingPlayerState._shouldTransitionToAttacking;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
-            return AloeServerAI.AloeStates.AttackingPlayer;
+            return AloeServerAI.States.AttackingPlayer;
         }
     }
 }

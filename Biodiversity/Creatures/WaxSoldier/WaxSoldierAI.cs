@@ -4,9 +4,14 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier;
 
-public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.WaxSoldierStates, WaxSoldierServerAI>
+public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxSoldierServerAI>
 {
-    public enum WaxSoldierStates
+#pragma warning disable 0649
+    [Header("Controllers")] [Space(5f)] 
+    public WaxSoldierNetcodeController netcodeController;
+#pragma warning restore 0649
+    
+    public enum States
     {
         Spawning,
         Dead,
@@ -14,10 +19,10 @@ public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.WaxSoldierSt
     
     internal float AgentMaxAcceleration;
     internal float AgentMaxSpeed;
-
-    protected override WaxSoldierStates DetermineInitialState()
+    
+    protected override States DetermineInitialState()
     {
-        return WaxSoldierStates.Spawning;
+        return States.Spawning;
     }
     
     protected override string GetLogPrefix()
