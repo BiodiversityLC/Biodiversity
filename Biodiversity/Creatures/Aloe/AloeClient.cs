@@ -353,8 +353,8 @@ public class AloeClient : MonoBehaviour
                 _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
             }
             
-            CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value); // such a shitty way of fixing a bug
-            UpdateRagdollVisibility(); // this too
+            CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value);
+            UpdateRagdollVisibility();
         }
     }
 
@@ -416,7 +416,7 @@ public class AloeClient : MonoBehaviour
         float endMetallicValue = toDark ? skinMetallicValueDark : 0;
 
         Color currentColour = bodyRenderer.material.GetColor(BaseColour);
-        RGBToHSV(currentColour, out float h, out float s, out float v);
+        ExtensionMethods.RGBToHSV(currentColour, out float h, out float s, out float v);
         float endV = toDark ? 0.5f : 1f;
 
         // Early exit if the skin colour is already the desired colour
@@ -431,7 +431,7 @@ public class AloeClient : MonoBehaviour
             float t = timeElapsed / skinMetallicTransitionTime;
             float currentMetallicValue = Mathf.Lerp(startMetallicValue, endMetallicValue, t);
             float currentV = Mathf.Lerp(v, endV, t);
-            Color newColour = HSVToRGB(h, s, currentV);
+            Color newColour = ExtensionMethods.HSVToRGB(h, s, currentV);
 
             _propertyBlock.SetFloat(Metallic, currentMetallicValue);
             _propertyBlock.SetColor(BaseColour, newColour);
@@ -443,7 +443,7 @@ public class AloeClient : MonoBehaviour
 
         // Ensure the final value is set exactly at the end
         _propertyBlock.SetFloat(Metallic, endMetallicValue);
-        _propertyBlock.SetColor(BaseColour, HSVToRGB(h, s, endV));
+        _propertyBlock.SetColor(BaseColour, ExtensionMethods.HSVToRGB(h, s, endV));
         bodyRenderer.SetPropertyBlock(_propertyBlock);
         
         _changeSkinColourCoroutine = null;
@@ -845,34 +845,6 @@ public class AloeClient : MonoBehaviour
                 baseStateMachineBehaviour.Initialize(netcodeController, aloeServerAI, this);
             }
         }
-    }
-
-    /// <summary>
-    /// Converts an RGB color to HSV and returns the original RGB color.
-    /// </summary>
-    /// <param name="rgb">The RGB color to convert.</param>
-    /// <param name="h">The hue component of the HSV color.</param>
-    /// <param name="s">The saturation component of the HSV color.</param>
-    /// <param name="v">The value component of the HSV color.</param>
-    /// <returns>The original RGB color.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
-    {
-        Color.RGBToHSV(rgb, out h, out s, out v);
-        return rgb;
-    }
-
-    /// <summary>
-    /// Converts HSV color components to an RGB color.
-    /// </summary>
-    /// <param name="h">The hue component of the HSV color.</param>
-    /// <param name="s">The saturation component of the HSV color.</param>
-    /// <param name="v">The value component of the HSV color.</param>
-    /// <returns>The RGB color corresponding to the given HSV components.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Color HSVToRGB(float h, float s, float v)
-    {
-        return Color.HSVToRGB(h, s, v);
     }
     
     private void ManuallyControlPlayerOffsets()

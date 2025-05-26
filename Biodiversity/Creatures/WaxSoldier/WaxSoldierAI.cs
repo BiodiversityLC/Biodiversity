@@ -14,11 +14,35 @@ public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxS
     public enum States
     {
         Spawning,
+        WalkingToStation,
+        Stationary,
+        Pursuing,
         Dead,
+    }
+
+    public enum CombatAction
+    {
+        None,
+        Aim,
+        Fire,
+        Reload,
+        Stab,
+        Spin,
+        MusketSwing,
+        CircularFlailing,
+        Lunge
+    }
+
+    public enum MoltenState
+    {
+        Unmolten,
+        Molten
     }
     
     internal float AgentMaxAcceleration;
     internal float AgentMaxSpeed;
+    
+    internal Vector3 StationPosition;
     
     protected override States DetermineInitialState()
     {

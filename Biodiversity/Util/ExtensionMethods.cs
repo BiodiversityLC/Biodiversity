@@ -156,4 +156,32 @@ internal static class ExtensionMethods
     {
         return (bool)instance.GetType().GetProperty("IsServer")?.GetValue(instance)!;
     }
+    
+    /// <summary>
+    /// Converts an RGB color to HSV and returns the original RGB color.
+    /// </summary>
+    /// <param name="rgb">The RGB color to convert.</param>
+    /// <param name="h">The hue component of the HSV color.</param>
+    /// <param name="s">The saturation component of the HSV color.</param>
+    /// <param name="v">The value component of the HSV color.</param>
+    /// <returns>The original RGB color.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
+    {
+        Color.RGBToHSV(rgb, out h, out s, out v);
+        return rgb;
+    }
+
+    /// <summary>
+    /// Converts HSV color components to an RGB color.
+    /// </summary>
+    /// <param name="h">The hue component of the HSV color.</param>
+    /// <param name="s">The saturation component of the HSV color.</param>
+    /// <param name="v">The value component of the HSV color.</param>
+    /// <returns>The RGB color corresponding to the given HSV components.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Color HSVToRGB(float h, float s, float v)
+    {
+        return Color.HSVToRGB(h, s, v);
+    }
 }
