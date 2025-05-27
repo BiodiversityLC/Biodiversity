@@ -25,7 +25,7 @@ internal class CuddlingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
         EnemyAIInstance.AgentMaxSpeed = 0f;
         EnemyAIInstance.AgentMaxAcceleration = 50f;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
-        EnemyAIInstance.openDoorSpeedMultiplier = 4f;
+        EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
     }
 
     internal override void AIIntervalBehaviour()

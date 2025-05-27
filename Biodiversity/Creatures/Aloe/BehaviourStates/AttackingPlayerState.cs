@@ -26,7 +26,7 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.States, AloeSe
         
         EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.AttackingPlayerMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.AttackingPlayerMaxAcceleration;
-        EnemyAIInstance.openDoorSpeedMultiplier = 2f;
+        EnemyAIInstance.openDoorSpeedMultiplier = EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);

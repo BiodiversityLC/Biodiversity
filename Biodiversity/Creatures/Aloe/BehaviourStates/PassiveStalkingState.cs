@@ -29,9 +29,9 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
 
         EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.StalkingMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.StalkingMaxAcceleration;
+        EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.moveTowardsDestination = true;
-        EnemyAIInstance.openDoorSpeedMultiplier = 4f;
 
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);

@@ -21,6 +21,8 @@ internal static class DungeonGenPatch
     [HarmonyPostfix]
     public static void OnChangeStatus(DungeonGenerator __instance)
     {
+        //__instance.CurrentDungeon.AllTiles
+        
         if (!NetworkManager.Singleton.IsServer) return;
 
         if (__instance.CurrentDungeon == null) BiodiversityPlugin.Logger.LogDebug("CurrentDungeon is null");
@@ -32,6 +34,15 @@ internal static class DungeonGenPatch
         CreateBrackenRoomAINodes(tile.transform);
         AloeSharedData.Instance.PopulateBrackenRoomAloeNodes(tile.transform);
         AloeSharedData.Instance.BrackenRoomDoorPosition = tile.transform.Find("Door1 (18)").position;
+    }
+
+    private static void CreateAlternateAINodes(IReadOnlyCollection<Tile> tiles)
+    {
+        // foreach (Tile tile in tiles)
+        // {
+        //     Bounds tileBounds = tile.Bounds;
+        //     string key = 
+        // }
     }
 
     private static void CreateBrackenRoomAINodes(Transform brackenRoomTransform)

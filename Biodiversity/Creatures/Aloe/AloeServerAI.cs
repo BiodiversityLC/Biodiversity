@@ -98,7 +98,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         PlayerTargetableConditions.AddCondition(player => player.sinkingValue < 0.7300000190734863);
         PlayerTargetableConditions.AddCondition(player => !AloeSharedData.Instance.IsPlayerKidnapBound(player));
         
-        LogVerbose("Aloe Spawned!");
+        LogVerbose("Aloe spawned!");
     }
     
     protected override States DetermineInitialState()
@@ -917,11 +917,10 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         
         agent.angularSpeed = AloeHandler.Instance.Config.AngularSpeed;
         agent.autoBraking = AloeHandler.Instance.Config.AutoBraking;
-        agent.height = AloeHandler.Instance.Config.NavMeshAgentHeight;
-        agent.radius = AloeHandler.Instance.Config.NavMeshAgentRadius;
         agent.avoidancePriority = AloeHandler.Instance.Config.NavMeshAgentAvoidancePriority;
         
         AIIntervalTime = AloeHandler.Instance.Config.AiIntervalTime;
+        openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         
         netcodeController.InitializeConfigValuesClientRpc();
     }

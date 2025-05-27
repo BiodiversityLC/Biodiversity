@@ -35,9 +35,9 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
 
         EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.AvoidingPlayerMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.AvoidingPlayerMaxAcceleration;
+        EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         EnemyAIInstance.agent.acceleration = 50f;
-        EnemyAIInstance.openDoorSpeedMultiplier = 20f;
-
+        
         _avoidPlayerIntervalTimer = 0f;
         _avoidPlayerTimerTotal = 0f;
 

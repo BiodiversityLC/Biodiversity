@@ -29,7 +29,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.States, AloeServerAI>
 
         EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.RoamingMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.RoamingMaxAcceleration;
-        EnemyAIInstance.openDoorSpeedMultiplier = 2f; //todo: make config for this
+        EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         EnemyAIInstance.moveTowardsDestination = true;
         _reachedFavouriteSpotForRoaming = false;
 

@@ -29,8 +29,8 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.States, A
 
         EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.ChasingEscapedPlayerMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.ChasingEscapedPlayerMaxAcceleration;
+        EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
-        EnemyAIInstance.openDoorSpeedMultiplier = 2f;
         
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
             nameof(AloeClient.AudioClipTypes.chaseSfx),
