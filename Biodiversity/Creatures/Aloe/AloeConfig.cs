@@ -160,7 +160,6 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     #endregion
 
     #region Alternative Behaviours
-
     [field: Header("Alternative Behaviours")]
     
     [field: Tooltip("If true, then the Aloe WILL NOT run away if looked at while she's in her kidnap animation.")]

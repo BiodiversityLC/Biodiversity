@@ -1,7 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using UnityEngine;
 
-
 namespace Biodiversity.Creatures.WaxSoldier;
 
 public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxSoldierServerAI>
