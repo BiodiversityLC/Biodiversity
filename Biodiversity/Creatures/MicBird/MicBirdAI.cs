@@ -562,18 +562,22 @@ namespace Biodiversity.Creatures.MicBird
 
             if (enemyHP <= 0 && !isEnemyDead)
             {
-
                 KillEnemyOnOwnerClient();
                 enemyType.numberSpawned--;
-                if (IsServer)
-                {
-                    creatureAnimator.SetTrigger("Die"); 
-                    creatureAnimator.SetBool("DeadAlready", true);
-                }
             }
 
             if (!IsServer) return;
             PlayVoiceClientRpc((int)SoundID.HIT, 0);
+        }
+
+        public override void KillEnemy(bool destroy = false)
+        {
+            base.KillEnemy(destroy);
+            if (IsServer)
+            {
+                creatureAnimator.SetTrigger("Die");
+                creatureAnimator.SetBool("DeadAlready", true);
+            }
         }
 
         public void EndHurt()

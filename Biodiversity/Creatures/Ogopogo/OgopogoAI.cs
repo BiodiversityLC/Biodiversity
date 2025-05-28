@@ -223,7 +223,8 @@ internal class OgopogoAI : BiodiverseAI
     {
         base.Update();
 
-        MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position : new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, transform.position.z);
+        if (StartOfRound.Instance.mapScreen.targetedPlayer != null)
+            MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position : new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, transform.position.z);
 
         skinnedMeshRenderers[0].enabled = !GameNetworkManager.Instance.localPlayerController.isInsideFactory;
 

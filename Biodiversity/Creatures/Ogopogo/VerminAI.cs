@@ -209,7 +209,8 @@ internal class VerminAI : BiodiverseAI
     {
         base.Update();
 
-        MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position : 
+        if (StartOfRound.Instance.mapScreen.targetedPlayer != null)
+            MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position : 
             new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, transform.position.z);
 
         if (!IsServer) return;
