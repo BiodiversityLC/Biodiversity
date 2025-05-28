@@ -5,8 +5,8 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
-[State(AloeServerAI.AloeStates.Spawning)]
-internal class SpawningState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
+[State(AloeServerAI.States.Spawning)]
+internal class SpawningState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     public SpawningState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {

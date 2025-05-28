@@ -7,8 +7,8 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
-[State(AloeServerAI.AloeStates.HealingPlayer)]
-internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
+[State(AloeServerAI.States.HealingPlayer)]
+internal class HealingPlayerState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     private int _healingPerInterval;
 
@@ -30,7 +30,7 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
         EnemyAIInstance.AgentMaxSpeed = 0f;
         EnemyAIInstance.AgentMaxAcceleration = 50f;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
-        EnemyAIInstance.openDoorSpeedMultiplier = 4f;
+        EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
 
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, true);
@@ -44,7 +44,7 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
         if (EnemyAIInstance.ActualTargetPlayer.Value.health == playerMaxHealth)
         {
             EnemyAIInstance.LogVerbose("Target player is already at max health, switching to cuddling player.");
-            EnemyAIInstance.SwitchBehaviourState(AloeServerAI.AloeStates.CuddlingPlayer);
+            EnemyAIInstance.SwitchBehaviourState(AloeServerAI.States.CuddlingPlayer);
             return;
         }
 
@@ -62,7 +62,7 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
         float totalHealingTime = (playerMaxHealth - EnemyAIInstance.ActualTargetPlayer.Value.health) / healingRate;
         EnemyAIInstance.netcodeController.PlayHealingVfxClientRpc(totalHealingTime);
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
-            AloeClient.AudioClipTypes.healingSfx.ToString(), AloeClient.AudioSourceTypes.aloeVoiceSource.ToString());
+            nameof(AloeClient.AudioClipTypes.healingSfx), nameof(AloeClient.AudioSourceTypes.aloeVoiceSource));
         EnemyAIInstance.ActualTargetPlayer.Value
             .HealServerRpc(); // Doesn't actually heal them, just makes them not bleed anymore
     }
@@ -98,16 +98,16 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.AloeStates, Aloe
     }
 
     private class TransitionToCuddlingPlayer(AloeServerAI enemyAIInstance, HealingPlayerState healingPlayerState)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         internal override bool ShouldTransitionBeTaken()
         {
             return healingPlayerState._finishedHealing;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
-            return AloeServerAI.AloeStates.CuddlingPlayer;
+            return AloeServerAI.States.CuddlingPlayer;
         }
     }
 }

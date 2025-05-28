@@ -7,8 +7,8 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
-[State(AloeServerAI.AloeStates.CuddlingPlayer)]
-internal class CuddlingPlayerState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
+[State(AloeServerAI.States.CuddlingPlayer)]
+internal class CuddlingPlayerState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     public CuddlingPlayerState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
@@ -25,7 +25,7 @@ internal class CuddlingPlayerState : BehaviourState<AloeServerAI.AloeStates, Alo
         EnemyAIInstance.AgentMaxSpeed = 0f;
         EnemyAIInstance.AgentMaxAcceleration = 50f;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
-        EnemyAIInstance.openDoorSpeedMultiplier = 4f;
+        EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
     }
 
     internal override void AIIntervalBehaviour()

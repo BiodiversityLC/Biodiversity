@@ -1,102 +1,106 @@
-﻿using GameNetcodeStuff;
-using System.Collections;
-using Unity.Netcode;
+﻿using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.AI;
 
 
-namespace Biodiversity.Creatures.WaxSoldier
+namespace Biodiversity.Creatures.WaxSoldier;
+
+public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxSoldierServerAI>
 {
-    public class WaxSoldierAI : EnemyAI
+#pragma warning disable 0649
+    [Header("Controllers")] [Space(5f)] 
+    public WaxSoldierNetcodeController netcodeController;
+#pragma warning restore 0649
+    
+    public enum States
     {
-        public NetworkVariable<int> State = new NetworkVariable<int>(0);
-        public BoxCollider StabHITBOX;
-        public Vector3 StartPosition;
-        public Quaternion StartRotation;
-        private AudioSource Theme;
-        public NavMeshPath path;
-        public override void Start()
-        {
-            path = new NavMeshPath();
-            Theme = GetComponent<AudioSource>();
-            StartPosition = transform.position;
-            StartRotation = transform.rotation;
-            //NetworkBehaviour.Destroy(gameObject);
-        }
-        public override void DoAIInterval()
-        {
-            base.DoAIInterval();
-            if (State.Value == 0)
-            {
-                TargetClosestPlayer(1.5f, true,90);
-                if (agent.remainingDistance <= 0.5f)
-                {
-                    creatureAnimator.SetInteger("state", 0);
-                    transform.rotation = StartRotation;
-                }
-                SetDestinationToPosition(StartPosition);
-                if (Theme.isPlaying)
-                    Theme.Stop();
-                if (targetPlayer)
-                {
-                    if (Vector3.Distance(gameObject.transform.position, targetPlayer.gameObject.transform.position) <= 15)
-                    {
-                        State.Value = 1;
-                    }
-                }
+        Spawning,
+        WalkingToStation,
+        Stationary,
+        Pursuing,
+        Dead,
+    }
 
-            }
-            if (State.Value == 1)
-            {
-                bool pathed = TargetClosestPlayer();
-                creatureAnimator.SetInteger("state", 1);
-                if (targetPlayer)
-                {
-                    SetMovingTowardsTargetPlayer(targetPlayer);
-                    if (Vector3.Distance(gameObject.transform.position, targetPlayer.gameObject.transform.position) >= 20 && pathed)
-                    {
-                        State.Value = 0;
-                    }
-                    else
-                    {
-                        if (!Theme.isPlaying)
-                            Theme.Play();
-                        if (Vector3.Distance(gameObject.transform.position, targetPlayer.gameObject.transform.position) <= 4)
-                        {
-                            SetDestinationToPosition(transform.position);
-                            transform.LookAt(targetPlayer.transform);
-                            StartCoroutine(Stab());
-                        }
-                    }
-                }
-            }
-        }
+    public enum CombatAction
+    {
+        None,
+        Aim,
+        Fire,
+        Reload,
+        Stab,
+        Spin,
+        MusketSwing,
+        CircularFlailing,
+        Lunge
+    }
 
-        public IEnumerator Stab()
-        {
-            State.Value = 3;
-            creatureAnimator.SetInteger("state", 3);
-            creatureAnimator.speed = .5f;
-            yield return new WaitForSeconds(0.15f);
-            StabHITBOX.gameObject.SetActive(true);
-            foreach (Collider Obj in Physics.OverlapBox(StabHITBOX.center, StabHITBOX.size, Quaternion.identity))
-            {
-                var player = Obj.gameObject.GetComponent<PlayerControllerB>();
-                if (player)
-                {
-                    player.DamagePlayer(30,false,true,CauseOfDeath.Stabbing,0,false, transform.forward * 3);
-                }
-            }
-            StabHITBOX.gameObject.SetActive(false);
-            yield return new WaitForSeconds(0.3f);
-            creatureAnimator.speed = 1f;
-            creatureAnimator.SetInteger("state", 0);
-            yield return new WaitForSeconds(0.1f);
-            State.Value = 0;
-        }
-        public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
-        {
-            base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-        }
+    public enum MoltenState
+    {
+        Unmolten,
+        Molten
+    }
+    
+    internal float AgentMaxAcceleration;
+    internal float AgentMaxSpeed;
+    private float _takeDamageCooldown;
+    
+    internal Vector3 StationPosition;
+
+    public override void Start()
+    {
+        base.Start();
+        if (!IsServer) return;
+        
+        InitializeConfigValues();
+        
+        LogVerbose("Wax Soldier spawned!");
+    }
+    
+    protected override States DetermineInitialState()
+    {
+        return States.Spawning;
+    }
+    
+    protected override string GetLogPrefix()
+    {
+        return $"[WaxSoldierServerAI {BioId}]";
+    }
+    
+    protected override bool ShouldRunUpdate()
+    {
+        if (!IsServer || isEnemyDead)
+            return false;
+        
+        // todo: instead of copying the same setup as the Aloe, instead see if making a `StunnedState` or `StunState` would be a more clean approach (not clean but, idk, u get me anyway)
+        
+        _takeDamageCooldown -= Time.deltaTime;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void MoveWithAcceleration()
+    {
+        float speedAdjustment = Time.deltaTime / 2f;
+        agent.speed = Mathf.Lerp(agent.speed, AgentMaxSpeed, speedAdjustment);
+        
+        float accelerationAdjustment = Time.deltaTime;
+        agent.acceleration = Mathf.Lerp(agent.acceleration, AgentMaxAcceleration, accelerationAdjustment);
+    }
+
+    /// <summary>
+    /// Gets the config values and assigns them to their respective [SerializeField] variables.
+    /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
+    /// </summary>
+    internal void InitializeConfigValues()
+    {
+        if (!IsServer) return;
+        
+        enemyHP = WaxSoldierHandler.Instance.Config.Health;
+
+        AIIntervalTime = WaxSoldierHandler.Instance.Config.AiIntervalTime;
+        openDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
     }
 }

@@ -28,7 +28,6 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     #endregion
     
     #region Movement Settings
-    
     [field: Header("Movement Settings")]
     
     [field: Tooltip("The max speed of the Aloe when she's roaming.")]
@@ -97,7 +96,6 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     #endregion
 
     #region General Settings
-
     [field: Header("General Settings")]
     
     [field: Tooltip("The health of the Aloe upon spawning.")]
@@ -115,6 +113,10 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Tooltip("The radius in meters the Aloe is allowed roam from her favourite spot.")]
     [field: Range(45f, 500f)]
     public float RoamingRadius { get; private set; } = 25f;
+    
+    [field: Tooltip("The speed multiplier for how quickly the Aloe can open doors. Note that when the Aloe is grabbing a player, she WILL be able to open doors quickly, regardless of this setting.")]
+    [field: Range(0f, 100f)]
+    public float OpenDoorSpeedMultiplier { get; private set; } = 3f;
     
     [field: Tooltip("The required health a player needs to be or lower for the Aloe to stalk them.")]
     [field: Range(1, 100)]
@@ -152,7 +154,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     [field: Range(0f, 30f)]
     public float WaitBeforeChasingEscapedPlayerTime { get; private set; } = 3f;
 
-    [field: Tooltip("Whether landmines and seamines will blow up if the Aloe moves over one while carrying a player.")]
+    [field: Tooltip("Whether landmines and seamines (from the Surfaced mod) will blow up if the Aloe moves over one while carrying a player.")]
     public bool LandminesBlowUpAloe { get; private set; } = false;
 
     #endregion
@@ -174,20 +176,11 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     #endregion
 
     #region Advanced Settings
-
     [field: Header("Advanced Settings")]
     
     [field: Tooltip("How often (in seconds) the Aloe updates its logic. Higher values increase performance but slow down reaction times.")]
     [field: Range(0.001f, 1f)]
     public float AiIntervalTime { get; private set; } = 0.03f;
-
-    [field: Tooltip("The height of the Aloe's NavMeshAgent in meters.")]
-    [field: Range(0.01f, 10f)]
-    public float NavMeshAgentHeight { get; private set; } = 2.2f;
-
-    [field: Tooltip("The radius of the Aloe's NavMeshAgent in meters.")]
-    [field: Range(0.01f, 5f)]
-    public float NavMeshAgentRadius { get; private set; } = 0.5f;
     
     [field: Tooltip("The avoidance priority of the Aloe's NavMeshAgent. Lower values indicate higher priority. Example: an agent with priority 49 can push an agent with priority 50 out of its path.")]
     [field: Range(0, 99)]

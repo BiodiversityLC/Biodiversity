@@ -9,8 +9,8 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 
 [Preserve]
-[State(AloeServerAI.AloeStates.Roaming)]
-internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServerAI>
+[State(AloeServerAI.States.Roaming)]
+internal class RoamingState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     private bool _reachedFavouriteSpotForRoaming;
 
@@ -29,7 +29,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
 
         EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.RoamingMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.RoamingMaxAcceleration;
-        EnemyAIInstance.openDoorSpeedMultiplier = 2f;
+        EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         EnemyAIInstance.moveTowardsDestination = true;
         _reachedFavouriteSpotForRoaming = false;
 
@@ -73,7 +73,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
     }
 
     private class TransitionToAvoidingPlayer(AloeServerAI enemyAIInstance)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         private PlayerControllerB _playerLookingAtAloe;
 
@@ -84,9 +84,9 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
             return _playerLookingAtAloe != null;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
-            return AloeServerAI.AloeStates.AvoidingPlayer;
+            return AloeServerAI.States.AvoidingPlayer;
         }
 
         internal override void OnTransition()
@@ -96,7 +96,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
     }
 
     private class TransitionToPassivelyStalkingPlayer(AloeServerAI enemyAIInstance)
-        : StateTransition<AloeServerAI.AloeStates, AloeServerAI>(enemyAIInstance)
+        : StateTransition<AloeServerAI.States, AloeServerAI>(enemyAIInstance)
     {
         private PlayerControllerB _stalkablePlayer;
 
@@ -117,9 +117,9 @@ internal class RoamingState : BehaviourState<AloeServerAI.AloeStates, AloeServer
             return false;
         }
 
-        internal override AloeServerAI.AloeStates NextState()
+        internal override AloeServerAI.States NextState()
         {
-            return AloeServerAI.AloeStates.PassiveStalking;
+            return AloeServerAI.States.PassiveStalking;
         }
 
         internal override void OnTransition()

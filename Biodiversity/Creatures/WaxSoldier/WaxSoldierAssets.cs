@@ -1,15 +1,13 @@
 ﻿using Biodiversity.Util.Assetloading;
 using Biodiversity.Util.Attributes;
 
-namespace Biodiversity.Creatures.WaxSoldier
+namespace Biodiversity.Creatures.WaxSoldier;
+
+internal class WaxSoldierAssets(string bundle) : BiodiverseAssetBundle<WaxSoldierAssets>(bundle)
 {
-    internal class WaxSoldierAssets(string bundle) : BiodiverseAssetBundle<WaxSoldierAssets>(bundle)
-    {
-        [LoadFromBundle("WaxSoldierType")]
-        public EnemyType WaxSoldierType;
-        [LoadFromBundle("WaxSoldierNode")]
-        public TerminalNode WaxSoldierNode;
-        [LoadFromBundle("WaxSoldierKey")]
-        public TerminalKeyword WaxSoldierKey;
-    }
+#pragma warning disable 0649
+    [LoadFromBundle("WaxSoldierEnemyType")] public EnemyType EnemyType;
+    [LoadFromBundle("WaxSoldierTerminalNode")] public TerminalNode TerminalNode;
+    [LoadFromBundle("WaxSoldierTerminalKeyword")] public TerminalKeyword TerminalKeyword;
+#pragma warning restore 0649
 }

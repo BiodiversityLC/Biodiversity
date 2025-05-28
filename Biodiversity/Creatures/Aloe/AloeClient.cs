@@ -305,7 +305,7 @@ public class AloeClient : MonoBehaviour
         {
             switch (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value)
             {
-                case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer:
+                case (int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer:
                 {
                     if (!_targetPlayer.HasValue) break;
                     if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
@@ -345,16 +345,16 @@ public class AloeClient : MonoBehaviour
         // Animate the real target player's body
         if (_targetPlayerInCaptivity && _targetPlayer.HasValue)
         {
-            if (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.AloeStates.KidnappingPlayer
-                    or (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer &&
+            if (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value is (int)AloeServerAI.States.KidnappingPlayer
+                    or (int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer &&
                 _targetPlayer.Value.inSpecialInteractAnimation)
             {
                 _targetPlayer.Value.transform.position = transform.position + transform.rotation * _offsetPosition;
                 _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
             }
             
-            CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value); // such a shitty way of fixing a bug
-            UpdateRagdollVisibility(); // this too
+            CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value);
+            UpdateRagdollVisibility();
         }
     }
 
@@ -416,7 +416,7 @@ public class AloeClient : MonoBehaviour
         float endMetallicValue = toDark ? skinMetallicValueDark : 0;
 
         Color currentColour = bodyRenderer.material.GetColor(BaseColour);
-        RGBToHSV(currentColour, out float h, out float s, out float v);
+        ExtensionMethods.RGBToHSV(currentColour, out float h, out float s, out float v);
         float endV = toDark ? 0.5f : 1f;
 
         // Early exit if the skin colour is already the desired colour
@@ -431,7 +431,7 @@ public class AloeClient : MonoBehaviour
             float t = timeElapsed / skinMetallicTransitionTime;
             float currentMetallicValue = Mathf.Lerp(startMetallicValue, endMetallicValue, t);
             float currentV = Mathf.Lerp(v, endV, t);
-            Color newColour = HSVToRGB(h, s, currentV);
+            Color newColour = ExtensionMethods.HSVToRGB(h, s, currentV);
 
             _propertyBlock.SetFloat(Metallic, currentMetallicValue);
             _propertyBlock.SetColor(BaseColour, newColour);
@@ -443,7 +443,7 @@ public class AloeClient : MonoBehaviour
 
         // Ensure the final value is set exactly at the end
         _propertyBlock.SetFloat(Metallic, endMetallicValue);
-        _propertyBlock.SetColor(BaseColour, HSVToRGB(h, s, endV));
+        _propertyBlock.SetColor(BaseColour, ExtensionMethods.HSVToRGB(h, s, endV));
         bodyRenderer.SetPropertyBlock(_propertyBlock);
         
         _changeSkinColourCoroutine = null;
@@ -541,7 +541,6 @@ public class AloeClient : MonoBehaviour
     /// Sets the target player up to be in captivity.
     /// It will muffle the player, drop all their items and freeze them.
     /// </summary>
-    /// <param name="receivedAloeId">The Aloe ID.</param>
     /// <param name="setToInCaptivity">Whether to make them captive or not.</param>
     private void HandleSetTargetPlayerInCaptivity(bool setToInCaptivity)
     {
@@ -614,7 +613,7 @@ public class AloeClient : MonoBehaviour
 
     private void CleanupRagdoll()
     {
-        if (_currentFakePlayerBodyRagdoll == null) return;
+        if (!_currentFakePlayerBodyRagdoll) return;
         BiodiversityPlugin.LogVerbose("_currentFakePlayerBodyRagdoll is not null. Destroying it.");
         Destroy(_currentFakePlayerBodyRagdoll.gameObject);
         _currentFakePlayerBodyRagdoll = null;
@@ -658,8 +657,8 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     private void HandleMuffleTargetPlayerVoice()
     {
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
+        if (!_targetPlayer.Value.currentVoiceChatAudioSource) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (!_targetPlayer.Value.currentVoiceChatAudioSource) return;
 
         BiodiversityPlugin.LogVerbose($"Muffling {_targetPlayer.Value.playerUsername}");
         _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 5f;
@@ -673,8 +672,8 @@ public class AloeClient : MonoBehaviour
     /// </summary>
     private void HandleUnMuffleTargetPlayerVoice()
     {
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-        if (_targetPlayer.Value.currentVoiceChatAudioSource == null) return;
+        if (!_targetPlayer.Value.currentVoiceChatAudioSource) StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+        if (!_targetPlayer.Value.currentVoiceChatAudioSource) return;
 
         BiodiversityPlugin.LogVerbose($"UnMuffling {_targetPlayer.Value.playerUsername}");
         _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 1f;
@@ -776,13 +775,13 @@ public class AloeClient : MonoBehaviour
 
     private void HandleBehaviourStateChanged(int oldValue, int newValue)
     {
-        petalsRenderer.enabled = newValue is (int)AloeServerAI.AloeStates.HealingPlayer
-            or (int)AloeServerAI.AloeStates.CuddlingPlayer or (int)AloeServerAI.AloeStates.ChasingEscapedPlayer
-            or (int)AloeServerAI.AloeStates.AttackingPlayer;
+        petalsRenderer.enabled = newValue is (int)AloeServerAI.States.HealingPlayer
+            or (int)AloeServerAI.States.CuddlingPlayer or (int)AloeServerAI.States.ChasingEscapedPlayer
+            or (int)AloeServerAI.States.AttackingPlayer;
         
         switch (newValue)
         {
-            case (int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer when oldValue is not ((int)AloeServerAI.AloeStates.HealingPlayer or (int)AloeServerAI.AloeStates.CuddlingPlayer):
+            case (int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer when oldValue is not ((int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer):
             {
                 BiodiversityPlugin.LogVerbose("Switching target player offset to cuddled.");
                 if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
@@ -790,8 +789,8 @@ public class AloeClient : MonoBehaviour
                 break;
             }
             
-            case (int)AloeServerAI.AloeStates.KidnappingPlayer when
-                oldValue is not (int)AloeServerAI.AloeStates.KidnappingPlayer:
+            case (int)AloeServerAI.States.KidnappingPlayer when
+                oldValue is not (int)AloeServerAI.States.KidnappingPlayer:
             {
                 _offsetPosition = Vector3.zero;
                 _offsetRotation = Quaternion.identity;
@@ -846,34 +845,6 @@ public class AloeClient : MonoBehaviour
                 baseStateMachineBehaviour.Initialize(netcodeController, aloeServerAI, this);
             }
         }
-    }
-
-    /// <summary>
-    /// Converts an RGB color to HSV and returns the original RGB color.
-    /// </summary>
-    /// <param name="rgb">The RGB color to convert.</param>
-    /// <param name="h">The hue component of the HSV color.</param>
-    /// <param name="s">The saturation component of the HSV color.</param>
-    /// <param name="v">The value component of the HSV color.</param>
-    /// <returns>The original RGB color.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
-    {
-        Color.RGBToHSV(rgb, out h, out s, out v);
-        return rgb;
-    }
-
-    /// <summary>
-    /// Converts HSV color components to an RGB color.
-    /// </summary>
-    /// <param name="h">The hue component of the HSV color.</param>
-    /// <param name="s">The saturation component of the HSV color.</param>
-    /// <param name="v">The value component of the HSV color.</param>
-    /// <returns>The RGB color corresponding to the given HSV components.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Color HSVToRGB(float h, float s, float v)
-    {
-        return Color.HSVToRGB(h, s, v);
     }
     
     private void ManuallyControlPlayerOffsets()

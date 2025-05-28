@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using Biodiversity.Creatures.Aloe.Types;
+﻿using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Creatures.Aloe.Types.Networking;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -238,7 +238,7 @@ internal class AloeSharedData
     {
         if (player == null)
         {
-            BiodiversityPlugin.Logger.LogWarning($"The provided player is null, we will assume that their max health is 100.");
+            BiodiversityPlugin.Logger.LogWarning("The provided player is null, we will assume that their max health is 100.");
             return 100;
         }
         
