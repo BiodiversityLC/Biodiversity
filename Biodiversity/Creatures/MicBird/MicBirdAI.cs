@@ -478,7 +478,7 @@ namespace Biodiversity.Creatures.MicBird
         private void spawnMicBird()
         {
             if (MicBirdHandler.Instance.Assets.MicBirdEnemyType.numberSpawned >= 9) return;
-            GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag("OutsideAINode");;
+            GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag("OutsideAINode");
 
             Vector3 vector = spawnPoints[spawnRandom.Next(0, spawnPoints.Length)].transform.position;
             vector = RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(vector, 10f, default(NavMeshHit), spawnRandom, RoundManager.Instance.GetLayermaskForEnemySizeLimit(enemyType));
