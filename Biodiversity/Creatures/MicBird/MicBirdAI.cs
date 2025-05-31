@@ -154,6 +154,11 @@ namespace Biodiversity.Creatures.MicBird
         MalfunctionID malfunction;
         Vector3 targetPos = Vector3.zero;
 
+        // objects for malfunctions
+        ShipLights shipLights;
+        WalkieTalkie[] walkies;
+        HangarShipDoor door;
+
         // Wander vars
         private AISearchRoutine wander = new AISearchRoutine();
         private bool wanderingAlready = false;
@@ -182,6 +187,7 @@ namespace Biodiversity.Creatures.MicBird
         private bool despawnEarly = false;
         private int numberofupdatesstuck = 0;
         private float leaveTimer = 0f;
+        private AnimationClip[] anims;
 
         // Compatibility mode
         private bool hurt = false;
@@ -227,6 +233,11 @@ namespace Biodiversity.Creatures.MicBird
 
             HoarderBugAI.RefreshGrabbableObjectsInMapList();
 
+            shipLights = FindObjectOfType<ShipLights>();
+            walkies = FindObjectsOfType<WalkieTalkie>();
+            door = FindObjectOfType<HangarShipDoor>();
+
+            anims = creatureAnimator.runtimeAnimatorController.animationClips;
             if (!IsServer) return;
             PlayVoiceClientRpc((int)SoundID.SPAWN, 0);
         }
@@ -235,7 +246,7 @@ namespace Biodiversity.Creatures.MicBird
         {
             base.OnDestroy();
 
-            if (firstSpawned != null && !despawnEarly)
+            if (firstSpawned != null && !despawnEarly && StartOfRound.Instance.shipIsLeaving)
             {
                 firstSpawned = null;
                 UpdateNumberSpawnedClientRpc(0);
@@ -246,7 +257,7 @@ namespace Biodiversity.Creatures.MicBird
 
         public override void Update()
         {
-            if (StartOfRound.Instance.shipIsLeaving && IsServer && !leaving)
+            if (StartOfRound.Instance.shipIsLeaving && IsServer && !leaving && enemyHP > -4)
             {
                 creatureAnimator.SetTrigger("Leave");
                 leaving = true;
@@ -259,6 +270,7 @@ namespace Biodiversity.Creatures.MicBird
                 if (leaveTimer <= 0)
                 {
                     Destroy(gameObject);
+                    return;
                 }
             }
 
@@ -275,15 +287,9 @@ namespace Biodiversity.Creatures.MicBird
             if (!spawnDone) return;
 
 
-            if (currentBehaviourStateIndex == (int)State.RUN)
-            {
-                running = true;
-            }
-            else
-            {
-                running = false;
-            }
-            
+            running = currentBehaviourStateIndex == (int)State.RUN;
+
+
             if (!IsServer) return;
             malfunctionInterval -= Time.deltaTime;
 
@@ -328,10 +334,9 @@ namespace Biodiversity.Creatures.MicBird
                         StartOfRound.Instance.mapScreen.SwitchRadarTargetForward(true);
                         break;
                     case MalfunctionID.LIGHTSOUT:
-                        ShipLights lights = FindObjectOfType<ShipLights>();
-                        lights.ToggleShipLights();
+                        shipLights.ToggleShipLights();
 
-                        if (!lights.areLightsOn) PlayMalfunctionSoundClientRpc(5); else PlayMalfunctionSoundClientRpc(6);
+                        if (!shipLights.areLightsOn) PlayMalfunctionSoundClientRpc(5); else PlayMalfunctionSoundClientRpc(6);
                         break;
                     case MalfunctionID.NONE:
                         ranMalfunction = false;
@@ -356,35 +361,17 @@ namespace Biodiversity.Creatures.MicBird
 
             AudioClip audio;
 
-            switch (id)
+            audio = id switch
             {
-                case 0:
-                    if (firstSpawned == this)
-                    {
-                        audio = leaderCallSound;
-                        break;
-                    }
-                    audio = callSound;
-                    break;
-                case 1:
-                    audio = hitSound;
-                    break;
-                case 2:
-                    audio = idleSounds[rand];
-                    break;
-                case 3:
-                    audio = roamSounds[rand];
-                    break;
-                case 4:
-                    audio = scaredSounds[rand];
-                    break;
-                case 5:
-                    audio = spawnSound;
-                    break;
-                default:
-                    audio = null;
-                    break;
-            }
+                0 when firstSpawned == this => leaderCallSound,
+                0 => callSound,
+                1 => hitSound,
+                2 => idleSounds[rand],
+                3 => roamSounds[rand],
+                4 => scaredSounds[rand],
+                5 => spawnSound,
+                _ => null,
+            };
 
             creatureVoice.PlayOneShot(audio);
         }
@@ -429,7 +416,6 @@ namespace Biodiversity.Creatures.MicBird
         [ClientRpc]
         public void ToggleAllWalkiesOutsideClientRpc()
         {
-            WalkieTalkie[] walkies = (WalkieTalkie[])Resources.FindObjectsOfTypeAll(typeof(WalkieTalkie));
             foreach (WalkieTalkie walkie in walkies)
             {
                 if (walkie.isInFactory) return;
@@ -447,14 +433,7 @@ namespace Biodiversity.Creatures.MicBird
         {
             if (StartOfRound.Instance.shipIsLeaving) return;
 
-
-            HangarShipDoor door = FindObjectOfType<HangarShipDoor>();
-            if (door.shipDoorsAnimator.GetBool("Closed"))
-            {
-                door.shipDoorsAnimator.SetBool("Closed", false);
-                return;
-            }
-            door.shipDoorsAnimator.SetBool("Closed", true);
+            door.shipDoorsAnimator.SetBool("Closed", !door.shipDoorsAnimator.GetBool("Closed"));
         }
 
         [ClientRpc]
@@ -470,12 +449,12 @@ namespace Biodiversity.Creatures.MicBird
             distractedRadarBoosterItem = obj.gameObject.GetComponent<RadarBoosterItem>();
         }
 
-        private int negativeRandom(int min, int maxExclusive)
+        private int NegativeRandom(int min, int maxExclusive)
         {
             return Random.Range(min, maxExclusive) * ((Random.Range(0, 2) == 0) ? 1 : -1);
         }
 
-        private void spawnMicBird()
+        private void SpawnMicBird()
         {
             if (MicBirdHandler.Instance.Assets.MicBirdEnemyType.numberSpawned >= 9) return;
             GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag("OutsideAINode");
@@ -491,7 +470,7 @@ namespace Biodiversity.Creatures.MicBird
             UpdateNumberSpawnedClientRpc(enemyType.numberSpawned + 1);
         }
 
-        private void runAway(float timer)
+        private void RunAway(float timer)
         {
             PlayVoiceClientRpc((int)SoundID.SCARED, Random.RandomRangeInt(0, scaredSounds.Length));
 
@@ -511,7 +490,7 @@ namespace Biodiversity.Creatures.MicBird
         [ServerRpc(RequireOwnership = false)]
         public void StartRunOnServerServerRpc(float timer)
         {
-            runAway(timer);
+            RunAway(timer);
         }
 
         [ClientRpc]
@@ -551,13 +530,12 @@ namespace Biodiversity.Creatures.MicBird
 
             if (IsServer)
             {
-                if (IsServer && enemyHP > 0) creatureAnimator.SetTrigger("Hurt");
-                BiodiversityPlugin.LogVerbose("Micbird hit by shovel");
+                if (enemyHP > 0) creatureAnimator.SetTrigger("Hurt");
                 agent.speed = 0;
                 agent.velocity = Vector3.zero;
                 enemyHP -= force;
                 hurt = true;
-                runAway(40);
+                RunAway(40);
             }
 
             if (enemyHP <= 0 && !isEnemyDead)
@@ -600,7 +578,7 @@ namespace Biodiversity.Creatures.MicBird
                     despawnEarly = true;
                     KillEnemyClientRpc(false);
                     creatureAnimator.SetTrigger("LeaveEarly");
-                    foreach (AnimationClip anim in creatureAnimator.runtimeAnimatorController.animationClips)
+                    foreach (AnimationClip anim in anims)
                     {
                         if (anim.name == "LeaveEarly")
                         {
@@ -614,13 +592,12 @@ namespace Biodiversity.Creatures.MicBird
                 numberofupdatesstuck = 0;
             }
 
-                GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 20f, null, null);
+            GameObject maybeRadar = CheckLineOfSight(HoarderBugAI.grabbableObjectsInMap, 60f, 40, 20f, null, null);
             if (maybeRadar)
             {
                 GrabbableObject item = maybeRadar.GetComponent<GrabbableObject>();
-                if (item.GetType() == typeof(RadarBoosterItem))
+                if (item is RadarBoosterItem radar)
                 {
-                    RadarBoosterItem radar = (RadarBoosterItem)item;
                     if (!radar.isInShipRoom && !radar.isPocketed)
                     {
                         SyncRadarBoosterClientRpc(new NetworkObjectReference(item.NetworkObject));
@@ -695,7 +672,7 @@ namespace Biodiversity.Creatures.MicBird
                         }
                         else
                         {
-                            targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(negativeRandom(2, 7), 4, negativeRandom(2, 7));
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + new Vector3(NegativeRandom(2, 7), 4, NegativeRandom(2, 7));
                         }
                     }
                     else
@@ -706,7 +683,7 @@ namespace Biodiversity.Creatures.MicBird
                         }
                         else
                         {
-                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (Random.Range(13, 19) * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1)) + (negativeRandom(2, 6) * StartOfRound.Instance.shipBounds.transform.right);
+                            targetPos = StartOfRound.Instance.middleOfShipNode.position + (Random.Range(13, 19) * StartOfRound.Instance.shipBounds.transform.forward * (compatSide ? 1 : -1)) + (NegativeRandom(2, 6) * StartOfRound.Instance.shipBounds.transform.right);
                         }
                     }
 
@@ -761,20 +738,13 @@ namespace Biodiversity.Creatures.MicBird
                     break;
                 case (int)State.CALL:
                     creatureAnimator.SetInteger("ID", 3);
-                    if (firstSpawned == this)
-                    {
-                        creatureAnimator.SetInteger("CallID", 2);
-                    }
-                    else
-                    {
-                        creatureAnimator.SetInteger("CallID", Random.RandomRangeInt(0, 2));
-                    }
+                    creatureAnimator.SetInteger("CallID", firstSpawned == this ? 2 : Random.RandomRangeInt(0, 2));
 
 
                     PlayVoiceClientRpc((int)SoundID.CALL, 0);
                     BiodiversityPlugin.LogVerbose("Caw I'm a bird! (Micbird called)");
 
-                    spawnMicBird();
+                    SpawnMicBird();
 
                     callTimer = 60;
 
@@ -815,49 +785,28 @@ namespace Biodiversity.Creatures.MicBird
 
                     malfunction = Enum.Parse<MalfunctionID>(malfunctionName);
                     BiodiversityPlugin.LogVerbose("Setting Micbird malfunction to " + malfunction.ToString());
-                    switch (malfunction)
+
+                    (int, float) malfunctionVals = malfunction switch
                     {
-                        case MalfunctionID.WALKIE:
-                            malfunctionTimes = Random.Range(1, 6);
-                            baseMalfunctionInterval = 0.22f;
-                            break;
-                        case MalfunctionID.SHIPDOORS:
-                            malfunctionTimes = Random.Range(1, 6);
-                            baseMalfunctionInterval = 0.22f;
-                            break;
-                        case MalfunctionID.RADARBLINK:
-                            malfunctionTimes = Random.Range(1, 8);
-                            baseMalfunctionInterval = 0.5f;
-                            break;
-                        case MalfunctionID.LIGHTSOUT:
-                            malfunctionTimes = Random.Range(1, 4);
-                            baseMalfunctionInterval = 0.66f;
-                            break;
-                        default:
-                            BiodiversityPlugin.LogVerbose("Something is not working. (2) (Micbird)");
-                            break;
-                    }
+                        MalfunctionID.WALKIE => (Random.Range(1, 6), 0.22f),
+                        MalfunctionID.SHIPDOORS => (Random.Range(1, 6), 0.22f),
+                        MalfunctionID.RADARBLINK => (Random.Range(1, 8), 0.5f),
+                        MalfunctionID.LIGHTSOUT => (Random.Range(1, 4), 0.66f),
+                        _ => (0, 0f)
+                    };
+
+                    malfunctionTimes = malfunctionVals.Item1;
+                    baseMalfunctionInterval = malfunctionVals.Item2;
+
                     malfunctionInterval = baseMalfunctionInterval;
                     SwitchToBehaviourClientRpc((int)State.PERCH);
                     break;
                 case (int)State.RUN:
-                    if (Mathf.Sqrt(Mathf.Pow(agent.velocity.x, 2) + Mathf.Pow(agent.velocity.z, 2)) < 0.2f)
-                    {
-                        creatureAnimator.SetInteger("ID", 4);
-                    }
-                    else
-                    {
-                        creatureAnimator.SetInteger("ID", 1);
-                    }
+                    creatureAnimator.SetInteger("ID", Mathf.Sqrt(Mathf.Pow(agent.velocity.x, 2) + Mathf.Pow(agent.velocity.z, 2)) < 0.2f ? 4 : 1);
+
                     break;
                 case (int)State.RADARBOOSTER:
-                    if (Vector3.Distance(distractedRadarBoosterItem.transform.position, transform.position) >= 2 + MicBirdHandler.Instance.Config.RadarBoosterStopDistance)
-                    {
-                        creatureAnimator.SetInteger("ID", 1);
-                    }
-                    else {
-                        creatureAnimator.SetInteger("ID", 4);
-                    }
+                    creatureAnimator.SetInteger("ID", Vector3.Distance(distractedRadarBoosterItem.transform.position, transform.position) >= 2 + MicBirdHandler.Instance.Config.RadarBoosterStopDistance ? 1 : 4);
 
                     if (agent.speed != 3)
                     {
