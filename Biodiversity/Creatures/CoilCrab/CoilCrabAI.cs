@@ -102,7 +102,7 @@ namespace Biodiversity.Creatures.CoilCrab
 
             GameObject ShellObject = Instantiate(ShellPrefab);
             ShellObject.GetComponentInChildren<NetworkObject>().Spawn(true);
-            Shell = ShellObject.GetComponent<GrabbableObject>();
+            Shell = ShellObject.GetComponent<CoilShell>();
 
             enemyHP = CoilCrabHandler.Instance.Config.Health;
 
