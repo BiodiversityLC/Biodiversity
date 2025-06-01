@@ -59,6 +59,16 @@ namespace Biodiversity.Creatures.CoilCrab
             return 1;
         }
 
+        GrabbableObject IVisibleThreat.GetHeldObject()
+        {
+            return null;
+        }
+
+        bool IVisibleThreat.IsThreatDead()
+        {
+            return isEnemyDead;
+        }
+
 
 
 

@@ -64,6 +64,15 @@ namespace Biodiversity.Creatures.MicBird
             return 1;
         }
 
+        GrabbableObject IVisibleThreat.GetHeldObject()
+        {
+            return null;
+        }
+
+        bool IVisibleThreat.IsThreatDead()
+        {
+            return isEnemyDead;
+        }
 
 
         private enum State
