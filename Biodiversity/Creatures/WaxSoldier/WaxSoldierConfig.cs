@@ -45,15 +45,23 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     
     [field: Tooltip("The health of the Wax Soldier upon spawning.")]
     [field: Range(1, 100)]
-    public int Health { get; private set; } = 6; // todo: check if this is the correct default health value
-    
-    [field: Tooltip("Whether landmines and seamines (from the Surfaced mod) will blow up if the Wax Soldier moves over one.")]
-    public bool LandminesBlowUpWaxSoldier { get; private set; } = true;
-    // The wax soldier should be able to actively avoid landmines and traps in general.
+    public int Health { get; private set; } = 8; // todo: check if this is the correct default health value
     
     [field: Tooltip("The speed multiplier for how quickly the Wax Soldier can open doors.")]
     [field: Range(0f, 100f)]
     public float OpenDoorSpeedMultiplier { get; private set; } = 3f;
+    
+    [field: Tooltip("The view width in degrees of the Wax Soldier.")]
+    [field: Range(1f, 360f)]
+    public float ViewWidth { get; private set; } = 115f;
+    
+    [field: Tooltip("The view range in meters of the Wax Soldier.")]
+    [field: Range(1, 200)]
+    public int ViewRange { get; private set; } = 65;
+    
+    [field: Tooltip("Whether landmines and seamines (from the Surfaced mod) will blow up if the Wax Soldier moves over one.")]
+    public bool LandminesBlowUpWaxSoldier { get; private set; } = true;
+    // The wax soldier should be able to actively avoid landmines and traps in general.
     
     #endregion
     

@@ -10,7 +10,7 @@ internal static class GameNetworkManagerPatch
     internal static readonly HashSet<GameObject> NetworkPrefabsToRegister = [];
 
     [HarmonyPatch(nameof(GameNetworkManager.Start)), HarmonyPrefix]
-    private static void AddNetworkPrefabs() 
+    private static void AddNetworkPrefabs()
     {
         BiodiversityPlugin.Instance.FinishLoading();
 

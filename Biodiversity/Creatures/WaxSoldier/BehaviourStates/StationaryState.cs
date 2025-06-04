@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Util.Attributes;
 using Biodiversity.Util.DataStructures;
+using GameNetcodeStuff;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -19,5 +20,22 @@ internal class StationaryState : BehaviourState<WaxSoldierServerAI.States, WaxSo
 
         EnemyAIInstance.AgentMaxAcceleration = 0f;
         EnemyAIInstance.AgentMaxAcceleration = 50f;
+    }
+
+    internal override void AIIntervalBehaviour()
+    {
+        base.AIIntervalBehaviour();
+
+        PlayerControllerB currentVisiblePlayer = EnemyAIInstance.GetClosestVisiblePlayerFromEye(
+            EnemyAIInstance.eye,
+            WaxSoldierHandler.Instance.Config.ViewWidth,
+            WaxSoldierHandler.Instance.Config.ViewRange
+        );
+
+        if (currentVisiblePlayer == null)
+        {
+            // figure out what to do
+            // possible state change after
+        }
     }
 }

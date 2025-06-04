@@ -562,7 +562,7 @@ public abstract class BiodiverseAI : EnemyAI
 
     internal void LogVerbose(object message)
     {
-        if (BiodiversityPlugin.Config?.VerboseLogging ?? false)
+        if (BiodiversityPlugin.Config?.VerboseLoggingEnabled ?? false)
             BiodiversityPlugin.Logger.LogDebug($"{GetLogPrefix()} {message}");
     }
 

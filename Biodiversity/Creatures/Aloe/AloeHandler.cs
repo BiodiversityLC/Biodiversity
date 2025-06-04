@@ -11,20 +11,17 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler>
 
     public AloeHandler()
     {
-        Assets = new AloeAssets("aloebracken");
+        Assets = new AloeAssets("aloebracken"); //todo: Load the bundle synchronously
+        
         Config = new AloeConfig(BiodiversityPlugin.Instance.CreateConfig("aloe"));
 
         Assets.EnemyType.PowerLevel = Config.PowerLevel;
         Assets.EnemyType.MaxCount = Config.MaxAmount;
 
         if (Assets.FakePlayerBodyRagdollPrefab != null)
-        {
             GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(Assets.FakePlayerBodyRagdollPrefab);
-        }
         else
-        {
             BiodiversityPlugin.Logger.LogError("FakePlayerBodyRagdollPrefab is null.");
-        }
 
         TranslateTerminalNode(Assets.TerminalNode);
 

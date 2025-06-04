@@ -54,34 +54,30 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
         {
             Object asset = assets[i];
 
-            if (asset is GameObject gameObject)
+            switch (asset)
             {
-                if (gameObject.GetComponent<NetworkObject>() != null)
+                case GameObject gameObject:
                 {
-                    if (GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject))
+                    if (gameObject.GetComponent<NetworkObject>() != null && GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject))
                     {
                         BiodiversityPlugin.LogVerbose($"Adding NetworkPrefab '{gameObject.name}' from bundle '{filePath}' to registration queue.");
                     }
+
+                    break;
                 }
-            }
-            
-            // if (asset is GameObject gameObject)
-            // {
-            //     if (gameObject.GetComponent<NetworkObject>() == null) continue;
-            //     if (!GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject)) continue;
-            // }
-            
-            if (asset is AudioClip { preloadAudioData: false } clip)
-            {
-                BiodiversityPlugin.Logger.LogWarning(
-                    $"Loading Audio data for '{clip.name}' because it does not have preloadAudioData enabled!");
-                clip.LoadAudioData();
-            }
-            
-            if (asset is VideoClip videoClip)
-            {
-                BiodiversityPlugin.Logger.LogWarning(
-                    $"VideoClip: '{videoClip.name}' is being loaded from '{typeof(T).Name}' instead of the dedicated video clip bundle. It will not work correctly.");
+
+                case AudioClip { preloadAudioData: false } clip:
+                {
+                    BiodiversityPlugin.Logger.LogWarning($"Loading Audio data for '{clip.name}' because it does not have preloadAudioData enabled!");
+                    clip.LoadAudioData();
+                    break;
+                }
+
+                case VideoClip videoClip:
+                {
+                    BiodiversityPlugin.Logger.LogWarning($"VideoClip: '{videoClip.name}' is being loaded from '{typeof(T).Name}' instead of the dedicated video clip bundle. It will not work correctly.");
+                    break;
+                }
             }
         }
         

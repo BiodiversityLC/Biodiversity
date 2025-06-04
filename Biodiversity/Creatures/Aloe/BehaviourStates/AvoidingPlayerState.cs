@@ -151,8 +151,6 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
             float distanceToClosestPlayer =
                 Vector3.Distance(EnemyAIInstance.transform.position, closestPlayerPosition);
             
-            EnemyAIInstance.LogDebug($"Distance to closest player: {distanceToClosestPlayer}");
-            
             return distanceToClosestPlayer > 35f &&
                    avoidingPlayerState._avoidPlayerTimerTotal >= 5f &&
                    !avoidingPlayerState._playerLookingAtAloe.HasValue;

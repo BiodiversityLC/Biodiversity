@@ -5,7 +5,7 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 
 [Preserve]
-[State(WaxSoldierServerAI.States.Stationary)]
+[State(WaxSoldierServerAI.States.Pursuing)]
 internal class PursuingState : BehaviourState<WaxSoldierServerAI.States, WaxSoldierServerAI>
 {
     public PursuingState(WaxSoldierServerAI enemyAiInstance) : base(enemyAiInstance)

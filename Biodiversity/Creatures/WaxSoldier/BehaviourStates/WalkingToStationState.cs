@@ -25,7 +25,7 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierServerAI.States,
 
         EnemyAIInstance.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
-        EnemyAIInstance.openDoorSpeedMultiplier = 2f; //todo: make config for this
+        EnemyAIInstance.openDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
         EnemyAIInstance.moveTowardsDestination = true;
 
         // Only call SetDestinationToPosition if its actually needed
