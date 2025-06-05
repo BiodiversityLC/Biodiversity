@@ -23,7 +23,7 @@ public struct GenericScrapItem(
     public int MinimumValue { get; private set; } = minimumValue;
     public int MaximumValue { get; private set; } = maximumValue;
 
-    private static readonly AcceptableValueRange<float> WeightRange = new(0f, 1000f);
+    private static readonly AcceptableValueRange<float> WeightRange = new(1f, 4f);
     private static readonly AcceptableValueRange<int> MinimumValueRange = new(0, 1000);
     private static readonly AcceptableValueRange<int> MaximumValueRange = new(0, 1000);
 

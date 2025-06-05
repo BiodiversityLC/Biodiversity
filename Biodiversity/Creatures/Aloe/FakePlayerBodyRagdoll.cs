@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe;
 
+[DisallowMultipleComponent]
 public class FakePlayerBodyRagdoll : NetworkBehaviour
 {
     /// <summary>
@@ -103,12 +104,17 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
         UnsubscribeFromNetworkEvents();
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        SubscribeToNetworkEvents();
+    }
+
     private void Start()
     {
-        SubscribeToNetworkEvents();
-
-        foreach (BodyPart bodyPart in bodyParts)
+        for (int i = 0; i < bodyParts.Count; i++)
         {
+            BodyPart bodyPart = bodyParts[i];
             if (!string.IsNullOrEmpty(bodyPart.name))
                 _bodyPartMap.Add(bodyPart.name, bodyPart);
         }
@@ -162,15 +168,13 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
                 }
             }
             
-            // Use interpolation to reduce network load
-            // todo: copy the mirror network transform's logic and use that for more advanced interpolation stuff
             _networkPosition.Value = transform.position;
             _networkRotation.Value = transform.rotation;
         }
         else
         {
             float timeSinceLastUpdate = Time.time - _lastReceivedTime;
-            float t = timeSinceLastUpdate / PositionLerpTime;
+            float t = Mathf.Clamp01(timeSinceLastUpdate / PositionLerpTime);
 
             transform.position = Vector3.Lerp(transform.position, _lastReceivedPosition, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, _lastReceivedRotation, t);
@@ -188,6 +192,12 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
         _moveToExactPositionTimer = 0.0f;
         if (!_wasMatchingPosition) return;
         _wasMatchingPosition = false;
+
+        if (!bodyPart.limbRigidbody)
+        {
+            BiodiversityPlugin.Logger.LogDebug($"BodyPart {bodyPart.name} has no limb rigidbody.");
+            return;
+        }
 
         bodyPart.limbRigidbody.velocity = Vector3.zero;
         bodyPart.limbRigidbody.angularVelocity = Vector3.zero;
@@ -215,6 +225,12 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
             }
             else
             {
+                if (!bodyPart.limbRigidbody)
+                {
+                    BiodiversityPlugin.Logger.LogDebug($"BodyPart {bodyPart.name} has no limb rigidbody.");
+                    return;
+                }
+                
                 bodyPart.limbRigidbody.freezeRotation = true;
                 bodyPart.limbRigidbody.isKinematic = true;
                 bodyPart.limbRigidbody.transform.position = bodyPart.attachedTo.position;
@@ -245,11 +261,11 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
         }
 
         limb.AddForce(
-            _forceDirection * (speedMultiplier * Mathf.Clamp(Vector3.Distance(target.position, limb.position),
+            _forceDirection * (speedMultiplier * Mathf.Clamp(distance,
                 forceMinDistance, forceMaxDistance)),
             ForceMode.VelocityChange);
 
-        if (limb.velocity.sqrMagnitude > maxVelocity)
+        if (limb.velocity.sqrMagnitude > maxVelocity * maxVelocity)
         {
             limb.velocity = limb.velocity.normalized * maxVelocity;
         }
@@ -296,7 +312,15 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     {
         if (StartOfRound.Instance == null) return;
 
+        if (playerObjectId < 0 || playerObjectId >= StartOfRound.Instance.allPlayerScripts.Length) return;
+
         PlayerControllerB playerScript = StartOfRound.Instance.allPlayerScripts[playerObjectId];
+        if (playerScript == null) return;
+
+        if (StartOfRound.Instance.unlockablesList == null ||
+            playerScript.currentSuitID < 0 ||
+            playerScript.currentSuitID >= StartOfRound.Instance.unlockablesList.unlockables.Count) return;
+        
         bodyMeshRenderer.sharedMaterial =
             StartOfRound.Instance.unlockablesList.unlockables[playerScript.currentSuitID].suitMaterial;
         bodyMeshRenderer.renderingLayerMask = (uint)(513 | 1 << playerObjectId + 12);
@@ -313,11 +337,17 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
         if (!IsOwner) return;
         if (!_bodyPartMap.TryGetValue(bodyPartName, out BodyPart bodyPart)) return;
         
+        if (!bodyPart.limbRigidbody)
+        {
+            BiodiversityPlugin.Logger.LogDebug($"BodyPart {bodyPart.name} has no limb rigidbody.");
+            return;
+        }
+        
         // If the given transform is null, detach the limb instead as a failsafe
-        if (transformToAttachTo == null)
+        if (!transformToAttachTo)
         {
             // BiodiversityPlugin.LogVerbose($"The given transform is null, cannot attach transform to body part {bodyPartName}");
-            DetachLimbFromTransform(bodyPartName);
+            DetachLimbFromTransform(bodyPartName, retainVelocity);
             return;
         }
         
@@ -344,6 +374,12 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
 
         bodyPart.active = false;
         bodyPart.attachedTo = null;
+        
+        if (!bodyPart.limbRigidbody)
+        {
+            BiodiversityPlugin.Logger.LogDebug($"BodyPart {bodyPart.name} has no limb rigidbody.");
+            return;
+        }
 
         if (!retainVelocity)
         {
@@ -375,7 +411,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     private void OnNetworkRotationChanged(Quaternion oldRotation, Quaternion newRotation)
     {
         _lastReceivedRotation = newRotation;
-        _lastReceivedTime = Time.time;
+        // _lastReceivedTime = Time.time;
     }
     
     /// <summary>
@@ -383,7 +419,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     /// </summary>
     private void SubscribeToNetworkEvents()
     {
-        if (IsOwner || _networkEventsSubscribed) return;
+        if (_networkEventsSubscribed) return;
         _networkPosition.OnValueChanged += OnNetworkPositionChanged;
         _networkRotation.OnValueChanged += OnNetworkRotationChanged;
         _networkEventsSubscribed = true;
@@ -394,7 +430,7 @@ public class FakePlayerBodyRagdoll : NetworkBehaviour
     /// </summary>
     private void UnsubscribeFromNetworkEvents()
     {
-        if (IsOwner || !_networkEventsSubscribed) return;
+        if (!_networkEventsSubscribed) return;
         _networkPosition.OnValueChanged -= OnNetworkPositionChanged;
         _networkRotation.OnValueChanged -= OnNetworkRotationChanged;
         _networkEventsSubscribed = false;
