@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using Biodiversity.Creatures.Aloe.AnimatorStateMachineBehaviours;
+using Biodiversity.Creatures.Aloe.AnimatorStates;
 using Biodiversity.Util;
 using Biodiversity.Util.Lang;
 using Biodiversity.Util.DataStructures;
@@ -276,8 +276,6 @@ public class AloeClient : MonoBehaviour
         _propertyBlock = new MaterialPropertyBlock();
         lookAimRig.weight = 0f;
 
-        AddStateMachineBehaviours(animator);
-
         animator.SetBool(Spawning, true);
 
         _defaultFoostepAudioSourcePitch = aloeFootstepsSource.pitch;
@@ -326,7 +324,6 @@ public class AloeClient : MonoBehaviour
                         _targetPlayerCanEscape = false;
                         netcodeController.TargetPlayerEscapedServerRpc();
                         
-                        // healingOrbEffect.Stop();
                         healingLightEffect.enabled = false;
                     }
 
@@ -832,21 +829,6 @@ public class AloeClient : MonoBehaviour
         BiodiversityPlugin.LogVerbose($"Destroying AloeClient gameobject.");
         Destroy(gameObject);
     }
-
-    private void AddStateMachineBehaviours(Animator receivedAnimator)
-    {
-        AloeServerAI aloeServerAI = _aloeServer.Value;
-        StateMachineBehaviour[] behaviours = receivedAnimator.GetBehaviours<StateMachineBehaviour>();
-        for (int i = 0; i < behaviours.Length; i++)
-        {
-            StateMachineBehaviour behaviour = behaviours[i];
-            if (behaviour is AloeStateMachineBehaviour baseStateMachineBehaviour)
-            {
-                baseStateMachineBehaviour.Initialize(netcodeController, aloeServerAI, this);
-            }
-        }
-    }
-    
     private void ManuallyControlPlayerOffsets()
     {
         const float moveAmount = 0.1f;

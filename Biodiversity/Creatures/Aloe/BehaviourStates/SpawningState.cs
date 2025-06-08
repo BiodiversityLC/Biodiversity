@@ -10,9 +10,7 @@ internal class SpawningState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
     public SpawningState(AloeServerAI enemyAiInstance) : base(enemyAiInstance)
     {
-        Transitions =
-        [
-        ];
+        Transitions = [];
     }
 
     internal override void OnStateEnter(ref StateData initData)

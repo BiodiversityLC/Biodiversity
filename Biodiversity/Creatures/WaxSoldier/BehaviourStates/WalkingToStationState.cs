@@ -26,13 +26,12 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierServerAI.States,
         EnemyAIInstance.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
         EnemyAIInstance.openDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
-        EnemyAIInstance.moveTowardsDestination = true;
 
         // Only call SetDestinationToPosition if its actually needed
-        if (Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.StationPosition) <= 2)
+        if (Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.PostPosition) <= 2)
             reachedStation = true;
         else 
-            EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.StationPosition);
+            EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.PostPosition);
     }
 
     internal override void AIIntervalBehaviour()
@@ -40,7 +39,7 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierServerAI.States,
         base.AIIntervalBehaviour();
 
         if (!reachedStation &&
-            Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.StationPosition) <= 2)
+            Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.PostPosition) <= 2)
         {
             reachedStation = true;
         }

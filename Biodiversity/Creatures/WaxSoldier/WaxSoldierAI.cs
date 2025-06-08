@@ -42,7 +42,9 @@ public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxS
     internal float AgentMaxSpeed;
     private float _takeDamageCooldown;
     
-    internal Vector3 StationPosition;
+    internal Vector3 PostPosition;
+
+    #region Event Functions
 
     public override void Start()
     {
@@ -52,16 +54,6 @@ public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxS
         InitializeConfigValues();
         
         LogVerbose("Wax Soldier spawned!");
-    }
-    
-    protected override States DetermineInitialState()
-    {
-        return States.Spawning;
-    }
-    
-    protected override string GetLogPrefix()
-    {
-        return $"[WaxSoldierServerAI {BioId}]";
     }
     
     protected override bool ShouldRunUpdate()
@@ -74,6 +66,26 @@ public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxS
         _takeDamageCooldown -= Time.deltaTime;
         
         return true;
+    }
+
+    #endregion
+
+    #region AI Logic
+
+    public void DeterminePostPosition()
+    {
+        Vector3 calculatedPos = Vector3.zero;
+
+        PostPosition = calculatedPos;
+    }
+
+    #endregion
+    
+    #region Small Stuff
+
+    protected override States DetermineInitialState()
+    {
+        return States.Spawning;
     }
     
     /// <summary>
@@ -102,4 +114,11 @@ public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxS
         AIIntervalTime = WaxSoldierHandler.Instance.Config.AiIntervalTime;
         openDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
     }
+    
+    protected override string GetLogPrefix()
+    {
+        return $"[WaxSoldierServerAI {BioId}]";
+    }
+
+    #endregion
 }
