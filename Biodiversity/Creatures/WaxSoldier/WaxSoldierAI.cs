@@ -1,9 +1,11 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+using GameNetcodeStuff;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier;
 
-public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxSoldierServerAI>
+public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 {
 #pragma warning disable 0649
     [Header("Controllers")] [Space(5f)] 
@@ -61,8 +63,6 @@ public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxS
         if (!IsServer || isEnemyDead)
             return false;
         
-        // todo: instead of copying the same setup as the Aloe, instead see if making a `StunnedState` or `StunState` would be a more clean approach (not clean but, idk, u get me anyway)
-        
         _takeDamageCooldown -= Time.deltaTime;
         
         return true;
@@ -70,18 +70,42 @@ public class WaxSoldierServerAI : StateManagedAI<WaxSoldierServerAI.States, WaxS
 
     #endregion
 
-    #region AI Logic
+    #region Wax Soldier Specific AI Logic
 
     public void DeterminePostPosition()
     {
-        Vector3 calculatedPos = Vector3.zero;
+        //todo: create tool that lets people easily select good guard spots for the wax soldier (nearly identical to the vending machine placement tool idea)
+        Vector3 calculatedPos = transform.position;
 
         PostPosition = calculatedPos;
     }
 
     #endregion
+
+    #region Lethal Company Vanilla Events
+
+    public override void SetEnemyStunned(
+        bool setToStunned, 
+        float setToStunTime = 1f, 
+        PlayerControllerB setStunnedByPlayer = null)
+    {
+        base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
+        if (!IsServer || isEnemyDead) return;
+        
+        CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
+    }
+
+    public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+    {
+        base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
+        if (!IsServer || isEnemyDead) return;
+        
+        CurrentState?.OnHitEnemy(force, playerWhoHit, hitID);
+    }
+
+    #endregion
     
-    #region Small Stuff
+    #region Other
 
     protected override States DetermineInitialState()
     {

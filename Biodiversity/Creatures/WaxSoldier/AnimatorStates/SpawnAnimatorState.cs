@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.AnimatorStates;
 
-public class SpawnAnimatorState : GenericAnimatorState<WaxSoldierServerAI>
+public class SpawnAnimatorState : GenericAnimatorState<WaxSoldierAI>
 {
     private static readonly int Spawning = Animator.StringToHash("Spawning");
 

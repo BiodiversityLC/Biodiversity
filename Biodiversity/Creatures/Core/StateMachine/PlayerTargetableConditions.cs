@@ -1,9 +1,11 @@
-﻿using GameNetcodeStuff;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
+using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Biodiversity.Util.DataStructures;
+namespace Biodiversity.Creatures.Core.StateMachine;
 
 public class PlayerTargetableConditions
 {

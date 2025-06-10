@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Creatures.Core;
+using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
@@ -339,8 +341,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitId = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitId);
-        if (!IsServer) return;
-        if (isEnemyDead) return;
+        if (!IsServer || isEnemyDead) return;
         
         States currentStateType = CurrentState.GetStateType();
         if (_takeDamageCooldown > 0 || currentStateType is States.Dead) return;
@@ -464,8 +465,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         PlayerControllerB setStunnedByPlayer = null)
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
-        if (!IsServer) return;
-        if (isEnemyDead) return;
+        if (!IsServer || isEnemyDead) return;
         
         States currentState = CurrentState.GetStateType();
         if (currentState is States.Dead) return;

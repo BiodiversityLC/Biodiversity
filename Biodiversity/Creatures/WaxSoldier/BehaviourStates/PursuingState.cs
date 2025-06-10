@@ -1,14 +1,15 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.DataStructures;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 
 [Preserve]
-[State(WaxSoldierServerAI.States.Pursuing)]
-internal class PursuingState : BehaviourState<WaxSoldierServerAI.States, WaxSoldierServerAI>
+[State(WaxSoldierAI.States.Pursuing)]
+internal class PursuingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    public PursuingState(WaxSoldierServerAI enemyAiInstance) : base(enemyAiInstance)
+    public PursuingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
     }

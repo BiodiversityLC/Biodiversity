@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
 

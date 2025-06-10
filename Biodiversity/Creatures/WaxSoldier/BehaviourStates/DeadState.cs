@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Util;
 using Biodiversity.Util.Attributes;
 using Biodiversity.Util.DataStructures;
 using UnityEngine.Scripting;
@@ -6,10 +7,10 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 
 [Preserve]
-[State(WaxSoldierServerAI.States.Dead)]
-internal class DeadState : BehaviourState<WaxSoldierServerAI.States, WaxSoldierServerAI>
+[State(WaxSoldierAI.States.Dead)]
+internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    public DeadState(WaxSoldierServerAI enemyAiInstance) : base(enemyAiInstance)
+    public DeadState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
     }

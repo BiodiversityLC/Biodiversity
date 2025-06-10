@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.DataStructures;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -6,12 +7,12 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 
 [Preserve]
-[State(WaxSoldierServerAI.States.WalkingToStation)]
-internal class WalkingToStationState : BehaviourState<WaxSoldierServerAI.States, WaxSoldierServerAI>
+[State(WaxSoldierAI.States.WalkingToStation)]
+internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     private bool reachedStation;
     
-    public WalkingToStationState(WaxSoldierServerAI enemyAiInstance) : base(enemyAiInstance)
+    public WalkingToStationState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
         [
@@ -29,9 +30,13 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierServerAI.States,
 
         // Only call SetDestinationToPosition if its actually needed
         if (Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.PostPosition) <= 2)
+        {
             reachedStation = true;
-        else 
+        }
+        else
+        {
             EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.PostPosition);
+        }
     }
 
     internal override void AIIntervalBehaviour()
@@ -48,18 +53,18 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierServerAI.States,
     }
 
     private class TransitionToStationary(
-        WaxSoldierServerAI enemyAIInstance,
+        WaxSoldierAI enemyAIInstance,
         WalkingToStationState walkingToStationState)
-        : StateTransition<WaxSoldierServerAI.States, WaxSoldierServerAI>(enemyAIInstance)
+        : StateTransition<WaxSoldierAI.States, WaxSoldierAI>(enemyAIInstance)
     {
         internal override bool ShouldTransitionBeTaken()
         {
             return walkingToStationState.reachedStation;
         }
 
-        internal override WaxSoldierServerAI.States NextState()
+        internal override WaxSoldierAI.States NextState()
         {
-            return WaxSoldierServerAI.States.Stationary;
+            return WaxSoldierAI.States.Stationary;
         }
     }
 }
