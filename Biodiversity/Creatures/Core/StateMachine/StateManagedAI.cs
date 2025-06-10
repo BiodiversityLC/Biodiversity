@@ -381,6 +381,18 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             LogError($"State {newState} was not found in the StateDictionary. This should not happen.");
         }
     }
+    
+    /// <summary>
+    /// Triggers a custom, AI-specific event to be processed by the current state.
+    /// </summary>
+    /// <param name="eventName">A unique string identifying the event (e.g., "GrabAnimationComplete").</param>
+    /// <param name="data">Optional data payload.</param>
+    public void TriggerCustomEvent(string eventName, StateData data = null)
+    {
+        if (!IsServer) return;
+        
+        CurrentState?.OnCustomEvent(eventName, data);
+    }
 
     /// <summary>
     /// Determines the initial state for the AI when it is initialized.

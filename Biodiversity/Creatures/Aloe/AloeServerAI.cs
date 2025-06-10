@@ -304,6 +304,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         AgentMaxAcceleration = AloeHandler.Instance.Config.KidnappingPlayerCarryingMaxAcceleration;
     }
 
+    #region Lethal Company Vanilla Events
+
     public override void OnCollideWithPlayer(Collider other)
     {
         base.OnCollideWithPlayer(other);
@@ -519,6 +521,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             }
         }
     }
+
+    #endregion
     
     /// <summary>
     /// Creates a bind in the AloeBoundKidnaps dictionary and calls a network event to do several things in the client for kidnapping the target player.
@@ -643,8 +647,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     {
         LogVerbose("Spawn animation complete.");
         if (!IsServer) return;
-        if (CurrentState.GetStateType() is States.Spawning)
-            SwitchBehaviourState(States.Roaming);
+        TriggerCustomEvent(nameof(OnSpawnAnimationStateExit));
     }
     
     public void OnSpottedAnimationStateEnter()

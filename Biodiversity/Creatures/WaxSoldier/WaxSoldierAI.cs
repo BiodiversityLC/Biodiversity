@@ -105,6 +105,17 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     #endregion
     
+    #region Animation State Callbacks
+
+    public void OnSpawnAnimationStateExit()
+    {
+        LogVerbose("Spawn animation complete.");
+        if (!IsServer) return;
+        TriggerCustomEvent(nameof(OnSpawnAnimationStateExit));
+    }
+    
+    #endregion
+    
     #region Other
 
     protected override States DetermineInitialState()

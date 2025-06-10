@@ -1,7 +1,6 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
 using Biodiversity.Util.Attributes;
-using Biodiversity.Util.DataStructures;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -10,14 +9,21 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.Spawning)]
 internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
+    private bool spawnAnimComplete;
+    
     public SpawningState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
-        Transitions = [];
+        Transitions = 
+        [
+            new TransitionToNextState(EnemyAIInstance, this)
+        ];
     }
 
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
+        
+        spawnAnimComplete = false;
 
         EnemyAIInstance.AgentMaxAcceleration = 0f;
         EnemyAIInstance.AgentMaxAcceleration = 50f;
@@ -26,5 +32,33 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         
         EnemyAIInstance.InitializeConfigValues();
         EnemyAIInstance.DeterminePostPosition();
+    }
+
+    internal override void OnCustomEvent(string eventName, StateData eventData)
+    {
+        base.OnCustomEvent(eventName, eventData);
+
+        switch (eventName)
+        {
+            case nameof(WaxSoldierAI.OnSpawnAnimationStateExit):
+                spawnAnimComplete = true;
+                break;
+        }
+    }
+
+    private class TransitionToNextState(
+        WaxSoldierAI enemyAIInstance,
+        SpawningState spawningState)
+        : StateTransition<WaxSoldierAI.States, WaxSoldierAI>(enemyAIInstance)
+    {
+        internal override bool ShouldTransitionBeTaken()
+        {
+            return spawningState.spawnAnimComplete;
+        }
+
+        internal override WaxSoldierAI.States NextState()
+        {
+            return WaxSoldierAI.States.WalkingToStation;
+        }
     }
 }

@@ -144,13 +144,26 @@ public abstract class BehaviourState<TState, TEnemyAI>
         PlayerControllerB playerWhoHit = null, 
         int hitId = -1)
     {
-        
+        EnemyAIInstance.LogVerbose($"{nameof(OnHitEnemy)} called for {_stateType}.");
     }
 
-    internal virtual void OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1f,
+    internal virtual void OnSetEnemyStunned(
+        bool setToStunned, 
+        float setToStunTime = 1f,
         PlayerControllerB setStunnedByPlayer = null)
     {
-        
+        EnemyAIInstance.LogVerbose($"{nameof(OnSetEnemyStunned)} called for {_stateType}.");
+    }
+
+    /// <summary>
+    /// Called to handle any AI-specific custom events that don't have a dedicated virtual method.
+    /// Uses a switch on the <see cref="eventName"/> to handle different custom events.
+    /// </summary>
+    /// <param name="eventName">The unique string identifier for the custom event.</param>
+    /// <param name="eventData">An optional payload of data for the event.</param>
+    internal virtual void OnCustomEvent(string eventName, StateData eventData)
+    {
+        EnemyAIInstance.LogVerbose($"{nameof(OnCustomEvent)} with name {eventName} called for {_stateType}.");
     }
 
     /// <summary>
