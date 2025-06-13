@@ -68,7 +68,6 @@
 
     <ItemGroup>
       <Folder Include="3rdParty\" />
-      <Folder Include="Items\Weapons\" />
       <Folder Include="Util\Scripts\" />
     </ItemGroup>
 
