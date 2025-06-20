@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
 using Biodiversity.Util.Attributes;
 using Biodiversity.Util.DataStructures;
@@ -150,8 +151,6 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
 
             float distanceToClosestPlayer =
                 Vector3.Distance(EnemyAIInstance.transform.position, closestPlayerPosition);
-            
-            EnemyAIInstance.LogDebug($"Distance to closest player: {distanceToClosestPlayer}");
             
             return distanceToClosestPlayer > 35f &&
                    avoidingPlayerState._avoidPlayerTimerTotal >= 5f &&

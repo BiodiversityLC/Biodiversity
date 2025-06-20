@@ -7,7 +7,7 @@ using Random = UnityEngine.Random;
 
 namespace Biodiversity.Items.DeveloperItems;
 
-public class RubberDuckBehaviour : PhysicsProp
+public class RubberDuckBehaviour : BiodiverseItem
 {
 #pragma warning disable 0649
     [SerializeField] private Material[] materialVariants;
@@ -25,7 +25,7 @@ public class RubberDuckBehaviour : PhysicsProp
 
     private void Awake()
     {
-        _networkObject = new CachedValue<NetworkObject>(GetComponent<NetworkObject>, true);
+        _networkObject = new CachedValue<NetworkObject>(GetComponent<NetworkObject>);
     }
     
     private void OnEnable()
@@ -66,11 +66,17 @@ public class RubberDuckBehaviour : PhysicsProp
     [ClientRpc]
     private void PlayQuackClientRpc(int clipIndex)
     {
-        AudioClip clip = audioClipVariants[clipIndex];
-        
-        audioSource.Stop(true);
         animator.Play("Squeeze", -1, 0);
+        if (clipIndex >= audioClipVariants.Length)
+        {
+            BiodiversityPlugin.Logger.LogError($"Invalid clipIndex {clipIndex}, there are only {audioClipVariants.Length} clips.");
+            return;
+        }
+
+        AudioClip clip = audioClipVariants[clipIndex];
+        audioSource.Stop(true);
         audioSource.PlayOneShot(clip);
+        
         WalkieTalkie.TransmitOneShotAudio(audioSource, clip, audioSource.volume);
         RoundManager.Instance.PlayAudibleNoise(transform.position, (audioSource.minDistance + audioSource.maxDistance) / 2);
     }
@@ -104,7 +110,7 @@ public class RubberDuckBehaviour : PhysicsProp
     private void ApplyVariant(int chosenVariantIndex)
     {
         if (materialVariants.Length > 0) mainObjectRenderer.material = materialVariants[chosenVariantIndex];
-        else BiodiversityPlugin.Logger.LogError($"Nethersome's rubber duck item: No material variants available with index: {chosenVariantIndex}.");
+        else BiodiversityPlugin.Logger.LogError($"Nethersome's Rubber Duck item: No material variants available with index: {chosenVariantIndex}.");
     }
     
     private void SubscribeToNetworkEvents()

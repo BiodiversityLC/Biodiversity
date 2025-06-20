@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Creatures.Core;
+using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
@@ -199,36 +201,37 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     {
         if (!IsServer) return;
         
+        // todo: fix the aloe shared data thing
+        // todo: add a lazer pointer type thing with the required features so ppl can easily go around a map and get the coordinates of a good spot for an aloe node &/or wax soldier guard post
         _mainEntrancePosition = RoundManager.FindMainEntrancePosition(true);
         Vector3 brackenRoomAloeNode = AloeSharedData.Instance.OccupyBrackenRoomAloeNode();
 
         // Make sure the Aloe has the correct AI nodes assigned
+        Vector3 enemyPos = transform.position;
+        Vector3 closestOutsideNode = Vector3.positiveInfinity;
+        Vector3 closestInsideNode = Vector3.positiveInfinity;
+        
+        // todo: handle cases where these return a list of doodoo nodes (either just an empty list or a list of destroyed nodes).
+        GameObject[] outsideAINodes = AloeSharedData.Instance.GetOutsideAINodes();
+        GameObject[] insideAINodes = AloeSharedData.Instance.GetInsideAINodes();
+
+        for (int i = 0; i < outsideAINodes.Length; i++)
         {
-            Vector3 enemyPos = transform.position;
-            Vector3 closestOutsideNode = Vector3.positiveInfinity;
-            Vector3 closestInsideNode = Vector3.positiveInfinity;
-            
-            GameObject[] outsideAINodes = AloeSharedData.Instance.GetOutsideAINodes();
-            GameObject[] insideAINodes = AloeSharedData.Instance.GetInsideAINodes();
-
-            for (int i = 0; i < outsideAINodes.Length; i++)
-            {
-                GameObject node = outsideAINodes[i];
-                Vector3 nodePos = node.transform.position;
-                if ((nodePos - enemyPos).sqrMagnitude < (closestOutsideNode - enemyPos).sqrMagnitude)
-                    closestOutsideNode = nodePos;
-            }
-
-            for (int i = 0; i < insideAINodes.Length; i++)
-            {
-                GameObject node = insideAINodes[i];
-                Vector3 nodePos = node.transform.position;
-                if ((nodePos - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
-                    closestInsideNode = nodePos;
-            }
-
-            allAINodes = (closestOutsideNode - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude ? outsideAINodes : insideAINodes;
+            GameObject node = outsideAINodes[i];
+            Vector3 nodePos = node.transform.position;
+            if ((nodePos - enemyPos).sqrMagnitude < (closestOutsideNode - enemyPos).sqrMagnitude)
+                closestOutsideNode = nodePos;
         }
+
+        for (int i = 0; i < insideAINodes.Length; i++)
+        {
+            GameObject node = insideAINodes[i];
+            Vector3 nodePos = node.transform.position;
+            if ((nodePos - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
+                closestInsideNode = nodePos;
+        }
+
+        allAINodes = (closestOutsideNode - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude ? outsideAINodes : insideAINodes;
 
         //_favouriteSpot = brackenRoomAloeNode;
         FavouriteSpot = Vector3.zero;
@@ -260,7 +263,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             LookAtPosition(SlappingPlayer.Value.transform.position);
         }
 
-        switch (CurrentState.GetStateType())
+        States currentState = CurrentState.GetStateType();
+        switch (currentState)
         {
             case States.Dead or States.HealingPlayer or States.CuddlingPlayer:
                 break;
@@ -269,7 +273,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             {
                 if (!(agent.velocity.sqrMagnitude > 0.01f)) break;
                 Vector3 targetDirection = !HasTransitionedToRunningForwardsAndCarryingPlayer &&
-                                          CurrentState.GetStateType() == States.KidnappingPlayer
+                                          currentState == States.KidnappingPlayer
                     ? -agent.velocity.normalized
                     : agent.velocity.normalized;
         
@@ -300,6 +304,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         AgentMaxSpeed = AloeHandler.Instance.Config.KidnappingPlayerCarryingMaxSpeed;
         AgentMaxAcceleration = AloeHandler.Instance.Config.KidnappingPlayerCarryingMaxAcceleration;
     }
+
+    #region Lethal Company Vanilla Events
 
     public override void OnCollideWithPlayer(Collider other)
     {
@@ -338,8 +344,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitId = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitId);
-        if (!IsServer) return;
-        if (isEnemyDead) return;
+        if (!IsServer || isEnemyDead) return;
         
         States currentStateType = CurrentState.GetStateType();
         if (_takeDamageCooldown > 0 || currentStateType is States.Dead) return;
@@ -406,7 +411,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                 
                     break;
                 }
-
+                
                 case States.ChasingEscapedPlayer:
                 {
                     if (playerWhoHitMe.HasValue)
@@ -463,8 +468,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         PlayerControllerB setStunnedByPlayer = null)
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
-        if (!IsServer) return;
-        if (isEnemyDead) return;
+        if (!IsServer || isEnemyDead) return;
         
         States currentState = CurrentState.GetStateType();
         if (currentState is States.Dead) return;
@@ -518,6 +522,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             }
         }
     }
+
+    #endregion
     
     /// <summary>
     /// Creates a bind in the AloeBoundKidnaps dictionary and calls a network event to do several things in the client for kidnapping the target player.
@@ -642,8 +648,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     {
         LogVerbose("Spawn animation complete.");
         if (!IsServer) return;
-        if (CurrentState.GetStateType() is States.Spawning)
-            SwitchBehaviourState(States.Roaming);
+        TriggerCustomEvent(nameof(OnSpawnAnimationStateExit));
     }
     
     public void OnSpottedAnimationStateEnter()
@@ -687,12 +692,13 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     /// </summary>
     private void CalculateSpeed()
     {
+        States currentState = CurrentState.GetStateType();
+        
         if (stunNormalizedTimer > 0 || 
             IsStaringAtTargetPlayer ||
             InSlapAnimation || inCrushHeadAnimation ||
-            (CurrentState.GetStateType() == States.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
-            CurrentState.GetStateType() == States.Dead ||
-            CurrentState.GetStateType() == States.Spawning)
+            (currentState == States.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
+            currentState == States.Spawning)
         {
             agent.speed = 0;
             agent.acceleration = AgentMaxAcceleration;

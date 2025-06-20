@@ -10,14 +10,23 @@ namespace Biodiversity;
 
 public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
 {
-    [field: Header("Development")]
-    [field: Tooltip("Whether to log more debug information to the console. 99% of people do NOT need to touch this.")]
-    public bool VerboseLogging { get; private set; } = false;
-
     [field: NonSerialized] public string Language { get; private set; } = "en";
+    
+    #region Dev Config Options
+    [field: Header("Development")]
+    
+    [field: Tooltip("Whether to log more debug information to the console. 99% of people do NOT need to touch this.")]
+    public bool VerboseLoggingEnabled { get; private set; } = false;
+    
+    #endregion
 
+    #region Other Config Options
+    [field: Header("Other")]
+    
     [field: Tooltip("The stab is real.")]
     public bool StabIsReal { get; private set; } = false;
+    
+    #endregion
     
     private readonly HashSet<string> _enabledCreatures = [];
 

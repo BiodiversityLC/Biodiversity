@@ -11,11 +11,11 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     #region Spawn Settings
     [field: Header("Spawn Settings")]
     
-    [field: Tooltip("Whether the Wax Soldier will spawn in games.")]
-    public bool WaxSoldierEnabled { get; private set; } = true;
+    [field: Tooltip("Whether the Wax Soldier will spawn in games. Dont turn this on or your game will implode.")]
+    public bool WaxSoldierEnabled { get; private set; } = false;
     
     [field: Tooltip("Spawn weight of the Wax Soldier on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-    public string Rarity { get; private set; } = "havent filled this out yet";
+    public string Rarity { get; private set; } = "All:1";
 
     [field: Tooltip("The power level of the Wax Soldier.")]
     [field: Range(0f, 15f)]
@@ -45,15 +45,23 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     
     [field: Tooltip("The health of the Wax Soldier upon spawning.")]
     [field: Range(1, 100)]
-    public int Health { get; private set; } = 6; // todo: check if this is the correct default health value
-    
-    [field: Tooltip("Whether landmines and seamines (from the Surfaced mod) will blow up if the Wax Soldier moves over one.")]
-    public bool LandminesBlowUpWaxSoldier { get; private set; } = true;
-    // The wax soldier should be able to actively avoid landmines and traps in general.
+    public int Health { get; private set; } = 8; // todo: check if this is the correct default health value
     
     [field: Tooltip("The speed multiplier for how quickly the Wax Soldier can open doors.")]
     [field: Range(0f, 100f)]
     public float OpenDoorSpeedMultiplier { get; private set; } = 3f;
+    
+    [field: Tooltip("The view width in degrees of the Wax Soldier.")]
+    [field: Range(1f, 360f)]
+    public float ViewWidth { get; private set; } = 115f;
+    
+    [field: Tooltip("The view range in meters of the Wax Soldier.")]
+    [field: Range(1, 200)]
+    public int ViewRange { get; private set; } = 65;
+    
+    [field: Tooltip("Whether landmines and seamines (from the Surfaced mod) will blow up if the Wax Soldier moves over one.")]
+    public bool LandminesBlowUpWaxSoldier { get; private set; } = true;
+    // The wax soldier should be able to actively avoid landmines and traps in general.
     
     #endregion
     

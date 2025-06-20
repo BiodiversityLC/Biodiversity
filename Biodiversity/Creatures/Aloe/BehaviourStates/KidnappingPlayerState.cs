@@ -1,7 +1,7 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Util;
 using Biodiversity.Util.Attributes;
 using System.Collections.Generic;
-using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;

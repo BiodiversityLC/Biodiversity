@@ -1,6 +1,5 @@
 ﻿using Biodiversity.Util;
 using Biodiversity.Util.Attributes;
-using Biodiversity.Util.DataStructures;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -8,7 +7,7 @@ using System.Reflection;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Biodiversity.Creatures;
+namespace Biodiversity.Creatures.Core.StateMachine;
 
 /// <summary>
 /// An abstract base class for AI components that manage and transition between different behavior states.
@@ -155,7 +154,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                     }
                 }
                 
-                BiodiversityPlugin.Logger.LogInfo($"[StateCache<{typeof(TEnemyAI).Name}>] Initialized with {StateTypes.Count} states.");
+                BiodiversityPlugin.LogVerbose($"[StateCache<{typeof(TEnemyAI).Name}>] Initialized with {StateTypes.Count} states.");
                 IsInitialized = true;
             }
         }
@@ -264,7 +263,14 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         if (!ShouldRunLateUpdate()) return;
         CurrentState?.LateUpdateBehaviour();
     }
-    
+
+    //todo: write xml doc for this
+    protected void FixedUpdate()
+    {
+        if (!ShouldRunFixedUpdate()) return;
+        CurrentState?.FixedUpdateBehaviour();
+    }
+
     /// <summary>
     /// Populates the instance-specific <see cref="_stateDictionary"/> by creating instances of
     /// state types found in the <see cref="StateCache"/>. The state types are implementations of <see cref="BehaviourState{TState,TEnemyAI}"/>.
@@ -375,6 +381,18 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             LogError($"State {newState} was not found in the StateDictionary. This should not happen.");
         }
     }
+    
+    /// <summary>
+    /// Triggers a custom, AI-specific event to be processed by the current state.
+    /// </summary>
+    /// <param name="eventName">A unique string identifying the event (e.g., "GrabAnimationComplete").</param>
+    /// <param name="data">Optional data payload.</param>
+    public void TriggerCustomEvent(string eventName, StateData data = null)
+    {
+        if (!IsServer) return;
+        
+        CurrentState?.OnCustomEvent(eventName, data);
+    }
 
     /// <summary>
     /// Determines the initial state for the AI when it is initialized.
@@ -428,6 +446,17 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// </summary>
     /// <returns><c>true</c> if <see cref="LateUpdate"/> should run; otherwise, <c>false</c>.</returns>
     protected virtual bool ShouldRunLateUpdate()
+    {
+        return IsServer && !isEnemyDead;
+    }
+
+    /// <summary>
+    /// Determines if the <see cref="FixedUpdate"/> method should execute.
+    /// This method is intended to be overridden by subclasses to add custom conditions for executing fixed update logic.
+    /// By default, it returns true only if the object is on the server and the enemy is not dead.
+    /// </summary>
+    /// <returns><c>true</c> if <see cref="FixedUpdate"/> should run; otherwise, <c>false</c>.</returns>
+    protected virtual bool ShouldRunFixedUpdate()
     {
         return IsServer && !isEnemyDead;
     }

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Biodiversity.Util.DataStructures;
+namespace Biodiversity.Creatures.Core.StateMachine;
 
 public class StateData
 {

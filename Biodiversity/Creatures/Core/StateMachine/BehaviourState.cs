@@ -1,10 +1,10 @@
-﻿using Biodiversity.Creatures;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Util.Attributes;
+using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Biodiversity.Util.DataStructures;
+namespace Biodiversity.Creatures.Core.StateMachine;
 
 /// <summary>
 /// Represents a base state for managing AI behaviors in a state machine.
@@ -94,6 +94,16 @@ public abstract class BehaviourState<TState, TEnemyAI>
         EnemyAIInstance.LogVerbose($"OnStateEnter called for {_stateType}.");
         initData ??= new StateData();
     }
+    
+    /// <summary>
+    /// Called when the AI exits this state.
+    /// Override this method to define behavior that should happen when the AI transitions out of this state.
+    /// </summary>
+    internal virtual void OnStateExit()
+    {
+        EnemyAIInstance.LogVerbose($"{nameof(OnStateExit)} called for {_stateType}.");
+    }
+    
 
     /// <summary>
     /// Performs behavior in the AI's Update cycle while it is in this state.
@@ -120,12 +130,40 @@ public abstract class BehaviourState<TState, TEnemyAI>
     }
 
     /// <summary>
-    /// Called when the AI exits this state.
-    /// Override this method to define behavior that should happen when the AI transitions out of this state.
+    /// Performs behavior in the AI's FixedUpate cycle while it is in this state.
     /// </summary>
-    internal virtual void OnStateExit()
+    internal virtual void FixedUpdateBehaviour()
     {
-        EnemyAIInstance.LogVerbose($"OnStateExit called for {_stateType}.");
+    }
+
+    /// <param name="force">The amount of damage that was done by the hit.</param>
+    /// <param name="playerWhoHit">The player object that hit the AI, if it was hit by a player.</param>
+    /// <param name="hitId">The ID of hit which dealt the damage.</param>
+    internal virtual void OnHitEnemy(
+        int force = 1, 
+        PlayerControllerB playerWhoHit = null, 
+        int hitId = -1)
+    {
+        EnemyAIInstance.LogVerbose($"{nameof(OnHitEnemy)} called for {_stateType}.");
+    }
+
+    internal virtual void OnSetEnemyStunned(
+        bool setToStunned, 
+        float setToStunTime = 1f,
+        PlayerControllerB setStunnedByPlayer = null)
+    {
+        EnemyAIInstance.LogVerbose($"{nameof(OnSetEnemyStunned)} called for {_stateType}.");
+    }
+
+    /// <summary>
+    /// Called to handle any AI-specific custom events that don't have a dedicated virtual method.
+    /// Uses a switch on the <see cref="eventName"/> to handle different custom events.
+    /// </summary>
+    /// <param name="eventName">The unique string identifier for the custom event.</param>
+    /// <param name="eventData">An optional payload of data for the event.</param>
+    internal virtual void OnCustomEvent(string eventName, StateData eventData)
+    {
+        EnemyAIInstance.LogVerbose($"{nameof(OnCustomEvent)} with name {eventName} called for {_stateType}.");
     }
 
     /// <summary>

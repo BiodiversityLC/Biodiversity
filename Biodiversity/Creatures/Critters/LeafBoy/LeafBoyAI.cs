@@ -1,4 +1,6 @@
-﻿namespace Biodiversity.Creatures.Critters.LeafBoy;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+
+namespace Biodiversity.Creatures.Critters.LeafBoy;
 
 public class LeafBoyAI : StateManagedAI<LeafBoyAI.LeafBoyStates, LeafBoyAI>
 {

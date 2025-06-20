@@ -1,7 +1,6 @@
-﻿using Biodiversity.Creatures;
-using System;
+﻿using System;
 
-namespace Biodiversity.Util.DataStructures;
+namespace Biodiversity.Creatures.Core.StateMachine;
 
 /// <summary>
 /// Represents a transition between two states in an AI's state machine.

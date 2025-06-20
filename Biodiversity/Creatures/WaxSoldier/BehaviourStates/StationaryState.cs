@@ -1,14 +1,16 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Util.Attributes;
 using Biodiversity.Util.DataStructures;
+using GameNetcodeStuff;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 
 [Preserve]
-[State(WaxSoldierServerAI.States.Stationary)]
-internal class StationaryState : BehaviourState<WaxSoldierServerAI.States, WaxSoldierServerAI>
+[State(WaxSoldierAI.States.Stationary)]
+internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    public StationaryState(WaxSoldierServerAI enemyAiInstance) : base(enemyAiInstance)
+    public StationaryState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
     }
@@ -17,7 +19,23 @@ internal class StationaryState : BehaviourState<WaxSoldierServerAI.States, WaxSo
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.AgentMaxAcceleration = 0f;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
         EnemyAIInstance.AgentMaxAcceleration = 50f;
+    }
+
+    internal override void AIIntervalBehaviour()
+    {
+        base.AIIntervalBehaviour();
+
+        PlayerControllerB currentVisiblePlayer = EnemyAIInstance.GetClosestVisiblePlayerFromEye(
+            EnemyAIInstance.transform,
+            WaxSoldierHandler.Instance.Config.ViewWidth,
+            WaxSoldierHandler.Instance.Config.ViewRange
+        );
+
+        if (currentVisiblePlayer)
+        {
+            EnemyAIInstance.LogInfo("Bruh");
+        }
     }
 }

@@ -344,7 +344,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
                     // Needed because patching the network stuff in the generic StateManagedAI class produces an error
                     if (method.ContainsGenericParameters)
                     {
-                        Logger.LogWarning(
+                        Logger.LogDebug(
                             $"Skipping generic method {type.FullName}.{method.Name} with [RuntimeInitializeOnLoadMethod] attribute.");
                         continue;
                     }
@@ -392,14 +392,13 @@ public class BiodiversityPlugin : BaseUnityPlugin
             return null;
         }
         
-        
         LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
         return bundle;
     }
 
     internal static void LogVerbose(object message)
     {
-        if (Config.VerboseLogging)
+        if (Config.VerboseLoggingEnabled)
             Logger.LogDebug(message);
     }
 }

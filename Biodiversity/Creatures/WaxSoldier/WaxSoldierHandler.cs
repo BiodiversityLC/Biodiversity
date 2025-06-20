@@ -10,8 +10,7 @@ internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
 
     public WaxSoldierHandler()
     {
-        /*
-        Assets = new WaxSoldierAssets("waxsoldier");
+        Assets = new WaxSoldierAssets("biodiversity_waxsoldier");
         Config = new WaxSoldierConfig(BiodiversityPlugin.Instance.CreateConfig("waxsoldier"));
             
         Assets.EnemyType.PowerLevel = Config.PowerLevel;
@@ -25,6 +24,5 @@ internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
             Assets.EnemyType,
             Assets.TerminalNode,
             Assets.TerminalKeyword);
-        */
     }
 }

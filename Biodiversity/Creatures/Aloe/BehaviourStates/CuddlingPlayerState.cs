@@ -1,5 +1,5 @@
-﻿using Biodiversity.Util.Attributes;
-using Biodiversity.Util.DataStructures;
+﻿using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Util.Attributes;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.Scripting;
