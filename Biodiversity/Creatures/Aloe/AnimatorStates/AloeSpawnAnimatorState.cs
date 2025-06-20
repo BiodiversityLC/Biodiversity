@@ -5,13 +5,11 @@ namespace Biodiversity.Creatures.Aloe.AnimatorStates;
 
 public class AloeSpawnAnimatorState : GenericAnimatorState<AloeServerAI>
 {
-    private static readonly int Spawning = Animator.StringToHash("Spawning");
-
-    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        base.OnStateEnter(animator, stateInfo, layerIndex);
+        base.OnStateExit(animator, stateInfo, layerIndex);
 
-        animator.SetBool(Spawning, false);
+        animator.SetBool(AloeClient.Spawning, false);
         behaviour1.OnSpawnAnimationStateExit();
     }
 }

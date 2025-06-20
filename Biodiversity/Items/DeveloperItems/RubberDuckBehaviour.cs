@@ -7,7 +7,7 @@ using Random = UnityEngine.Random;
 
 namespace Biodiversity.Items.DeveloperItems;
 
-public class RubberDuckBehaviour : PhysicsProp
+public class RubberDuckBehaviour : BiodiverseItem
 {
 #pragma warning disable 0649
     [SerializeField] private Material[] materialVariants;

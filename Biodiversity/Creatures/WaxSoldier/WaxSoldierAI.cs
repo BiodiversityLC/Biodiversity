@@ -44,13 +44,16 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     internal float AgentMaxSpeed;
     private float _takeDamageCooldown;
     
-    internal Vector3 PostPosition;
+    internal Pose GuardPost;
 
     #region Event Functions
 
     public override void Start()
     {
         base.Start();
+
+        agent.updateRotation = false;
+        
         if (!IsServer) return;
         
         InitializeConfigValues();
@@ -72,12 +75,17 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     #region Wax Soldier Specific AI Logic
 
-    public void DeterminePostPosition()
+    public void DetermineGuardPostPosition()
     {
         //todo: create tool that lets people easily select good guard spots for the wax soldier (nearly identical to the vending machine placement tool idea)
-        Vector3 calculatedPos = transform.position;
+        
+        // for now lets just use this
+        Vector3 tempGuardPostPosition = GetFarthestValidNodeFromPosition(out PathStatus _, agent, transform.position, allAINodes).position;
+        
+        Vector3 calculatedPos = tempGuardPostPosition;
+        Quaternion calculatedRot = transform.rotation;
 
-        PostPosition = calculatedPos;
+        GuardPost = new Pose(calculatedPos, calculatedRot);
     }
 
     #endregion
@@ -127,7 +135,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void MoveWithAcceleration()
+    internal void MoveWithAcceleration()
     {
         float speedAdjustment = Time.deltaTime / 2f;
         agent.speed = Mathf.Lerp(agent.speed, AgentMaxSpeed, speedAdjustment);

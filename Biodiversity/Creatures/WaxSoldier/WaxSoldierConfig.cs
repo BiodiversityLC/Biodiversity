@@ -11,11 +11,11 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     #region Spawn Settings
     [field: Header("Spawn Settings")]
     
-    [field: Tooltip("Whether the Wax Soldier will spawn in games.")]
-    public bool WaxSoldierEnabled { get; private set; } = true;
+    [field: Tooltip("Whether the Wax Soldier will spawn in games. Dont turn this on or your game will implode.")]
+    public bool WaxSoldierEnabled { get; private set; } = false;
     
     [field: Tooltip("Spawn weight of the Wax Soldier on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-    public string Rarity { get; private set; } = "havent filled this out yet";
+    public string Rarity { get; private set; } = "All:1";
 
     [field: Tooltip("The power level of the Wax Soldier.")]
     [field: Range(0f, 15f)]

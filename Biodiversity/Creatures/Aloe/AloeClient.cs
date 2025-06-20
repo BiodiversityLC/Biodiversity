@@ -26,7 +26,7 @@ public class AloeClient : MonoBehaviour
 
     private static readonly int Speed = Animator.StringToHash("Speed");
     private static readonly int Dead = Animator.StringToHash("Dead");
-    private static readonly int Spawning = Animator.StringToHash("Spawning");
+    public static readonly int Spawning = Animator.StringToHash("Spawning");
     public static readonly int Stand = Animator.StringToHash("Stand");
     private static readonly int Crawling = Animator.StringToHash("Crawling");
     private static readonly int Stunned = Animator.StringToHash("Stunned");

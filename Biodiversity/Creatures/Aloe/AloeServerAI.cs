@@ -263,7 +263,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             LookAtPosition(SlappingPlayer.Value.transform.position);
         }
 
-        switch (CurrentState.GetStateType())
+        States currentState = CurrentState.GetStateType();
+        switch (currentState)
         {
             case States.Dead or States.HealingPlayer or States.CuddlingPlayer:
                 break;
@@ -272,7 +273,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             {
                 if (!(agent.velocity.sqrMagnitude > 0.01f)) break;
                 Vector3 targetDirection = !HasTransitionedToRunningForwardsAndCarryingPlayer &&
-                                          CurrentState.GetStateType() == States.KidnappingPlayer
+                                          currentState == States.KidnappingPlayer
                     ? -agent.velocity.normalized
                     : agent.velocity.normalized;
         
@@ -691,12 +692,13 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     /// </summary>
     private void CalculateSpeed()
     {
+        States currentState = CurrentState.GetStateType();
+        
         if (stunNormalizedTimer > 0 || 
             IsStaringAtTargetPlayer ||
             InSlapAnimation || inCrushHeadAnimation ||
-            (CurrentState.GetStateType() == States.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
-            CurrentState.GetStateType() == States.Dead ||
-            CurrentState.GetStateType() == States.Spawning)
+            (currentState == States.AvoidingPlayer && !netcodeController.HasFinishedSpottedAnimation.Value) ||
+            currentState == States.Spawning)
         {
             agent.speed = 0;
             agent.acceleration = AgentMaxAcceleration;

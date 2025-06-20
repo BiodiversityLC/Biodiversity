@@ -327,7 +327,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <summary>
     /// Determines the closest player that the eye can see, considering a buffer distance to avoid constant target switching.
     /// </summary>
-    /// <param name="eyeTransform">The transform representing the eye position and direction.</param>
+    /// <param name="eyeTransform">The transform representing the eye.</param>
     /// <param name="width">The view width of the eye in degrees.</param>
     /// <param name="range">The view range of the eye in units.</param>
     /// <param name="currentVisiblePlayer">The currently visible player to compare distances against.</param>
@@ -377,7 +377,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// Determines whether the AI has line of sight to the given position.
     /// </summary>
     /// <param name="position">The position to check for line of sight.</param>
-    /// <param name="eyeTransform">The eye transform of the AI.</param>
+    /// <param name="eyeTransform">The transform representing the eye.</param>
     /// <param name="width">The AI's view width in degrees.</param>
     /// <param name="range">The AI's view range in units.</param>
     /// <param name="proximityAwareness">The proximity awareness range of the AI.</param>
@@ -504,7 +504,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// Detects whether the player is reachable by the AI via a path.
     /// </summary>
     /// <param name="player">The target player to check for reachability.</param>
-    /// <param name="eyeTransform">The eye transform of the AI for line of sight calculations.</param>
+    /// <param name="eyeTransform">The transform representing the eye.</param>
     /// <param name="viewWidth">The view width of the AI's field of view in degrees.</param>
     /// <param name="viewRange">The view range of the AI in units.</param>
     /// <param name="bufferDistance">The buffer distance within which the player is considered reachable without further checks.</param>
@@ -549,10 +549,17 @@ public abstract class BiodiverseAI : EnemyAI
     }
     
     // 2d squared distance formula (cheaper for comparisons)
-    protected static float Distance2dSq(GameObject obj1, GameObject obj2)
+    public static float Distance2dSq(GameObject obj1, GameObject obj2)
     {
         float deltaX = obj1.transform.position.x - obj2.transform.position.x;
         float deltaZ = obj1.transform.position.z - obj2.transform.position.z;
+        return deltaX * deltaX + deltaZ * deltaZ;
+    }
+    
+    public static float Distance2dSq(Vector3 obj1, Vector3 obj2)
+    {
+        float deltaX = obj1.x - obj2.x;
+        float deltaZ = obj1.z - obj2.z;
         return deltaX * deltaX + deltaZ * deltaZ;
     }
 

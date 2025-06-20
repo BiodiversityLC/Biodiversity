@@ -19,7 +19,7 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.AgentMaxAcceleration = 0f;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
         EnemyAIInstance.AgentMaxAcceleration = 50f;
     }
 
@@ -28,15 +28,14 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
         base.AIIntervalBehaviour();
 
         PlayerControllerB currentVisiblePlayer = EnemyAIInstance.GetClosestVisiblePlayerFromEye(
-            EnemyAIInstance.eye,
+            EnemyAIInstance.transform,
             WaxSoldierHandler.Instance.Config.ViewWidth,
             WaxSoldierHandler.Instance.Config.ViewRange
         );
 
-        if (currentVisiblePlayer == null)
+        if (currentVisiblePlayer)
         {
-            // figure out what to do
-            // possible state change after
+            EnemyAIInstance.LogInfo("Bruh");
         }
     }
 }

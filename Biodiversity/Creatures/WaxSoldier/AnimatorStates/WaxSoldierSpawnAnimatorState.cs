@@ -5,13 +5,11 @@ namespace Biodiversity.Creatures.WaxSoldier.AnimatorStates;
 
 public class WaxSoldierSpawnAnimatorState : GenericAnimatorState<WaxSoldierAI>
 {
-    private static readonly int Spawning = Animator.StringToHash("Spawning");
-
-    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        base.OnStateEnter(animator, stateInfo, layerIndex);
+        base.OnStateExit(animator, stateInfo, layerIndex);
 
-        animator.SetBool(Spawning, false);
+        animator.SetBool(WaxSoldierClient.Spawning, false);
         behaviour1.OnSpawnAnimationStateExit();
     }
 }

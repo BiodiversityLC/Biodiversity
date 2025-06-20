@@ -25,13 +25,14 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         
         spawnAnimComplete = false;
 
-        EnemyAIInstance.AgentMaxAcceleration = 0f;
+        EnemyAIInstance.agent.speed = 0;
+        EnemyAIInstance.AgentMaxSpeed = 0f;
         EnemyAIInstance.AgentMaxAcceleration = 50f;
 
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
         
         EnemyAIInstance.InitializeConfigValues();
-        EnemyAIInstance.DeterminePostPosition();
+        EnemyAIInstance.DetermineGuardPostPosition();
     }
 
     internal override void OnCustomEvent(string eventName, StateData eventData)

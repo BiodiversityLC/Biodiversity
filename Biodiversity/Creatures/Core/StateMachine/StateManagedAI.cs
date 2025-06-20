@@ -154,7 +154,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                     }
                 }
                 
-                BiodiversityPlugin.Logger.LogInfo($"[StateCache<{typeof(TEnemyAI).Name}>] Initialized with {StateTypes.Count} states.");
+                BiodiversityPlugin.LogVerbose($"[StateCache<{typeof(TEnemyAI).Name}>] Initialized with {StateTypes.Count} states.");
                 IsInitialized = true;
             }
         }
