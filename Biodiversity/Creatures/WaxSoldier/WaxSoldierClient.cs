@@ -15,7 +15,8 @@ public class WaxSoldierClient : MonoBehaviour
     [SerializeField] private GameObject moltenGameObject;
     
     [Header("Animation")] [Space(5f)] 
-    [SerializeField] private Animator animator;
+    [SerializeField] private Animator unmoltenAnimator;
+    [SerializeField] private Animator moltenAnimator;
     
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private WaxSoldierNetcodeController netcodeController;
@@ -44,7 +45,7 @@ public class WaxSoldierClient : MonoBehaviour
 
     private void Start()
     {
-        animator.SetBool(Spawning, true);
+        unmoltenAnimator.SetBool(Spawning, true);
     }
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)

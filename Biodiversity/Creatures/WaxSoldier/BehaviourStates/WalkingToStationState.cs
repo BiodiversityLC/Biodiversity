@@ -26,13 +26,6 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSo
         EnemyAIInstance.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
         EnemyAIInstance.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
         EnemyAIInstance.openDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
-
-        // if HasReachedStation(), then transition to Stationary state \\ (this is done in a state transition class)
-        // else, check if the agent has already been given the task to go to the station
-        // if not, then tell it
-        
-        // Do checks in AIInterval to see if the agent has reached the destination.
-        // once it has, start rotating to the correct direction, and exit the state when HasReachedStation is true
         
         EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.GuardPost.position);
     }
@@ -46,7 +39,7 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSo
         NavMeshAgent agent = EnemyAIInstance.agent;
 
         if (agent.pathPending == false &&
-            agent.remainingDistance > agent.stoppingDistance)
+            agent.remainingDistance > 2)
         {
             Vector3 velocity = agent.velocity;
             if (velocity.sqrMagnitude > 0.001f)
@@ -56,7 +49,7 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSo
                     lookRotation, 100 * Time.deltaTime);
             }
         }
-        else if (agent.remainingDistance <= agent.stoppingDistance)
+        else if (agent.remainingDistance <= 2)
         {
             Quaternion desiredRotation = Quaternion.LookRotation(EnemyAIInstance.GuardPost.forward);
             EnemyAIInstance.transform.rotation = Quaternion.RotateTowards(EnemyAIInstance.transform.rotation,
