@@ -10,7 +10,6 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.WalkingToStation)]
 internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    
     public WalkingToStationState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
@@ -23,11 +22,11 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSo
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
-        EnemyAIInstance.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
-        EnemyAIInstance.openDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
+        EnemyAIInstance.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
+        EnemyAIInstance.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
+        EnemyAIInstance.Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
         
-        EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.GuardPost.position);
+        EnemyAIInstance.Adapter.SetDestinationToPosition(EnemyAIInstance.Blackboard.GuardPost.position);
     }
 
     internal override void UpdateBehaviour()
@@ -36,7 +35,7 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSo
         
         EnemyAIInstance.MoveWithAcceleration();
         
-        NavMeshAgent agent = EnemyAIInstance.agent;
+        NavMeshAgent agent = EnemyAIInstance.Adapter.Agent;
 
         if (agent.pathPending == false &&
             agent.remainingDistance > 2)
@@ -51,7 +50,7 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSo
         }
         else if (agent.remainingDistance <= 2)
         {
-            Quaternion desiredRotation = Quaternion.LookRotation(EnemyAIInstance.GuardPost.forward);
+            Quaternion desiredRotation = Quaternion.LookRotation(EnemyAIInstance.Blackboard.GuardPost.forward);
             EnemyAIInstance.transform.rotation = Quaternion.RotateTowards(EnemyAIInstance.transform.rotation,
                 desiredRotation, 100 * Time.deltaTime);
         }
@@ -62,14 +61,15 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSo
         base.AIIntervalBehaviour();
         
         //todo: add logic for looking out for players that previously beefed with him
+        // do this via a global transition thing tho (as in in every state, we want to scan for players)
     }
 
     internal override void OnStateExit()
     {
         base.OnStateExit();
 
-        EnemyAIInstance.transform.position = EnemyAIInstance.GuardPost.position;
-        EnemyAIInstance.transform.rotation = Quaternion.LookRotation(EnemyAIInstance.GuardPost.forward);
+        EnemyAIInstance.transform.position = EnemyAIInstance.Blackboard.GuardPost.position;
+        EnemyAIInstance.transform.rotation = Quaternion.LookRotation(EnemyAIInstance.Blackboard.GuardPost.forward);
     }
 
     private class TransitionToStationary(
@@ -88,7 +88,8 @@ internal class WalkingToStationState : BehaviourState<WaxSoldierAI.States, WaxSo
         
         private bool HasReachedStation()
         {
-            return Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.GuardPost.position) <= 0.1f;
+            // todo: figure out whether I should change this to the func bongo made for detecting whether a navmeshagent has reached its destination
+            return Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.Blackboard.GuardPost.position) <= 0.1f;
         }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Biodiversity.Util.Animation;
 
+// todo: use a design pattern that makes sense in this context, not this
 public abstract class GenericAnimatorState<T1> : BaseAnimatorState where T1 : Component
 {
     protected T1 behaviour1 { get; private set; }

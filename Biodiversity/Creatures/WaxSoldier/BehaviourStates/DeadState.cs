@@ -1,7 +1,6 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
 using Biodiversity.Util.Attributes;
-using Biodiversity.Util.DataStructures;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -19,14 +18,13 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnStateEnter(ref initData);
         
-        EnemyAIInstance.agent.speed *= 0.1f;
-        EnemyAIInstance.agent.acceleration = 200f;
-        EnemyAIInstance.AgentMaxSpeed = 0f;
-        EnemyAIInstance.AgentMaxAcceleration = 200f;
-        EnemyAIInstance.movingTowardsTargetPlayer = false;
-        EnemyAIInstance.moveTowardsDestination = false;
-        EnemyAIInstance.openDoorSpeedMultiplier = 0f;
-        EnemyAIInstance.isEnemyDead = true;
+        EnemyAIInstance.Adapter.Agent.speed *= 0.1f;
+        EnemyAIInstance.Adapter.Agent.acceleration = 200f;
+        EnemyAIInstance.Adapter.OpenDoorSpeedMultiplier = 0f;
+        EnemyAIInstance.Adapter.StopAllPathing();
+        
+        EnemyAIInstance.Blackboard.AgentMaxSpeed = 0f;
+        EnemyAIInstance.Blackboard.AgentMaxAcceleration = 200f;
         
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
         

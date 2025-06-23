@@ -1,6 +1,5 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
 using GameNetcodeStuff;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier;
@@ -40,19 +39,22 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Molten
     }
     
-    internal float AgentMaxAcceleration;
-    internal float AgentMaxSpeed;
-    private float _takeDamageCooldown;
-    
-    internal Pose GuardPost;
+    public WaxSoldierBlackboard Blackboard { get; private set; }
+    public WaxSoldierAdapter Adapter { get; private set; }
 
     #region Event Functions
+
+    public void Awake()
+    {
+        Blackboard = new WaxSoldierBlackboard();
+        Adapter = new WaxSoldierAdapter(this);
+    }
 
     public override void Start()
     {
         base.Start();
 
-        agent.updateRotation = false;
+        Adapter.Agent.updateRotation = false;
         
         if (!IsServer) return;
         
@@ -63,11 +65,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     
     protected override bool ShouldRunUpdate()
     {
-        if (!IsServer || isEnemyDead)
+        if (!IsServer || Adapter.IsDead)
             return false;
-        
-        _takeDamageCooldown -= Time.deltaTime;
-        
+
         return true;
     }
 
@@ -85,7 +85,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Vector3 calculatedPos = tempGuardPostPosition;
         Quaternion calculatedRot = transform.rotation;
 
-        GuardPost = new Pose(calculatedPos, calculatedRot);
+        Blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
     }
 
     #endregion
@@ -98,7 +98,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         PlayerControllerB setStunnedByPlayer = null)
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
-        if (!IsServer || isEnemyDead) return;
+        if (!IsServer || Adapter.IsDead) return;
         
         CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
     }
@@ -106,7 +106,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-        if (!IsServer || isEnemyDead) return;
+        if (!IsServer || Adapter.IsDead) return;
         
         CurrentState?.OnHitEnemy(force, playerWhoHit, hitID);
     }
@@ -134,14 +134,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /// <summary>
     /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void MoveWithAcceleration()
     {
         float speedAdjustment = Time.deltaTime / 2f;
-        agent.speed = Mathf.Lerp(agent.speed, AgentMaxSpeed, speedAdjustment);
+        Adapter.Agent.speed = Mathf.Lerp(Adapter.Agent.speed, Blackboard.AgentMaxSpeed, speedAdjustment);
         
         float accelerationAdjustment = Time.deltaTime;
-        agent.acceleration = Mathf.Lerp(agent.acceleration, AgentMaxAcceleration, accelerationAdjustment);
+        Adapter.Agent.acceleration = Mathf.Lerp(Adapter.Agent.acceleration, Blackboard.AgentMaxAcceleration, accelerationAdjustment);
     }
     
     /// <summary>
@@ -152,15 +151,17 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         if (!IsServer) return;
         
-        enemyHP = WaxSoldierHandler.Instance.Config.Health;
-
-        AIIntervalTime = WaxSoldierHandler.Instance.Config.AiIntervalTime;
-        openDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
+        Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
+        Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;
+        Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
+        
+        Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
+        Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
     }
     
     protected override string GetLogPrefix()
     {
-        return $"[WaxSoldierServerAI {BioId}]";
+        return $"[WaxSoldierAI {BioId}]";
     }
 
     #endregion

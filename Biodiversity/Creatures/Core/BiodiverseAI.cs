@@ -336,7 +336,7 @@ public abstract class BiodiverseAI : EnemyAI
     internal PlayerControllerB GetClosestVisiblePlayerFromEye(
         Transform eyeTransform,
         float width = 45f,
-        int range = 60,
+        float range = 60,
         PlayerControllerB currentVisiblePlayer = null,
         float bufferDistance = 1.5f)
     {
@@ -386,7 +386,7 @@ public abstract class BiodiverseAI : EnemyAI
         Vector3 position,
         Transform eyeTransform,
         float width = 45f,
-        int range = 60,
+        float range = 60f,
         float proximityAwareness = -1f)
     {
         float distanceFromEyeToPosition = Vector3.Distance(eyeTransform.position, position);

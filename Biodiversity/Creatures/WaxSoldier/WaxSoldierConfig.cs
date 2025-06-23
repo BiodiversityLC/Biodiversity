@@ -56,8 +56,8 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     public float ViewWidth { get; private set; } = 115f;
     
     [field: Tooltip("The view range in meters of the Wax Soldier.")]
-    [field: Range(1, 200)]
-    public int ViewRange { get; private set; } = 65;
+    [field: Range(0.1f, 200f)]
+    public float ViewRange { get; private set; } = 65f;
     
     [field: Tooltip("Whether landmines and seamines (from the Surfaced mod) will blow up if the Wax Soldier moves over one.")]
     public bool LandminesBlowUpWaxSoldier { get; private set; } = true;

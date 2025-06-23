@@ -172,7 +172,8 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// Marked as public for (and only for) vanilla compatibility or external systems needing to read the raw state index,
     /// though direct manipulation from outside this class is discouraged.
     /// </summary>
-    public readonly NetworkVariable<int> NetworkCurrentBehaviourStateIndex = new();
+    // ReSharper disable once Unity.RedundantHideInInspectorAttribute
+    [HideInInspector] public readonly NetworkVariable<int> NetworkCurrentBehaviourStateIndex = new();
     
     /// <summary>
     /// Gets the behavior state instance (an implementation of <see cref="BehaviourState{TState,TEnemyAI}"/>)
