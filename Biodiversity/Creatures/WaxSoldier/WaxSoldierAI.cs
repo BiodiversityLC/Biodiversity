@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Transitions;
 using GameNetcodeStuff;
 using UnityEngine;
 
@@ -62,18 +63,17 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         LogVerbose("Wax Soldier spawned!");
     }
-    
-    protected override bool ShouldRunUpdate()
-    {
-        if (!IsServer || Adapter.IsDead)
-            return false;
-
-        return true;
-    }
 
     #endregion
 
     #region Wax Soldier Specific AI Logic
+
+    protected override void InitializeGlobalTransitions()
+    {
+        base.InitializeGlobalTransitions();
+        
+        GlobalTransitions.Add(new TransitionToDeadState(this));
+    }
 
     public void DetermineGuardPostPosition()
     {

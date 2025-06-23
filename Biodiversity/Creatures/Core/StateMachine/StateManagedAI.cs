@@ -11,13 +11,13 @@ namespace Biodiversity.Creatures.Core.StateMachine;
 
 /// <summary>
 /// An abstract base class for AI components that manage and transition between different behavior states.
-/// This class provides a robust, reflection-based state machine system where each state is represented by a
+/// This class provides a reflection-based state machine system where each state is represented by a
 /// <see cref="BehaviourState{TState,TEnemyAI}"/> object. Transitions between states are managed based on
 /// defined conditions within each state.
 /// </summary>
 /// <remarks>
 /// <para>
-/// This state machine pattern enhances modularity and simplifies the management of complex AI behaviors.
+/// This state machine pattern simplifies the management of complex AI behaviors.
 /// States are discovered at runtime using reflection by looking for classes derived from
 /// <see cref="BehaviourState{TState,TEnemyAI}"/> and decorated with the <see cref="StateAttribute"/>.
 /// </para>
@@ -27,12 +27,11 @@ namespace Biodiversity.Creatures.Core.StateMachine;
 /// This means reflection overhead is incurred only once when the first AI of a specific type initializes.
 /// </para>
 /// <para>
-/// Networking: The current state index is synchronized using a <see cref="NetworkVariable{T}"/>,
-/// allowing client-side logic (e.g., animations, effects) to react to server-driven state changes.
+/// Networking: The current state index is synchronized using a <see cref="NetworkVariable{T}"/>.
 /// All core state logic and transitions execute exclusively on the server.
 /// </para>
 /// </remarks>
-/// <typeparam name="TState">An enumeration (Enum) that defines the possible states for this AI.</typeparam>
+/// <typeparam name="TState">An Enum that defines the possible states for this AI.</typeparam>
 /// <typeparam name="TEnemyAI">The concrete AI class that inherits from this <see cref="StateManagedAI{TState, TEnemyAI}"/>.</typeparam>
 public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     where TState : Enum
@@ -168,9 +167,8 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     
     /// <summary>
     /// Network-synchronized variable holding the integer representation of the current AI state (which is of enum type <see cref="TState"/>).
-    /// Primarily used for synchronizing state information to clients for visual or non-gameplay logic.
     /// Marked as public for (and only for) vanilla compatibility or external systems needing to read the raw state index,
-    /// though direct manipulation from outside this class is discouraged.
+    /// though direct manipulation from outside this class is heavily discouraged.
     /// </summary>
     // ReSharper disable once Unity.RedundantHideInInspectorAttribute
     [HideInInspector] public readonly NetworkVariable<int> NetworkCurrentBehaviourStateIndex = new();
@@ -185,10 +183,15 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// <summary>
     /// A dictionary mapping each <see cref="TState"/> enum value to its instantiated
     /// <see cref="BehaviourState{TState,TEnemyAI}"/> object for this specific AI instance.
-    /// This dictionary is populated by <see cref="ConstructStateDictionary"/> during this AI's <see cref="Start"/> method.
+    /// This dictionary is populated by <see cref="InitializeStateDictionary"/> during this AI's <see cref="Start"/> method.
     /// </summary>
     private readonly Dictionary<TState, BehaviourState<TState, TEnemyAI>> _stateDictionary = new();
 
+    /// <summary>
+    /// A list for transitions that should be checked from any state.
+    /// </summary>
+    protected readonly List<StateTransition<TState, TEnemyAI>> GlobalTransitions = [];
+    
     /// <summary>
     /// A dictionary containing arrays of <see cref="AudioClip"/>s, indexed by category name.
     /// </summary>
@@ -200,23 +203,22 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     protected Dictionary<string, AudioSource> AudioSources { get; set; } = new();
     
     /// <summary>
-    /// Called when the script instance is being loaded.
     /// Initializes the base <see cref="BiodiverseAI"/> and, if on the server,
-    /// constructs the state dictionary and transitions to the initial state determined by <see cref="DetermineInitialState"/>.
+    /// initializes the state dictionary and transitions to the initial state determined by <see cref="DetermineInitialState"/>.
     /// </summary>
     public override void Start()
     {
         base.Start();
         if (!IsServer) return;
         
-        ConstructStateDictionary();
+        InitializeStateDictionary();
+        InitializeGlobalTransitions();
         
         if (_stateDictionary.Count > 0) SwitchBehaviourState(DetermineInitialState());
-        else LogError("State dictionary is empty after construction. The AI will not work at all.");
+        else LogError("State dictionary is empty after initialization. The AI will not work at all.");
     }
 
     /// <summary>
-    /// Called every frame, if the MonoBehaviour is enabled.
     /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.UpdateBehaviour"/> method of the <see cref="CurrentState"/>
     /// if <see cref="ShouldRunUpdate"/> returns <c>true</c>.
     /// </summary>
@@ -229,10 +231,8 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Called at fixed intervals defined by <c>EnemyAI.AIIntervalTime</c> (from a base class, not shown).
-    /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.AIIntervalBehaviour"/> of the <see cref="CurrentState"/>
-    /// and then checks for any valid state transitions defined in the current state.
-    /// This is the primary driver for state changes.
+    /// Called at fixed intervals defined by <see cref="EnemyAI.AIIntervalTime"/>.
+    /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.AIIntervalBehaviour"/> of the <see cref="CurrentState"/>.
     /// </summary>
     public override void DoAIInterval()
     {
@@ -241,7 +241,17 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         
         CurrentState?.AIIntervalBehaviour();
         
-        List<StateTransition<TState, TEnemyAI>> transitions = CurrentState?.Transitions ?? [];
+       if (EvaluateTransitions(GlobalTransitions)) return;
+       EvaluateTransitions(CurrentState?.Transitions);
+    }
+
+    /// <summary>
+    /// Checks for any valid state transitions defined in the current state or from <see cref="GlobalTransitions"/>.
+    /// </summary>
+    /// <param name="transitions"></param>
+    /// <returns></returns>
+    private bool EvaluateTransitions(List<StateTransition<TState, TEnemyAI>> transitions)
+    {
         for (int i = 0; i < transitions.Count; i++)
         {
             StateTransition<TState, TEnemyAI> transition = transitions[i];
@@ -250,12 +260,13 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             transition.OnTransition();
             LogVerbose("SwitchBehaviourState() called from DoAIInterval()");
             SwitchBehaviourState(transition.NextState());
-            break;
+            return true;
         }
+
+        return false;
     }
 
     /// <summary>
-    /// Called every frame after all <see cref="Update"/> functions have been called.
     /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.LateUpdateBehaviour"/> method of the <see cref="CurrentState"/>
     /// if <see cref="ShouldRunLateUpdate"/> returns <c>true</c>.
     /// </summary>
@@ -265,7 +276,10 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         CurrentState?.LateUpdateBehaviour();
     }
 
-    //todo: write xml doc for this
+    /// <summary>
+    /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.FixedUpdateBehaviour"/> method of the <see cref="CurrentState"/>
+    /// if <see cref="ShouldRunFixedUpdate"/> returns <c>true</c>.
+    /// </summary>
     protected void FixedUpdate()
     {
         if (!ShouldRunFixedUpdate()) return;
@@ -277,7 +291,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// state types found in the <see cref="StateCache"/>. The state types are implementations of <see cref="BehaviourState{TState,TEnemyAI}"/>.
     /// This method is called once during <see cref="Start"/> for each AI instance.
     /// </summary>
-    private void ConstructStateDictionary()
+    private void InitializeStateDictionary()
     {
         if (!IsServer) return;
         
@@ -308,7 +322,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                 LogError($"Failed to instantiate state {stateType.Name} using cached constructor: {e}");
             }
         }
-        LogVerbose($"Constructed state dictionary for this instance with {_stateDictionary.Count} states.");
+        LogVerbose($"Initialized state dictionary for this instance with {_stateDictionary.Count} states.");
     }
 
     /// <summary>
@@ -391,9 +405,14 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     public void TriggerCustomEvent(string eventName, StateData data = null)
     {
         if (!IsServer) return;
-        
         CurrentState?.OnCustomEvent(eventName, data);
     }
+
+    /// <summary>
+    /// Populates the <see cref="GlobalTransitions"/> list. This is called once in <see cref="Start"/>.
+    /// Override this to add transitions that can occur from any state, such as dying or getting stunned.
+    /// </summary>
+    protected virtual void InitializeGlobalTransitions(){}
 
     /// <summary>
     /// Determines the initial state for the AI when it is initialized.
@@ -426,7 +445,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// <returns><c>true</c> if <see cref="Update"/> should run; otherwise, <c>false</c>.</returns>
     protected virtual bool ShouldRunUpdate()
     {
-        return IsServer && !isEnemyDead;
+        return IsServer && !isEnemyDead; //todo: remove `isEnemyDead` from all of these (default version) functions
     }
 
     /// <summary>
