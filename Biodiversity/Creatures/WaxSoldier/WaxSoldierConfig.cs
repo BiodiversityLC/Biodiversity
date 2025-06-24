@@ -32,7 +32,7 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     
     [field: Tooltip("The max spead of the Wax Solder when he's on patrol.")]
     [field: Range(0.01f, 500f)]
-    public float PatrolMaxSpeed { get; private set; } = 3.25f;
+    public float PatrolMaxSpeed { get; private set; } = 5f;
     
     [field: Tooltip("The max acceleration of the Wax Solder when he's on patrol.")]
     [field: Range(0.01f, 500f)]

@@ -1,3 +1,5 @@
+using Biodiversity.Util;
+using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.ProBuilder;
@@ -176,5 +178,26 @@ public class LeafyBoiAI : BiodiverseAI
         {
             State = AIState.SCARED;
         }
+    }
+    
+    /// <summary>
+    /// Determines whether there is a player within the specified distance to the given position.
+    /// It will return true regardless of whether there are 1 or more players.
+    /// </summary>
+    /// <param name="position">The reference position to measure distance from.</param>
+    /// <param name="playerDetectionRange">The maximum distance from the position to search for players in.</param>
+    /// <returns>Returns <c>true</c> if there is at least one player within the specified distance.</returns>
+    private static bool IsPlayerCloseByToPosition(Vector3 position, float playerDetectionRange)
+    {
+        PlayerControllerB[] players = StartOfRound.Instance.allPlayerScripts;
+        
+        for (int i = 0; i < players.Length; i++)
+        {
+            PlayerControllerB player = players[i];
+            if (!PlayerUtil.IsPlayerDead(player) &&
+                Vector3.Distance(player.transform.position, position) <= playerDetectionRange) return true;
+        }
+
+        return false;
     }
 }

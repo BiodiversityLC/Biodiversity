@@ -17,6 +17,8 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
+        
+        EnemyAIInstance.Adapter.StopAllPathing();
 
         EnemyAIInstance.Adapter.Agent.speed = 0;
         EnemyAIInstance.Blackboard.AgentMaxSpeed = 0f;
@@ -35,7 +37,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         switch (eventName)
         {
             case nameof(WaxSoldierAI.OnSpawnAnimationStateExit):
-                EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.WalkingToStation);
+                EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
                 break;
         }
     }

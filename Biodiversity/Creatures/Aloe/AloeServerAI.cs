@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types.Networking;
-using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;

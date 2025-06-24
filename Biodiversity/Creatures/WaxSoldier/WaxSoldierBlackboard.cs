@@ -3,6 +3,7 @@
 namespace Biodiversity.Creatures.WaxSoldier;
 
 //todo: write xml doc so I actually remember what this does in a years time
+
 // holds variables that the AI needs in all states, and it doesnt include the ones included with the vanilla EnemyAi class (the adapter contains those)
 public class WaxSoldierBlackboard
 {

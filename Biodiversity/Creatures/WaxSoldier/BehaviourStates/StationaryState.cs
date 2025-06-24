@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Transitions;
 using Biodiversity.Util.Attributes;
 using UnityEngine.Scripting;
 
@@ -10,23 +11,20 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
 {
     public StationaryState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
-        Transitions = [];
+        Transitions = 
+        [
+            new TransitionToPursuitState(enemyAiInstance)
+        ];
     }
 
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
 
+        EnemyAIInstance.Adapter.StopAllPathing();
         EnemyAIInstance.Adapter.Agent.speed = 0;
         
         EnemyAIInstance.Blackboard.AgentMaxSpeed = 0f;
         EnemyAIInstance.Blackboard.AgentMaxAcceleration = 50f;
-    }
-
-    internal override void AIIntervalBehaviour()
-    {
-        base.AIIntervalBehaviour();
-
-        // todo: see the todo in the WalkingToStationState.AIIntervalBehaviour
     }
 }

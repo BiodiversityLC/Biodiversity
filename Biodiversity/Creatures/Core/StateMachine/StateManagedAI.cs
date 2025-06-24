@@ -160,13 +160,14 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
     
     /// <summary>
-    /// Gets the current active behavior state instance of the AI. This state is an implementation of <see cref="BehaviourState{TState,TEnemyAI}"/>.
+    /// Gets the current active behavior state instance of the AI.
+    /// This state is an implementation of <see cref="BehaviourState{TState,TEnemyAI}"/>.
     /// This is <c>null</c> if no state is active or before initialization.
     /// </summary>
     protected BehaviourState<TState, TEnemyAI> CurrentState;
     
     /// <summary>
-    /// Network-synchronized variable holding the integer representation of the current AI state (which is of enum type <see cref="TState"/>).
+    /// Network-synchronized variable holding the integer representation of the <see cref="CurrentState"/>.
     /// Marked as public for (and only for) vanilla compatibility or external systems needing to read the raw state index,
     /// though direct manipulation from outside this class is heavily discouraged.
     /// </summary>
@@ -187,6 +188,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// </summary>
     private readonly Dictionary<TState, BehaviourState<TState, TEnemyAI>> _stateDictionary = new();
 
+    // todo: make it so you can set some state transitions to have higher priorities than others (as in the more important ones (like death) get checked before others)
     /// <summary>
     /// A list for transitions that should be checked from any state.
     /// </summary>
@@ -231,7 +233,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Called at fixed intervals defined by <see cref="EnemyAI.AIIntervalTime"/>.
+    /// Called at fixed intervals of length <see cref="EnemyAI.AIIntervalTime"/>.
     /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.AIIntervalBehaviour"/> of the <see cref="CurrentState"/>.
     /// </summary>
     public override void DoAIInterval()
@@ -246,9 +248,9 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Checks for any valid state transitions defined in the current state or from <see cref="GlobalTransitions"/>.
+    /// Checks and executes any valid state transitions given in the <paramref name="transitions"/> parameter.
     /// </summary>
-    /// <param name="transitions"></param>
+    /// <param name="transitions">The list of transitions to evaluate.</param>
     /// <returns></returns>
     private bool EvaluateTransitions(List<StateTransition<TState, TEnemyAI>> transitions)
     {
@@ -330,15 +332,13 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// This involves calling <see cref="BehaviourState{TState,TEnemyAI}.OnStateExit"/> on the current state (if any),
     /// then <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/> on the new state.
     /// The <see cref="NetworkCurrentBehaviourStateIndex"/> is updated to reflect the new state.
-    /// The <paramref name="stateTransition"/>'s <c>OnTransition</c> method is called if provided.
+    /// The <paramref name="stateTransition"/>'s <see cref="StateTransition{TState,TEnemyAI}.OnTransition"/> method is called if provided.
     /// </summary>
     /// <param name="newState">The enum value of the <see cref="TState"/> to transition to.</param>
     /// <param name="stateTransition">The <see cref="StateTransition{TState,TEnemyAI}"/> object that triggered this state change, if applicable.
-    /// Its <c>OnTransition</c> method will be called.</param>
-    /// <param name="initData">Optional <see cref="StateData"/> to pass to the <c>OnStateEnter</c>
-    /// method of the new state. If the state's <c>OnStateEnter</c> method signature uses <c>ref StateData</c>,
-    /// then <paramref name="initData"/> will be passed by reference.
-    /// </param>
+    /// Its <see cref="StateTransition{TState,TEnemyAI}.OnTransition"/> method will be called.</param>
+    /// <param name="initData">Optional <see cref="StateData"/> to pass to the <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/>
+    /// method of the new state.</param>
     internal void SwitchBehaviourState(
         TState newState,
         StateTransition<TState, TEnemyAI> stateTransition = null,
@@ -398,7 +398,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
     
     /// <summary>
-    /// Triggers a custom, AI-specific event to be processed by the current state.
+    /// Triggers a custom, AI-specific event to be processed by the <see cref="CurrentState"/>.
     /// </summary>
     /// <param name="eventName">A unique string identifying the event (e.g., "GrabAnimationComplete").</param>
     /// <param name="data">Optional data payload.</param>
@@ -409,15 +409,15 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Populates the <see cref="GlobalTransitions"/> list. This is called once in <see cref="Start"/>.
+    /// Populates the <see cref="GlobalTransitions"/> list.
+    /// This is called once in <see cref="Start"/>.
     /// Override this to add transitions that can occur from any state, such as dying or getting stunned.
     /// </summary>
     protected virtual void InitializeGlobalTransitions(){}
 
     /// <summary>
     /// Determines the initial state for the AI when it is initialized.
-    /// This method should be overridden by subclasses to specify the starting state 
-    /// for the AI's behavior state machine.
+    /// This method should be overridden by subclasses to specify the starting state for the AI's behavior state machine.
     /// </summary>
     /// <returns>
     /// The initial state of type <typeparamref name="TState"/> that the AI should enter at the start.
@@ -440,44 +440,44 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// <summary>
     /// Determines if the <see cref="Update"/> method should execute.
     /// This method is designed to be overridden by derived classes to add custom conditions for execution.
-    /// By default, it returns true only if the object is on the server and the enemy is not dead.
+    /// By default, it returns true only if the object is on the server.
     /// </summary>
     /// <returns><c>true</c> if <see cref="Update"/> should run; otherwise, <c>false</c>.</returns>
     protected virtual bool ShouldRunUpdate()
     {
-        return IsServer && !isEnemyDead; //todo: remove `isEnemyDead` from all of these (default version) functions
+        return IsServer;
     }
 
     /// <summary>
     /// Determines if the <see cref="DoAIInterval"/> method should execute.
     /// This method is intended to be overridden by subclasses to add custom conditions for running the AI interval.
-    /// By default, it returns true only if the object is on the server and the enemy is not dead.
+    /// By default, it returns true only if the object is on the server.
     /// </summary>
     /// <returns><c>true</c> if <see cref="DoAIInterval"/> should run; otherwise, <c>false</c>.</returns>
     protected virtual bool ShouldRunAiInterval()
     {
-        return IsServer && !isEnemyDead;
+        return IsServer;
     }
 
     /// <summary>
     /// Determines if the <see cref="LateUpdate"/> method should execute.
     /// This method is intended to be overridden by subclasses to add custom conditions for executing late update logic.
-    /// By default, it returns true only if the object is on the server and the enemy is not dead.
+    /// By default, it returns true only if the object is on the server.
     /// </summary>
     /// <returns><c>true</c> if <see cref="LateUpdate"/> should run; otherwise, <c>false</c>.</returns>
     protected virtual bool ShouldRunLateUpdate()
     {
-        return IsServer && !isEnemyDead;
+        return IsServer;
     }
 
     /// <summary>
     /// Determines if the <see cref="FixedUpdate"/> method should execute.
     /// This method is intended to be overridden by subclasses to add custom conditions for executing fixed update logic.
-    /// By default, it returns true only if the object is on the server and the enemy is not dead.
+    /// By default, it returns true only if the object is on the server.
     /// </summary>
     /// <returns><c>true</c> if <see cref="FixedUpdate"/> should run; otherwise, <c>false</c>.</returns>
     protected virtual bool ShouldRunFixedUpdate()
     {
-        return IsServer && !isEnemyDead;
+        return IsServer;
     }
 }

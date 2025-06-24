@@ -15,7 +15,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public enum States
     {
         Spawning,
-        WalkingToStation,
+        MovingToStation,
+        ArrivingAtStation,
         Stationary,
         Pursuing,
         Dead,
@@ -54,9 +55,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public override void Start()
     {
         base.Start();
-
-        Adapter.Agent.updateRotation = false;
-        
         if (!IsServer) return;
         
         InitializeConfigValues();
@@ -98,7 +96,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         PlayerControllerB setStunnedByPlayer = null)
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
-        if (!IsServer || Adapter.IsDead) return;
+        if (!IsServer) return;
         
         CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
     }
@@ -106,7 +104,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-        if (!IsServer || Adapter.IsDead) return;
+        if (!IsServer) return;
         
         CurrentState?.OnHitEnemy(force, playerWhoHit, hitID);
     }

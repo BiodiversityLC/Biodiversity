@@ -319,4 +319,19 @@ public class HoneyFeederAI : BiodiverseAI {
         targetPlayer = playerWhoHit;
         State = AIStates.ATTACKING_BACKINGUP;
     }
+    
+    // Moved these functions back here because they arent used by anything else
+    
+    // https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5
+    private bool HasFinishedAgentPath()
+    {
+        return !agent.pathPending || !(agent.remainingDistance > agent.stoppingDistance) ||
+               (!agent.hasPath && agent.velocity.sqrMagnitude == 0f);
+    }
+
+    private static Vector3 GetRandomPositionOnNavMesh(Vector3 origin, float radius = 10f)
+    {
+        return RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(origin, radius, layerMask: -1,
+            randomSeed: new System.Random(Random.Range(int.MinValue, int.MaxValue)));
+    }
 }

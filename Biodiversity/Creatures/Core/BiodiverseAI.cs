@@ -45,39 +45,7 @@ public abstract class BiodiverseAI : EnemyAI
         Random.InitState(StartOfRound.Instance.randomMapSeed + BioId.GetHashCode() - thisEnemyIndex);
     }
 
-    /// <summary>
-    /// Determines whether there is a player within the specified distance to the given position.
-    /// It will return true regardless of whether there are 1 or more players.
-    /// </summary>
-    /// <param name="position">The reference position to measure distance from.</param>
-    /// <param name="playerDetectionRange">The maximum distance from the position to search for players in.</param>
-    /// <returns>Returns <c>true</c> if there is at least one player within the specified distance.</returns>
-    protected static bool IsPlayerCloseByToPosition(Vector3 position, float playerDetectionRange)
-    {
-        PlayerControllerB[] players = StartOfRound.Instance.allPlayerScripts;
-        
-        for (int i = 0; i < players.Length; i++)
-        {
-            PlayerControllerB player = players[i];
-            if (!PlayerUtil.IsPlayerDead(player) &&
-                Vector3.Distance(player.transform.position, position) <= playerDetectionRange) return true;
-        }
-
-        return false;
-    }
-
-    // https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5
-    protected bool HasFinishedAgentPath()
-    {
-        return !agent.pathPending || !(agent.remainingDistance > agent.stoppingDistance) ||
-               (!agent.hasPath && agent.velocity.sqrMagnitude == 0f);
-    }
-
-    protected static Vector3 GetRandomPositionOnNavMesh(Vector3 origin, float radius = 10f)
-    {
-        return RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(origin, radius, layerMask: -1,
-            randomSeed: new System.Random(Random.Range(int.MinValue, int.MaxValue)));
-    }
+    #region Pathing
 
     /// <summary>
     /// Represents the status of a path.
@@ -324,6 +292,27 @@ public abstract class BiodiverseAI : EnemyAI
         }
     }
     
+    #endregion
+
+    #region Line Of Sight Stuff
+    
+    internal bool IsAPlayerInLineOfSightToEye(
+        Transform eyeTransform,
+        float width = 45f,
+        float range = 60f)
+    {
+        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        {
+            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+            
+            if (!PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
+            if (DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eyeTransform, width, range))
+                return true;
+        }
+
+        return false;
+    }
+    
     /// <summary>
     /// Determines the closest player that the eye can see, considering a buffer distance to avoid constant target switching.
     /// </summary>
@@ -336,7 +325,7 @@ public abstract class BiodiverseAI : EnemyAI
     internal PlayerControllerB GetClosestVisiblePlayerFromEye(
         Transform eyeTransform,
         float width = 45f,
-        float range = 60,
+        float range = 60f,
         PlayerControllerB currentVisiblePlayer = null,
         float bufferDistance = 1.5f)
     {
@@ -494,6 +483,8 @@ public abstract class BiodiverseAI : EnemyAI
         }
         return players;
     }
+    
+    #endregion
     
     // todo: review the functionality of this function, it seems a bit stupid
     // PlayerUtil.IsPlayerDead is used to check if the inputted player is gucci, but then we use
