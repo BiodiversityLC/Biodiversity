@@ -18,11 +18,11 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnStateEnter(ref initData);
         
-        EnemyAIInstance.Adapter.StopAllPathing();
+        EnemyAIInstance.Context.Adapter.StopAllPathing();
 
-        EnemyAIInstance.Adapter.Agent.speed = 0;
-        EnemyAIInstance.Blackboard.AgentMaxSpeed = 0f;
-        EnemyAIInstance.Blackboard.AgentMaxAcceleration = 50f;
+        EnemyAIInstance.Context.Adapter.Agent.speed = 0;
+        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
+        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
 
         ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
         

@@ -6,7 +6,7 @@ namespace Biodiversity.Creatures.WaxSoldier.Transitions;
 internal class TransitionToStationaryState(WaxSoldierAI enemyAIInstance, ArrivingAtStationState arrivingState)
     : StateTransition<WaxSoldierAI.States, WaxSoldierAI>(enemyAIInstance)
 {
-    internal override bool ShouldTransitionBeTaken() => EnemyAIInstance.Adapter.HasReachedDestination();
+    internal override bool ShouldTransitionBeTaken() => EnemyAIInstance.Context.Adapter.HasReachedDestination();
 
     internal override WaxSoldierAI.States NextState() => WaxSoldierAI.States.Stationary;
 

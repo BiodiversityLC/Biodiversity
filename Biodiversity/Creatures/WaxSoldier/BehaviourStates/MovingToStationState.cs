@@ -23,11 +23,11 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
         base.OnStateEnter(ref initData);
 
         //todo: name config values appropriately
-        EnemyAIInstance.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
-        EnemyAIInstance.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
-        EnemyAIInstance.Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
+        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
+        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
+        EnemyAIInstance.Context.Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
         
-        EnemyAIInstance.Adapter.MoveToDestination(EnemyAIInstance.Blackboard.GuardPost.position);
+        EnemyAIInstance.Context.Adapter.MoveToDestination(EnemyAIInstance.Context.Blackboard.GuardPost.position);
     }
 
     internal override void UpdateBehaviour()

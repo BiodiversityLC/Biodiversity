@@ -1,4 +1,5 @@
-﻿using Biodiversity.Creatures.Core.StateMachine;
+﻿using Biodiversity.Creatures.Core;
+using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -41,15 +42,16 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Molten
     }
     
-    public WaxSoldierBlackboard Blackboard { get; private set; }
-    public WaxSoldierAdapter Adapter { get; private set; }
+    public AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> Context { get; private set; }
 
     #region Event Functions
 
     public void Awake()
     {
-        Blackboard = new WaxSoldierBlackboard();
-        Adapter = new WaxSoldierAdapter(this);
+        WaxSoldierBlackboard blackboard = new();
+        WaxSoldierAdapter adapter = new(this);
+
+        Context = new AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>(blackboard, adapter);
     }
 
     public override void Start()
@@ -83,7 +85,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Vector3 calculatedPos = tempGuardPostPosition;
         Quaternion calculatedRot = transform.rotation;
 
-        Blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
+        Context.Blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
     }
 
     #endregion
@@ -135,10 +137,10 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     internal void MoveWithAcceleration()
     {
         float speedAdjustment = Time.deltaTime / 2f;
-        Adapter.Agent.speed = Mathf.Lerp(Adapter.Agent.speed, Blackboard.AgentMaxSpeed, speedAdjustment);
+        Context.Adapter.Agent.speed = Mathf.Lerp(Context.Adapter.Agent.speed, Context.Blackboard.AgentMaxSpeed, speedAdjustment);
         
         float accelerationAdjustment = Time.deltaTime;
-        Adapter.Agent.acceleration = Mathf.Lerp(Adapter.Agent.acceleration, Blackboard.AgentMaxAcceleration, accelerationAdjustment);
+        Context.Adapter.Agent.acceleration = Mathf.Lerp(Context.Adapter.Agent.acceleration, Context.Blackboard.AgentMaxAcceleration, accelerationAdjustment);
     }
     
     /// <summary>
@@ -149,12 +151,12 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         if (!IsServer) return;
         
-        Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
-        Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;
-        Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
+        Context.Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
+        Context.Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;
+        Context.Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
         
-        Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
-        Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
+        Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
+        Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
     }
     
     protected override string GetLogPrefix()

@@ -25,12 +25,12 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.Blackboard.AgentMaxSpeed = 1.5f;
-        EnemyAIInstance.Blackboard.AgentMaxAcceleration *= 3f; // So it can decelerate quickly
+        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 1.5f;
+        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration *= 3f; // So it can decelerate quickly
 
-        EnemyAIInstance.Adapter.Agent.updateRotation = false;
+        EnemyAIInstance.Context.Adapter.Agent.updateRotation = false;
 
-        DesiredRotation = Quaternion.LookRotation(EnemyAIInstance.Blackboard.GuardPost.forward);
+        DesiredRotation = Quaternion.LookRotation(EnemyAIInstance.Context.Blackboard.GuardPost.forward);
     }
 
     internal override void UpdateBehaviour()
@@ -50,7 +50,7 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
     {
         base.OnStateExit();
         
-        EnemyAIInstance.Adapter.Agent.updateRotation = true;
+        EnemyAIInstance.Context.Adapter.Agent.updateRotation = true;
         DesiredRotation = Quaternion.identity;
     }
 }

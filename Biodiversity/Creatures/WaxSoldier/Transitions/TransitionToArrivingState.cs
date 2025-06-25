@@ -8,7 +8,7 @@ internal class TransitionToArrivingState(WaxSoldierAI enemyAIInstance)
 {
     internal override bool ShouldTransitionBeTaken()
     {
-        NavMeshAgent agent = EnemyAIInstance.Adapter.Agent;
+        NavMeshAgent agent = EnemyAIInstance.Context.Adapter.Agent;
         
         if (agent.pathPending) return false;
         return agent.remainingDistance <= agent.stoppingDistance;

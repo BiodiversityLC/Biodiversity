@@ -8,9 +8,9 @@ internal class TransitionToPursuitState(WaxSoldierAI enemyAIInstance)
     internal override bool ShouldTransitionBeTaken()
     {
         return EnemyAIInstance.IsAPlayerInLineOfSightToEye(
-            EnemyAIInstance.Adapter.EyeTransform,
-            EnemyAIInstance.Blackboard.ViewWidth,
-            EnemyAIInstance.Blackboard.ViewRange
+            EnemyAIInstance.Context.Adapter.EyeTransform,
+            EnemyAIInstance.Context.Blackboard.ViewWidth,
+            EnemyAIInstance.Context.Blackboard.ViewRange
             );
     }
 
