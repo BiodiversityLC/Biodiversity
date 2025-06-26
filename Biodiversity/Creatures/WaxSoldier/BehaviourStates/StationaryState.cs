@@ -13,7 +13,7 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
     {
         Transitions = 
         [
-            new TransitionToPursuitState(enemyAiInstance)
+            new TransitionToPursuitState(EnemyAIInstance)
         ];
     }
 

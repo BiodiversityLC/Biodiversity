@@ -9,6 +9,10 @@ namespace Biodiversity.Creatures.Core;
 /// </summary>
 public interface IEnemyAdapter
 {
+    GameObject[] AssignedAINodes { get; set; }
+    
+    PlayerControllerB TargetPlayer { get; set; }
+    
     bool IsDead { get; }
     
     float OpenDoorSpeedMultiplier { get; set; }

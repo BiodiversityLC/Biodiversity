@@ -1,8 +1,10 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -18,7 +20,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// A unique identifier for the object, stored as a networked fixed-size string.
     /// This ID is generated as a GUID on the server and synchronized to all clients.
     /// </summary>
-    private readonly NetworkVariable<FixedString64Bytes> _networkBioId = new();
+    private readonly NetworkVariable<FixedString32Bytes> _networkBioId = new();
     
     /// <summary>
     /// Gets the unique identifier (BioId) for this object as a string.
@@ -32,11 +34,20 @@ public abstract class BiodiverseAI : EnemyAI
     
     internal readonly PlayerTargetableConditions PlayerTargetableConditions = new();
 
+    public static CachedList<GameObject> CachedInsideAINodes;
+    public static CachedList<GameObject> CachedOutsideAINodes;
+
+    private void Awake()
+    {
+        CachedInsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("AINode").ToList());
+        CachedOutsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("OutsideAINode").ToList());
+    }
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
         if (!IsServer) return;
-        _networkBioId.Value = new FixedString64Bytes(Guid.NewGuid().ToString());
+        _networkBioId.Value = new FixedString32Bytes(Guid.NewGuid().ToString("N").Substring(0, 8));
     }
 
     public override void Start()
@@ -312,7 +323,7 @@ public abstract class BiodiverseAI : EnemyAI
 
         return false;
     }
-    
+
     /// <summary>
     /// Determines the closest player that the eye can see, considering a buffer distance to avoid constant target switching.
     /// </summary>
@@ -347,18 +358,16 @@ public abstract class BiodiverseAI : EnemyAI
             closestDistance = distance;
         }
 
-        // If the current visible player is still within the buffer distance, continue targeting it
-        if (currentVisiblePlayer != null)
+        // If the current visible player is still within the buffer distance, continue targeting them
+        if (currentVisiblePlayer)
         {
             float currentTargetDistance = Vector3.Distance(eyeTransform.position, currentVisiblePlayer.transform.position);
             if (Mathf.Abs(closestDistance - currentTargetDistance) < bufferDistance)
             {
-                //LogVerbose($"Current visible player {currentVisiblePlayer.name} remains within buffer distance");
                 return currentVisiblePlayer;
             }
         }
-
-        //LogVerbose(closestPlayer != null ? $"New closest player: {closestPlayer.name}" : "No visible player found");
+        
         return closestPlayer;
     }
     
@@ -486,13 +495,8 @@ public abstract class BiodiverseAI : EnemyAI
     
     #endregion
     
-    // todo: review the functionality of this function, it seems a bit stupid
-    // PlayerUtil.IsPlayerDead is used to check if the inputted player is gucci, but then we use
-    // PlayerTargetableConditions.IsPlayerTargetable(player) later on in the function aswell??
-    // I think I made this for the Aloe's stalking pathing, and gave the function a dumbass name, so yea review it
-    
     /// <summary>
-    /// Detects whether the player is reachable by the AI via a path.
+    /// Detects whether the player is reachable by the NavMeshAgent via a path.
     /// </summary>
     /// <param name="player">The target player to check for reachability.</param>
     /// <param name="eyeTransform">The transform representing the eye.</param>
@@ -524,8 +528,6 @@ public abstract class BiodiverseAI : EnemyAI
         }
         
         bool isReachable = Mathf.Abs(optimalDistance - currentDistance) < bufferDistance;
-
-        // LogVerbose($"Is player reachable: {isReachable}");
         return isReachable;
     }
     
@@ -544,13 +546,6 @@ public abstract class BiodiverseAI : EnemyAI
     {
         float deltaX = obj1.transform.position.x - obj2.transform.position.x;
         float deltaZ = obj1.transform.position.z - obj2.transform.position.z;
-        return deltaX * deltaX + deltaZ * deltaZ;
-    }
-    
-    public static float Distance2dSq(Vector3 obj1, Vector3 obj2)
-    {
-        float deltaX = obj1.x - obj2.x;
-        float deltaZ = obj1.z - obj2.z;
         return deltaX * deltaX + deltaZ * deltaZ;
     }
 

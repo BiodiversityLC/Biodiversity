@@ -20,6 +20,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         ArrivingAtStation,
         Stationary,
         Pursuing,
+        Hunting,
         Dead,
     }
 

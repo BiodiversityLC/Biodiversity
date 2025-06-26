@@ -21,7 +21,7 @@ public class PlayerTargetableConditions
 
     public bool IsPlayerTargetable(PlayerControllerB player)
     {
-        return player != null && _conditions.All(condition => condition(player));
+        return player && _conditions.All(condition => condition(player));
     }
 
     public bool IsPlayerTargetable(CachedNullable<PlayerControllerB> player)

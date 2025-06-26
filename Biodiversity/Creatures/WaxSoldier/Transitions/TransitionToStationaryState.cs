@@ -13,7 +13,6 @@ internal class TransitionToStationaryState(WaxSoldierAI enemyAIInstance, Arrivin
     internal override void OnTransition()
     {
         base.OnTransition();
-
         EnemyAIInstance.transform.rotation = arrivingState.DesiredRotation;
     }
 }

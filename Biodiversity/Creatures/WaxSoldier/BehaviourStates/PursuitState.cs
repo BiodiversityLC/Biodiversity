@@ -6,27 +6,26 @@ using UnityEngine.Scripting;
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 
 [Preserve]
-[State(WaxSoldierAI.States.MovingToStation)]
-internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
+[State(WaxSoldierAI.States.Pursuing)]
+internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    public MovingToStationState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
+    public PursuitState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
-        Transitions =
+        Transitions = 
         [
-            new TransitionToPursuitState(EnemyAIInstance),
-            new TransitionToArrivingState(EnemyAIInstance)
+            new TransitionToHuntingState(EnemyAIInstance)
         ];
     }
 
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-
+        
         // todo: name config values appropriately
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
         
-        EnemyAIInstance.Context.Adapter.MoveToDestination(EnemyAIInstance.Context.Blackboard.GuardPost.position);
+        EnemyAIInstance.Context.Adapter.MoveToPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer);
     }
 
     internal override void UpdateBehaviour()

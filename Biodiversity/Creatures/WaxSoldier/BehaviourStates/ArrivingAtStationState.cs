@@ -16,8 +16,8 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
     {
         Transitions =
         [
-            new TransitionToStationaryState(enemyAiInstance, this)
-            // todo: add TransitionToPursuitState here later on
+            new TransitionToPursuitState(EnemyAIInstance),
+            new TransitionToStationaryState(EnemyAIInstance, this)
         ];
     }
 

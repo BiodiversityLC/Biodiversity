@@ -20,7 +20,7 @@ public class PlayerVectorNodeSearch : ISearchStrategy<WaxSoldierBlackboard, WaxS
         searchQueue = new Queue<Vector3>();
 
         Vector3 lkp = context.Blackboard.LastKnownPlayerPosition;
-        Vector3 lkv = context.Blackboard.LastKnowPlayerVelocity.normalized;
+        Vector3 lkv = context.Blackboard.LastKnownPlayerVelocity.normalized;
 
         // todo: If the lkp is too far, we should prob not bother searching
         List<GameObject> nearbyNodes = GetNearbyNodes(lkp, 25f);
@@ -35,6 +35,7 @@ public class PlayerVectorNodeSearch : ISearchStrategy<WaxSoldierBlackboard, WaxS
             .OrderByDescending(x => x.Score) // We want to search the nodes that the player is most likely near to based on where we last saw them going
             .Select(x => x.Node.transform.position);
 
+        searchQueue.Enqueue(lkp); // Go to the player's last known position first
         foreach (Vector3 position in sortedNodes)
         {
             searchQueue.Enqueue(position);
@@ -58,6 +59,17 @@ public class PlayerVectorNodeSearch : ISearchStrategy<WaxSoldierBlackboard, WaxS
 
     private List<GameObject> GetNearbyNodes(Vector3 position, float radius)
     {
-        return [];
+        List<GameObject> nearbyNodes = [];
+        GameObject[] nodes = context.Adapter.AssignedAINodes;
+        
+        for (int i = 0; i < nodes.Length; i++)
+        {
+            GameObject node = nodes[i];
+            float distanceToNode = Vector3.Distance(position, node.transform.position);
+            
+            if (distanceToNode <= radius) nearbyNodes.Add(node);
+        }
+        
+        return nearbyNodes;
     }
 }

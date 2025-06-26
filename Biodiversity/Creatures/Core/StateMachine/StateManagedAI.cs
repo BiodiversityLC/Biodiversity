@@ -187,8 +187,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// This dictionary is populated by <see cref="InitializeStateDictionary"/> during this AI's <see cref="Start"/> method.
     /// </summary>
     private readonly Dictionary<TState, BehaviourState<TState, TEnemyAI>> _stateDictionary = new();
-
-    // todo: make it so you can set some state transitions to have higher priorities than others (as in the more important ones (like death) get checked before others)
+    
     /// <summary>
     /// A list for transitions that should be checked from any state.
     /// </summary>
@@ -260,7 +259,6 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             if (!transition.ShouldTransitionBeTaken()) continue;
             
             transition.OnTransition();
-            LogVerbose("SwitchBehaviourState() called from DoAIInterval()");
             SwitchBehaviourState(transition.NextState());
             return true;
         }
