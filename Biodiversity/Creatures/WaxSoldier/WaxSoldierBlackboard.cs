@@ -10,6 +10,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
 {
     public float AgentMaxSpeed { get; set; }
     public float AgentMaxAcceleration { get; set; }
+    public float AgentAngularSpeed { get; set; }
     public float ViewWidth { get; set; }
     public float ViewRange { get; set; }
     

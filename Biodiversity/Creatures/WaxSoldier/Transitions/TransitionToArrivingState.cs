@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
+using UnityEngine;
 using UnityEngine.AI;
 
 namespace Biodiversity.Creatures.WaxSoldier.Transitions;

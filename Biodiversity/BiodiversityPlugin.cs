@@ -47,7 +47,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
     private void Awake()
     {
         Stopwatch timer = Stopwatch.StartNew();
-        Logger = BepInEx.Logging.Logger.CreateLogSource(MyPluginInfo.PLUGIN_GUID);
+        Logger = BepInEx.Logging.Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_NAME}|{MyPluginInfo.PLUGIN_VERSION}");
         Instance = this;
 
         CachedAssemblies = new CachedList<Assembly>(() => AppDomain.CurrentDomain.GetAssemblies().ToList());
@@ -80,7 +80,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
         timer.Stop();
         Logger.LogInfo(
-            $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has setup. ({timer.ElapsedMilliseconds}ms)");
+            $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has setup in {timer.ElapsedMilliseconds}ms.");
     }
 
     /// <summary>
@@ -90,9 +90,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
     /// <remarks>
     /// This method:
     /// <list type="bullet">
-    /// <item>Initializes the <c>VanillaEnemies</c> class.</item>
+    /// <item>Initializes the <see cref="VanillaEnemies"/> class.</item>
     /// <item>Loads a specific asset bundle for video clips.</item>
-    /// <item>Registers AI handlers for creatures in the plugin, excluding the <c>HoneyFeederHandler</c>.</item>
+    /// <item>Registers AI handlers for the creatures.</item>
     /// <item>Logs the registration of each creature handler.</item>
     /// <item>Logs a silly quote.</item>
     /// </list>
@@ -163,9 +163,9 @@ public class BiodiversityPlugin : BaseUnityPlugin
     /// This method applies patches based on the <see cref="ModConditionalPatch"/> and <see cref="HarmonyPatch"/> attributes. 
     /// It works by:
     /// <list type="bullet">
-    /// <item>Checking if a required mod (specified by <c>ModConditionalPatch</c>) is loaded.</item>
+    /// <item>Checking if a required mod (specified by <see cref="ModConditionalPatch"/>) is loaded.</item>
     /// <item>If the mod is loaded, it applies the appropriate patch (prefix, postfix, transpiler, or finalizer).</item>
-    /// <item>If no <c>ModConditionalPatch</c> is found, it falls back to applying patches using the <c>HarmonyPatch</c> attribute.</item>
+    /// <item>If no <see cref="ModConditionalPatch"/> is found, it falls back to applying patches using the <see cref="HarmonyPatch"/> attribute.</item>
     /// </list>
     /// This method handles patch failures by logging reasons such as missing classes, methods, or patch methods.
     /// </remarks>
