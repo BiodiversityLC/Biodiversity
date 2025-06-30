@@ -3,6 +3,7 @@ using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.SearchStrategies;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
 using Biodiversity.Util.Attributes;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -12,7 +13,11 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.Hunting)]
 internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    private readonly ISearchStrategy<WaxSoldierBlackboard, WaxSoldierAdapter> searchStrategy = new PlayerVectorNodeSearch();
+    private readonly SearchStrategy<WaxSoldierBlackboard, WaxSoldierAdapter> searchStrategy;
+
+    private float searchRadius = 25f;
+    private float directionWeight = 1.5f;
+    private float distanceWeight = 1.0f;
     
     public HuntingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
@@ -20,19 +25,27 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         [
             new TransitionToPursuitState(EnemyAIInstance)
         ];
+        
+        List<UtilityDrivenSearch.ScorerWeight> scorers =
+        [
+            new() { Scorer = new DirectionAlignmentScorer(EnemyAIInstance.Context), Weight = directionWeight },
+            new() { Scorer = new DistanceScorer(EnemyAIInstance.Context, searchRadius), Weight = distanceWeight }
+        ];
+        
+        searchStrategy = new UtilityDrivenSearch(EnemyAIInstance.Context, scorers, searchRadius);
     }
 
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
         
-        // Initialize the search strategy and go to the prescribed position
-        searchStrategy.Initialize(EnemyAIInstance.Context);
+        // Start the search strategy and go to the prescribed position
+        searchStrategy.Start();
         if (!searchStrategy.TryGetNextSearchPosition(out Vector3 searchPosition))
         {
-            EnemyAIInstance.LogError("No search position found.");
+            EnemyAIInstance.LogError("No search position found; moving back guard post.");
+            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
             return;
-            // todo: add fallback option or whatever
         }
         
         EnemyAIInstance.Context.Adapter.MoveToDestination(searchPosition);
@@ -42,6 +55,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.UpdateBehaviour();
         EnemyAIInstance.MoveWithAcceleration();
+        searchStrategy.Update();
     }
 
     internal override void AIIntervalBehaviour()

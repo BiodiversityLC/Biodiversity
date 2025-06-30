@@ -7,16 +7,8 @@ namespace Biodiversity.Creatures.WaxSoldier.Transitions;
 internal class TransitionToHuntingState(WaxSoldierAI enemyAIInstance)
     : StateTransition<WaxSoldierAI.States, WaxSoldierAI>(enemyAIInstance)
 {
-    /// <summary>
-    /// The number of consecutive <c>AIIntervals</c> where a player was not spotted.
-    /// </summary>
-    private int counter;
-    
-    /// <summary>
-    /// The required amount of consecutive <c>AIIntervals</c> (where a player was not spotted), needed to trigger the state transition.
-    /// This is needed to make sure that the transition only happens if the player really is fully out of sight, and didn't just slip out of LOS for a split second.
-    /// </summary>
-    private const int threshold = 5;
+    private const float thresholdTimeWherePlayerGone = 1f;
+    private float totalTimeWherePlayerGone;
     
     internal override bool ShouldTransitionBeTaken()
     {
@@ -25,11 +17,11 @@ internal class TransitionToHuntingState(WaxSoldierAI enemyAIInstance)
             EnemyAIInstance.Context.Blackboard.ViewWidth,
             EnemyAIInstance.Context.Blackboard.ViewRange
         );
-        
-        if (!foundPlayer) counter++;
-        else counter = 0;
 
-        return counter >= threshold;
+        if (!foundPlayer) totalTimeWherePlayerGone += EnemyAIInstance.Context.Adapter.AIIntervalLength;
+        else totalTimeWherePlayerGone = 0f;
+
+        return totalTimeWherePlayerGone >= thresholdTimeWherePlayerGone;
     }
     
     internal override WaxSoldierAI.States NextState() => WaxSoldierAI.States.Hunting;
@@ -45,7 +37,7 @@ internal class TransitionToHuntingState(WaxSoldierAI enemyAIInstance)
         EnemyAIInstance.Context.Blackboard.LastKnownPlayerVelocity =
             PlayerUtil.GetVelocityOfPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer);
 
-        counter = 0;
+        totalTimeWherePlayerGone = 0f;
 
         if (!arrowRenderer)
         {
@@ -59,8 +51,8 @@ internal class TransitionToHuntingState(WaxSoldierAI enemyAIInstance)
         }
         
         Vector3 start = EnemyAIInstance.Context.Blackboard.LastKnownPlayerPosition;
-        Vector3 dir   =  EnemyAIInstance.Context.Blackboard.LastKnownPlayerVelocity.normalized;
-        Vector3 end   = start + dir * 3;
+        Vector3 dir = EnemyAIInstance.Context.Blackboard.LastKnownPlayerVelocity.normalized;
+        Vector3 end = start + dir * 3;
         arrowRenderer.SetPosition(0, start);
         arrowRenderer.SetPosition(1, end);
     }

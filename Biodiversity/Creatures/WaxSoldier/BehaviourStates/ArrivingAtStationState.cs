@@ -42,7 +42,7 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
         EnemyAIInstance.transform.rotation = Quaternion.RotateTowards(
             EnemyAIInstance.transform.rotation,
             DesiredRotation,
-            100 * Time.deltaTime //todo: replace 100 with a config value for rotation speed
+            EnemyAIInstance.Context.Blackboard.AgentAngularSpeed * Time.deltaTime
             );
     }
 

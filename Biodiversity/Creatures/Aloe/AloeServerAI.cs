@@ -723,7 +723,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        ActualTargetPlayer.Set(newValue == NullPlayerId ? null : StartOfRound.Instance.allPlayerScripts[newValue]);
+        ActualTargetPlayer.Set(newValue == NullPlayerId ? null : PlayerUtil.GetPlayerFromClientId(newValue));
         targetPlayer = ActualTargetPlayer.Value;
         LogVerbose(ActualTargetPlayer.HasValue
             ? $"Changed target player to {ActualTargetPlayer.Value.playerUsername}."

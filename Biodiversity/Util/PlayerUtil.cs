@@ -6,7 +6,7 @@ namespace Biodiversity.Util;
 internal static class PlayerUtil 
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static PlayerControllerB GetPlayerFromClientId(int playerClientId) 
+    internal static PlayerControllerB GetPlayerFromClientId(ulong playerClientId) 
     {
         return StartOfRound.Instance.allPlayerScripts[playerClientId];
     }

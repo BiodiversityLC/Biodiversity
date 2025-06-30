@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Biodiversity.Util;
 
@@ -117,7 +118,7 @@ internal static class ExtensionMethods
     /// </remarks>
     internal static IEnumerable<Type> GetLoadableTypes(this Assembly assembly) 
     {
-        if(assembly == null) throw new ArgumentNullException(nameof(assembly));
+        if (assembly == null) throw new ArgumentNullException(nameof(assembly));
         
         try 
         {
@@ -184,4 +185,11 @@ internal static class ExtensionMethods
     {
         return Color.HSVToRGB(h, s, v);
     }
+
+    /// <summary>
+    /// A quadratic curve, U = x^k.
+    /// </summary>
+    /// <param name="x">The normalized input value [0, 1].</param>
+    /// <param name="k">The exponent.</param>
+    public static float Quadratic(float x, float k) => Mathf.Pow(Mathf.Clamp01(x), k);
 }
