@@ -36,11 +36,10 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeS
         EnemyAIInstance.HasTransitionedToRunningForwardsAndCarryingPlayer = false;
         _dragPlayerTimer = AloeClient.SnatchAndGrabAudioLength;
 
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
-            EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+        EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(true);
+        EnemyAIInstance.netcodeController.AnimationParamCrawling.SafeSet(false);
+        EnemyAIInstance.netcodeController.AnimationParamHealing.SafeSet(false);
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
 
         // Spawn fake player body ragdoll
         GameObject fakePlayerBodyRagdollGameObject =

@@ -30,12 +30,11 @@ internal class DeadState : BehaviourState<AloeServerAI.States, AloeServerAI>
         EnemyAIInstance.openDoorSpeedMultiplier = 0f;
         EnemyAIInstance.isEnemyDead = true;
 
-        EnemyAIInstance.netcodeController.AnimationParamDead.Value = true;
-
         EnemyAIInstance.SetTargetPlayerInCaptivity(false);
 
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
+        EnemyAIInstance.netcodeController.AnimationParamDead.Value = true;
+        EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(true);
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
 
         AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);
 

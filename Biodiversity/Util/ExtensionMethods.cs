@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace Biodiversity.Util;
 
@@ -22,7 +20,6 @@ internal static class ExtensionMethods
     /// <param name="to">The target position vector</param>
     /// <returns>Normalized direction vector pointing from source to target</returns>
     /// <remarks>This function was made for the Honey Feeder, and I don't think it's needed anymore</remarks>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static Vector3 Direction(this Vector3 from, Vector3 to) 
     {
         return (to - from).normalized;
@@ -83,7 +80,6 @@ internal static class ExtensionMethods
     /// target minute is less than or equal to current minute
     /// </returns>
     /// <remarks>This function was made for the Honey Feeder, and I don't think it's needed anymore</remarks>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool HasPassedTime(this TimeOfDay timeOfDay, (int, int) current, (int, int) target) 
     {
         return target.Item1 <= current.Item1 && target.Item2 <= current.Item2;
@@ -98,13 +94,11 @@ internal static class ExtensionMethods
     /// <remarks>
     /// Prevents unnecessary network updates by checking equality before setting
     /// </remarks>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ChangeNetworkVar<T>(NetworkVariable<T> networkVariable, T newValue) where T : IEquatable<T>
+    public static void SafeSet<T>(this NetworkVariable<T> networkVariable, T newValue) 
+        where T : IEquatable<T>
     {
         if (!EqualityComparer<T>.Default.Equals(networkVariable.Value, newValue))
-        {
             networkVariable.Value = newValue;
-        }
     }
 
     /// <summary>
@@ -166,7 +160,6 @@ internal static class ExtensionMethods
     /// <param name="s">The saturation component of the HSV color.</param>
     /// <param name="v">The value component of the HSV color.</param>
     /// <returns>The original RGB color.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color RGBToHSV(Color rgb, out float h, out float s, out float v)
     {
         Color.RGBToHSV(rgb, out h, out s, out v);
@@ -180,7 +173,6 @@ internal static class ExtensionMethods
     /// <param name="s">The saturation component of the HSV color.</param>
     /// <param name="v">The value component of the HSV color.</param>
     /// <returns>The RGB color corresponding to the given HSV components.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color HSVToRGB(float h, float s, float v)
     {
         return Color.HSVToRGB(h, s, v);

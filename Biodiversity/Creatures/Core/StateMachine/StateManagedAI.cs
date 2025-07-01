@@ -374,7 +374,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         {
             CurrentState = newStateInstance;
             currentBehaviourStateIndex = Convert.ToInt32(newState);
-            ExtensionMethods.ChangeNetworkVar(NetworkCurrentBehaviourStateIndex, currentBehaviourStateIndex);
+            NetworkCurrentBehaviourStateIndex.SafeSet(currentBehaviourStateIndex);
             
             LogVerbose($"Entering state {newState}.");
 

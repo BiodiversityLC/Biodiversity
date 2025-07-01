@@ -32,10 +32,9 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.States, AloeServ
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
 
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, true);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
-            EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+        EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(false);
+        EnemyAIInstance.netcodeController.AnimationParamHealing.SafeSet(true);
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
 
         EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(true);
         EnemyAIInstance.netcodeController.UnMuffleTargetPlayerVoiceClientRpc();

@@ -46,15 +46,15 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
 
         if (initData.ContainsKey("overridePlaySpottedAnimation") && initData.Get<bool>("overridePlaySpottedAnimation"))
         {
-            ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, true);
+            EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.SafeSet(true);
         }
         else
         {
-            ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
+            EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.SafeSet(false);
             EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.Spotted);
         }
 
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
+        EnemyAIInstance.netcodeController.AnimationParamCrawling.SafeSet(false);
     }
 
     internal override void UpdateBehaviour()
@@ -132,7 +132,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
     {
         base.OnStateExit();
         EnemyAIInstance.AvoidingPlayer.Reset();
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation, false);
+        EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.SafeSet(false);
     }
 
     private class TransitionToPreviousState(AloeServerAI enemyAIInstance, AvoidingPlayerState avoidingPlayerState)

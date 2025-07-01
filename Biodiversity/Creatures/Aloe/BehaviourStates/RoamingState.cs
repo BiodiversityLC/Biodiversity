@@ -34,11 +34,11 @@ internal class RoamingState : BehaviourState<AloeServerAI.States, AloeServerAI>
         _reachedFavouriteSpotForRoaming = false;
 
         AloeSharedData.Instance.Unbind(EnemyAIInstance, BindType.Stalk);
-        
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, false);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
+
+        EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(false);
+        EnemyAIInstance.netcodeController.AnimationParamCrawling.SafeSet(false);
+        EnemyAIInstance.netcodeController.AnimationParamHealing.SafeSet(false);
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
 
         EnemyAIInstance.LogVerbose("Heading towards favourite position before roaming.");
         EnemyAIInstance.SetDestinationToPosition(EnemyAIInstance.FavouriteSpot);
@@ -125,8 +125,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.States, AloeServerAI>
         internal override void OnTransition()
         {
             AloeSharedData.Instance.Bind(EnemyAIInstance, _stalkablePlayer, BindType.Stalk);
-            ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId,
-                _stalkablePlayer.actualClientId);
+            EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(_stalkablePlayer.actualClientId);
         }
     }
 }

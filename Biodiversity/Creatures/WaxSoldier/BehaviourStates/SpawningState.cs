@@ -24,7 +24,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
 
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.TargetPlayerClientId, BiodiverseAI.NullPlayerId);
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         
         EnemyAIInstance.InitializeConfigValues();
         EnemyAIInstance.DetermineGuardPostPosition();

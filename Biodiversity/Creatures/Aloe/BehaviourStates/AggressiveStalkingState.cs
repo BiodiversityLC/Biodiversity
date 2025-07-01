@@ -37,8 +37,8 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
         EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         EnemyAIInstance.movingTowardsTargetPlayer = false;
 
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);
+        EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(true);
+        EnemyAIInstance.netcodeController.AnimationParamCrawling.SafeSet(true);
     }
 
     internal override void AIIntervalBehaviour()

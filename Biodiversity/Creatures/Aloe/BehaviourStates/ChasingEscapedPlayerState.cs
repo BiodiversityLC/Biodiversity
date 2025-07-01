@@ -38,9 +38,9 @@ internal class ChasingEscapedPlayerState : BehaviourState<AloeServerAI.States, A
             true, true, false, true);
         
         EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.Stand);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, false);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamHealing, false);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
+        EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(true);
+        EnemyAIInstance.netcodeController.AnimationParamCrawling.SafeSet(false);
+        EnemyAIInstance.netcodeController.AnimationParamHealing.SafeSet(false);
 
         WaitBeforeChasingTimer = EnemyAIInstance.WaitBeforeChasingEscapedPlayerTime;
         _isPlayerTargetable = true;

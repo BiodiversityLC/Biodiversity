@@ -33,8 +33,8 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
         EnemyAIInstance.movingTowardsTargetPlayer = false;
         EnemyAIInstance.moveTowardsDestination = true;
 
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.ShouldHaveDarkSkin, true);
-        ExtensionMethods.ChangeNetworkVar(EnemyAIInstance.netcodeController.AnimationParamCrawling, true);
+        EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(true);
+        EnemyAIInstance.netcodeController.AnimationParamCrawling.SafeSet(true);
 
         _isPlayerReachable = true;
         EnemyAIInstance.IsStaringAtTargetPlayer = false;
