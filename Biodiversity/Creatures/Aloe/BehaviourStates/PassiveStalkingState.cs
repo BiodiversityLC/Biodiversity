@@ -1,6 +1,6 @@
-﻿using Biodiversity.Creatures.Core.StateMachine;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
-using Biodiversity.Util.Attributes;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -101,7 +101,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
         {
             // Check if a player sees the aloe
             _playerLookingAtAloe = BiodiverseAI.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
-            return _playerLookingAtAloe != null;
+            return _playerLookingAtAloe;
         }
 
         internal override AloeServerAI.States NextState()

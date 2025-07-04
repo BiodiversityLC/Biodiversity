@@ -1,6 +1,6 @@
-﻿using Biodiversity.Creatures.Core.StateMachine;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
-using Biodiversity.Util.Attributes;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -50,7 +50,7 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.States, AloeSe
     internal override void OnStateExit()
     {
         base.OnStateExit();
-        if (EnemyAIInstance.BackupTargetPlayer != null)
+        if (EnemyAIInstance.BackupTargetPlayer)
         {
             EnemyAIInstance.netcodeController.TargetPlayerClientId.Value = EnemyAIInstance.BackupTargetPlayer.actualClientId;
             EnemyAIInstance.BackupTargetPlayer = null;

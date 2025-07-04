@@ -1,4 +1,4 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
@@ -19,7 +19,7 @@ internal static class TurretPatch
     private static void PostfixCheckForPlayersInLineOfSight(Turret __instance, ref PlayerControllerB __result,
         float radius, bool angleRangeCheck)
     {
-        if (__result != null && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
+        if (__result && AloeSharedData.Instance.IsPlayerKidnapBound(__result))
             __result = null;
     }
 }

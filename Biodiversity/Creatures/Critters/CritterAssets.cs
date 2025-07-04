@@ -1,11 +1,12 @@
-using Biodiversity.Util.Assetloading;
-using Biodiversity.Util.Attributes;
+using Biodiversity.Core.AssetLoading;
+using Biodiversity.Core.Attributes;
 
 #pragma warning disable CS0649 // Fields are filled in with reflection.
 
 namespace Biodiversity.Creatures.Critters;
 
-internal class CritterAssets(string path) : BiodiverseAssetBundle<CritterAssets>(path) {
+internal class CritterAssets(string path) : BiodiverseAssetBundle<CritterAssets>(path) 
+{
 	[LoadFromBundle("PrototaxEnemyType.asset")]
 	public EnemyType PrototaxEnemyType;
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Biodiversity.Util;
+using System.Collections.Generic;
 
 namespace Biodiversity.Creatures.CoilCrab;
 
@@ -26,10 +27,10 @@ internal class CoilCrabHandler : BiodiverseAIHandler<CoilCrabHandler>
 
         ParseWeights();
 
-        RegisterScrapWithRuntimeIconSupport(Assets.CoilShellItem, new Dictionary<LethalLib.Modules.Levels.LevelTypes, int> {{LethalLib.Modules.Levels.LevelTypes.All, 0}}, new Dictionary<string, int> { });
+        LethalLibUtils.RegisterScrapWithRuntimeIconSupport(Assets.CoilShellItem, new Dictionary<LethalLib.Modules.Levels.LevelTypes, int> {{LethalLib.Modules.Levels.LevelTypes.All, 0}}, new Dictionary<string, int> { });
 
-        TranslateTerminalNode(Assets.CoilCrabTerminalNode);
-        RegisterEnemyWithConfig(
+        LethalLibUtils.TranslateTerminalNode(Assets.CoilCrabTerminalNode);
+        LethalLibUtils.RegisterEnemyWithConfig(
             Config.EnableCoilCrab,
             Config.CoilCrabRarity,
             Assets.CoilCrabEnemy,

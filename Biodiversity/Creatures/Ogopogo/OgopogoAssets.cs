@@ -1,10 +1,11 @@
-using Biodiversity.Util.Assetloading;
-using Biodiversity.Util.Attributes;
+using Biodiversity.Core.AssetLoading;
+using Biodiversity.Core.Attributes;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Ogopogo;
 
-internal class OgopogoAssets(string filePath) : BiodiverseAssetBundle<OgopogoAssets>(filePath) {
+internal class OgopogoAssets(string filePath) : BiodiverseAssetBundle<OgopogoAssets>(filePath) 
+{
 #pragma	warning disable 0649
 	[LoadFromBundle("Ogopogo.asset")]
 	public EnemyType OgopogoEnemyType;

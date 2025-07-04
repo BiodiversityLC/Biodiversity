@@ -1,5 +1,5 @@
-﻿using Biodiversity.Creatures.Core.StateMachine;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.Core.StateMachine;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -36,7 +36,7 @@ internal class CuddlingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
             EnemyAIInstance.eye.transform.position,
             ignorePlayer: EnemyAIInstance.ActualTargetPlayer.Value);
 
-        if (tempPlayer != null)
+        if (tempPlayer)
         {
             EnemyAIInstance.LookAtPosition(tempPlayer.transform.position);
         }

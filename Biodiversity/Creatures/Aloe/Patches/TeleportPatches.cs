@@ -1,5 +1,5 @@
-﻿using Biodiversity.Creatures.Aloe.Types.Networking;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.Aloe.Types.Networking;
 using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
@@ -22,7 +22,7 @@ internal static class TeleportPatches
         float rot = 0f, bool allowInteractTrigger = false, bool enableController = true)
     {
         if (!__instance.IsHost && !__instance.IsServer) return;
-        if (__instance == null) return;
+        if (!__instance) return;
 
         if (!AloeSharedData.Instance.IsPlayerKidnapBound(__instance)) return;
         KeyValuePair<string, ulong> first = new();

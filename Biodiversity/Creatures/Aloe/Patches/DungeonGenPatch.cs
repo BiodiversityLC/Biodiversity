@@ -1,4 +1,4 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using DunGen;
@@ -25,11 +25,11 @@ internal static class DungeonGenPatch
         
         if (!NetworkManager.Singleton.IsServer) return;
 
-        if (__instance.CurrentDungeon == null) BiodiversityPlugin.Logger.LogDebug("CurrentDungeon is null");
-        else if (__instance.CurrentDungeon.AllTiles == null) BiodiversityPlugin.Logger.LogDebug("AllTiles is null");
+        if (!__instance.CurrentDungeon) BiodiversityPlugin.LogVerbose("CurrentDungeon is null");
+        else if (__instance.CurrentDungeon.AllTiles == null) BiodiversityPlugin.LogVerbose("AllTiles is null");
 
         Tile tile = FindTileWithName(__instance.CurrentDungeon, "SmallRoom2");
-        if (tile == null) return;
+        if (!tile) return;
 
         CreateBrackenRoomAINodes(tile.transform);
         AloeSharedData.Instance.PopulateBrackenRoomAloeNodes(tile.transform);
@@ -70,7 +70,7 @@ internal static class DungeonGenPatch
 
     private static Tile FindTileWithName(Dungeon dungeon, string nameContains)
     {
-        if (dungeon != null)
+        if (dungeon)
         {
             for (int i = 0; i < dungeon.AllTiles.Count; i++)
             {
@@ -81,7 +81,7 @@ internal static class DungeonGenPatch
             return null;
         }
 
-        BiodiversityPlugin.Logger.LogDebug("Dungeon is null");
+        BiodiversityPlugin.LogVerbose("Dungeon is null");
         return null;
     }
 }

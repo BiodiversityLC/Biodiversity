@@ -1,5 +1,5 @@
-﻿using Biodiversity.Patches;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Patches;
 using System;
 using System.Reflection;
 using Unity.Netcode;
@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.Video;
 using Object = UnityEngine.Object;
 
-namespace Biodiversity.Util.Assetloading;
+namespace Biodiversity.Core.AssetLoading;
 
 /// <summary>
 /// Abstract class to handle loading assets from an asset bundle for Biodiversity.
@@ -30,18 +30,18 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
             return;
         }
         
-        Type type = typeof(T);
-        for (int i = 0; i < type.GetFields().Length; i++)
+        Type assetBundleType = typeof(T);
+        for (int i = 0; i < assetBundleType.GetFields().Length; i++)
         {
-            FieldInfo field = type.GetFields()[i];
+            FieldInfo assetBundleFields = assetBundleType.GetFields()[i];
             LoadFromBundleAttribute loadInstruction =
-                (LoadFromBundleAttribute)field.GetCustomAttribute(typeof(LoadFromBundleAttribute));
+                (LoadFromBundleAttribute)assetBundleFields.GetCustomAttribute(typeof(LoadFromBundleAttribute));
             
             if (loadInstruction == null) continue;
             
             try
             {
-                field.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
+                assetBundleFields.SetValue(this, LoadAsset(bundle, loadInstruction.BundleFile));
             }
             catch (ArgumentException e)
             {
@@ -58,9 +58,9 @@ internal abstract class BiodiverseAssetBundle<T> where T : BiodiverseAssetBundle
             {
                 case GameObject gameObject:
                 {
-                    if (gameObject.GetComponent<NetworkObject>() != null && GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject))
+                    if (gameObject.GetComponent<NetworkObject>() && GameNetworkManagerPatch.NetworkPrefabsToRegister.Add(gameObject))
                     {
-                        BiodiversityPlugin.LogVerbose($"Adding NetworkPrefab '{gameObject.name}' from bundle '{filePath}' to registration queue.");
+                        BiodiversityPlugin.LogVerbose($"Added NetworkPrefab '{gameObject.name}' from bundle '{filePath}' to registration queue.");
                     }
 
                     break;

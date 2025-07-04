@@ -1,5 +1,5 @@
 using BepInEx.Configuration;
-using Biodiversity.Util.Config;
+using Biodiversity.Core.Config;
 using System;
 using UnityEngine;
 

@@ -1,5 +1,5 @@
-﻿using Biodiversity.Util;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Util;
 using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
@@ -25,7 +25,7 @@ internal static class LandminePatch
         if (AloeHandler.Instance.Config.LandminesBlowUpAloe) return true;
 
         AloeServerAI aloeAI = other.gameObject.GetComponentInParent<AloeServerAI>();
-        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
+        if (aloeAI && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
             return false;
 
         PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
@@ -33,7 +33,7 @@ internal static class LandminePatch
             return false;
         
         FakePlayerBodyRagdoll fakePlayerBodyRagdoll = other.gameObject.GetComponent<FakePlayerBodyRagdoll>();
-        if (fakePlayerBodyRagdoll != null)
+        if (fakePlayerBodyRagdoll)
             return false;
 
         return true;
@@ -47,7 +47,7 @@ internal static class LandminePatch
         if (AloeHandler.Instance.Config.LandminesBlowUpAloe) return true;
 
         AloeServerAI aloeAI = other.gameObject.GetComponentInParent<AloeServerAI>();
-        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
+        if (aloeAI && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
             return false;
 
         PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
@@ -55,7 +55,7 @@ internal static class LandminePatch
             return false;
         
         FakePlayerBodyRagdoll fakePlayerBodyRagdoll = other.gameObject.GetComponent<FakePlayerBodyRagdoll>();
-        if (fakePlayerBodyRagdoll != null)
+        if (fakePlayerBodyRagdoll)
             return false;
         
         return true;

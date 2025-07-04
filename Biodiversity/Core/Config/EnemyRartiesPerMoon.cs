@@ -6,7 +6,7 @@ using BepInEx.Configuration;
 using LethalLevelLoader;
 using LethalLib.Modules;
 
-namespace Biodiversity.Util.Config;
+namespace Biodiversity.Core.Config;
 
 public class EnemyRaritiesPerMoon(
 	int defaultRarity,

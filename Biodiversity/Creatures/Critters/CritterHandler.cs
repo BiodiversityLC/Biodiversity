@@ -1,3 +1,4 @@
+using Biodiversity.Util;
 using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.Critters;
@@ -11,16 +12,16 @@ internal class CritterHandler : BiodiverseAIHandler<CritterHandler> {
 		Assets = new CritterAssets("critters");
 		Config = new CritterConfig(BiodiversityPlugin.Instance.CreateConfig("critters"));
 		
-		TranslateTerminalNode(Assets.PrototaxTerminalNode);
-		RegisterEnemyWithConfig(
+		LethalLibUtils.TranslateTerminalNode(Assets.PrototaxTerminalNode);
+		LethalLibUtils.RegisterEnemyWithConfig(
 			Config.FungiEnabled,
 			Config.FungiRarity,
 			Assets.PrototaxEnemyType,
 			Assets.PrototaxTerminalNode,
 			Assets.PrototaxTerminalKeyword);
 		
-		TranslateTerminalNode(Assets.LeafyBoiTerminalNode);
-		RegisterEnemyWithConfig(
+		LethalLibUtils.TranslateTerminalNode(Assets.LeafyBoiTerminalNode);
+		LethalLibUtils.RegisterEnemyWithConfig(
 			Config.LeafBoyEnabled,
 			Config.LeafBoyRarity,
 			Assets.LeafyBoiEnemyType,

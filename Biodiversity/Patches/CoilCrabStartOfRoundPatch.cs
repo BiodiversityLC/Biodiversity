@@ -1,26 +1,24 @@
-﻿using Biodiversity.Creatures.CoilCrab;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.CoilCrab;
 using HarmonyLib;
 
+namespace Biodiversity.Patches;
 
-namespace Biodiversity.Patches
+[CreaturePatch("CoilCrab")]
+[HarmonyPatch(typeof(StartOfRound))]
+internal class CoilCrabStartOfRoundPatch
 {
-    [CreaturePatch("CoilCrab")]
-    [HarmonyPatch(typeof(StartOfRound))]
-    internal class CoilCrabStartOfRoundPatch
+    [HarmonyPatch(nameof(StartOfRound.SwitchMapMonitorPurpose)), HarmonyPostfix]
+    internal static void CoilCrabSounds()
     {
-        [HarmonyPatch(nameof(StartOfRound.SwitchMapMonitorPurpose)), HarmonyPostfix]
-        internal static void CoilCrabSounds()
+        foreach (Item item in StartOfRound.Instance.allItemsList.itemsList)
         {
-            foreach (Item item in StartOfRound.Instance.allItemsList.itemsList)
+            if (item.name == "ComedyMask")
             {
-                if (item.name == "ComedyMask")
-                {
-                    CoilCrabHandler.Instance.Assets.CoilShellItem.pocketSFX = item.pocketSFX;
-                    CoilCrabHandler.Instance.Assets.CoilShellItem.grabSFX = item.grabSFX;
-                    BiodiversityPlugin.LogVerbose("Found the select sfx for the shovel.");
-                    break;
-                }
+                CoilCrabHandler.Instance.Assets.CoilShellItem.pocketSFX = item.pocketSFX;
+                CoilCrabHandler.Instance.Assets.CoilShellItem.grabSFX = item.grabSFX;
+                BiodiversityPlugin.LogVerbose("Found the select sfx for the shovel.");
+                break;
             }
         }
     }

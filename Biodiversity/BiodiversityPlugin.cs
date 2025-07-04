@@ -1,8 +1,9 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using Biodiversity.Core.Attributes;
+using Biodiversity.Core.Lang;
 using Biodiversity.Util;
-using Biodiversity.Lang;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Biodiversity.Creatures;
-using Biodiversity.Util.Attributes;
+using Biodiversity.Items;
 using Biodiversity.Util.DataStructures;
 using UnityEngine;
 using HarmonyPatchType = HarmonyLib.HarmonyPatchType;
@@ -84,7 +85,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
     }
 
     /// <summary>
-    /// Finalizes the loading process for the plugin, initializes enemies, loads assets, and registers creatures.
+    /// Finalizes the loading process for the plugin, initializes enemies & items, loads assets, and registers creatures.
     /// Also logs a silly quote and the total time taken for loading.
     /// </summary>
     /// <remarks>
@@ -92,8 +93,8 @@ public class BiodiversityPlugin : BaseUnityPlugin
     /// <list type="bullet">
     /// <item>Initializes the <see cref="VanillaEnemies"/> class.</item>
     /// <item>Loads a specific asset bundle for video clips.</item>
-    /// <item>Registers AI handlers for the creatures.</item>
-    /// <item>Logs the registration of each creature handler.</item>
+    /// <item>Registers AI handlers for the creatures and logs it.</item>
+    /// <item>Registers item handlers for the items and logs it.</item>
     /// <item>Logs a silly quote.</item>
     /// </list>
     /// The method measures the total loading time using a stopwatch and logs the time taken.
@@ -109,7 +110,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         LogVerbose("Loading VideoClip bundle.");
         LoadBundle("biodiversity_video_clips");
         
-        LogVerbose("Registering the silly little creatures and config stuff.");
+        LogVerbose("Registering the creatures...");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType is { IsGenericType: true }
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
@@ -119,41 +120,65 @@ public class BiodiversityPlugin : BaseUnityPlugin
         for (int i = 0; i < creatureHandlers.Count; i++)
         {
             Type type = creatureHandlers[i];
-            string creatureName = type.Name;
+            string handlerName = type.Name;
 
             DisableEnemyByDefaultAttribute dis = type.GetCustomAttribute<DisableEnemyByDefaultAttribute>();
             bool enableByDefault = dis == null;
 
-            bool creatureEnabled = base.Config.Bind("Creatures", creatureName, enableByDefault, $"Enable/disable the {creatureName}").Value;
+            bool creatureEnabled = base.Config.Bind("Creatures", handlerName, enableByDefault, $"Enable/disable the {handlerName}").Value;
             
             if (!creatureEnabled)
             {
-                LogVerbose($"{creatureName} was skipped because it's disabled.");
+                LogVerbose($"{handlerName} was skipped because it's disabled.");
                 continue;
             }
             
-            LogVerbose($"Creating {creatureName}");
+            LogVerbose($"Creating {handlerName}...");
             try
             {
                 type.GetConstructor([])?.Invoke([]);
-                Config.AddEnabledCreature(creatureName.Replace("Handler", ""));
+                Config.AddEnabledCreature(handlerName.Replace("Handler", ""));
                 enabledCreatureCount++;
             }
             catch (Exception e)
             {
-                Logger.LogError($"Failed to instantiate creature handler {creatureName}: {e}");
+                Logger.LogError($"Failed to instantiate creature handler {handlerName}: {e}.");
+            }
+        }
+        
+        LogVerbose($"Sucessfully setup {enabledCreatureCount} creatures!");
+        
+        LogVerbose("Registering the items...");
+        List<Type> itemHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
+            x.BaseType is { IsGenericType: true }
+            && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseItemHandler<>)
+        ).ToList();
+        
+        for (int i = 0; i < itemHandlers.Count; i++)
+        {
+            Type type = itemHandlers[i];
+            string handlerName = type.Name;
+            
+            LogVerbose($"Creating {handlerName}...");
+            
+            try
+            {
+                type.GetConstructor([])?.Invoke([]);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError($"Failed to instantiate item handler {handlerName}: {e}.");
             }
         }
         
         ApplyPatches();
         
-        LogVerbose($"Sucessfully setup {enabledCreatureCount} silly creatures!");
         timer.Stop();
         
         (string, string) quote = SillyQuotes[UnityEngine.Random.Range(0, SillyQuotes.Length)];
         Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
         LogVerbose(
-            $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms)");
+            $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms).");
     }
     
     /// <summary>

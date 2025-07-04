@@ -1,4 +1,4 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;

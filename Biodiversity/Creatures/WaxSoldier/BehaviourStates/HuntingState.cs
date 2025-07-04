@@ -1,8 +1,8 @@
-﻿using Biodiversity.Creatures.Core.Search;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.Core.Search;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.SearchStrategies;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
-using Biodiversity.Util.Attributes;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;

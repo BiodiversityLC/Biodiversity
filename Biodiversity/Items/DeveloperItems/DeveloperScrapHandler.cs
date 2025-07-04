@@ -1,15 +1,14 @@
-﻿using JetBrains.Annotations;
-using Biodiversity.Creatures;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Core.Config;
+using JetBrains.Annotations;
 using Biodiversity.Items.DeveloperItems;
-using Biodiversity.Util.Attributes;
-using Biodiversity.Util.Config;
+using Biodiversity.Util;
 using System.Reflection;
-using UnityEngine;
 
 namespace Biodiversity.Items.Developeritems;
 
 [UsedImplicitly]
-internal class DeveloperScrapHandler : BiodiverseAIHandler<DeveloperScrapHandler>
+internal class DeveloperScrapHandler : BiodiverseItemHandler<DeveloperScrapHandler>
 {
     internal DeveloperScrapAssets Assets { get; set; }
     internal DeveloperScrapConfig Config { get; set; }
@@ -25,22 +24,24 @@ internal class DeveloperScrapHandler : BiodiverseAIHandler<DeveloperScrapHandler
             LoadFromBundleAttribute loadFromBundleAttribute = field.GetCustomAttribute<LoadFromBundleAttribute>();
             if (loadFromBundleAttribute == null) continue;
 
+            // Registers items that are `GenericScrapItem`s
             for (int j = 0; j < typeof(DeveloperScrapConfig).GetProperties().Length; j++)
             {
                 PropertyInfo property = typeof(DeveloperScrapConfig).GetProperties()[j];
-                if (property.PropertyType != typeof(GenericScrapItem)) continue;
+                if (property.PropertyType == typeof(GenericScrapItem))
+                {
+                    GenericScrapItem scrapItem = (GenericScrapItem)property.GetValue(Config);
+                    if (scrapItem.AssetName != loadFromBundleAttribute.BundleFile) continue;
 
-                GenericScrapItem scrapItem = (GenericScrapItem)property.GetValue(Config);
-                if (scrapItem.AssetName != loadFromBundleAttribute.BundleFile) continue;
+                    Item item = (Item)field.GetValue(Assets);
 
-                Item item = (Item)field.GetValue(Assets);
+                    item.isScrap = true;
+                    item.weight = scrapItem.Weight;
+                    item.minValue = scrapItem.MinimumValue;
+                    item.maxValue = scrapItem.MaximumValue;
 
-                item.isScrap = true;
-                item.weight = scrapItem.Weight;
-                item.minValue = scrapItem.MinimumValue;
-                item.maxValue = scrapItem.MaximumValue;
-
-                RegisterScrapWithConfig(scrapItem.Rarity, item);
+                    LethalLibUtils.RegisterScrapWithConfig(scrapItem.Rarity, item);
+                }
             }
         }
     }

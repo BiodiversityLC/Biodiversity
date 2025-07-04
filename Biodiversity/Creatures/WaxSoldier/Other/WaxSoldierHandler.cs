@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using Biodiversity.Util;
+using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.WaxSoldier;
 
@@ -16,15 +17,15 @@ internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
         Assets.EnemyType.PowerLevel = Config.PowerLevel;
         Assets.EnemyType.MaxCount = Config.MaxAmount;
             
-        TranslateTerminalNode(Assets.TerminalNode);
+        LethalLibUtils.TranslateTerminalNode(Assets.TerminalNode);
 
-        RegisterEnemyWithConfig(
+        LethalLibUtils.RegisterEnemyWithConfig(
             Config.WaxSoldierEnabled,
             Config.Rarity,
             Assets.EnemyType,
             Assets.TerminalNode,
             Assets.TerminalKeyword);
         
-        RegisterScrapWithConfig("All:0", Assets.MusketItemData);
+        LethalLibUtils.RegisterScrapWithConfig("All:0", Assets.MusketItemData);
     }
 }

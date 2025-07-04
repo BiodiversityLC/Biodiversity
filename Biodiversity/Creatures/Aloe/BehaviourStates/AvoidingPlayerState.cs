@@ -1,8 +1,8 @@
-﻿using System.Linq;
+﻿using Biodiversity.Core.Attributes;
+using System.Linq;
 using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
-using Biodiversity.Util.Attributes;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -108,7 +108,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
                 bufferDistance: 5f)
             : null;
 
-        if (farAwayNode != null && pathStatus != BiodiverseAI.PathStatus.Unknown &&
+        if (farAwayNode && pathStatus != BiodiverseAI.PathStatus.Unknown &&
             pathStatus != BiodiverseAI.PathStatus.Invalid)
         {
             if (pathStatus == BiodiverseAI.PathStatus.ValidButInLos)

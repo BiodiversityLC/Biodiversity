@@ -1,7 +1,7 @@
 ﻿using BepInEx.Configuration;
 using System.Text.RegularExpressions;
 
-namespace Biodiversity.Util.Config;
+namespace Biodiversity.Core.Config;
 
 public struct GenericScrapItem(
     string assetName,

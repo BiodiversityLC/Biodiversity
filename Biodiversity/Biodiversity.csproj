@@ -43,7 +43,7 @@
         <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
     <ItemGroup>
-      <None Remove="Lang\defs.json" />
+      <None Remove="Core\Lang\defs.json" />
     </ItemGroup>
 
     <!-- Primary Package References -->
@@ -52,7 +52,7 @@
         <PackageReference Include="BepInEx.Core" Version="5.*" PrivateAssets="all" />
         <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
         <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" PrivateAssets="all" />
-        <PackageReference Include="Evaisa.LethalLib" Version="1.1.0" Publicize="true" />
+        <PackageReference Include="Evaisa.LethalLib" Version="1.1.1" Publicize="true" />
         <PackageReference Include="IAmBatby.LethalLevelLoader" Version="1.4.0" Publicize="true" />
         <PackageReference Include="LethalCompany.GameLibs.Steam" Version="70.0.0-ngd.0" Publicize="true" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
@@ -85,7 +85,7 @@
 		<Message Importance="high" Text="Collecting lang files!" />
 		
 		<ItemGroup>
-			<LangFiles Include="$(ProjectDir)Lang/languages/*.json" Exclude="$(ProjectDir)Lang/languages/defs.json">
+			<LangFiles Include="$(ProjectDir)Core/Lang/languages/*.json" Exclude="$(ProjectDir)Core/Lang/languages/defs.json">
 				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			</LangFiles>
 		</ItemGroup>

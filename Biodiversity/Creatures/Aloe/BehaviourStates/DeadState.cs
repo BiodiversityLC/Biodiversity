@@ -1,7 +1,7 @@
-﻿using Biodiversity.Creatures.Aloe.Types.Networking;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
-using Biodiversity.Util.Attributes;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;

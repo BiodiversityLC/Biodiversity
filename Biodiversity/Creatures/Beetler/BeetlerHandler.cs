@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Util;
 
 namespace Biodiversity.Creatures.Beetler;
 
@@ -16,6 +17,6 @@ internal class BeetlerHandler : BiodiverseAIHandler<BeetlerHandler>
         Config = new BeetlerConfig(BiodiversityPlugin.Instance.CreateConfig("beetler"));
 
         // Register butlet
-        RegisterEnemyWithConfig(Config.EnableBeetler, "All:0", Assets.ButtletEnemy, Assets.ButtletTerminalNode, Assets.ButtletTerminalKeyword);
+        LethalLibUtils.RegisterEnemyWithConfig(Config.EnableBeetler, "All:0", Assets.ButtletEnemy, Assets.ButtletTerminalNode, Assets.ButtletTerminalKeyword);
     }
 }

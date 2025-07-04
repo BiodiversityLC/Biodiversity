@@ -1,5 +1,5 @@
-﻿using Biodiversity.Creatures.Core.StateMachine;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.Core.StateMachine;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.Aloe.BehaviourStates;

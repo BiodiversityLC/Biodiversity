@@ -1,21 +1,19 @@
-﻿using Biodiversity.Util.Assetloading;
-using Biodiversity.Util.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Biodiversity.Core.AssetLoading;
+using Biodiversity.Core.Attributes;
 using UnityEngine;
 
-namespace Biodiversity.Creatures.ClockworkAngel
+namespace Biodiversity.Creatures.ClockworkAngel;
+
+#pragma warning disable CS0649
+
+internal class ClockworkAngelAssets(string filePath) : BiodiverseAssetBundle<ClockworkAngelAssets>(filePath)
 {
-    internal class ClockworkAngelAssets(string filePath) : BiodiverseAssetBundle<ClockworkAngelAssets>(filePath)
-    {
-        [LoadFromBundle("ClockworkAngel.prefab")]
-        public GameObject enemy;
+    [LoadFromBundle("ClockworkAngel.prefab")]
+    public GameObject enemy;
 
-        [LoadFromBundle("AngelSpotlight.prefab")]
-        public GameObject AngelSpotlight;
+    [LoadFromBundle("AngelSpotlight.prefab")]
+    public GameObject AngelSpotlight;
 
-        [LoadFromBundle("AngelAgent.prefab")]
-        public GameObject AngelAgent;
-    }
+    [LoadFromBundle("AngelAgent.prefab")]
+    public GameObject AngelAgent;
 }

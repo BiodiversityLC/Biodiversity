@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Biodiversity.Util.Attributes;
+namespace Biodiversity.Core.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
 internal class StateAttribute : Attribute

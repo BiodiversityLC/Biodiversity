@@ -1,6 +1,6 @@
-﻿using Biodiversity.Creatures.Core.StateMachine;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
-using Biodiversity.Util.Attributes;
 using UnityEngine;
 using UnityEngine.Scripting;
 

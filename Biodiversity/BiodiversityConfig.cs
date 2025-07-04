@@ -1,7 +1,7 @@
 using System;
 using BepInEx.Configuration;
-using Biodiversity.Util.Config;
-using Biodiversity.Lang;
+using Biodiversity.Core.Config;
+using Biodiversity.Core.Lang;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;

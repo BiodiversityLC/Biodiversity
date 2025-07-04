@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Biodiversity.Core.Lang;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Biodiversity.Util;
-using Biodiversity.Lang;
 using Biodiversity.Util.DataStructures;
 using Unity.Netcode;
 using GameNetcodeStuff;

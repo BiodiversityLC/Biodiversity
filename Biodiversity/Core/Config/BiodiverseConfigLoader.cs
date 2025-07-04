@@ -3,7 +3,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace Biodiversity.Util.Config;
+namespace Biodiversity.Core.Config;
 
 [Serializable]
 public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader<T>

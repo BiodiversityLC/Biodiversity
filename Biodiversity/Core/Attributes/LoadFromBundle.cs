@@ -1,7 +1,7 @@
-﻿using System;
-using Biodiversity.Util.Assetloading;
+﻿using Biodiversity.Core.AssetLoading;
+using System;
 
-namespace Biodiversity.Util.Attributes;
+namespace Biodiversity.Core.Attributes;
 
 /// <summary>
 /// Marks a field to be automatically populated with an asset loaded from an asset bundle.

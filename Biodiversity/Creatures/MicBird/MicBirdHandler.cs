@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.DataStructures;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using System.Collections.Generic;
 
 namespace Biodiversity.Creatures.MicBird;
@@ -11,6 +12,7 @@ internal class MicBirdHandler : BiodiverseAIHandler<MicBirdHandler>
     internal int totalweight { get; private set; }
 
     internal string[] compatGUIDS { get; private set; }
+    
     public MicBirdHandler()
     {
         Assets = new MicBirdAssets("biodiversity_micbird");
@@ -37,8 +39,8 @@ internal class MicBirdHandler : BiodiverseAIHandler<MicBirdHandler>
 
         Assets.MicBirdEnemyType.PowerLevel = Config.PowerLevel;
 
-        TranslateTerminalNode(Assets.MicBirdTerminalNode);
-        RegisterEnemyWithConfig(
+        LethalLibUtils.TranslateTerminalNode(Assets.MicBirdTerminalNode);
+        LethalLibUtils.RegisterEnemyWithConfig(
             Config.EnableBoomBird,
             Config.BoomBirdRarity,
             Assets.MicBirdEnemyType,

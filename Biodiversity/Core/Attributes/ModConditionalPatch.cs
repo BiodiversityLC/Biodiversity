@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using System;
 
-namespace Biodiversity.Util.Attributes;
+namespace Biodiversity.Core.Attributes;
 
 /// <summary>
 /// Specifies a conditional Harmony patch that is applied only if a specific mod is installed.

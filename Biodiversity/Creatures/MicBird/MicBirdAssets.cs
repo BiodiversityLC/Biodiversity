@@ -1,20 +1,18 @@
-﻿using Biodiversity.Util.Assetloading;
-using Biodiversity.Util.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Biodiversity.Core.AssetLoading;
+using Biodiversity.Core.Attributes;
 
-namespace Biodiversity.Creatures.MicBird
+namespace Biodiversity.Creatures.MicBird;
+
+#pragma warning disable CS0649
+
+internal class MicBirdAssets(string filePath) : BiodiverseAssetBundle<MicBirdAssets>(filePath)
 {
-    internal class MicBirdAssets(string filePath) : BiodiverseAssetBundle<MicBirdAssets>(filePath)
-    {
-        [LoadFromBundle("MicBird.asset")]
-        public EnemyType MicBirdEnemyType;
+    [LoadFromBundle("MicBird.asset")]
+    public EnemyType MicBirdEnemyType;
 
-        [LoadFromBundle("MicBirdTN")]
-        public TerminalNode MicBirdTerminalNode;
+    [LoadFromBundle("MicBirdTN")]
+    public TerminalNode MicBirdTerminalNode;
 
-        [LoadFromBundle("MicBirdKW")]
-        public TerminalKeyword MicBirdTerminalKeyword;
-    }
+    [LoadFromBundle("MicBirdKW")]
+    public TerminalKeyword MicBirdTerminalKeyword;
 }

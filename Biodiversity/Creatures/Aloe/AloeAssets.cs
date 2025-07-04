@@ -1,5 +1,5 @@
-﻿using Biodiversity.Util.Assetloading;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.AssetLoading;
+using Biodiversity.Core.Attributes;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe;

@@ -1,4 +1,4 @@
-﻿using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;

@@ -1,5 +1,5 @@
-﻿using Biodiversity.Util;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using HarmonyLib;
 using JetBrains.Annotations;
@@ -27,7 +27,7 @@ internal static class SeaminePatches
         if (AloeHandler.Instance.Config.LandminesBlowUpAloe) return true;
 
         AloeServerAI aloeAI = other.gameObject.GetComponentInParent<AloeServerAI>();
-        if (aloeAI != null && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
+        if (aloeAI && AloeSharedData.Instance.AloeBoundKidnaps.ContainsKey(aloeAI.BioId))
             return false;
 
         PlayerControllerB component = other.gameObject.GetComponent<PlayerControllerB>();

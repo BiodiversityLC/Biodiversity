@@ -1,5 +1,5 @@
-﻿using Biodiversity.Util;
-using Biodiversity.Util.Attributes;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;

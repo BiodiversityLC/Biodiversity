@@ -1,16 +1,16 @@
 ﻿using BepInEx.Configuration;
-using Biodiversity.Util.Config;
+using Biodiversity.Core.Config;
 using System;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.HoneyFeeder;
 [Serializable]
-public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfigLoader<HoneyFeederConfig>(configFile) {
+public class HoneyFeederConfig(ConfigFile configFile) : BiodiverseConfigLoader<HoneyFeederConfig>(configFile) 
+{
     [field: Header("General Settings")]
     public float SightDistance { get; private set; } = 25;
     [field: Tooltip("24 hour time on when the honey feeder will wake up and start moving.")]
     public string WakeUpTime { get; private set; } = "13:00";
-
     [field: Tooltip("TEMPORARY SETTING, WILL BE REMOVED LATER.")]
     public int Rarity { get; private set; } = 100;
 

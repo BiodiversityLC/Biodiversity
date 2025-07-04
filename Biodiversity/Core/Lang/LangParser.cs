@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
-namespace Biodiversity.Lang;
+namespace Biodiversity.Core.Lang;
 
 internal static class LangParser
 {

@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Patches;
+using Biodiversity.Util;
 using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.Aloe;
@@ -12,7 +13,6 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler>
     public AloeHandler()
     {
         Assets = new AloeAssets("aloebracken"); //todo: Load the bundle synchronously
-        
         Config = new AloeConfig(BiodiversityPlugin.Instance.CreateConfig("aloe"));
 
         Assets.EnemyType.PowerLevel = Config.PowerLevel;
@@ -23,9 +23,9 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler>
         else
             BiodiversityPlugin.Logger.LogError("FakePlayerBodyRagdollPrefab is null.");
 
-        TranslateTerminalNode(Assets.TerminalNode);
+        LethalLibUtils.TranslateTerminalNode(Assets.TerminalNode);
 
-        RegisterEnemyWithConfig(
+        LethalLibUtils.RegisterEnemyWithConfig(
             Config.AloeEnabled,
             Config.Rarity,
             Assets.EnemyType,

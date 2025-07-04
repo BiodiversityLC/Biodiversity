@@ -43,6 +43,7 @@ public class Musket : BiodiverseItem
 
     private readonly NetworkVariable<int> currentAmmo = new(1);
     private const int bulletHitId = 8832676;
+    private const int raycastHitBufferLength = 35;
     private int bulletMask;
     private int maxAmmo;
 
@@ -52,7 +53,7 @@ public class Musket : BiodiverseItem
     private void Awake()
     {
         currentAttackMode = AttackMode.Gun;
-        hitBuffer = new RaycastHit[2];
+        hitBuffer = new RaycastHit[raycastHitBufferLength];
         bulletMask = StartOfRound.Instance.collidersRoomMaskDefaultAndPlayers | (1 << LayerMask.NameToLayer("Enemies"));
         raycastHitDistanceComparer = Comparer<RaycastHit>.Create((a, b) => a.distance.CompareTo(b.distance));
         
@@ -108,6 +109,8 @@ public class Musket : BiodiverseItem
 
         int hitCount = Physics.SphereCastNonAlloc(bulletRay, bulletRadius, hitBuffer, maxBulletDistance, bulletMask,
             QueryTriggerInteraction.Collide);
+        
+        DebugUtils.DrawSphereCast(bulletRay, bulletRadius, Color.green, maxDistance: maxBulletDistance);
 
         if (hitCount == 0) return;
         if (hitCount > 1)
