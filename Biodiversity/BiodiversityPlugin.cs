@@ -2,7 +2,7 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using Biodiversity.Util;
-using Biodiversity.Util.Lang;
+using Biodiversity.Lang;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;

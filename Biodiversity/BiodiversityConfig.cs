@@ -1,9 +1,9 @@
 using System;
-using System.Linq;
 using BepInEx.Configuration;
 using Biodiversity.Util.Config;
-using Biodiversity.Util.Lang;
+using Biodiversity.Lang;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Biodiversity;

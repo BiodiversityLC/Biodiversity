@@ -26,7 +26,6 @@ public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<Devel
             minimumValue: 28,
             maximumValue: 68);
     */
-
     
     public GenericScrapItem IronDog { get; private set; } =
         new(

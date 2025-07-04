@@ -1,6 +1,6 @@
 ﻿using BepInEx.Bootstrap;
 using Biodiversity.Patches;
-using Biodiversity.Util.Lang;
+using Biodiversity.Lang;
 using LethalLib.Modules;
 using System;
 using System.Collections.Generic;

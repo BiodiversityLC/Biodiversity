@@ -24,5 +24,7 @@ internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
             Assets.EnemyType,
             Assets.TerminalNode,
             Assets.TerminalKeyword);
+        
+        RegisterScrapWithConfig("All:0", Assets.MusketItemData);
     }
 }

@@ -9,5 +9,6 @@ internal class WaxSoldierAssets(string bundle) : BiodiverseAssetBundle<WaxSoldie
     [LoadFromBundle("WaxSoldierEnemyType")] public EnemyType EnemyType;
     [LoadFromBundle("WaxSoldierTerminalNode")] public TerminalNode TerminalNode;
     [LoadFromBundle("WaxSoldierTerminalKeyword")] public TerminalKeyword TerminalKeyword;
+    [LoadFromBundle("MusketItemData")] public Item MusketItemData;
 #pragma warning restore 0649
 }

@@ -4,15 +4,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
-namespace Biodiversity.Util.Lang;
+namespace Biodiversity.Lang;
+
 internal static class LangParser
 {
     internal static Dictionary<string, string> Languages { get; private set; }
     private static Dictionary<string, object> LoadedLanguage { get; set; }
 
+    private const string LangMissing = "lang.missing";
+
     internal static void Init()
     {
-        const string defsJsonFilename = "Biodiversity.Util.Lang.defs.json";
+        const string defsJsonFilename = "Biodiversity.Lang.defs.json";
         using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(defsJsonFilename);
         if (stream == null)
         {
@@ -44,23 +47,24 @@ internal static class LangParser
     {
         LoadedLanguage = LoadLanguage(id);
     }
-
-    internal static string GetTranslation(string translation)
+    
+    internal static string GetTranslation(string translationId)
     {
         if (LoadedLanguage == null)
         {
-            BiodiversityPlugin.Logger.LogDebug($"Cannot translate message due to translations not being loaded: {translation}");
-            return GetTranslation("lang.missing").Replace("<translation_id>", translation);
+            if (translationId == LangMissing) return LangMissing;
+            BiodiversityPlugin.Logger.LogDebug($"Cannot translate the message {translationId} due to translations not being loaded.");
+            return GetTranslation(LangMissing).Replace("<translation_id>", translationId);
         }
-        
-        if (LoadedLanguage.TryGetValue(translation, out object result)) return (string)result;
-        if (translation == "lang.missing") 
+         
+        if (LoadedLanguage.TryGetValue(translationId, out object result)) return result.ToString();
+        if (translationId == LangMissing)
         {
-            BiodiversityPlugin.Logger.LogError("LANG.MISSING IS MISSING!!!!!  THIS IS BAD!! VERY BAD!!");
-            return "lang.missing; <translation_id>";
+            BiodiversityPlugin.Logger.LogError($"{LangMissing} is missing.");
+            return $"{LangMissing}; <translation_id>";
         }
 
-        return GetTranslation("lang.missing").Replace("<translation_id>", translation);
+        return GetTranslation($"{LangMissing}").Replace("<translation_id>", translationId);
     }
 
     internal static JArray GetTranslationSet(string translation) 
@@ -68,7 +72,7 @@ internal static class LangParser
         if (LoadedLanguage == null)
         {
             BiodiversityPlugin.Logger.LogDebug($"Cannot translate message due to translations not being loaded: {translation}");
-            return [GetTranslation("lang.missing").Replace("<translation_id>", translation)];
+            return [GetTranslation(LangMissing).Replace("<translation_id>", translation)];
         }
         
         if (LoadedLanguage.TryGetValue(translation, out object result)) 
@@ -77,6 +81,6 @@ internal static class LangParser
             return result as JArray;
         }
 
-        return [GetTranslation("lang.missing").Replace("<translation_id>", translation)];
+        return [GetTranslation(LangMissing).Replace("<translation_id>", translation)];
     }
 }

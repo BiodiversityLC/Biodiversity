@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using Biodiversity.Creatures.Aloe.AnimatorStates;
 using Biodiversity.Util;
-using Biodiversity.Util.Lang;
+using Biodiversity.Lang;
 using Biodiversity.Util.DataStructures;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
@@ -21,9 +19,12 @@ namespace Biodiversity.Creatures.Aloe;
 
 public class AloeClient : MonoBehaviour
 {
+    #region Shader IDs
     private static readonly int Metallic = Shader.PropertyToID("_Metallic");
     private static readonly int BaseColour = Shader.PropertyToID("_BaseColor");
+    #endregion
 
+    #region Animator Hashes
     private static readonly int Speed = Animator.StringToHash("Speed");
     private static readonly int Dead = Animator.StringToHash("Dead");
     public static readonly int Spawning = Animator.StringToHash("Spawning");
@@ -38,7 +39,8 @@ public class AloeClient : MonoBehaviour
     private static readonly int Crush = Animator.StringToHash("Crush");
     
     private static readonly int PlayerCrouching = Animator.StringToHash("crouching");
-
+    #endregion
+    
     public const float SnatchAndGrabAudioLength = 2.019f;
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -165,6 +167,9 @@ public class AloeClient : MonoBehaviour
     private Coroutine _changeSkinColourCoroutine;
     private Coroutine _changeTargetPlayerOffsets;
 
+    private string escapeTooltipHeader;
+    private string escapeTooltipBody;
+
     private bool _targetPlayerCanEscape;
     private bool _targetPlayerInCaptivity;
     private bool _networkEventsSubscribed;
@@ -176,8 +181,7 @@ public class AloeClient : MonoBehaviour
 
     private void Awake()
     {
-        if (netcodeController == null) netcodeController = GetComponent<AloeNetcodeController>();
-
+        if (!netcodeController) netcodeController = GetComponent<AloeNetcodeController>();
         _aloeServer = new CachedValue<AloeServerAI>(GetComponent<AloeServerAI>);
         
         _playersCachedRenderers = new PerKeyCachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
@@ -185,7 +189,7 @@ public class AloeClient : MonoBehaviour
             List<Tuple<Component, bool>> rendererComponents = [];
             PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
             
-            if (player == null)
+            if (!player)
             {
                 BiodiversityPlugin.Logger.LogError("Cannot get target player renderers because the target player variable is null.");
                 return rendererComponents;
@@ -197,7 +201,7 @@ public class AloeClient : MonoBehaviour
                 try
                 {
                     Transform rendererTransform = player.transform.Find(rendererTuple.Item1);
-                    if (rendererTransform == null)
+                    if (!rendererTransform)
                     {
                         BiodiversityPlugin.Logger.LogWarning($"Transform not found for renderer: {rendererTuple.Item1}");
                         continue;
@@ -236,6 +240,9 @@ public class AloeClient : MonoBehaviour
 
         _playerOccludeAudios = new PerKeyCachedDictionary<ulong, OccludeAudio>(playerId =>
             StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource.GetComponent<OccludeAudio>());
+
+        escapeTooltipHeader = LangParser.GetTranslation("tooltip.header.aloe.escape");
+        escapeTooltipBody = LangParser.GetTranslation("tooltip.body.aloe.escape");
     }
 
     /// <summary>
@@ -628,8 +635,8 @@ public class AloeClient : MonoBehaviour
 
         if (canEscape && HUDManager.Instance.localPlayer == _targetPlayer.Value)
             HUDManager.Instance.DisplayTip(
-                LangParser.GetTranslation("tooltip.header.aloe.escape"), 
-                LangParser.GetTranslation("tooltip.body.aloe.escape"),
+                escapeTooltipHeader, 
+                escapeTooltipBody,
                 false,
                 true,
                 "LC_AloeGrabTip");
@@ -644,7 +651,7 @@ public class AloeClient : MonoBehaviour
     private void HandleIncreasePlayerFearLevel(float targetInsanity, ulong playerClientId)
     {
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
-        if (player == null || player != GameNetworkManager.Instance.localPlayerController) return;
+        if (!player || player != GameNetworkManager.Instance.localPlayerController) return;
         player.JumpToFearLevel(targetInsanity);
         player.IncreaseFearLevelOverTime(0.8f);
     }

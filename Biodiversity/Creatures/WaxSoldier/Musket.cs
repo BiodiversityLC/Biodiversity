@@ -1,15 +1,17 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity.Items;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Biodiversity.Items.Weapons;
+namespace Biodiversity.Creatures.WaxSoldier;
 
 public class Musket : BiodiverseItem
 {
     [SerializeField] private Transform muzzleTip;
+    [SerializeField] private Transform bulletRayOrigin;
 
     private enum DamageType
     {
@@ -17,10 +19,24 @@ public class Musket : BiodiverseItem
         IHittable
     }
 
+    private enum AttackMode
+    {
+        Gun,
+        Bayonet
+    }
+
+    private enum ShootFailureReason
+    {
+        None,
+        NotHeld,
+        NeedsReloading,
+        SafetyIsOn
+    }
+
     private RaycastHit[] hitBuffer;
     private Comparer<RaycastHit> raycastHitDistanceComparer;
 
-    private EnemyAI enemyHeldBy;
+    private AttackMode currentAttackMode;
     
     private float bulletRadius;
     private float maxBulletDistance;
@@ -32,23 +48,50 @@ public class Musket : BiodiverseItem
 
     private readonly NetworkVariable<bool> isSafetyOn = new();
     private const bool canHitEnemies = true;
-    private bool isHeldByPlayer;
     
     private void Awake()
     {
+        currentAttackMode = AttackMode.Gun;
         hitBuffer = new RaycastHit[2];
         bulletMask = StartOfRound.Instance.collidersRoomMaskDefaultAndPlayers | (1 << LayerMask.NameToLayer("Enemies"));
         raycastHitDistanceComparer = Comparer<RaycastHit>.Create((a, b) => a.distance.CompareTo(b.distance));
+        
+        bulletRadius = 0.25f;
+        maxBulletDistance = 200f;
+        maxAmmo = 1;
+
+        isSafetyOn.Value = false;
     }
 
-    private bool CanShoot()
+    private bool CanShoot(out ShootFailureReason failureReason)
     {
-        return (isHeld || isHeldByPlayer || isHeldByEnemy) && currentAmmo.Value > 0 && !isSafetyOn.Value;
+        failureReason = ShootFailureReason.None;
+        if (!isHeld || !isHeldByPlayer && !isHeldByEnemy)
+        {
+            failureReason = ShootFailureReason.NotHeld;
+            return false;
+        }
+
+        if (currentAmmo.Value <= 0)
+        {
+            failureReason = ShootFailureReason.NeedsReloading;
+            return false;
+        }
+        
+        if (isSafetyOn.Value)
+        {
+            failureReason = ShootFailureReason.SafetyIsOn;
+            return false;
+        }
+
+        return true;
     }
 
     private void Shoot()
     {
         if (!IsOwner) return;
+        
+        LogVerbose($"In {nameof(Shoot)}");
         
         // todo: add particle effects, anims and audio BEFORE the raycasting logic below 
         
@@ -60,8 +103,8 @@ public class Musket : BiodiverseItem
                 localPlayer.gameplayCamera.transform.position - localPlayer.gameplayCamera.transform.up * 0.45f,
                 localPlayer.gameplayCamera.transform.forward)
             : new Ray(
-                muzzleTip.position,
-                muzzleTip.forward);
+                bulletRayOrigin.position,
+                bulletRayOrigin.forward);
 
         int hitCount = Physics.SphereCastNonAlloc(bulletRay, bulletRadius, hitBuffer, maxBulletDistance, bulletMask,
             QueryTriggerInteraction.Collide);
@@ -98,16 +141,16 @@ public class Musket : BiodiverseItem
 
     private void Reload()
     {
+        LogVerbose("Reloading...");
         currentAmmo.Value = Mathf.Clamp(currentAmmo.Value + 1, 0, maxAmmo);
     }
 
     private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
     {
-        return 1;
+        return 100;
     }
 
     #region RPCs
-
     [ServerRpc(RequireOwnership = false)]
     private void DamagePlayerServerRpc(ulong playerId, int damage, Vector3 force = default)
     {
@@ -120,16 +163,54 @@ public class Musket : BiodiverseItem
         PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerId);
         player.DamagePlayer(damage, true, true, CauseOfDeath.Gunshots, 0, false, force);
     }
-
     #endregion
 
-    #region Abstract Item Class Event Functions
+    protected override string GetLogPrefix()
+    {
+        base.GetLogPrefix();
+        return $"[Musket {BioId}]";
+    }
 
+    #region Abstract Item Class Event Functions
     public override void ItemActivate(bool used, bool buttonDown = true)
     {
         base.ItemActivate(used, buttonDown);
-        
-        if (CanShoot()) Shoot();
+
+        switch (currentAttackMode)
+        {
+            case AttackMode.Gun:
+            {
+                if (CanShoot(out ShootFailureReason failureReason))
+                {
+                    Shoot();
+                    break;
+                }
+                
+                LogVerbose($"Failed to shoot due to {failureReason}");
+
+                switch (failureReason)
+                {
+                    case ShootFailureReason.NeedsReloading:
+                    {
+                        Reload();
+                        break;
+                    }
+
+                    case ShootFailureReason.SafetyIsOn:
+                    {
+                        // audio.PlayOneShot(gunSafetySfx);
+                        break;
+                    }
+                }
+                
+                break;
+            }
+
+            case AttackMode.Bayonet:
+            {
+                break;
+            }
+        }
     }
 
     public override int GetItemDataToSave()
@@ -154,62 +235,5 @@ public class Musket : BiodiverseItem
         
         currentAmmo.Value = saveData;
     }
-
-    public override void EquipItem()
-    {
-        base.EquipItem();
-        
-        isHeldByPlayer = true;
-        isHeldByEnemy = false;
-
-        enemyHeldBy = null;
-    }
-    
-    public override void PocketItem()
-    {
-        base.PocketItem();
-
-        isHeldByPlayer = true;
-        isHeldByEnemy = false;
-        enemyHeldBy = null;
-    }
-
-    public override void GrabItem()
-    {
-        base.GrabItem();
-        
-        isHeldByPlayer = true;
-        isHeldByEnemy = false;
-        enemyHeldBy = null;
-    }
-
-    public override void GrabItemFromEnemy(EnemyAI enemy)
-    {
-        base.GrabItemFromEnemy(enemy);
-        
-        isHeldByPlayer = false;
-        isHeldByEnemy = true;
-        enemyHeldBy = enemy;
-        playerHeldBy = null;
-    }
-    
-    public override void DiscardItem()
-    {
-        base.DiscardItem();
-
-        isHeldByPlayer = false;
-        isHeldByEnemy = false;
-        enemyHeldBy = null;
-    }
-
-    public override void DiscardItemFromEnemy()
-    {
-        base.DiscardItemFromEnemy();
-        
-        isHeldByPlayer = false;
-        isHeldByEnemy = false;
-        enemyHeldBy = null;
-    }
-
     #endregion
 }

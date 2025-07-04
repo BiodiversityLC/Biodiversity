@@ -43,10 +43,7 @@
         <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
     <ItemGroup>
-      <None Remove="Util\Lang\defs.json" />
-    </ItemGroup>
-    <ItemGroup>
-        <EmbeddedResource Include="Util\Lang\defs.json" />
+      <None Remove="Lang\defs.json" />
     </ItemGroup>
 
     <!-- Primary Package References -->
@@ -88,7 +85,7 @@
 		<Message Importance="high" Text="Collecting lang files!" />
 		
 		<ItemGroup>
-			<LangFiles Include="$(ProjectDir)Util/Lang/languages/*.json" Exclude="$(ProjectDir)Util/Lang/languages/defs.json">
+			<LangFiles Include="$(ProjectDir)Lang/languages/*.json" Exclude="$(ProjectDir)Lang/languages/defs.json">
 				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			</LangFiles>
 		</ItemGroup>
