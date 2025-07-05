@@ -126,7 +126,7 @@ internal static class ExtensionMethods
     
     /// <summary>
     /// Reflection-based check for IsHost property
-    /// It is used in patches using <see cref="Biodiversity.Util.Attributes.ModConditionalPatch"/> to get the value of <c>__instance.IsHost</c>
+    /// It is used in patches using <see cref="Biodiversity.Core.Attributes.ModConditionalPatch"/> to get the value of <c>__instance.IsHost</c>
     /// </summary>
     /// <param name="instance">Object instance to inspect</param>
     /// <returns>Value of IsHost property if exists</returns>
@@ -140,7 +140,7 @@ internal static class ExtensionMethods
 
     /// <summary>
     /// Reflection-based check for IsServer property
-    /// It is used in patches using <see cref="Biodiversity.Util.Attributes.ModConditionalPatch"/> to get the value of <c>__instance.IsServer</c>
+    /// It is used in patches using <see cref="Biodiversity.Core.Attributes.ModConditionalPatch"/> to get the value of <c>__instance.IsServer</c>
     /// </summary>
     /// <param name="instance">Object instance to inspect</param>
     /// <returns>Value of IsServer property if exists</returns>

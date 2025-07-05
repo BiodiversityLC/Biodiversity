@@ -76,9 +76,10 @@ public class VanillaLayersUtil
      * walkableSurfacesMask = 1375734025 -> Railing and collidersRoomMaskDefaultAndPlayers
      *
      *
-     * 
-     * ### Mask variables used in the Shotgun ###
+     * ### Mask variables used in vanilla items ###
      *
-     * 524288 -> Enemies
+     * shotgunMask = 524288 -> Enemies
+     *
+     * shovelMask = 1084754248 -> Player, Props, Room, Colliders, Enemies, MapHazards, EnemiesNotRendered and Vehicle
      */
 }

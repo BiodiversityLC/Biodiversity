@@ -28,7 +28,6 @@ public class BiodiverseItem : PhysicsProp
     }
     
     #region Abstract Item Class Event Functions
-    
     public override void EquipItem()
     {
         base.EquipItem();
@@ -89,11 +88,9 @@ public class BiodiverseItem : PhysicsProp
         isHeldByEnemy = false;
         enemyHeldBy = null;
     }
-    
     #endregion
     
     #region Logging
-
     protected void LogInfo(object message) => BiodiversityPlugin.Logger?.LogInfo($"{GetLogPrefix()} {message}");
 
     protected void LogVerbose(object message)
@@ -112,6 +109,5 @@ public class BiodiverseItem : PhysicsProp
     {
         return $"[{itemProperties.name}]";
     }
-
     #endregion
 }
