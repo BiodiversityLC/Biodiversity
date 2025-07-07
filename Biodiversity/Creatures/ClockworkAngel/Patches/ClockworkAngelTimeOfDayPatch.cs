@@ -42,12 +42,8 @@ internal static class ClockworkAngelTimeOfDayPatch
 
             ClockworkAngelAI AI = angel.GetComponent<ClockworkAngelAI>();
             AngelAgent agentScript = agent.GetComponent<AngelAgent>();
-            AngelSpotlight spotlightScript = spotlight.GetComponent<AngelSpotlight>();
 
-            AI.AngelSpotlight = spotlightScript;
             AI.AngelAgent = agentScript;
-
-            spotlightScript.ParentAngel = AI;
         }
     }
 }
