@@ -42,7 +42,7 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
             Language,
             new ConfigDescription(
                 "What language should Biodiversity use (en, es, de, ru)?\n" +
-                "Some languages may also need FontPatcher(https://thunderstore.io/c/lethal-company/p/LeKAKiD/FontPatcher/)\\n",
+                "Some languages may also need FontPatcher(https://thunderstore.io/c/lethal-company/p/LeKAKiD/FontPatcher/)\n",
                 acceptableLanguages)
         ).Value;
     }
