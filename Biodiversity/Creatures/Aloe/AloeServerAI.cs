@@ -775,9 +775,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         }
 
         // Validate audio source type
-        // todo: is there a way around doing this null check every time?
-        // maybe wrap the audio sources in the dictionary with a cached nullable? 
-        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource source) || source == null)
+        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource source) || !source)
         {
             LogWarning($"Audio Source Type '{audioSourceType}' not found or null.");
             return;
@@ -844,7 +842,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         }
 
         AudioClip clipToPlay = clipArr[clipIndex];
-        if (clipToPlay == null)
+        if (!clipToPlay)
         {
             LogWarning($"Client: Audio clip at index {clipIndex} for type '{audioClipType}' is null.");
             return;

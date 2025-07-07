@@ -12,12 +12,22 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class Musket : BiodiverseItem
 {
     private static readonly int ReelingUpAnimatorHash = Animator.StringToHash("reelingUp");
+    private static readonly int ShovelHitAnimatorHash = Animator.StringToHash("shovelHit");
 
     #region Unity Inspector Variables
-    [Header("Audio")]
-    [SerializeField] private AudioClip shootSfx;
-    [SerializeField] private AudioClip stabSfx;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource shootAudioSource;
+    [SerializeField] private AudioSource otherAudioSource;
+    
+    [SerializeField] private AudioClip shootSfx;
+    [SerializeField] private AudioClip shootFailSfx;
+    [SerializeField] private AudioClip turnSafetyOnSfx;
+    [SerializeField] private AudioClip turnSafetyOffSfx;
+    [SerializeField] private AudioClip reelUpSfx;
+    [SerializeField] private AudioClip swingSfx;
+    [SerializeField] private AudioClip stabIntoFleshSfx;
+    
     [Header("Colliders")]
     [SerializeField] private BoxCollider bayonetCollider;
 
@@ -134,9 +144,7 @@ public class Musket : BiodiverseItem
         LogVerbose($"In {nameof(Shoot)}");
         isPerformingAttackAction = true;
         
-        // todo: add particle effects, anims and audio BEFORE the raycasting logic below 
-        
-        // audio.PlayOneShoot(shootSfx);
+        PlayRandomAudioClipTypeServerRpc(nameof(shootSfx), nameof(shootAudioSource), true, audibleByEnemies: true);
         yield return new WaitForSeconds(0.09f); // The actual gunshot happens 0.09 seconds into the shoot audio clip
         PerformBulletLogic();
         isPerformingAttackAction = false;
@@ -210,15 +218,15 @@ public class Musket : BiodiverseItem
         
         playerUsingBayonet.activatingItem = true;
         playerUsingBayonet.twoHanded = true;
-        playerUsingBayonet.playerBodyAnimator.ResetTrigger("shovelHit");
-        playerUsingBayonet.playerBodyAnimator.SetBool("reelingUp", true);
+        playerUsingBayonet.playerBodyAnimator.ResetTrigger(ShovelHitAnimatorHash);
+        playerUsingBayonet.playerBodyAnimator.SetBool(ReelingUpAnimatorHash, true);
         
-        // todo: play reel-up sfx
+        PlayRandomAudioClipTypeServerRpc(nameof(reelUpSfx), nameof(otherAudioSource), true, true, true, true);
 
         yield return new WaitForSeconds(0.35f);
         yield return new WaitUntil(() => !isHoldingButton || !isHeld);
         
-        playerUsingBayonet.playerBodyAnimator.SetBool("reelingUp", false);
+        playerUsingBayonet.playerBodyAnimator.SetBool(ReelingUpAnimatorHash, false);
         if (!isHeld)
         {
             LogVerbose("Musket has been dropped, cancelling bayonet stab.");
@@ -227,7 +235,7 @@ public class Musket : BiodiverseItem
         }
         
         LogVerbose("Swinging bayonet...");
-        // todo: play swing sfx
+        PlayRandomAudioClipTypeServerRpc(nameof(swingSfx), nameof(otherAudioSource), true, true, true, true);
         playerUsingBayonet.UpdateSpecialAnimationValue(true, (short)playerUsingBayonet.transform.localEulerAngles.y, 0.4f);
         
         yield return new WaitForSeconds(0.13f);
@@ -294,6 +302,22 @@ public class Musket : BiodiverseItem
         base.GetLogPrefix();
         return $"[Musket {BioId}]";
     }
+    
+    protected override void CollectAudioClipsAndSources()
+    {
+        base.CollectAudioClipsAndSources();
+        
+        AudioSources.Add(nameof(shootAudioSource), shootAudioSource);
+        AudioSources.Add(nameof(otherAudioSource), otherAudioSource);
+        
+        AudioClips.Add(nameof(shootSfx), [shootSfx]);
+        AudioClips.Add(nameof(shootFailSfx), [shootFailSfx]);
+        AudioClips.Add(nameof(turnSafetyOnSfx), [turnSafetyOnSfx]);
+        AudioClips.Add(nameof(turnSafetyOffSfx), [turnSafetyOffSfx]);
+        AudioClips.Add(nameof(reelUpSfx), [reelUpSfx]);
+        AudioClips.Add(nameof(swingSfx), [swingSfx]);
+        AudioClips.Add(nameof(stabIntoFleshSfx), [stabIntoFleshSfx]);
+    }
 
     #region Abstract Item Class Event Functions
     public override void ItemActivate(bool used, bool buttonDown = true)
@@ -319,19 +343,10 @@ public class Musket : BiodiverseItem
                 
                 LogVerbose($"Failed to shoot due to {failureReason}.");
 
-                switch (failureReason)
+                if (failureReason is AttackFailureReason.NeedsReloading or AttackFailureReason.SafetyIsOn)
                 {
-                    case AttackFailureReason.NeedsReloading:
-                    {
-                        Reload();
-                        break;
-                    }
-
-                    case AttackFailureReason.SafetyIsOn:
-                    {
-                        // audio.PlayOneShot(gunSafetySfx);
-                        break;
-                    }
+                    PlayRandomAudioClipTypeServerRpc(nameof(shootFailSfx), nameof(otherAudioSource), audibleByEnemies: isHeldByPlayer);
+                    if (failureReason is AttackFailureReason.NeedsReloading) Reload();
                 }
                 
                 break;
@@ -359,9 +374,18 @@ public class Musket : BiodiverseItem
     {
         base.ItemInteractLeftRight(right);
         if (isPerformingAttackAction) return;
-        if (right) return;
-
-        currentAttackMode = currentAttackMode == AttackMode.Gun ? AttackMode.Bayonet : AttackMode.Gun;
+        if (right)
+        {
+            currentAttackMode = currentAttackMode == AttackMode.Gun ? AttackMode.Bayonet : AttackMode.Gun;
+            LogVerbose($"Changed attack mode to {currentAttackMode}.");
+        }
+        else
+        {
+            string clipToPlay = isSafetyOn.Value ? nameof(turnSafetyOffSfx) : nameof(turnSafetyOnSfx);
+            isSafetyOn.Value = !isSafetyOn.Value;
+            PlayRandomAudioClipTypeServerRpc(clipToPlay, nameof(otherAudioSource), true, true, true);
+        }
+        
     }
 
     public override int GetItemDataToSave()
