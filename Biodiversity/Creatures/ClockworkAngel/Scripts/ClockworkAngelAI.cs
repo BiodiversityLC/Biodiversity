@@ -18,7 +18,6 @@ namespace Biodiversity.Creatures.ClockworkAngel.Scripts
         public State CurrentState = State.Scout;
 
         public AngelAgent AngelAgent;
-        public AngelSpotlight AngelSpotlight;
         public GameObject[] AInodes;
 
 
@@ -49,7 +48,6 @@ namespace Biodiversity.Creatures.ClockworkAngel.Scripts
                 {
                     UpdateInterval = DefaultUpdateInterval;
                     AIInterval();
-                    AngelSpotlight.TickSpotlight();
                 }
                 UpdateInterval -= Time.deltaTime;
 
