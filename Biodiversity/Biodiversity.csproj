@@ -42,9 +42,6 @@
         -->
         <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
-    <ItemGroup>
-      <None Remove="Core\Lang\defs.json" />
-    </ItemGroup>
 
     <!-- Primary Package References -->
     <ItemGroup>
