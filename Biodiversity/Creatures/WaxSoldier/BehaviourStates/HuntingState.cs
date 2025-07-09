@@ -54,8 +54,10 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        EnemyAIInstance.MoveWithAcceleration();
+        
         searchStrategy.Update();
+        
+        EnemyAIInstance.MoveWithAcceleration();
     }
 
     internal override void AIIntervalBehaviour()

@@ -30,5 +30,4 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         
         EnemyAIInstance.KillEnemyServerRpc(false);
     }
-    
 }

@@ -419,9 +419,8 @@ public class Musket : BiodiverseItem
 
     public override void DiscardItem()
     {
-        base.DiscardItem();
         playerHeldBy.equippedUsableItemQE = false;
+        base.DiscardItem();
     }
-
     #endregion
 }

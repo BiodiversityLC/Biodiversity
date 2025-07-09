@@ -398,6 +398,31 @@ public abstract class BiodiverseAI : EnemyAI
     }
     
     /// <summary>
+    /// Determines whether the AI has line of sight to the given position.
+    /// </summary>
+    /// <param name="position">The position to check for line of sight.</param>
+    /// <param name="eyeTransform">The transform representing the eye.</param>
+    /// <param name="width">The AI's view width in degrees.</param>
+    /// <param name="range">The AI's view range in units.</param>
+    /// <param name="proximityAwareness">The proximity awareness range of the AI.</param>
+    /// <returns>Returns true if the AI has line of sight to the given position; otherwise, false.</returns>
+    internal static bool DoesEyeHaveLineOfSightToPosition(
+        float distanceFromEyeToPosition,
+        Vector3 position,
+        Transform eyeTransform,
+        float width = 45f,
+        float range = 60f,
+        float proximityAwareness = -1f)
+    {
+        return distanceFromEyeToPosition < range &&
+               !Physics.Linecast(eyeTransform.position, position, StartOfRound.Instance.collidersAndRoomMaskAndDefault) &&
+               (
+                   Vector3.Angle(eyeTransform.forward, position - eyeTransform.position) < width ||
+                   distanceFromEyeToPosition < proximityAwareness
+               );
+    }
+    
+    /// <summary>
     /// Determines the closest player, if any, is looking at the specified position.
     /// </summary>
     /// <param name="position">The position to check if a player is looking at.</param>
@@ -480,7 +505,7 @@ public abstract class BiodiverseAI : EnemyAI
     {
         PlayerControllerB[] allPlayers = StartOfRound.Instance.allPlayerScripts;
         players.Clear();
-        bool shouldIgnore = ignorePlayer != null;
+        bool shouldIgnore = ignorePlayer;
         
         for (int i = 0; i < allPlayers.Length; i++)
         {

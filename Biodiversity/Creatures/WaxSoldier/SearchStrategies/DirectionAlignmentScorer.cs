@@ -16,6 +16,7 @@ public class DirectionAlignmentScorer(AIContext<WaxSoldierBlackboard, WaxSoldier
 
         Vector3 directionToNode = (candidatePosition - lkp).normalized;
         float dot = Vector3.Dot(directionToNode, lkv);
+        if (dot < 0.1f) return 0f;
         
         return (dot + 1.0f) / 2.0f; // The dot product's range is [-1, 1]; we need it to be [0, 1] 
     }

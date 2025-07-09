@@ -8,10 +8,9 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
 {
     #region Unity Components
-
     public NavMeshAgent Agent => instance.agent;
-    public Transform EyeTransform => instance.transform; //todo: change this to the actual eye transform when models are gucci
-
+    public Animator Animator => instance.creatureAnimator;
+    public Transform EyeTransform => instance.eye;
     #endregion
     
     public GameObject[] AssignedAINodes { get => instance.allAINodes; set => instance.allAINodes = value; }

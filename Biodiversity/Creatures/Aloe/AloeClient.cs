@@ -993,9 +993,9 @@ public class AloeClient : MonoBehaviour
     }
 
     /// <summary>
-    /// Sets a trigger in the animator
+    /// Sets a trigger in the <see cref="animator"/>.
     /// </summary>
-    /// <param name="parameter">The name of the trigger in the animator.</param>
+    /// <param name="parameter">The name of the trigger in the <see cref="animator"/>.</param>
     private void HandleSetAnimationTrigger(int parameter)
     {
         animator.SetTrigger(parameter);

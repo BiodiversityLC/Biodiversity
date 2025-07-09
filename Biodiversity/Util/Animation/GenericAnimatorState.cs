@@ -12,7 +12,7 @@ public abstract class GenericAnimatorState<T1> : BaseAnimatorState where T1 : Co
         if (IsInitialized) return;
         
         behaviour1 = animator.GetComponent<T1>();
-        if (behaviour1 == null) BiodiversityPlugin.Logger.LogError($"'{GetType().Name}' could not find the required component of type '{typeof(T1).Name}' on the Animator's GameObject.");
+        if (!behaviour1) BiodiversityPlugin.Logger.LogError($"'{GetType().Name}' could not find the required component of type '{typeof(T1).Name}' on the Animator's GameObject.");
 
         IsInitialized = true;
     }
@@ -30,10 +30,10 @@ public abstract class GenericAnimatorState<T1, T2> : BaseAnimatorState
         if (IsInitialized) return;
         
         behaviour1 = animator.GetComponent<T1>();
-        if (behaviour1 == null) BiodiversityPlugin.Logger.LogError($"'{GetType().Name}' could not find the required component of type '{typeof(T1).Name}' on the Animator's GameObject.");
+        if (!behaviour1) BiodiversityPlugin.Logger.LogError($"'{GetType().Name}' could not find the required component of type '{typeof(T1).Name}' on the Animator's GameObject.");
         
         behaviour2 = animator.GetComponent<T2>();
-        if (behaviour2 == null) BiodiversityPlugin.Logger.LogError($"'{GetType().Name}' could not find the required component of type '{typeof(T2).Name}' on the Animator's GameObject.");
+        if (!behaviour2) BiodiversityPlugin.Logger.LogError($"'{GetType().Name}' could not find the required component of type '{typeof(T2).Name}' on the Animator's GameObject.");
 
         IsInitialized = true;
     }

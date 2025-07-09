@@ -46,7 +46,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> Context { get; private set; }
 
     #region Event Functions
-
     public void Awake()
     {
         WaxSoldierBlackboard blackboard = new();
@@ -64,11 +63,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         LogVerbose("Wax Soldier spawned!");
     }
-
     #endregion
 
     #region Wax Soldier Specific AI Logic
-
     protected override void InitializeGlobalTransitions()
     {
         base.InitializeGlobalTransitions();
@@ -88,11 +85,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
         Context.Blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
     }
-
     #endregion
 
     #region Lethal Company Vanilla Events
-
     public override void SetEnemyStunned(
         bool setToStunned, 
         float setToStunTime = 1f, 
@@ -111,22 +106,32 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         CurrentState?.OnHitEnemy(force, playerWhoHit, hitID);
     }
-
     #endregion
     
     #region Animation State Callbacks
-
     public void OnSpawnAnimationStateExit()
     {
         LogVerbose("Spawn animation complete.");
         if (!IsServer) return;
         TriggerCustomEvent(nameof(OnSpawnAnimationStateExit));
     }
+
+    public void OnSpinAttackAnimationStateExit()
+    {
+        LogVerbose("Spin attack animation complete.");
+        if (!IsServer) return;
+        TriggerCustomEvent(nameof(OnSpinAttackAnimationStateExit));
+    }
     
+    public void OnStabAttackAnimationStateExit()
+    {
+        LogVerbose("Stab attack animation complete.");
+        if (!IsServer) return;
+        TriggerCustomEvent(nameof(OnStabAttackAnimationStateExit));
+    }
     #endregion
     
     #region Other
-
     protected override States DetermineInitialState()
     {
         return States.Spawning;
@@ -164,6 +169,5 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         return $"[WaxSoldierAI {BioId}]";
     }
-
     #endregion
 }

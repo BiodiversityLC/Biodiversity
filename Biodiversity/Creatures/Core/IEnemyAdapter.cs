@@ -1,5 +1,6 @@
 ﻿using GameNetcodeStuff;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Biodiversity.Creatures.Core;
 
@@ -9,6 +10,12 @@ namespace Biodiversity.Creatures.Core;
 /// </summary>
 public interface IEnemyAdapter
 {
+    #region Unity Components
+    NavMeshAgent Agent { get; }
+    Animator Animator { get; }
+    Transform EyeTransform { get; }
+    #endregion
+    
     GameObject[] AssignedAINodes { get; set; }
     
     PlayerControllerB TargetPlayer { get; set; }
