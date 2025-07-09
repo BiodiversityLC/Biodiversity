@@ -38,5 +38,5 @@ public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<Ogopo
 	public string VerminRarity { get; private set; } = "All:100";
 
 	[field: Tooltip("Moons where Vermin is disabled during flooding.")]
-	public string VerminDisableLevels { get; private set; } = "AdamanceLevel,DineLevel,ArtificeLevel,Etern,Pelagia,Cesspool";
+	public string VerminDisableLevels { get; private set; } = "AdamanceLevel,DineLevel,ArtificeLevel,Etern,Pelagia,Cesspool,Hyve";
 }
