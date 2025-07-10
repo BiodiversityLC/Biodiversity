@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using Biodiversity.Util;
+using GameNetcodeStuff;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -24,7 +25,7 @@ public class SlapCollisionDetection : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             PlayerControllerB player = other.GetComponent<PlayerControllerB>();
-            if (player == null) return;
+            if (!player) return;
             if (_playersAlreadyHitBySlap.Contains(player.actualClientId)) return;
 
             SlapPlayerServerRpc(player.actualClientId);
@@ -32,9 +33,9 @@ public class SlapCollisionDetection : MonoBehaviour
         else if (other.CompareTag("Enemy"))
         {
             EnemyAICollisionDetect enemyAICollisionDetect = other.GetComponent<EnemyAICollisionDetect>();
-            if (enemyAICollisionDetect == null) return;
+            if (!enemyAICollisionDetect) return;
             EnemyAI enemy = enemyAICollisionDetect.mainScript;
-            if (enemy == null) return;
+            if (!enemy) return;
             if (_enemiesAlreadyHitBySlap.Contains(enemy.thisEnemyIndex)) return;
 
             SlapEnemyServerRpc(enemy.thisEnemyIndex);
@@ -75,7 +76,7 @@ public class SlapCollisionDetection : MonoBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SlapPlayerServerRpc(ulong playerId)
     {
-        PlayerControllerB playerToDamage = StartOfRound.Instance.allPlayerScripts[playerId];
+        PlayerControllerB playerToDamage = PlayerUtil.GetPlayerFromClientId(playerId);
         playerToDamage.DamagePlayer(AloeHandler.Instance.Config.SlapDamagePlayers, true, true, CauseOfDeath.Bludgeoning,
             force: playerToDamage.turnCompass.forward * (-1 * 5) + playerToDamage.turnCompass.right * 5);
 

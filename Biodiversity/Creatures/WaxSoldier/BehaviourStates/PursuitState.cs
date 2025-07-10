@@ -16,7 +16,12 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     private float spinAttackRange = 3f;
+    private float spinAttackCooldown = 2f;
+    
     private float stabAttackRange = 6f;
+    private float stabAttackCooldown = 2f;
+
+    private float attackCooldown;
 
     private Coroutine attackCoroutine;
 
@@ -45,19 +50,21 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.UpdateBehaviour();
         EnemyAIInstance.MoveWithAcceleration();
+        
+        attackCooldown -= Time.deltaTime;
     }
 
     internal override void AIIntervalBehaviour()
     {
         base.AIIntervalBehaviour();
-        if (currentAttackState is not WaxSoldierAI.CombatAction.None) return;
+        if (currentAttackState is not WaxSoldierAI.CombatAction.None || attackCooldown > 0) return;
         
         // IF a player or several are within spin attack distance, THEN do spin attack and RETURN
         
         // IF a player is within stabbing distance, THEN stab them and RETURN
         
         // IF a player is within line of sight, THEN take aim
-            // Wait x seconds in the shooting position. Whilst waiting, keep checking if the player becomes in view again.
+            // Wait x seconds in the shooting position if the player dashes behind cover. Whilst waiting, keep checking if the player becomes in view again.
                 // IF they come into view again, THEN fire and RETURN
                 // ELSE keep on waiting for x seconds to pass
             // If x seconds passes with no shots fired, THEN go to hunting state and RETURN
@@ -97,8 +104,9 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     private IEnumerator DoSpinAttack()
     {
         EnemyAIInstance.LogVerbose($"In {nameof(DoSpinAttack)}");
+        attackCooldown = spinAttackCooldown;
 
-        EnemyAIInstance.Context.Adapter.Agent.speed /= 2;
+        EnemyAIInstance.Context.Adapter.Agent.speed /= 3;
         EnemyAIInstance.Context.Adapter.Agent.acceleration *= 3;
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed / 3;
         
@@ -109,6 +117,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     private IEnumerator DoStabAttack()
     {
         EnemyAIInstance.LogVerbose($"In {nameof(DoStabAttack)}");
+        attackCooldown = stabAttackCooldown;
         
         EnemyAIInstance.Context.Adapter.Agent.speed /= 1.5f;
         EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.StabAttack);

@@ -1,6 +1,7 @@
 ﻿using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -27,6 +28,7 @@ public class WaxSoldierClient : MonoBehaviour
     [Header("Animation")] [Space(5f)] 
     [SerializeField] private Animator unmoltenAnimator;
     [SerializeField] private Animator moltenAnimator;
+    [SerializeField] private Transform musketContainer;
     
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private WaxSoldierNetcodeController netcodeController;
@@ -36,6 +38,8 @@ public class WaxSoldierClient : MonoBehaviour
     private Animator currentAnimator;
     
     private CachedNullable<PlayerControllerB> _targetPlayer;
+    private CachedValue<EnemyAI> enemyAIReference;
+    private Musket musket;
     
     private Vector3 smoothedVelocity;
 
@@ -44,6 +48,7 @@ public class WaxSoldierClient : MonoBehaviour
     private void Awake()
     {
         if (!netcodeController) netcodeController = GetComponent<WaxSoldierNetcodeController>();
+        enemyAIReference = new CachedValue<EnemyAI>(GetComponent<EnemyAI>);
     }
 
     private void OnEnable()
@@ -80,6 +85,27 @@ public class WaxSoldierClient : MonoBehaviour
         animator.SetFloat(VelocityX, smoothedVelocity.x);
         animator.SetFloat(VelocityZ, smoothedVelocity.z);
     }
+
+    private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)
+    {
+        if (!objectReference.TryGet(out NetworkObject networkObject))
+        {
+            BiodiversityPlugin.Logger.LogError("Received null network object for the musket.");
+            return;
+        }
+
+        if (!networkObject.TryGetComponent(out Musket receivedMusket))
+        {
+            BiodiversityPlugin.Logger.LogError("The musket component on the musket network object is null.");
+            return;
+        }
+
+        musket = receivedMusket;
+        musket.SetScrapValue(scrapValue);
+        musket.parentObject = musketContainer;
+        musket.GrabItemFromEnemy(enemyAIReference.Value);
+        musket.OnGrabbedByWaxSoldier();
+    }
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
@@ -103,6 +129,7 @@ public class WaxSoldierClient : MonoBehaviour
     {
         if (_networkEventsSubscribed) return;
         
+        netcodeController.OnSpawnMusket += HandleSpawnMusket;
         netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
 
         netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
@@ -114,6 +141,7 @@ public class WaxSoldierClient : MonoBehaviour
     {
         if (!_networkEventsSubscribed) return;
         
+        netcodeController.OnSpawnMusket -= HandleSpawnMusket;
         netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
 
         netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;

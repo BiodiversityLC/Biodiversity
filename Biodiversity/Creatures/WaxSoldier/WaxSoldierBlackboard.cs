@@ -18,4 +18,6 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     
     public Vector3 LastKnownPlayerPosition { get; set; }
     public Vector3 LastKnownPlayerVelocity { get; set; }
+    
+    public Musket HeldMusket { get; set; }
 }

@@ -26,5 +26,7 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
         
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
+        
+        // todo: add animation trigger to make waxy go into a salute pose whilst guarding
     }
 }

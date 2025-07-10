@@ -57,7 +57,6 @@ public abstract class BiodiverseAI : EnemyAI
     }
 
     #region Pathing
-
     /// <summary>
     /// Represents the status of a path.
     /// </summary>
@@ -302,11 +301,9 @@ public abstract class BiodiverseAI : EnemyAI
             ListPool<GameObject>.Release(candidateNodes);
         }
     }
-    
     #endregion
 
     #region Line Of Sight Stuff
-    
     internal bool IsAPlayerInLineOfSightToEye(
         Transform eyeTransform,
         float width = 45f,
@@ -517,7 +514,6 @@ public abstract class BiodiverseAI : EnemyAI
         }
         return players;
     }
-    
     #endregion
     
     /// <summary>
@@ -575,7 +571,6 @@ public abstract class BiodiverseAI : EnemyAI
     }
 
     #region Logging
-
     internal void LogInfo(object message) => BiodiversityPlugin.Logger?.LogInfo($"{GetLogPrefix()} {message}");
 
     internal void LogVerbose(object message)
@@ -594,6 +589,5 @@ public abstract class BiodiverseAI : EnemyAI
     {
         return $"[{enemyType.enemyName}]";
     }
-
     #endregion
 }

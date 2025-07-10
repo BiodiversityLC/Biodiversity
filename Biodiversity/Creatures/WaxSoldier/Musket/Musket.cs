@@ -67,6 +67,9 @@ public class Musket : BiodiverseItem
     private Coroutine shootingCoroutine;
 
     private AttackMode currentAttackMode;
+
+    private Vector3 itemPositionOffset;
+    private Vector3 itemRotationOffset;
     
     private float bulletRadius;
     private float maxBulletDistance;
@@ -84,6 +87,7 @@ public class Musket : BiodiverseItem
     private readonly NetworkVariable<bool> isSafetyOn = new();
     private bool isPerformingAttackAction;
     private bool isHoldingButton;
+    private bool isHeldByWaxSoldier;
     
     private void Awake()
     {
@@ -100,6 +104,13 @@ public class Musket : BiodiverseItem
 
         currentAttackMode = AttackMode.Gun;
         isSafetyOn.Value = false;
+    }
+
+    public override void Start()
+    {
+        base.Start();
+        itemPositionOffset = itemProperties.positionOffset;
+        itemRotationOffset = itemProperties.rotationOffset;
     }
 
     private bool CanAttack(out AttackFailureReason failureReason)
@@ -282,6 +293,18 @@ public class Musket : BiodiverseItem
         }
     }
 
+    internal void OnGrabbedByWaxSoldier()
+    {
+        isHeldByWaxSoldier = true;
+        bayonetCollider.isTrigger = true;
+    }
+
+    internal void OnDroppedByWaxSoldier()
+    {
+        isHeldByWaxSoldier = false;
+        bayonetCollider.isTrigger = false;
+    }
+
     #region RPCs
     [ServerRpc(RequireOwnership = false)]
     private void DamagePlayerServerRpc(ulong playerId, int damage, CauseOfDeath causeOfDeath = CauseOfDeath.Unknown, Vector3 force = default)
@@ -386,6 +409,13 @@ public class Musket : BiodiverseItem
             PlayRandomAudioClipTypeServerRpc(clipToPlay, nameof(otherAudioSource), true, true, true);
         }
         
+    }
+
+    public override void LateUpdate()
+    {
+        itemProperties.positionOffset = isHeldByWaxSoldier ? Vector3.zero : itemPositionOffset;
+        itemProperties.rotationOffset = isHeldByWaxSoldier ? Vector3.zero : itemRotationOffset;
+        base.LateUpdate();
     }
 
     public override int GetItemDataToSave()

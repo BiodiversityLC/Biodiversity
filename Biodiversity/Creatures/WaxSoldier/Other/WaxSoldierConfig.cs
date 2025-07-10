@@ -24,7 +24,6 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     [field: Tooltip("The max amount of Wax Soldiers that can spawn in the map.")]
     [field: Range(0, 100)]
     public int MaxAmount { get; private set; } = 1;
-    
     #endregion
     
     #region Movement Settings
@@ -62,7 +61,18 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     [field: Tooltip("Whether landmines and seamines (from the Surfaced mod) will blow up if the Wax Soldier moves over one.")]
     public bool LandminesBlowUpWaxSoldier { get; private set; } = true;
     // The wax soldier should be able to actively avoid landmines and traps in general.
+    #endregion
+
+    #region Musket Settings
+    [field: Header("Musket Settings")]
     
+    [field: Tooltip("The minimum value that the musket can spawn with.")]
+    [field: Range(1, 5000)]
+    public int MusketMinimumValue { get; private set; } = 100;
+    
+    [field: Tooltip("The maximum value that the musket can spawn with.")]
+    [field: Range(1, 5000)]
+    public int MusketMaximumValue { get; private set; } = 250;
     #endregion
     
     #region Advanced Settings
@@ -71,6 +81,5 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     [field: Tooltip("How often (in seconds) the Wax Soldier updates its logic. Higher values increase performance but slow down reaction times.")]
     [field: Range(0.001f, 1f)]
     public float AiIntervalTime { get; private set; } = 0.03f;
-    
     #endregion
 }

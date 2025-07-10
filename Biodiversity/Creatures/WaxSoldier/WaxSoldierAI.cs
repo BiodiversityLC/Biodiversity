@@ -2,6 +2,7 @@
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
 using GameNetcodeStuff;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier;
@@ -45,6 +46,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     
     public AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> Context { get; private set; }
 
+    private bool _networkEventsSubscribed;
+
     #region Event Functions
     public void Awake()
     {
@@ -54,11 +57,22 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context = new AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>(blackboard, adapter);
     }
 
+    private void OnEnable()
+    {
+        SubscribeToNetworkEvents();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeFromNetworkEvents();
+    }
+
     public override void Start()
     {
         base.Start();
         if (!IsServer) return;
         
+        SubscribeToNetworkEvents();
         InitializeConfigValues();
         
         LogVerbose("Wax Soldier spawned!");
@@ -84,6 +98,23 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Quaternion calculatedRot = transform.rotation;
 
         Context.Blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
+    }
+    
+    private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)
+    {
+        if (!objectReference.TryGet(out NetworkObject networkObject))
+        {
+            LogError("Received null network object for the musket.");
+            return;
+        }
+
+        if (!networkObject.TryGetComponent(out Musket receivedMusket))
+        {
+            LogError("The musket component on the musket network object is null.");
+            return;
+        }
+
+        Context.Blackboard.HeldMusket = receivedMusket;
     }
     #endregion
 
@@ -131,7 +162,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     }
     #endregion
     
-    #region Other
+    #region Little Misc Stuff
     protected override States DetermineInitialState()
     {
         return States.Spawning;
@@ -168,6 +199,24 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     protected override string GetLogPrefix()
     {
         return $"[WaxSoldierAI {BioId}]";
+    }
+    
+    private void SubscribeToNetworkEvents()
+    {
+        if (!IsServer || _networkEventsSubscribed) return;
+        
+        netcodeController.OnSpawnMusket += HandleSpawnMusket;
+        
+        _networkEventsSubscribed = true;
+    }
+
+    private void UnsubscribeFromNetworkEvents()
+    {
+        if (!IsServer || !_networkEventsSubscribed) return;
+        
+        netcodeController.OnSpawnMusket -= HandleSpawnMusket;
+        
+        _networkEventsSubscribed = false;
     }
     #endregion
 }

@@ -18,6 +18,9 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     private float searchRadius = 25f;
     private float directionWeight = 1.5f;
     private float distanceWeight = 1.0f;
+    private float searchTime = 30f;
+
+    private float searchTimeLeft;
     
     public HuntingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
@@ -40,6 +43,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.OnStateEnter(ref initData);
         
         // Start the search strategy and go to the prescribed position
+        searchTimeLeft = searchTime;
         searchStrategy.Start();
         if (!searchStrategy.TryGetNextSearchPosition(out Vector3 searchPosition))
         {
@@ -56,8 +60,15 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.UpdateBehaviour();
         
         searchStrategy.Update();
-        
         EnemyAIInstance.MoveWithAcceleration();
+
+        searchTimeLeft -= Time.deltaTime;
+        if (searchTimeLeft <= 0)
+        {
+            EnemyAIInstance.LogVerbose("Spent too much time searching; going back to guard post.");
+            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
+            return;
+        }
     }
 
     internal override void AIIntervalBehaviour()
