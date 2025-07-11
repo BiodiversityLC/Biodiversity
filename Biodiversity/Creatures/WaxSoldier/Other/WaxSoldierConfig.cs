@@ -36,7 +36,6 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     [field: Tooltip("The max acceleration of the Wax Solder when he's on patrol.")]
     [field: Range(0.01f, 500f)]
     public float PatrolMaxAcceleration { get; private set; } = 8f;
-    
     #endregion
     
     #region General Settings
@@ -62,6 +61,14 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     public bool LandminesBlowUpWaxSoldier { get; private set; } = true;
     // The wax soldier should be able to actively avoid landmines and traps in general.
     #endregion
+
+    // #region Combat Settings
+    // [field: Header("Combat Settings")]
+    //
+    // [field: Tooltip("")]
+    // [field: Range(1f, 30f)]
+    // public float StabAreaLength { get; private set; } = 14f;
+    // #endregion
 
     #region Musket Settings
     [field: Header("Musket Settings")]

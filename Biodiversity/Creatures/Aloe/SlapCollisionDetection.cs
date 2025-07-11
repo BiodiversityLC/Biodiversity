@@ -22,18 +22,14 @@ public class SlapCollisionDetection : MonoBehaviour
     private void OnTriggerStay(Collider other)
     {
         if (!_canBeSlapped) return;
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && other.TryGetComponent(out PlayerControllerB player))
         {
-            PlayerControllerB player = other.GetComponent<PlayerControllerB>();
-            if (!player) return;
             if (_playersAlreadyHitBySlap.Contains(player.actualClientId)) return;
-
+            
             SlapPlayerServerRpc(player.actualClientId);
         }
-        else if (other.CompareTag("Enemy"))
+        else if (other.CompareTag("Enemy") && other.TryGetComponent(out EnemyAICollisionDetect enemyAICollisionDetect))
         {
-            EnemyAICollisionDetect enemyAICollisionDetect = other.GetComponent<EnemyAICollisionDetect>();
-            if (!enemyAICollisionDetect) return;
             EnemyAI enemy = enemyAICollisionDetect.mainScript;
             if (!enemy) return;
             if (_enemiesAlreadyHitBySlap.Contains(enemy.thisEnemyIndex)) return;

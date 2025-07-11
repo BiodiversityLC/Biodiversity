@@ -14,10 +14,13 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float ViewWidth { get; set; }
     public float ViewRange { get; set; }
     
+    public bool IsNetworkEventsSubscribed { get; set; }
+    
     public Pose GuardPost { get; set; }
     
     public Vector3 LastKnownPlayerPosition { get; set; }
     public Vector3 LastKnownPlayerVelocity { get; set; }
     
     public Musket HeldMusket { get; set; }
+    public BoxCollider StabAttackTriggerArea { get; set; }
 }

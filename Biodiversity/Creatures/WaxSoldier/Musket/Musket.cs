@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Items;
 using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System;
 using System.Collections;
@@ -32,9 +33,11 @@ public class Musket : BiodiverseItem
     [SerializeField] private BoxCollider bayonetCollider;
 
     [Header("Transforms")]
-    [SerializeField] private Transform bayonetTip;
+    [SerializeField] public Transform bayonetTip;
     [SerializeField] private Transform muzzleTip;
     [SerializeField] private Transform bulletRayOrigin;
+    
+    [SerializeField] public MusketBayonetCollisionDetection bayonetCollisionDetection;
     #endregion
    
 
@@ -62,6 +65,8 @@ public class Musket : BiodiverseItem
     private RaycastHit[] bulletHitBuffer;
     private Collider[] bayonetHitBuffer;
     private Comparer<RaycastHit> raycastHitDistanceComparer;
+
+    private CachedValue<Vector3> bayonetColliderHalfExtents;
 
     private Coroutine reelingUpCoroutine;
     private Coroutine shootingCoroutine;
@@ -109,8 +114,11 @@ public class Musket : BiodiverseItem
     public override void Start()
     {
         base.Start();
+        
         itemPositionOffset = itemProperties.positionOffset;
         itemRotationOffset = itemProperties.rotationOffset;
+
+        bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.5f);
     }
 
     private bool CanAttack(out AttackFailureReason failureReason)
@@ -176,8 +184,6 @@ public class Musket : BiodiverseItem
 
         int hitCount = Physics.SphereCastNonAlloc(bulletRay, bulletRadius, bulletHitBuffer, maxBulletDistance, bulletHitMask,
             QueryTriggerInteraction.Collide);
-        
-        // DebugUtils.DrawSphereCast(bulletRay, bulletRadius, Color.green, maxDistance: maxBulletDistance);
 
         if (hitCount == 0) return;
         if (hitCount > 1)
@@ -271,7 +277,7 @@ public class Musket : BiodiverseItem
     {
         LogVerbose($"In {nameof(HitBayonet)}");
         
-        int hitCount = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, bayonetCollider.size * 0.5f,
+        int hitCount = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, bayonetColliderHalfExtents.Value,
             bayonetHitBuffer, Quaternion.identity, bayonetHitMask, QueryTriggerInteraction.Collide);
         
         if (hitCount == 0) return;
@@ -293,16 +299,18 @@ public class Musket : BiodiverseItem
         }
     }
 
-    internal void OnGrabbedByWaxSoldier()
+    internal void OnGrabbedByWaxSoldier(EnemyAI waxSoldier)
     {
         isHeldByWaxSoldier = true;
         bayonetCollider.isTrigger = true;
+        GrabItemFromEnemy(waxSoldier);
     }
 
     internal void OnDroppedByWaxSoldier()
     {
         isHeldByWaxSoldier = false;
         bayonetCollider.isTrigger = false;
+        DiscardItemFromEnemy();
     }
 
     #region RPCs

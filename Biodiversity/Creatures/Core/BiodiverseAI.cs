@@ -552,14 +552,19 @@ public abstract class BiodiverseAI : EnemyAI
         return isReachable;
     }
     
-    protected static float Distance2d(GameObject obj1, GameObject obj2)
+    public static float Distance2d(GameObject obj1, GameObject obj2)
     {
-        float deltaX = obj1.transform.position.x - obj2.transform.position.x;
-        float deltaZ = obj1.transform.position.z - obj2.transform.position.z;
+        return Distance2d(obj1.transform.position, obj2.transform.position);
+    }
+
+    public static float Distance2d(Vector3 pos1, Vector3 pos2)
+    {
+        float deltaX = pos1.x - pos2.x;
+        float deltaZ = pos1.z - pos2.z;
         return Mathf.Sqrt(deltaX * deltaX + deltaZ * deltaZ);
         
         // Its a slightly faster way of doing this:
-        // return Mathf.Sqrt(Mathf.Pow(obj1.transform.position.x - obj2.transform.position.x, 2f) + Mathf.Pow(obj1.transform.position.z - obj2.transform.position.z, 2f));
+        // return Mathf.Sqrt(Mathf.Pow(pos1.x - pos2.x, 2f) + Mathf.Pow(pos1.z - pos2.z, 2f));
     }
     
     // 2d squared distance formula (cheaper for comparisons)

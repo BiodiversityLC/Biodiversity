@@ -10,6 +10,7 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierClient : MonoBehaviour
 {
     #region Animator Hashes
+    private static readonly int InSalute = Animator.StringToHash("InSalute");
     public static readonly int Spawning = Animator.StringToHash("Spawning");
     public static readonly int SpinAttack = Animator.StringToHash("SpinAttack");
     public static readonly int StabAttack = Animator.StringToHash("StabAttack");
@@ -66,7 +67,13 @@ public class WaxSoldierClient : MonoBehaviour
         unmoltenAnimator.SetBool(Spawning, true);
         currentAnimator = unmoltenAnimator;
     }
-    
+
+    private void Update()
+    {
+        currentAnimator.SetBool(InSalute, netcodeController.AnimationParamInSalute.Value);
+    }
+
+    #region Animation
     public void SetWalkLocomotionAnimationParams()
     {
         Vector3 worldVelocity = agent.velocity;
@@ -85,7 +92,9 @@ public class WaxSoldierClient : MonoBehaviour
         animator.SetFloat(VelocityX, smoothedVelocity.x);
         animator.SetFloat(VelocityZ, smoothedVelocity.z);
     }
+    #endregion
 
+    #region Network Events
     private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)
     {
         if (!objectReference.TryGet(out NetworkObject networkObject))
@@ -99,12 +108,27 @@ public class WaxSoldierClient : MonoBehaviour
             BiodiversityPlugin.Logger.LogError("The musket component on the musket network object is null.");
             return;
         }
-
+        
         musket = receivedMusket;
         musket.SetScrapValue(scrapValue);
         musket.parentObject = musketContainer;
-        musket.GrabItemFromEnemy(enemyAIReference.Value);
-        musket.OnGrabbedByWaxSoldier();
+        musket.OnGrabbedByWaxSoldier(enemyAIReference.Value);
+    }
+
+    private void HandleDropMusket()
+    {
+        if (!musket) return;
+        musket.OnDroppedByWaxSoldier();
+        musket.parentObject = null;
+        musket.transform.SetParent(StartOfRound.Instance.propsContainer, true);
+        musket.EnablePhysics(true);
+        musket.fallTime = 0f;
+
+        Transform parent;
+        musket.startFallingPosition =
+            (parent = musket.transform.parent).InverseTransformPoint(musket.transform.position);
+        musket.targetFloorPosition = parent.InverseTransformPoint(transform.position);
+        musket = null;
     }
     
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
@@ -130,6 +154,7 @@ public class WaxSoldierClient : MonoBehaviour
         if (_networkEventsSubscribed) return;
         
         netcodeController.OnSpawnMusket += HandleSpawnMusket;
+        netcodeController.OnDropMusket += HandleDropMusket;
         netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
 
         netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
@@ -142,10 +167,12 @@ public class WaxSoldierClient : MonoBehaviour
         if (!_networkEventsSubscribed) return;
         
         netcodeController.OnSpawnMusket -= HandleSpawnMusket;
+        netcodeController.OnDropMusket -= HandleDropMusket;
         netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
 
         netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
         
         _networkEventsSubscribed = false;
     }
+    #endregion
 }

@@ -1,6 +1,8 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
+using System.Collections;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -27,7 +29,6 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         
         EnemyAIInstance.InitializeConfigValues();
-        EnemyAIInstance.netcodeController.SpawnMusketServerRpc();
         EnemyAIInstance.DetermineGuardPostPosition();
     }
 
@@ -38,8 +39,16 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         switch (eventName)
         {
             case nameof(WaxSoldierAI.OnSpawnAnimationStateExit):
-                EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
+                EnemyAIInstance.StartCoroutine(SpawnMusketWhenNetworkIsReady());
                 break;
         }
+    }
+
+    private IEnumerator SpawnMusketWhenNetworkIsReady()
+    {
+        yield return new WaitUntil(() => EnemyAIInstance.Context.Blackboard.IsNetworkEventsSubscribed);
+        EnemyAIInstance.netcodeController.SpawnMusketServerRpc();
+        yield return null;
+        EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
     }
 }

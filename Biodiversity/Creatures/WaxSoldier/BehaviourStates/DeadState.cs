@@ -26,6 +26,7 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 200f;
         
+        EnemyAIInstance.DropMusket();
         EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         
         EnemyAIInstance.KillEnemyServerRpc(false);

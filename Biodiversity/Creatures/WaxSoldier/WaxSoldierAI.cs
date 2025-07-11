@@ -10,6 +10,8 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 {
 #pragma warning disable 0649
+    [SerializeField] private BoxCollider stabAttackTriggerArea;
+    
     [Header("Controllers")] [Space(5f)] 
     public WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
@@ -25,7 +27,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Dead,
     }
 
-    public enum CombatAction
+    public enum AttackAction
     {
         None,
         Aim,
@@ -43,10 +45,14 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Unmolten,
         Molten
     }
+    /* Molten state ideas:
+     *
+     * Maybe he can break doors off its hinges like the fiend
+     * Sound triangulation
+     * Ambush attacks (figure out ambush points by considering where scrap is, apparatus, etc), but don't do cheap annoying stuff like guarding the entrance to the dungeon
+     */
     
     public AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> Context { get; private set; }
-
-    private bool _networkEventsSubscribed;
 
     #region Event Functions
     public void Awake()
@@ -102,6 +108,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     
     private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)
     {
+        if (!IsServer) return;
+        
         if (!objectReference.TryGet(out NetworkObject networkObject))
         {
             LogError("Received null network object for the musket.");
@@ -114,7 +122,14 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             return;
         }
 
+        LogVerbose("Musket spawned successfully.");
         Context.Blackboard.HeldMusket = receivedMusket;
+    }
+
+    public void DropMusket()
+    {
+        Context.Blackboard.HeldMusket = null;
+        netcodeController.DropMusketClientRpc();
     }
     #endregion
 
@@ -139,7 +154,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     }
     #endregion
     
-    #region Animation State Callbacks
+    #region Animation State & Event Calls
     public void OnSpawnAnimationStateExit()
     {
         LogVerbose("Spawn animation complete.");
@@ -152,6 +167,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         LogVerbose("Spin attack animation complete.");
         if (!IsServer) return;
         TriggerCustomEvent(nameof(OnSpinAttackAnimationStateExit));
+    }
+    
+    public void OnAnimationEventStabAttackLeap()
+    {
+        LogVerbose("Stab attack leap.");
+        if (!IsServer) return;
+        TriggerCustomEvent(nameof(OnAnimationEventStabAttackLeap));
     }
     
     public void OnStabAttackAnimationStateExit()
@@ -194,6 +216,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
         Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
+        Context.Blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
     }
     
     protected override string GetLogPrefix()
@@ -203,20 +226,22 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     
     private void SubscribeToNetworkEvents()
     {
-        if (!IsServer || _networkEventsSubscribed) return;
+        if (!IsServer || Context.Blackboard.IsNetworkEventsSubscribed) return;
+        LogVerbose("Subscribing to network events.");
         
         netcodeController.OnSpawnMusket += HandleSpawnMusket;
         
-        _networkEventsSubscribed = true;
+        Context.Blackboard.IsNetworkEventsSubscribed = true;
     }
 
     private void UnsubscribeFromNetworkEvents()
     {
-        if (!IsServer || !_networkEventsSubscribed) return;
+        if (!IsServer || !Context.Blackboard.IsNetworkEventsSubscribed) return;
+        LogVerbose("Unsubscribing from network events.");
         
         netcodeController.OnSpawnMusket -= HandleSpawnMusket;
         
-        _networkEventsSubscribed = false;
+        Context.Blackboard.IsNetworkEventsSubscribed = false;
     }
     #endregion
 }

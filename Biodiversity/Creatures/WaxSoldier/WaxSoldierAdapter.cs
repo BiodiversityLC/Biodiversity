@@ -47,7 +47,7 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
     /// <summary>
     /// <see href="https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5"/>
     /// </summary>
-    /// <returns>Returns true if the agent has reached its destination.</returns>
+    /// <returns>Returns true if the <see cref="Agent"/> has reached its destination.</returns>
     public bool HasReachedDestination()
     {
         // If there is no destination, then just return true

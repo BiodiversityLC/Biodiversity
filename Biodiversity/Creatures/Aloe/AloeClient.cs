@@ -836,6 +836,7 @@ public class AloeClient : MonoBehaviour
         BiodiversityPlugin.LogVerbose($"Destroying AloeClient gameobject.");
         Destroy(gameObject);
     }
+    
     private void ManuallyControlPlayerOffsets()
     {
         const float moveAmount = 0.1f;

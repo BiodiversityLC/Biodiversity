@@ -2,6 +2,7 @@
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
 using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,14 +19,19 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     private float spinAttackRange = 3f;
     private float spinAttackCooldown = 2f;
     
-    private float stabAttackRange = 6f;
+    private float stabAttackRange = 8f;
     private float stabAttackCooldown = 2f;
+    private const float stabLeapDuration = 0.25f;
 
     private float attackCooldown;
 
-    private Coroutine attackCoroutine;
+    private bool isStabLeapActivated;
+    
+    private readonly Collider[] colliderBuffer = new Collider[3];
+    private readonly CachedValue<Vector3> stabAttackTriggerAreaHalfExtents;
 
-    private WaxSoldierAI.CombatAction currentAttackState = WaxSoldierAI.CombatAction.None;
+    private Coroutine attackCoroutine;
+    private WaxSoldierAI.AttackAction currentAttackState = WaxSoldierAI.AttackAction.None;
     
     public PursuitState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
@@ -33,6 +39,9 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         [
             new TransitionToHuntingState(EnemyAIInstance)
         ];
+
+        stabAttackTriggerAreaHalfExtents =
+            new CachedValue<Vector3>(() => EnemyAIInstance.Context.Blackboard.StabAttackTriggerArea.size * 0.5f);
     }
 
     internal override void OnStateEnter(ref StateData initData)
@@ -57,7 +66,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void AIIntervalBehaviour()
     {
         base.AIIntervalBehaviour();
-        if (currentAttackState is not WaxSoldierAI.CombatAction.None || attackCooldown > 0) return;
+        if (currentAttackState is not WaxSoldierAI.AttackAction.None || attackCooldown > 0) return;
         
         // IF a player or several are within spin attack distance, THEN do spin attack and RETURN
         
@@ -87,58 +96,40 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             
             if (distance <= spinAttackRange)
             {
-                AttackSetup(WaxSoldierAI.CombatAction.Spin, player);
+                AttackSetup(WaxSoldierAI.AttackAction.Spin, player);
                 return;
             }
 
             if (distance <= stabAttackRange && BiodiverseAI.DoesEyeHaveLineOfSightToPosition(
                     distance, player.transform.position, EnemyAIInstance.Context.Adapter.EyeTransform, 
-                    EnemyAIInstance.Context.Blackboard.ViewWidth, EnemyAIInstance.Context.Blackboard.ViewRange))
+                    EnemyAIInstance.Context.Blackboard.ViewWidth, EnemyAIInstance.Context.Blackboard.ViewRange, 1f))
             {
-                AttackSetup(WaxSoldierAI.CombatAction.Stab, player);
-                return;
+                BoxCollider stabArea = EnemyAIInstance.Context.Blackboard.StabAttackTriggerArea;
+                int hitCount = Physics.OverlapBoxNonAlloc(stabArea.transform.position,
+                    stabAttackTriggerAreaHalfExtents.Value, colliderBuffer, Quaternion.identity,
+                    LayerMask.GetMask("Player"));
+
+                EnemyAIInstance.LogVerbose($"Hit {hitCount} players in stab attack trigger area.");
+                if (hitCount > 0)
+                {
+                    for (int j = 0; j < hitCount; j++)
+                    {
+                        Collider detectedCollider = colliderBuffer[j];
+                        
+                        if (detectedCollider.CompareTag("Player") &&
+                            detectedCollider.transform.TryGetComponent(out PlayerControllerB detectedPlayer) &&
+                            !PlayerUtil.IsPlayerDead(detectedPlayer))
+                        {
+                            EnemyAIInstance.LogVerbose($"Stabbing player '{detectedPlayer.playerUsername}'.");
+                            AttackSetup(WaxSoldierAI.AttackAction.Stab, detectedPlayer);
+                            return;
+                        }
+                    }
+                }
             }
         }
     }
-
-    private IEnumerator DoSpinAttack()
-    {
-        EnemyAIInstance.LogVerbose($"In {nameof(DoSpinAttack)}");
-        attackCooldown = spinAttackCooldown;
-
-        EnemyAIInstance.Context.Adapter.Agent.speed /= 3;
-        EnemyAIInstance.Context.Adapter.Agent.acceleration *= 3;
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed / 3;
-        
-        EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.SpinAttack);
-        yield break;
-    }
     
-    private IEnumerator DoStabAttack()
-    {
-        EnemyAIInstance.LogVerbose($"In {nameof(DoStabAttack)}");
-        attackCooldown = stabAttackCooldown;
-        
-        EnemyAIInstance.Context.Adapter.Agent.speed /= 1.5f;
-        EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.StabAttack);
-        
-        yield break;
-    }
-
-    private void AttackSetup(WaxSoldierAI.CombatAction attackAction, PlayerControllerB targetPlayer)
-    {
-        EnemyAIInstance.Context.Adapter.TargetPlayer = targetPlayer;
-        CancelAttackCoroutine();
-
-        currentAttackState = attackAction;
-        switch (currentAttackState)
-        {
-            case WaxSoldierAI.CombatAction.Spin: EnemyAIInstance.StartCoroutine(DoSpinAttack()); break;
-            case WaxSoldierAI.CombatAction.Stab: EnemyAIInstance.StartCoroutine(DoStabAttack()); break;
-            default: EnemyAIInstance.LogError($"Attack action '{attackAction}' is not defined."); break;
-        }
-    }
-
     internal override void OnStateExit()
     {
         base.OnStateExit();
@@ -157,8 +148,67 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             case nameof(WaxSoldierAI.OnStabAttackAnimationStateExit):
                 CancelAttackCoroutine();
                 EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
-                currentAttackState = WaxSoldierAI.CombatAction.None;
                 break;
+            
+            case nameof(WaxSoldierAI.OnAnimationEventStabAttackLeap):
+                isStabLeapActivated = true;
+                break;
+        }
+    }
+
+    private IEnumerator DoSpinAttack()
+    {
+        EnemyAIInstance.LogVerbose($"In {nameof(DoSpinAttack)}");
+        attackCooldown = spinAttackCooldown;
+        EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetCollisionDetection.bayonetMode = MusketBayonetCollisionDetection.BayonentMode.Spin;
+
+        EnemyAIInstance.Context.Adapter.Agent.speed /= 3;
+        EnemyAIInstance.Context.Adapter.Agent.acceleration *= 3;
+        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed / 3;
+        
+        EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.SpinAttack);
+        EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetCollisionDetection.colliderEnabled = true;
+        yield break;
+    }
+    
+    private IEnumerator DoStabAttack()
+    {
+        EnemyAIInstance.LogVerbose($"In {nameof(DoStabAttack)}");
+        attackCooldown = stabAttackCooldown;
+        EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetCollisionDetection.bayonetMode = MusketBayonetCollisionDetection.BayonentMode.Stab;
+        
+        EnemyAIInstance.Context.Adapter.Agent.speed /= 1.5f;
+        EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetCollisionDetection.colliderEnabled = true;
+        EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.StabAttack);
+        
+        yield return new WaitUntil(() => isStabLeapActivated);
+        EnemyAIInstance.LogVerbose($"Stab leap activated.");
+        EnemyAIInstance.Context.Adapter.StopAllPathing();
+        
+        float leapDistance = Mathf.Max(BiodiverseAI.Distance2d(EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetTip.position,
+            EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position) - 0.5f, 0f);
+        
+        if (leapDistance > 0f)
+        {
+            Vector3 directionToPlayer = (EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position -
+                                         EnemyAIInstance.transform.position).normalized;
+            EnemyAIInstance.Context.Adapter.Agent.Move(directionToPlayer * leapDistance);
+        }
+        
+        EnemyAIInstance.Context.Adapter.MoveToPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer);
+    }
+
+    private void AttackSetup(WaxSoldierAI.AttackAction attackAction, PlayerControllerB targetPlayer)
+    {
+        EnemyAIInstance.Context.Adapter.TargetPlayer = targetPlayer;
+        CancelAttackCoroutine();
+
+        currentAttackState = attackAction;
+        switch (currentAttackState)
+        {
+            case WaxSoldierAI.AttackAction.Spin: EnemyAIInstance.StartCoroutine(DoSpinAttack()); break;
+            case WaxSoldierAI.AttackAction.Stab: EnemyAIInstance.StartCoroutine(DoStabAttack()); break;
+            default: EnemyAIInstance.LogError($"Attack action '{attackAction}' is not defined."); break;
         }
     }
 
@@ -169,5 +219,9 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             EnemyAIInstance.StopCoroutine(attackCoroutine);
             attackCoroutine = null;
         }
+        
+        currentAttackState = WaxSoldierAI.AttackAction.None;
+        isStabLeapActivated = false;
+        EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetCollisionDetection.colliderEnabled = false;
     }
 }

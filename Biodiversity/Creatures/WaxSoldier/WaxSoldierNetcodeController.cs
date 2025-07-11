@@ -7,11 +7,19 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierNetcodeController : NetworkBehaviour
 {
     internal readonly NetworkVariable<ulong> TargetPlayerClientId = new();
+    internal readonly NetworkVariable<bool> AnimationParamInSalute = new();
 
     internal event Action<NetworkObjectReference, int> OnSpawnMusket;
+    internal event Action OnDropMusket;
     internal event Action<int> OnSetAnimationTrigger;
+
+    [ClientRpc]
+    public void DropMusketClientRpc()
+    {
+        OnDropMusket?.Invoke();
+    }
     
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = true)]
     public void SpawnMusketServerRpc()
     {
         GameObject musketObject = Instantiate(
