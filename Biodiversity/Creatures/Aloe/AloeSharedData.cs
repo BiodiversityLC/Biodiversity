@@ -89,7 +89,7 @@ internal class AloeSharedData
 
     public bool IsAloeKidnapBound(AloeServerAI serverAI)
     {
-        if (serverAI == null)
+        if (!serverAI)
         {
             throw new ArgumentNullException(nameof(serverAI), "The provided aloe server instance is null, cannot determine whether she is kidnap bound.");
         }
@@ -99,7 +99,7 @@ internal class AloeSharedData
     
     public bool IsPlayerKidnapBound(PlayerControllerB player)
     {
-        if (player == null)
+        if (!player)
         {
             throw new ArgumentNullException(nameof(player),
                 "The given player object instance is null, cannot determine whether they are kidnap bound.");
@@ -110,7 +110,7 @@ internal class AloeSharedData
     
     public bool IsPlayerStalkBound(PlayerControllerB player)
     {
-        if (player == null)
+        if (!player)
         {
             throw new ArgumentNullException(nameof(player),
                 "The given player object instance is null, cannot determine whether they are stalk bound.");

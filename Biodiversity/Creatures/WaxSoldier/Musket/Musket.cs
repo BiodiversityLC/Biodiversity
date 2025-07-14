@@ -34,13 +34,12 @@ public class Musket : BiodiverseItem
 
     [Header("Transforms")]
     [SerializeField] public Transform bayonetTip;
-    [SerializeField] private Transform muzzleTip;
-    [SerializeField] private Transform bulletRayOrigin;
+    [SerializeField] public Transform muzzleTip;
+    [SerializeField] public Transform bulletRayOrigin;
     
-    [SerializeField] public MusketBayonetCollisionDetection bayonetCollisionDetection;
+    [SerializeField] public MusketBayonetHitbox bayonetHitbox;
     #endregion
-   
-
+    
     private enum DamageType
     {
         Player,
@@ -109,14 +108,14 @@ public class Musket : BiodiverseItem
 
         currentAttackMode = AttackMode.Gun;
         isSafetyOn.Value = false;
+        
+        itemPositionOffset = itemProperties.positionOffset;
+        itemRotationOffset = itemProperties.rotationOffset;
     }
 
     public override void Start()
     {
         base.Start();
-        
-        itemPositionOffset = itemProperties.positionOffset;
-        itemRotationOffset = itemProperties.rotationOffset;
 
         bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.5f);
     }
@@ -158,7 +157,7 @@ public class Musket : BiodiverseItem
         return true;
     }
 
-    private IEnumerator Shoot()
+    public IEnumerator Shoot()
     {
         LogVerbose($"In {nameof(Shoot)}");
         isPerformingAttackAction = true;
@@ -217,7 +216,7 @@ public class Musket : BiodiverseItem
         }
     }
 
-    private void Reload()
+    public void Reload()
     {
         LogVerbose("Reloading...");
         currentAmmo.Value = Mathf.Clamp(currentAmmo.Value + 1, 0, maxAmmo);

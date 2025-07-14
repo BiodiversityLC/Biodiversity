@@ -187,7 +187,7 @@ public class AloeClient : MonoBehaviour
         _playersCachedRenderers = new PerKeyCachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
         {
             List<Tuple<Component, bool>> rendererComponents = [];
-            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
+            PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerId);
             
             if (!player)
             {
@@ -231,15 +231,15 @@ public class AloeClient : MonoBehaviour
         });
         
         _playerVisorRenderers = new PerKeyCachedDictionary<ulong, MeshRenderer>(playerId =>
-            StartOfRound.Instance.allPlayerScripts[playerId].localVisor.gameObject
+            PlayerUtil.GetPlayerFromClientId(playerId).localVisor.gameObject
                 .GetComponentsInChildren<MeshRenderer>()[0]);
 
         _playerAudioLowPassFilters = new PerKeyCachedDictionary<ulong, AudioLowPassFilter>(playerId =>
-            StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource
+            PlayerUtil.GetPlayerFromClientId(playerId).currentVoiceChatAudioSource
                 .GetComponent<AudioLowPassFilter>());
 
         _playerOccludeAudios = new PerKeyCachedDictionary<ulong, OccludeAudio>(playerId =>
-            StartOfRound.Instance.allPlayerScripts[playerId].currentVoiceChatAudioSource.GetComponent<OccludeAudio>());
+            PlayerUtil.GetPlayerFromClientId(playerId).currentVoiceChatAudioSource.GetComponent<OccludeAudio>());
 
         escapeTooltipHeader = LangParser.GetTranslation("tooltip.header.aloe.escape");
         escapeTooltipBody = LangParser.GetTranslation("tooltip.body.aloe.escape");
@@ -357,7 +357,7 @@ public class AloeClient : MonoBehaviour
                 _targetPlayer.Value.transform.rotation = transform.rotation * _offsetRotation;
             }
             
-            CorrectlySetTargetPlayerLocalRenderers(_targetPlayerInCaptivity, _targetPlayer.Value);
+            CorrectlySetTargetPlayerLocalRenderers(false, _targetPlayer.Value);
             UpdateRagdollVisibility();
         }
     }
@@ -369,7 +369,7 @@ public class AloeClient : MonoBehaviour
     private void HandleCrushPlayerAnimation(ulong playerClientId)
     {
         PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
-        if (player == null) return;
+        if (!player) return;
 
         StartCoroutine(CrushPlayerAnimation(player));
     }
@@ -378,7 +378,7 @@ public class AloeClient : MonoBehaviour
     {
         BiodiversityPlugin.LogVerbose($"Killing player: {player.name}");
         if (player.inSpecialInteractAnimation &&
-            player.currentTriggerInAnimationWith != null)
+            player.currentTriggerInAnimationWith)
             player.currentTriggerInAnimationWith.CancelAnimationExternally();
 
         player.isCrouching = false;
@@ -496,7 +496,7 @@ public class AloeClient : MonoBehaviour
     {
         BiodiversityPlugin.LogVerbose($"In {nameof(HandleTransitionToRunningForwardsAndCarryingPlayer)}");
 
-        if (_currentFakePlayerBodyRagdoll == null)
+        if (!_currentFakePlayerBodyRagdoll)
         {
             BiodiversityPlugin.Logger.LogError("The player body ragdoll is null, this should never happen.");
             return;
@@ -523,7 +523,7 @@ public class AloeClient : MonoBehaviour
         }
         
         _currentFakePlayerBodyRagdoll = fakePlayerBodyRagdollNetworkObject.GetComponent<FakePlayerBodyRagdoll>();
-        if (_currentFakePlayerBodyRagdoll == null)
+        if (!_currentFakePlayerBodyRagdoll)
         {
             BiodiversityPlugin.Logger.LogError("FakePlayerBodyRagdoll script is null on the ragdoll gameobject. This should never happen.");
             return;
@@ -535,7 +535,7 @@ public class AloeClient : MonoBehaviour
     
     private void UpdateRagdollVisibility()
     {
-        if (_currentFakePlayerBodyRagdoll == null) return;
+        if (!_currentFakePlayerBodyRagdoll) return;
     
         bool isLocalPlayer = GameNetworkManager.Instance.localPlayerController == _targetPlayer.Value;
         _currentFakePlayerBodyRagdoll.bodyMeshRenderer.enabled = !isLocalPlayer;
@@ -565,7 +565,7 @@ public class AloeClient : MonoBehaviour
 
     private void SetupCaptivity(PlayerControllerB targetPlayer)
     {
-        if (targetPlayer.inSpecialInteractAnimation && targetPlayer.currentTriggerInAnimationWith != null)
+        if (targetPlayer.inSpecialInteractAnimation && targetPlayer.currentTriggerInAnimationWith)
             targetPlayer.currentTriggerInAnimationWith.CancelAnimationExternally();
 
         targetPlayer.isCrouching = false;

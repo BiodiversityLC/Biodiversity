@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Misc;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
 using GameNetcodeStuff;
 using Unity.Netcode;
@@ -11,6 +12,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 {
 #pragma warning disable 0649
     [SerializeField] private BoxCollider stabAttackTriggerArea;
+    [SerializeField] private AttackSelector attackSelector;
     
     [Header("Controllers")] [Space(5f)] 
     public WaxSoldierNetcodeController netcodeController;
@@ -23,22 +25,23 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         ArrivingAtStation,
         Stationary,
         Pursuing,
+        Attacking,
         Hunting,
         Dead,
     }
 
-    public enum AttackAction
-    {
-        None,
-        Aim,
-        Fire,
-        Reload,
-        Stab,
-        Spin,
-        MusketSwing,
-        CircularFlailing,
-        Lunge
-    }
+    // public enum OldAttackAction
+    // {
+    //     None,
+    //     Aim,
+    //     Fire,
+    //     Reload,
+    //     Stab,
+    //     Spin,
+    //     MusketSwing,
+    //     CircularFlailing,
+    //     Lunge
+    // }
 
     public enum MoltenState
     {
@@ -141,7 +144,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
         if (!IsServer) return;
-        
         CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
     }
 
@@ -149,7 +151,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
         if (!IsServer) return;
-        
         CurrentState?.OnHitEnemy(force, playerWhoHit, hitID);
     }
     #endregion
@@ -162,11 +163,10 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         TriggerCustomEvent(nameof(OnSpawnAnimationStateExit));
     }
 
-    public void OnSpinAttackAnimationStateExit()
+    public void OnAttackAnimationFinish()
     {
-        LogVerbose("Spin attack animation complete.");
         if (!IsServer) return;
-        TriggerCustomEvent(nameof(OnSpinAttackAnimationStateExit));
+        TriggerCustomEvent(nameof(OnAttackAnimationFinish));
     }
     
     public void OnAnimationEventStabAttackLeap()
@@ -176,11 +176,55 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         TriggerCustomEvent(nameof(OnAnimationEventStabAttackLeap));
     }
     
-    public void OnStabAttackAnimationStateExit()
+    public void OnAnimationEventStartTargetLook(string lookTransformName)
     {
-        LogVerbose("Stab attack animation complete.");
         if (!IsServer) return;
-        TriggerCustomEvent(nameof(OnStabAttackAnimationStateExit));
+
+        StateData data = new();
+        data.Add("lookTransform",
+            lookTransformName == "musketMuzzle" ? Context.Blackboard.HeldMusket.muzzleTip : transform);
+        
+        TriggerCustomEvent(nameof(OnAnimationEventStartTargetLook), data);
+    }
+
+    public void OnAnimationEventStopTargetLook()
+    {
+        if (!IsServer) return;
+        LogVerbose("Stop target look.");
+        TriggerCustomEvent(nameof(OnAnimationEventStopTargetLook));
+    }
+
+    public void OnAnimationEventToggleBayonet()
+    {
+        if (!IsServer) return;
+
+        MusketBayonetHitbox bayonetHitbox = Context.Blackboard.HeldMusket.bayonetHitbox;
+        if (bayonetHitbox.currentBayonetMode == MusketBayonetHitbox.BayonentMode.None)
+        {
+            int hash = Context.Blackboard.currentAttackAction.AnimationTriggerHash;
+            if (hash == WaxSoldierClient.SpinAttack)
+            {
+                bayonetHitbox.BeginAttack(MusketBayonetHitbox.BayonentMode.Spin);
+            }
+            if (hash == WaxSoldierClient.StabAttack)
+            {
+                bayonetHitbox.BeginAttack(MusketBayonetHitbox.BayonentMode.Stab);
+            }
+            
+            LogVerbose($"Toggling bayonet on.");
+        }
+        else
+        {
+            LogVerbose($"Toggling bayonet mode off.");
+            bayonetHitbox.EndAttack();
+        }
+    }
+    
+    public void OnAnimationEventMusketShoot()
+    {
+        LogVerbose("Musket fired.");
+        if (!IsServer) return;
+        TriggerCustomEvent(nameof(OnAnimationEventMusketShoot));
     }
     #endregion
     
@@ -201,14 +245,24 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         float accelerationAdjustment = Time.deltaTime;
         Context.Adapter.Agent.acceleration = Mathf.Lerp(Context.Adapter.Agent.acceleration, Context.Blackboard.AgentMaxAcceleration, accelerationAdjustment);
     }
+
+    internal void DecelerateAndStop()
+    {
+        // Make the agent's speed smoothly go to zero
+        Context.Blackboard.AgentMaxSpeed = 0;
+        
+        // Boost the acceleration immediately so it can decelerate quickly
+        Context.Adapter.Agent.acceleration *= 3;
+    }
     
     /// <summary>
     /// Gets the config values and assigns them to their respective [SerializeField] variables.
     /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
     /// </summary>
-    internal void InitializeConfigValues()
+    private void InitializeConfigValues()
     {
         if (!IsServer) return;
+        LogVerbose("Initializing config values...");
         
         Context.Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
         Context.Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;
@@ -216,7 +270,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
         Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
+        
         Context.Blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
+        Context.Blackboard.AttackSelector = attackSelector;
     }
     
     protected override string GetLogPrefix()

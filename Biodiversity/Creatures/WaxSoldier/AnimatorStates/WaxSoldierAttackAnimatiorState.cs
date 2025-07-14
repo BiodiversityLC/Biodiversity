@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.AnimatorStates;
 
-public class WaxSoldierStabAttackAnimatorState : BaseAnimatorState
+public class WaxSoldierAttackAnimatiorState : BaseAnimatorState
 {
     private WaxSoldierAI behaviour;
     
@@ -21,9 +21,15 @@ public class WaxSoldierStabAttackAnimatorState : BaseAnimatorState
         BiodiversityPlugin.Logger.LogError($"'{GetType().Name}' could not find the required component of type '{nameof(WaxSoldierAI)}' on the Animator's GameObject.");
     }
     
+    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        base.OnStateEnter(animator, stateInfo, layerIndex);
+        //behaviour?.OnAttackAnimationStart();
+    }
+    
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         base.OnStateExit(animator, stateInfo, layerIndex);
-        behaviour?.OnStabAttackAnimationStateExit();
+        behaviour?.OnAttackAnimationFinish();
     }
 }

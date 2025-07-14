@@ -52,6 +52,11 @@ public abstract class StateTransition<TState, TEnemyAI>
     {
     }
 
+    internal virtual StateData GetTransitionData()
+    {
+        return null;
+    }
+
     /// <summary>
     /// Gets a description of the transition.
     /// Override this method to provide details or context for the transition, such as for debugging or logging purposes.

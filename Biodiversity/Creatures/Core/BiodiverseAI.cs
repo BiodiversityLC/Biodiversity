@@ -304,6 +304,57 @@ public abstract class BiodiverseAI : EnemyAI
     #endregion
 
     #region Line Of Sight Stuff
+    /// <summary>
+    /// Determines if there is an unobstructed line of sight to a position within a specified view cone and range.
+    /// This is a pure geometric and physics check.
+    /// </summary>
+    /// <param name="targetPosition">The position to check line of sight to.</param>
+    /// <param name="eyeTransform">The transform representing the eye's position and forward direction.</param>
+    /// <param name="viewWidth">The total angle of the view cone in degrees.</param>
+    /// <param name="viewRange">The maximum distance for the check.</param>
+    /// <param name="proximityAwareness">The proximity awareness range. If the value is less than zero, then it is assumed that there is no proximity awareness at all.</param>
+    /// <returns>Returns true if the AI has line of sight to the given position; otherwise, false.</returns>
+    internal bool HasLineOfSight(
+        Vector3 targetPosition,
+        Transform eyeTransform,
+        float viewWidth = 45f,
+        float viewRange = 60f,
+        float proximityAwareness = -1f)
+    {
+        // LogVerbose($"In {nameof(HasLineOfSight)}");
+        Vector3 eyePosition = eyeTransform.position;
+        Vector3 directionToTarget = targetPosition - eyePosition;
+        float distance = directionToTarget.magnitude;
+        
+        // 1). Range check
+        if (distance > viewRange)
+        {
+            // LogVerbose($"Distance check failed.");
+            return false;
+        }
+        
+        // 2). FOV check
+        // The proximity can bypass the FOV check, but not the physics obstruction check
+        if (distance > proximityAwareness)
+        {
+            float dotProduct = Vector3.Dot(eyeTransform.forward, directionToTarget.normalized);
+            if (dotProduct < Mathf.Cos(viewWidth * 0.5f * Mathf.Deg2Rad))
+            {
+                // LogVerbose($"Dot product check failed: {dotProduct} < {Mathf.Cos(viewWidth * 0.5f * Mathf.Deg2Rad)}");
+                return false;
+            }
+        }
+        
+        // 3). Obstruction check
+        if (Physics.Linecast(eyePosition, targetPosition, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
+        {
+            // LogVerbose("Line of sight check failed");
+            return false;
+        }
+
+        return true;
+    }
+    
     internal bool IsAPlayerInLineOfSightToEye(
         Transform eyeTransform,
         float width = 45f,
@@ -314,7 +365,7 @@ public abstract class BiodiverseAI : EnemyAI
             PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
             
             if (!PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
-            if (DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eyeTransform, width, range))
+            if (HasLineOfSight(player.gameplayCamera.transform.position, eyeTransform, width, range))
                 return true;
         }
 
@@ -322,101 +373,81 @@ public abstract class BiodiverseAI : EnemyAI
     }
 
     /// <summary>
-    /// Determines the closest player that the eye can see, considering a buffer distance to avoid constant target switching.
+    /// Finds the closest visible and targetable player.
+    /// Uses a buffer distance to prevent rapid target switching.
     /// </summary>
-    /// <param name="eyeTransform">The transform representing the eye.</param>
-    /// <param name="width">The view width of the eye in degrees.</param>
-    /// <param name="range">The view range of the eye in units.</param>
-    /// <param name="currentVisiblePlayer">The currently visible player to compare distances against.</param>
-    /// <param name="bufferDistance">The buffer distance to prevent constant target switching.</param>
-    /// <returns>Returns the closest visible player to the eye, or null if no player is found.</returns>
-    internal PlayerControllerB GetClosestVisiblePlayerFromEye(
+    /// <param name="eyeTransform">The transform representing the eye's position and forward direction.</param>
+    /// <param name="viewWidth">The total angle of the view cone in degrees.</param>
+    /// <param name="viewRange">The maximum distance for the check.</param>
+    /// <param name="currentTargetPlayer">The player currently being targeted.</param>
+    /// <param name="bufferDistance">The distance buffer to prevent target switching. A new target must be this much closer to be chosen.</param>
+    /// <returns>The best player target, or null if none are found.</returns>
+    internal PlayerControllerB GetClosestVisiblePlayer(
         Transform eyeTransform,
-        float width = 45f,
-        float range = 60f,
-        PlayerControllerB currentVisiblePlayer = null,
+        float viewWidth = 45f,
+        float viewRange = 60f,
+        PlayerControllerB currentTargetPlayer = null,
         float bufferDistance = 1.5f)
     {
-        PlayerControllerB closestPlayer = null;
-        float closestDistance = float.MaxValue;
-
-        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        // LogVerbose($"In {nameof(GetClosestVisiblePlayer)}");
+        PlayerControllerB bestTarget = null;
+        float bestTargetDistanceSqr = float.MaxValue;
+        
+        PlayerControllerB[] allPlayers = StartOfRound.Instance.allPlayerScripts;
+        
+        // First, re-validate the current target
+        float currentTargetDistanceSqr = float.MaxValue;
+        if (currentTargetPlayer && PlayerTargetableConditions.IsPlayerTargetable(currentTargetPlayer))
         {
-            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
-            
-            if (player == currentVisiblePlayer) continue;
-            if (!PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
-            if (!DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eyeTransform, width, range)) continue;
-            
-            float distance = Vector3.Distance(eyeTransform.position, player.transform.position);
-            if (!(distance < closestDistance)) continue;
-
-            closestPlayer = player;
-            closestDistance = distance;
+            if (HasLineOfSight(currentTargetPlayer.gameplayCamera.transform.position, eyeTransform, viewWidth,
+                    viewRange))
+            {
+                // The current target player is still valid, and it will be our baseline
+                bestTarget = currentTargetPlayer;
+                currentTargetDistanceSqr = (currentTargetPlayer.transform.position - eyeTransform.position).sqrMagnitude;
+                bestTargetDistanceSqr = currentTargetDistanceSqr;
+            }
         }
 
-        // If the current visible player is still within the buffer distance, continue targeting them
-        if (currentVisiblePlayer)
+        for (int i = 0; i < allPlayers.Length; i++)
         {
-            float currentTargetDistance = Vector3.Distance(eyeTransform.position, currentVisiblePlayer.transform.position);
-            if (Mathf.Abs(closestDistance - currentTargetDistance) < bufferDistance)
+            PlayerControllerB potentialTarget = allPlayers[i];
+            // LogVerbose($"Evaluating player {potentialTarget.playerUsername}");
+            
+            // Skip the check if this player is the current target player; they have already been validated
+            if (potentialTarget == currentTargetPlayer) continue;
+            if (!PlayerTargetableConditions.IsPlayerTargetable(potentialTarget))
             {
-                return currentVisiblePlayer;
+                // LogVerbose($"Player {potentialTarget.playerUsername} is not targetable.");
+                continue;
+            }
+            
+            Vector3 targetPosition = potentialTarget.gameplayCamera.transform.position;
+            if (!HasLineOfSight(targetPosition, eyeTransform, viewWidth, viewRange))
+            {
+                // LogVerbose($"Player {potentialTarget.playerUsername} is not in LOS.");
+                continue;
+            }
+            
+            float potentialTargetDistanceSqr = (potentialTarget.transform.position - eyeTransform.position).sqrMagnitude;
+            if (potentialTargetDistanceSqr < bestTargetDistanceSqr)
+            {
+                bestTarget = potentialTarget;
+                bestTargetDistanceSqr = potentialTargetDistanceSqr;
             }
         }
         
-        return closestPlayer;
-    }
-    
-    /// <summary>
-    /// Determines whether the AI has line of sight to the given position.
-    /// </summary>
-    /// <param name="position">The position to check for line of sight.</param>
-    /// <param name="eyeTransform">The transform representing the eye.</param>
-    /// <param name="width">The AI's view width in degrees.</param>
-    /// <param name="range">The AI's view range in units.</param>
-    /// <param name="proximityAwareness">The proximity awareness range of the AI.</param>
-    /// <returns>Returns true if the AI has line of sight to the given position; otherwise, false.</returns>
-    internal static bool DoesEyeHaveLineOfSightToPosition(
-        Vector3 position,
-        Transform eyeTransform,
-        float width = 45f,
-        float range = 60f,
-        float proximityAwareness = -1f)
-    {
-        float distanceFromEyeToPosition = Vector3.Distance(eyeTransform.position, position);
-        
-        return distanceFromEyeToPosition < range &&
-               !Physics.Linecast(eyeTransform.position, position, StartOfRound.Instance.collidersAndRoomMaskAndDefault) &&
-               (
-                   Vector3.Angle(eyeTransform.forward, position - eyeTransform.position) < width ||
-                   distanceFromEyeToPosition < proximityAwareness
-               );
-    }
-    
-    /// <summary>
-    /// Determines whether the AI has line of sight to the given position.
-    /// </summary>
-    /// <param name="position">The position to check for line of sight.</param>
-    /// <param name="eyeTransform">The transform representing the eye.</param>
-    /// <param name="width">The AI's view width in degrees.</param>
-    /// <param name="range">The AI's view range in units.</param>
-    /// <param name="proximityAwareness">The proximity awareness range of the AI.</param>
-    /// <returns>Returns true if the AI has line of sight to the given position; otherwise, false.</returns>
-    internal static bool DoesEyeHaveLineOfSightToPosition(
-        float distanceFromEyeToPosition,
-        Vector3 position,
-        Transform eyeTransform,
-        float width = 45f,
-        float range = 60f,
-        float proximityAwareness = -1f)
-    {
-        return distanceFromEyeToPosition < range &&
-               !Physics.Linecast(eyeTransform.position, position, StartOfRound.Instance.collidersAndRoomMaskAndDefault) &&
-               (
-                   Vector3.Angle(eyeTransform.forward, position - eyeTransform.position) < width ||
-                   distanceFromEyeToPosition < proximityAwareness
-               );
+        // If we switched targets, ensure that the new target is significantly closer
+        if (bestTarget && currentTargetPlayer && bestTarget != currentTargetPlayer)
+        {
+            // If the old target player is still valid and the new one isn't closer by the buffer amount, then revert
+            if (bestTargetDistanceSqr > currentTargetDistanceSqr - bufferDistance * bufferDistance)
+            {
+                return currentTargetPlayer;
+            }
+        }
+
+        return bestTarget;
     }
     
     /// <summary>
@@ -425,26 +456,28 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="position">The position to check if a player is looking at.</param>
     /// <param name="ignorePlayer">An optional player to exclude from the check.</param>
     /// <returns>Returns the player object that is looking at the specified position, or null if no player is found.</returns>
-    internal static PlayerControllerB GetClosestPlayerLookingAtPosition(Vector3 position, PlayerControllerB ignorePlayer = null)
+    internal static PlayerControllerB GetClosestPlayerLookingAtPosition(
+        Vector3 position, 
+        PlayerControllerB ignorePlayer = null)
     {
         PlayerControllerB closestPlayer = null;
-        float closestDistance = float.MaxValue;
-        bool isThereAPlayerToIgnore = ignorePlayer != null;
+        float closestDistanceSqr = float.MaxValue;
 
-        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        List<PlayerControllerB> visiblePlayers = GetAllPlayersLookingAtPositionPooled(position, ignorePlayer);
+
+        for (int i = 0; i < visiblePlayers.Count; i++)
         {
-            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
-            
-            if (PlayerUtil.IsPlayerDead(player) || (isThereAPlayerToIgnore && player == ignorePlayer) || !player.isInsideFactory) continue;
-            if (!player.HasLineOfSightToPosition(position, 60f)) continue;
-            
-            float distance = Vector3.Distance(position, player.transform.position);
-            if (!(distance < closestDistance)) continue;
+            PlayerControllerB player = visiblePlayers[i];
+            float distanceSqr = (player.transform.position - position).sqrMagnitude;
 
-            closestPlayer = player;
-            closestDistance = distance;
+            if (distanceSqr < closestDistanceSqr)
+            {
+                closestDistanceSqr = distanceSqr;
+                closestPlayer = player;
+            }
         }
-
+        
+        ListPool<PlayerControllerB>.Release(visiblePlayers);
         return closestPlayer;
     }
     
@@ -542,7 +575,7 @@ public abstract class BiodiverseAI : EnemyAI
         
         if (PlayerTargetableConditions.IsPlayerTargetable(player) && 
             IsPathValid(agent, player.transform.position) == PathStatus.Valid && 
-            (!requireLineOfSight || DoesEyeHaveLineOfSightToPosition(player.gameplayCamera.transform.position, eyeTransform, viewWidth, viewRange)))
+            (!requireLineOfSight || HasLineOfSight(player.gameplayCamera.transform.position, eyeTransform, viewWidth, viewRange)))
         {
             if (currentDistance < optimalDistance)
                 optimalDistance = currentDistance;

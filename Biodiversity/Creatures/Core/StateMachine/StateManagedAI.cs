@@ -250,7 +250,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// Checks and executes any valid state transitions given in the <paramref name="transitions"/> parameter.
     /// </summary>
     /// <param name="transitions">The list of transitions to evaluate.</param>
-    /// <returns></returns>
+    /// <returns>A bool representing whether a transition was triggered (true) or not (false).</returns>
     private bool EvaluateTransitions(List<StateTransition<TState, TEnemyAI>> transitions)
     {
         for (int i = 0; i < transitions.Count; i++)
@@ -387,7 +387,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                 LogError($"Exception during OnStateEnter for {newState}: {e}");
             }
             
-            LogVerbose($"Successfully switched to behaviour state {newState}");
+            LogVerbose($"Successfully switched to behaviour state {newState}.");
         }
         else
         {

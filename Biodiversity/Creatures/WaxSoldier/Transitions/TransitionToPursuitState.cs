@@ -8,7 +8,7 @@ internal class TransitionToPursuitState(WaxSoldierAI enemyAIInstance)
 {
     internal override bool ShouldTransitionBeTaken()
     {
-        PlayerControllerB player = EnemyAIInstance.GetClosestVisiblePlayerFromEye(
+        PlayerControllerB player = EnemyAIInstance.GetClosestVisiblePlayer(
             EnemyAIInstance.Context.Adapter.EyeTransform,
             EnemyAIInstance.Context.Blackboard.ViewWidth,
             EnemyAIInstance.Context.Blackboard.ViewRange);

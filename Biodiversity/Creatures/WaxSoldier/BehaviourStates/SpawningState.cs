@@ -28,7 +28,6 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         
-        EnemyAIInstance.InitializeConfigValues();
         EnemyAIInstance.DetermineGuardPostPosition();
     }
 
