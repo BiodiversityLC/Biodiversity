@@ -39,21 +39,21 @@ internal class TransitionToHuntingState(WaxSoldierAI enemyAIInstance)
 
         totalTimeWherePlayerGone = 0f;
 
-        if (!arrowRenderer)
-        {
-            arrowRenderer = EnemyAIInstance.gameObject.AddComponent<LineRenderer>();
-            arrowRenderer.positionCount = 2;
-            arrowRenderer.startWidth = 0.1f;
-            arrowRenderer.endWidth = 0.1f;
-            arrowRenderer.material = new Material(Shader.Find("Sprites/Default"));
-            arrowRenderer.startColor = Color.red;
-            arrowRenderer.endColor = Color.red;
-        }
-        
-        Vector3 start = EnemyAIInstance.Context.Blackboard.LastKnownPlayerPosition;
-        Vector3 dir = EnemyAIInstance.Context.Blackboard.LastKnownPlayerVelocity.normalized;
-        Vector3 end = start + dir * 3;
-        arrowRenderer.SetPosition(0, start);
-        arrowRenderer.SetPosition(1, end);
+        // if (!arrowRenderer)
+        // {
+        //     arrowRenderer = EnemyAIInstance.gameObject.AddComponent<LineRenderer>();
+        //     arrowRenderer.positionCount = 2;
+        //     arrowRenderer.startWidth = 0.1f;
+        //     arrowRenderer.endWidth = 0.1f;
+        //     arrowRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        //     arrowRenderer.startColor = Color.red;
+        //     arrowRenderer.endColor = Color.red;
+        // }
+        //
+        // Vector3 start = EnemyAIInstance.Context.Blackboard.LastKnownPlayerPosition;
+        // Vector3 dir = EnemyAIInstance.Context.Blackboard.LastKnownPlayerVelocity.normalized;
+        // Vector3 end = start + dir * 3;
+        // arrowRenderer.SetPosition(0, start);
+        // arrowRenderer.SetPosition(1, end);
     }
 }

@@ -87,4 +87,11 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         if (!IsServer) return;
         ai.Context.Blackboard.HeldMusket.SetupShoot();
     }
+
+    public void OnAnimationEventPlayAudio(string sfxName)
+    {
+        ai.LogVerbose($"Playing audio {sfxName}.");
+        if (!IsServer) return;
+        ai.PlayAudioClipTypeClientRpc(sfxName, "creatureVoice", 0, true);
+    }
 }

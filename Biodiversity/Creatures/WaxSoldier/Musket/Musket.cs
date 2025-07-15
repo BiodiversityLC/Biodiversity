@@ -226,7 +226,7 @@ public class Musket : BiodiverseItem
 
     private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
     {
-        return 100;
+        return 110;
     }
 
     private IEnumerator ReelUpBayonet()

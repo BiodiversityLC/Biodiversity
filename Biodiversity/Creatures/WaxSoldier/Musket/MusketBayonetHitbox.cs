@@ -15,16 +15,14 @@ public class MusketBayonetHitbox : NetworkBehaviour
     [Header("Configuration")]
     [Tooltip("The layers that the bayonet can hit.")]
     [SerializeField] private LayerMask hitLayers;
-    [Tooltip("The radius of the spherecast used for hit detection.")]
-    [SerializeField] private float hitRadius = 0.1f;
     [Tooltip("How long (in seconds) a player is immune after being hit.")]
     [SerializeField] private float hitCooldown = 1f;
     
     [Header("Attack Properties")]
     [SerializeField] private int spinDamage = 40;
-    [SerializeField] private float spinKnockback = 4f;
+    [SerializeField] private float spinKnockback = 16f;
     [SerializeField] private int stabDamage = 50;
-    [SerializeField] private float stabKnockback = 2f;
+    [SerializeField] private float stabKnockback = 8f;
     
     [Header("References")]
     [SerializeField] private Transform bayonetTip;
@@ -81,7 +79,7 @@ public class MusketBayonetHitbox : NetworkBehaviour
         // Only do the cast if the tip has moved
         if (distance > 0.01f)
         {
-            int hits = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, bayonetCollider.size * 0.5f, 
+            int hits = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, bayonetCollider.size * 0.75f, 
                 bayonetHitBuffer, Quaternion.identity, hitLayers, QueryTriggerInteraction.Ignore);
 
             for (int i = 0; i < hits; i++)
