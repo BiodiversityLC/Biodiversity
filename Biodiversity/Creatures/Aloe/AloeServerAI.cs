@@ -79,7 +79,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         if (!IsServer) return;
         
         SetTargetPlayerInCaptivity(false);
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        if (NetworkManager.Singleton && NetworkManager.Singleton.CustomMessagingManager != null)
             AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(FavouriteSpot);
         UnsubscribeFromNetworkEvents();
     }
@@ -93,8 +93,9 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         
         agent.updateRotation = false;
         
-        CollectAudioClipsAndSources();
+        CollectAudioClipsAndSources<AloeClient>();
         
+        PlayerTargetableConditions.AddCondition(player => !PlayerUtil.IsPlayerDead(player));
         PlayerTargetableConditions.AddCondition(player => player.isInsideFactory);
         PlayerTargetableConditions.AddCondition(player => player.sinkingValue < 0.7300000190734863);
         PlayerTargetableConditions.AddCondition(player => !AloeSharedData.Instance.IsPlayerKidnapBound(player));
@@ -142,58 +143,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     protected override bool ShouldRunLateUpdate()
     {
         return ShouldRunAiInterval();
-    }
-    
-    /// <summary>
-    /// Collects all <see cref="AudioClip"/> and <see cref="AudioSource"/> fields defined on the object.
-    /// Then it populates the <see cref="AloeServerAI.AudioClips"/> and <see cref="AloeServerAI.AudioSources"/> dictionaries based on field names and values.
-    /// </summary>
-    private void CollectAudioClipsAndSources()
-    {
-        LogVerbose($"In {nameof(CollectAudioClipsAndSources)}");
-        
-        AudioClips = new Dictionary<string, AudioClip[]>();
-        AudioSources = new Dictionary<string, AudioSource>();
-
-        AloeClient aloeClient = GetComponent<AloeClient>();
-
-        for (int i = 0;
-             i < typeof(AloeClient).GetFields(
-                 BindingFlags.Public |
-                 BindingFlags.NonPublic |
-                 BindingFlags.Instance |
-                 BindingFlags.DeclaredOnly).Length;
-             i++)
-        {
-            FieldInfo field = typeof(AloeClient).GetFields(
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance |
-                BindingFlags.DeclaredOnly)[i];
-            
-            string key = field.Name;
-            Type fieldType = field.FieldType;
-            
-            LogVerbose($"Field name: {key}, field type: {fieldType}");
-
-            // This code looks ugly because there are null checks inside each if statement.
-            // Its better this way though because we only null check if we find a type that we actually want first.
-            if (fieldType == typeof(AudioClip[]))
-            {
-                AudioClip[] value = (AudioClip[])field.GetValue(aloeClient);
-                if (value is { Length: > 0 }) AudioClips[key] = value;
-            }
-            else if (fieldType == typeof(AudioClip))
-            {
-                AudioClip value = (AudioClip)field.GetValue(aloeClient);
-                if (value != null) AudioClips[key] = [value];
-            }
-            else if (fieldType == typeof(AudioSource))
-            {
-                AudioSource value = (AudioSource)field.GetValue(aloeClient);
-                if (value != null) AudioSources[key] = value;
-            }
-        }
     }
 
     public void PickFavouriteSpot()
@@ -598,7 +547,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             closestPlayer = player;
         }
 
-        if (currentTargetPlayer == null) return closestPlayer;
+        if (!currentTargetPlayer) return closestPlayer;
         float currentTargetPlayerDistance = Vector3.Distance(position, currentTargetPlayer.transform.position);
         return Mathf.Abs(closestDistance - currentTargetPlayerDistance) < bufferDistance ? currentTargetPlayer : closestPlayer;
     }
@@ -729,6 +678,64 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             ? $"Changed target player to {ActualTargetPlayer.Value.playerUsername}."
             : "Changed target player to null.");
     }
+
+    /// <summary>
+    /// Subscribe to the needed network events.
+    /// </summary>
+    private void SubscribeToNetworkEvents()
+    {
+        if (!IsServer || _networkEventsSubscribed) return;
+        
+        netcodeController.OnTargetPlayerEscaped += HandleTargetPlayerEscaped;
+        
+        netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
+
+        _networkEventsSubscribed = true;
+    }
+
+    /// <summary>
+    /// Unsubscribe to the network events.
+    /// </summary>
+    private void UnsubscribeFromNetworkEvents()
+    {
+        if (!IsServer || !_networkEventsSubscribed) return;
+        
+        netcodeController.OnTargetPlayerEscaped -= HandleTargetPlayerEscaped;
+        
+        netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
+
+        _networkEventsSubscribed = false;
+    }
+
+    /// <summary>
+    /// Gets the config values and assigns them to their respective [SerializeField] variables.
+    /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
+    /// </summary>
+    internal void InitializeConfigValues()
+    {
+        if (!IsServer) return;
+
+        // todo: add the new configs here
+        // Maybe theres a modular way to do this? Doing it manually seems really dumb
+        
+        enemyHP = AloeHandler.Instance.Config.Health;
+        PlayerHealthThresholdForStalking = AloeHandler.Instance.Config.PlayerHealthThresholdForStalking;
+        PlayerHealthThresholdForHealing = AloeHandler.Instance.Config.PlayerHealthThresholdForHealing;
+        TimeItTakesToFullyHealPlayer = AloeHandler.Instance.Config.TimeItTakesToFullyHealPlayer;
+        PassiveStalkStaredownDistance = AloeHandler.Instance.Config.PassiveStalkStaredownDistance;
+        WaitBeforeChasingEscapedPlayerTime = AloeHandler.Instance.Config.WaitBeforeChasingEscapedPlayerTime;
+
+        roamMap.searchWidth = AloeHandler.Instance.Config.RoamingRadius;
+        
+        agent.angularSpeed = AloeHandler.Instance.Config.AngularSpeed;
+        agent.autoBraking = AloeHandler.Instance.Config.AutoBraking;
+        agent.avoidancePriority = AloeHandler.Instance.Config.NavMeshAgentAvoidancePriority;
+        
+        AIIntervalTime = AloeHandler.Instance.Config.AiIntervalTime;
+        openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
+        
+        netcodeController.InitializeConfigValuesClientRpc();
+    }
     
     /// <summary>
     /// Requests the server to play a specific category of audio clip on a designated <see cref="UnityEngine.AudioSource"/>.
@@ -819,7 +826,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     /// Whether to slightly vary the pitch between the original pitch +/- 0.1.
     /// </param>
     [ClientRpc]
-    private void PlayAudioClipTypeClientRpc(
+    internal void PlayAudioClipTypeClientRpc(
         string audioClipType,
         string audioSourceType,
         int clipIndex,
@@ -868,63 +875,5 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
 
         if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
-    }
-
-    /// <summary>
-    /// Subscribe to the needed network events.
-    /// </summary>
-    private void SubscribeToNetworkEvents()
-    {
-        if (!IsServer || _networkEventsSubscribed) return;
-        
-        netcodeController.OnTargetPlayerEscaped += HandleTargetPlayerEscaped;
-        
-        netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
-
-        _networkEventsSubscribed = true;
-    }
-
-    /// <summary>
-    /// Unsubscribe to the network events.
-    /// </summary>
-    private void UnsubscribeFromNetworkEvents()
-    {
-        if (!IsServer || !_networkEventsSubscribed) return;
-        
-        netcodeController.OnTargetPlayerEscaped -= HandleTargetPlayerEscaped;
-        
-        netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
-
-        _networkEventsSubscribed = false;
-    }
-
-    /// <summary>
-    /// Gets the config values and assigns them to their respective [SerializeField] variables.
-    /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
-    /// </summary>
-    internal void InitializeConfigValues()
-    {
-        if (!IsServer) return;
-
-        // todo: add the new configs here
-        // Maybe theres a modular way to do this? Doing it manually seems really dumb
-        
-        enemyHP = AloeHandler.Instance.Config.Health;
-        PlayerHealthThresholdForStalking = AloeHandler.Instance.Config.PlayerHealthThresholdForStalking;
-        PlayerHealthThresholdForHealing = AloeHandler.Instance.Config.PlayerHealthThresholdForHealing;
-        TimeItTakesToFullyHealPlayer = AloeHandler.Instance.Config.TimeItTakesToFullyHealPlayer;
-        PassiveStalkStaredownDistance = AloeHandler.Instance.Config.PassiveStalkStaredownDistance;
-        WaitBeforeChasingEscapedPlayerTime = AloeHandler.Instance.Config.WaitBeforeChasingEscapedPlayerTime;
-
-        roamMap.searchWidth = AloeHandler.Instance.Config.RoamingRadius;
-        
-        agent.angularSpeed = AloeHandler.Instance.Config.AngularSpeed;
-        agent.autoBraking = AloeHandler.Instance.Config.AutoBraking;
-        agent.avoidancePriority = AloeHandler.Instance.Config.NavMeshAgentAvoidancePriority;
-        
-        AIIntervalTime = AloeHandler.Instance.Config.AiIntervalTime;
-        openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
-        
-        netcodeController.InitializeConfigValuesClientRpc();
     }
 }

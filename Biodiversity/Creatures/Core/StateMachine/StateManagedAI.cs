@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Unity.Netcode;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Core.StateMachine;
 
@@ -478,4 +479,62 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     {
         return IsServer;
     }
+    
+    #region Audio
+    /// <summary>
+    /// Collects all <see cref="AudioClip"/> and <see cref="AudioSource"/> fields defined on the object T.
+    /// Then it populates the <see cref="AudioClips"/> and <see cref="AudioSources"/> dictionaries based on field names and values.
+    /// </summary>
+    protected void CollectAudioClipsAndSources<T>() where T : Component
+    {
+        LogVerbose($"In {nameof(CollectAudioClipsAndSources)}<{typeof(T).Name}>");
+        
+        AudioClips = new Dictionary<string, AudioClip[]>();
+        AudioSources = new Dictionary<string, AudioSource>();
+
+        T component = GetComponent<T>();
+        if (component == null)
+        {
+            LogWarning($"No component of type {typeof(T).Name} found on {gameObject.name}. Cannot load audio clips & sources.");
+            return;
+        }
+
+        FieldInfo[] fields = typeof(T).GetFields(
+            BindingFlags.Public |
+            BindingFlags.NonPublic |
+            BindingFlags.Instance |
+            BindingFlags.DeclaredOnly);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            
+            string key = field.Name;
+            Type fieldType = field.FieldType;
+            object rawValue = field.GetValue(component);
+            
+            // LogVerbose($"Field name: {key}, field type: {fieldType}");
+
+            // This code looks ugly because there are null checks inside each if statement.
+            // Its better this way though because we only null check if we find a type that we actually want first.
+            if (fieldType == typeof(AudioClip[]))
+            {
+                if (rawValue is AudioClip[] { Length: > 0 } value) 
+                    AudioClips[key] = value;
+            }
+            else if (fieldType == typeof(AudioClip))
+            {
+                AudioClip value = rawValue as AudioClip;
+                if (value != null) 
+                    AudioClips[key] = [value];
+            }
+            else if (fieldType == typeof(AudioSource))
+            {
+                AudioSource value = rawValue as AudioSource;
+                if (value != null) 
+                    AudioSources[key] = value;
+            }
+        }
+    }
+    #endregion
 }

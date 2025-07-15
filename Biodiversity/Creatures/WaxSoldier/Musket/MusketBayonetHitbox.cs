@@ -1,8 +1,11 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity;
+using Biodiversity.Util;
 using GameNetcodeStuff;
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 // This component is used for bayonet collision detection when wielded by the Wax Soldier.
 // The collisions for when it is wielded by the player, is handled in the main Musket script (it is meant to mimic how the shovel works (monty wanted it this way)).
@@ -15,7 +18,7 @@ public class MusketBayonetHitbox : NetworkBehaviour
     [Tooltip("The radius of the spherecast used for hit detection.")]
     [SerializeField] private float hitRadius = 0.1f;
     [Tooltip("How long (in seconds) a player is immune after being hit.")]
-    [SerializeField] private float hitCooldown = 0.5f;
+    [SerializeField] private float hitCooldown = 1f;
     
     [Header("Attack Properties")]
     [SerializeField] private int spinDamage = 40;
@@ -25,11 +28,14 @@ public class MusketBayonetHitbox : NetworkBehaviour
     
     [Header("References")]
     [SerializeField] private Transform bayonetTip;
+    [SerializeField] public BoxCollider bayonetCollider;
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip stabIntoFleshSfx;
     
     public enum BayonentMode { None, Spin, Stab }
     public BayonentMode currentBayonetMode = BayonentMode.None;
+    
+    private Collider[] bayonetHitBuffer;
     
     private readonly Dictionary<PlayerControllerB, float> cooldownTracker = new();
     private readonly List<PlayerControllerB> cooldownsToRemove = [];
@@ -59,6 +65,11 @@ public class MusketBayonetHitbox : NetworkBehaviour
         EndAttack();
     }
 
+    private void Awake()
+    {
+        bayonetHitBuffer = new Collider[35];
+    }
+
     private void FixedUpdate()
     {
         if (currentBayonetMode == BayonentMode.None) return;
@@ -70,13 +81,13 @@ public class MusketBayonetHitbox : NetworkBehaviour
         // Only do the cast if the tip has moved
         if (distance > 0.01f)
         {
-            RaycastHit[] hits = Physics.SphereCastAll(previousTipPosition, hitRadius, direction.normalized, distance, hitLayers,
-                QueryTriggerInteraction.Ignore);
+            int hits = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, bayonetCollider.size * 0.5f, 
+                bayonetHitBuffer, Quaternion.identity, hitLayers, QueryTriggerInteraction.Ignore);
 
-            for (int i = 0; i < hits.Length; i++)
+            for (int i = 0; i < hits; i++)
             {
-                RaycastHit hit = hits[i];
-                TryToDamageEntity(hit.collider);
+                Collider hit = bayonetHitBuffer[i];
+                TryToDamageEntity(hit);
             }
         }
 
@@ -86,6 +97,7 @@ public class MusketBayonetHitbox : NetworkBehaviour
 
     private bool TryToDamageEntity(Collider entity)
     {
+        BiodiversityPlugin.LogVerbose($"Trying to damage {entity.name}");
         if (entity.CompareTag("Player") && entity.TryGetComponent(out PlayerControllerB player) && !PlayerUtil.IsPlayerDead(player) && !cooldownTracker.ContainsKey(player))
         {
             int damage = 0;

@@ -3,6 +3,7 @@ using Biodiversity.Creatures.Core.Search;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.SearchStrategies;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
+using GameNetcodeStuff;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -41,6 +42,21 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
+        
+        // todo: name config values appropriately
+        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
+        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
+        
+        PlayerControllerB player = EnemyAIInstance.GetClosestVisiblePlayer(
+            EnemyAIInstance.Context.Adapter.EyeTransform,
+            EnemyAIInstance.Context.Blackboard.ViewWidth,
+            EnemyAIInstance.Context.Blackboard.ViewRange, proximityAwareness: 2f);
+        if (player)
+        {
+            EnemyAIInstance.Context.Adapter.TargetPlayer = player;
+            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Pursuing);
+            return;
+        }
         
         // Start the search strategy and go to the prescribed position
         searchTimeLeft = searchTime;

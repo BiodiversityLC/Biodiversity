@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Animation;
 using Biodiversity.Util;
 using System.Collections;
 using UnityEngine;
@@ -37,7 +38,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         switch (eventName)
         {
-            case nameof(WaxSoldierAI.OnSpawnAnimationStateExit):
+            case nameof(UnmoltenAnimationHandler.OnSpawnAnimationStateExit):
                 EnemyAIInstance.StartCoroutine(SpawnMusketWhenNetworkIsReady());
                 break;
         }
@@ -47,6 +48,8 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         yield return new WaitUntil(() => EnemyAIInstance.Context.Blackboard.IsNetworkEventsSubscribed);
         EnemyAIInstance.netcodeController.SpawnMusketServerRpc();
+        yield return null;
+        EnemyAIInstance.PlayAudioClipTypeClientRpc("activateSfx", "creatureVoice", 0, true);
         yield return null;
         EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
     }

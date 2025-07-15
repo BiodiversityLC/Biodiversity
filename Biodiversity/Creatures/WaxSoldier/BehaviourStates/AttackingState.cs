@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Animation;
 using Biodiversity.Creatures.WaxSoldier.Misc;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -45,17 +46,19 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         
         if (lookAtTarget && EnemyAIInstance.Context.Adapter.TargetPlayer)
         {
-            Vector3 direction = lookTransform.position - EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position;
+            Vector3 direction = (EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position - EnemyAIInstance.transform.position).normalized;
             direction.y = 0;
-            EnemyAIInstance.transform.rotation = Quaternion.Slerp(EnemyAIInstance.transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * 15f);
+            EnemyAIInstance.transform.rotation = Quaternion.Slerp(EnemyAIInstance.transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * EnemyAIInstance.Context.Blackboard.AgentAngularSpeed);
         }
     }
 
     internal override void OnStateExit()
     {
         base.OnStateExit();
+        
         EnemyAIInstance.Context.Adapter.Agent.updateRotation = true;
         EnemyAIInstance.Context.Blackboard.currentAttackAction = null;
+        EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetHitbox.EndAttack();
     }
 
     internal override void OnCustomEvent(string eventName, StateData eventData)
@@ -63,16 +66,16 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         base.OnCustomEvent(eventName, eventData);
         switch (eventName)
         {
-            case nameof(WaxSoldierAI.OnAttackAnimationFinish):
-                EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
+            case nameof(UnmoltenAnimationHandler.OnAttackAnimationFinish):
+                EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Pursuing);
                 break;
             
-            case nameof(WaxSoldierAI.OnAnimationEventStartTargetLook):
+            case nameof(UnmoltenAnimationHandler.OnAnimationEventStartTargetLook):
                 lookAtTarget = true;
                 lookTransform = eventData.Get<Transform>("lookTransform");
                 break;
             
-            case nameof(WaxSoldierAI.OnAnimationEventStopTargetLook):
+            case nameof(UnmoltenAnimationHandler.OnAnimationEventStopTargetLook):
                 lookAtTarget = false;
                 break;
         }

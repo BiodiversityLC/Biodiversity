@@ -2,6 +2,7 @@
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,11 +12,10 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 {
 #pragma warning disable 0649
+    [Header("Controllers")] [Space(5f)] 
     [SerializeField] private BoxCollider stabAttackTriggerArea;
     [SerializeField] private AttackSelector attackSelector;
-    
-    [Header("Controllers")] [Space(5f)] 
-    public WaxSoldierNetcodeController netcodeController;
+    [SerializeField] public WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
     
     public enum States
@@ -29,19 +29,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Hunting,
         Dead,
     }
-
-    // public enum OldAttackAction
-    // {
-    //     None,
-    //     Aim,
-    //     Fire,
-    //     Reload,
-    //     Stab,
-    //     Spin,
-    //     MusketSwing,
-    //     CircularFlailing,
-    //     Lunge
-    // }
 
     public enum MoltenState
     {
@@ -62,6 +49,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         WaxSoldierBlackboard blackboard = new();
         WaxSoldierAdapter adapter = new(this);
+        
+        PlayerTargetableConditions.AddCondition(player => !PlayerUtil.IsPlayerDead(player));
 
         Context = new AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>(blackboard, adapter);
     }
@@ -76,11 +65,18 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         UnsubscribeFromNetworkEvents();
     }
 
+    public override void OnDestroy()
+    {
+        DropMusket();
+        base.OnDestroy();
+    }
+
     public override void Start()
     {
         base.Start();
         if (!IsServer) return;
         
+        CollectAudioClipsAndSources<WaxSoldierClient>();
         SubscribeToNetworkEvents();
         InitializeConfigValues();
         
@@ -155,79 +151,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     }
     #endregion
     
-    #region Animation State & Event Calls
-    public void OnSpawnAnimationStateExit()
-    {
-        LogVerbose("Spawn animation complete.");
-        if (!IsServer) return;
-        TriggerCustomEvent(nameof(OnSpawnAnimationStateExit));
-    }
-
-    public void OnAttackAnimationFinish()
-    {
-        if (!IsServer) return;
-        TriggerCustomEvent(nameof(OnAttackAnimationFinish));
-    }
-    
-    public void OnAnimationEventStabAttackLeap()
-    {
-        LogVerbose("Stab attack leap.");
-        if (!IsServer) return;
-        TriggerCustomEvent(nameof(OnAnimationEventStabAttackLeap));
-    }
-    
-    public void OnAnimationEventStartTargetLook(string lookTransformName)
-    {
-        if (!IsServer) return;
-
-        StateData data = new();
-        data.Add("lookTransform",
-            lookTransformName == "musketMuzzle" ? Context.Blackboard.HeldMusket.muzzleTip : transform);
-        
-        TriggerCustomEvent(nameof(OnAnimationEventStartTargetLook), data);
-    }
-
-    public void OnAnimationEventStopTargetLook()
-    {
-        if (!IsServer) return;
-        LogVerbose("Stop target look.");
-        TriggerCustomEvent(nameof(OnAnimationEventStopTargetLook));
-    }
-
-    public void OnAnimationEventToggleBayonet()
-    {
-        if (!IsServer) return;
-
-        MusketBayonetHitbox bayonetHitbox = Context.Blackboard.HeldMusket.bayonetHitbox;
-        if (bayonetHitbox.currentBayonetMode == MusketBayonetHitbox.BayonentMode.None)
-        {
-            int hash = Context.Blackboard.currentAttackAction.AnimationTriggerHash;
-            if (hash == WaxSoldierClient.SpinAttack)
-            {
-                bayonetHitbox.BeginAttack(MusketBayonetHitbox.BayonentMode.Spin);
-            }
-            if (hash == WaxSoldierClient.StabAttack)
-            {
-                bayonetHitbox.BeginAttack(MusketBayonetHitbox.BayonentMode.Stab);
-            }
-            
-            LogVerbose($"Toggling bayonet on.");
-        }
-        else
-        {
-            LogVerbose($"Toggling bayonet mode off.");
-            bayonetHitbox.EndAttack();
-        }
-    }
-    
-    public void OnAnimationEventMusketShoot()
-    {
-        LogVerbose("Musket fired.");
-        if (!IsServer) return;
-        TriggerCustomEvent(nameof(OnAnimationEventMusketShoot));
-    }
-    #endregion
-    
     #region Little Misc Stuff
     protected override States DetermineInitialState()
     {
@@ -264,15 +187,17 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (!IsServer) return;
         LogVerbose("Initializing config values...");
         
-        Context.Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
-        Context.Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;
-        Context.Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
-        
         Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
         Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
+        Context.Blackboard.AgentAngularSpeed = 200f;
         
         Context.Blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
         Context.Blackboard.AttackSelector = attackSelector;
+        
+        Context.Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
+        Context.Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;
+        Context.Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
+        Context.Adapter.Agent.angularSpeed = Context.Blackboard.AgentAngularSpeed;
     }
     
     protected override string GetLogPrefix()
@@ -300,4 +225,144 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context.Blackboard.IsNetworkEventsSubscribed = false;
     }
     #endregion
+    
+    /// <summary>
+    /// Requests the server to play a specific category of audio clip on a designated <see cref="UnityEngine.AudioSource"/>.
+    /// It will randomly select an audio clip from the array of clips assigned to that particular audio  .
+    /// This method ensures that the selected audio clip is synchronized across all clients.
+    /// </summary>
+    /// <param name="audioClipType">
+    /// A string identifier representing the type/category of the audio clip to be played 
+    /// (e.g., "Stun", "Laugh", "Ambient").
+    /// </param>
+    /// <param name="audioSourceType">
+    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played 
+    /// (e.g., "CreatureVoice", "CreatureSFX", "Footsteps").
+    /// </param>
+    /// <param name="interrupt">
+    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted 
+    /// before playing the new audio clip.
+    /// </param>
+    /// <param name="audibleInWalkieTalkie">
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// to players using walkie-talkies.
+    /// </param>
+    /// <param name="audibleByEnemies">
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// actions.
+    /// </param>
+    /// <param name="slightlyVaryPitch">
+    /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
+    /// </param>
+    [ServerRpc]
+    internal void PlayRandomAudioClipTypeServerRpc(
+        string audioClipType,
+        string audioSourceType,
+        bool interrupt = false,
+        bool audibleInWalkieTalkie = true,
+        bool audibleByEnemies = false,
+        bool slightlyVaryPitch = false)
+    {
+        // Validate audio clip type
+        if (!AudioClips.TryGetValue(audioClipType, out AudioClip[] clipArr) || clipArr == null || clipArr.Length == 0)
+        {
+            LogWarning($"Audio Clip Type '{audioClipType}' not found, is null, or empty.");
+            return;
+        }
+
+        // Validate audio source type
+        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource source) || !source)
+        {
+            LogWarning($"Audio Source Type '{audioSourceType}' not found or null.");
+            return;
+        }
+
+        // Select a random clip index
+        int clipIndex = Random.Range(0, clipArr.Length);
+        PlayAudioClipTypeClientRpc(audioClipType, audioSourceType, clipIndex, interrupt, audibleInWalkieTalkie,
+            audibleByEnemies, slightlyVaryPitch);
+    }
+
+    /// <summary>
+    /// Plays the selected audio clip on the specified <see cref="UnityEngine.AudioSource"/> across all clients.
+    /// This method is invoked by the server to ensure synchronized audio playback.
+    /// </summary>
+    /// <param name="audioClipType">
+    /// A string identifier representing the type/category of the audio clip to be played 
+    /// (e.g., "Stun", "Chase", "Ambient").
+    /// </param>
+    /// <param name="audioSourceType">
+    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played 
+    /// (e.g., "CreatureVoice", "CreatureSfx", "Footsteps").
+    /// </param>
+    /// <param name="clipIndex">
+    /// The index of the <see cref="AudioClip"/> within the array corresponding to <paramref name="audioClipType"/> 
+    /// that should be played.
+    /// </param>
+    /// <param name="interrupt">
+    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted 
+    /// before playing the new audio clip.
+    /// </param>
+    /// <param name="audibleInWalkieTalkie">
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// to players using walkie-talkies.
+    /// </param>
+    /// <param name="audibleByEnemies">
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// actions.
+    /// </param>
+    /// <param name="slightlyVaryPitch">
+    /// Whether to slightly vary the pitch between the original pitch +/- 0.1.
+    /// </param>
+    [ClientRpc]
+    internal void PlayAudioClipTypeClientRpc(
+        string audioClipType,
+        string audioSourceType,
+        int clipIndex,
+        bool interrupt = false,
+        bool audibleInWalkieTalkie = true,
+        bool audibleByEnemies = false,
+        bool slightlyVaryPitch = false)
+    {
+        // Validate audio clip type
+        if (!AudioClips.TryGetValue(audioClipType, out AudioClip[] clipArr) || clipArr == null || clipArr.Length == 0)
+        {
+            LogWarning($"Client: Audio Clip Type '{audioClipType}' not found, is null, or empty.");
+            return;
+        }
+        
+        if (clipIndex < 0 || clipIndex >= clipArr.Length)
+        {
+            LogWarning($"Client: Invalid clip index {clipIndex} received for type '{audioClipType}' (Count: {clipArr.Length}).");
+            return;
+        }
+
+        AudioClip clipToPlay = clipArr[clipIndex];
+        if (!clipToPlay)
+        {
+            LogWarning($"Client: Audio clip at index {clipIndex} for type '{audioClipType}' is null.");
+            return;
+        }
+        
+        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource selectedAudioSource) || selectedAudioSource == null)
+        {
+            LogWarning($"Client: Audio Source Type '{audioSourceType}' not found or is null.");
+            return;
+        }
+
+        LogVerbose(
+            $"Client: Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}'.");
+
+        float oldPitch = selectedAudioSource.pitch;
+        
+        if (interrupt && selectedAudioSource.isPlaying) selectedAudioSource.Stop();
+        if (slightlyVaryPitch) selectedAudioSource.pitch = Random.Range(oldPitch - 0.1f, oldPitch + 0.1f);
+        
+        selectedAudioSource.PlayOneShot(clipToPlay);
+        
+        if (audibleInWalkieTalkie) WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
+        if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
+
+        if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
+    }
 }

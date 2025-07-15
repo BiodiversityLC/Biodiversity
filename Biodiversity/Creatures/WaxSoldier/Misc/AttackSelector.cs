@@ -64,7 +64,7 @@ public class AttackSelector : NetworkBehaviour
         for (int i = 0; i < availableAttacks.Count; i++)
         {
             AttackAction attack = availableAttacks[i];
-            BiodiversityPlugin.LogVerbose($"Checking attack[{i}] = priority={attack.Priority} (MinRange={attack.MinRange}, MaxRange={attack.MaxRange}, RequiresLOS={attack.RequiresLineOfSight})");
+            // BiodiversityPlugin.LogVerbose($"Checking attack[{i}] = priority={attack.Priority} (MinRange={attack.MinRange}, MaxRange={attack.MaxRange}, RequiresLOS={attack.RequiresLineOfSight})");
 
             if (cooldowns.ContainsKey(attack) && cooldowns[attack] > 0)
             {

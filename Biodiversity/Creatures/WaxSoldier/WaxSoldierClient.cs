@@ -32,6 +32,18 @@ public class WaxSoldierClient : MonoBehaviour
     [SerializeField] private Animator unmoltenAnimator;
     [SerializeField] private Animator moltenAnimator;
     [SerializeField] private Transform musketContainer;
+
+    [Header("Audio")] [Space(5f)]
+    [SerializeField] private AudioSource creatureVoice;
+    [SerializeField] private AudioSource footstepsSource;
+    
+    [Space(2f)]
+    
+    [SerializeField] private AudioClip[] activateSfx;
+    [SerializeField] private AudioClip[] aimSfx;
+    [SerializeField] private AudioClip[] spinSfx;
+    [SerializeField] private AudioClip[] lightFootstepSfx;
+    [SerializeField] private AudioClip[] heavyFootstepSfx;
     
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private WaxSoldierNetcodeController netcodeController;

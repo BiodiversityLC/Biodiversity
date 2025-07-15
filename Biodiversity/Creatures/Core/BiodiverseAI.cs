@@ -387,7 +387,8 @@ public abstract class BiodiverseAI : EnemyAI
         float viewWidth = 45f,
         float viewRange = 60f,
         PlayerControllerB currentTargetPlayer = null,
-        float bufferDistance = 1.5f)
+        float bufferDistance = 1.5f,
+        float proximityAwareness = -1f)
     {
         // LogVerbose($"In {nameof(GetClosestVisiblePlayer)}");
         PlayerControllerB bestTarget = null;
@@ -400,7 +401,7 @@ public abstract class BiodiverseAI : EnemyAI
         if (currentTargetPlayer && PlayerTargetableConditions.IsPlayerTargetable(currentTargetPlayer))
         {
             if (HasLineOfSight(currentTargetPlayer.gameplayCamera.transform.position, eyeTransform, viewWidth,
-                    viewRange))
+                    viewRange, proximityAwareness))
             {
                 // The current target player is still valid, and it will be our baseline
                 bestTarget = currentTargetPlayer;
@@ -423,7 +424,7 @@ public abstract class BiodiverseAI : EnemyAI
             }
             
             Vector3 targetPosition = potentialTarget.gameplayCamera.transform.position;
-            if (!HasLineOfSight(targetPosition, eyeTransform, viewWidth, viewRange))
+            if (!HasLineOfSight(targetPosition, eyeTransform, viewWidth, viewRange, proximityAwareness))
             {
                 // LogVerbose($"Player {potentialTarget.playerUsername} is not in LOS.");
                 continue;

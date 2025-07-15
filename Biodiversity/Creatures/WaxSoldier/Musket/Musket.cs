@@ -102,7 +102,7 @@ public class Musket : BiodiverseItem
         bayonetHitMask = 1084754248; // See Util.VanillaLayersUtil for more details
         raycastHitDistanceComparer = Comparer<RaycastHit>.Create((a, b) => a.distance.CompareTo(b.distance));
         
-        bulletRadius = 0.25f;
+        bulletRadius = 0.5f;
         maxBulletDistance = 200f;
         maxAmmo = 1;
 
@@ -111,6 +111,8 @@ public class Musket : BiodiverseItem
         
         itemPositionOffset = itemProperties.positionOffset;
         itemRotationOffset = itemProperties.rotationOffset;
+
+        bayonetHitbox.bayonetCollider = bayonetCollider;
     }
 
     public override void Start()
@@ -200,7 +202,7 @@ public class Musket : BiodiverseItem
                 int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.Player);
                 DamagePlayerServerRpc(player.actualClientId, bulletDamage, CauseOfDeath.Gunshots); // RPC is needed because `PlayerControllerB.DamagePlayer` has an `if (!IsOwner) return;` statement at the start
                 LogVerbose($"Musket bullet delt {bulletDamage} damage to {player.playerUsername}.");
-                break;
+                //break;
             }
             
             if (hit.transform.TryGetComponent(out IHittable iHittable))
@@ -211,7 +213,7 @@ public class Musket : BiodiverseItem
                 int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.IHittable);
                 iHittable.Hit(bulletDamage, bulletRay.origin, playerHeldBy, true, bulletHitId);
                 LogVerbose($"Musket bullet delt {bulletDamage} damage to {iHittable}.");
-                break;
+                //break;
             }
         }
     }
@@ -349,6 +351,14 @@ public class Musket : BiodiverseItem
         AudioClips.Add(nameof(stabIntoFleshSfx), [stabIntoFleshSfx]);
     }
 
+    public void SetupShoot()
+    {
+        if (shootingCoroutine != null) StopCoroutine(shootingCoroutine);
+        shootingCoroutine = null;
+        isPerformingAttackAction = true;
+        shootingCoroutine = StartCoroutine(Shoot());
+    }
+
     #region Abstract Item Class Event Functions
     public override void ItemActivate(bool used, bool buttonDown = true)
     {
@@ -364,10 +374,7 @@ public class Musket : BiodiverseItem
             {
                 if (canAttack)
                 {
-                    if (shootingCoroutine != null) StopCoroutine(shootingCoroutine);
-                    shootingCoroutine = null;
-                    isPerformingAttackAction = true;
-                    shootingCoroutine = StartCoroutine(Shoot());
+                    SetupShoot();
                     break;
                 }
                 

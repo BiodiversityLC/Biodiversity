@@ -26,7 +26,7 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
         base.OnStateEnter(ref initData);
 
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 1.5f;
-        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration *= 3f; // So it can decelerate quickly
+        EnemyAIInstance.Context.Adapter.Agent.acceleration *= 3f; // So it can decelerate quickly
 
         EnemyAIInstance.Context.Adapter.Agent.updateRotation = false;
 
