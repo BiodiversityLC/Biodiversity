@@ -30,7 +30,14 @@ namespace Biodiversity.Creatures.MicBird
                 }
             } else
             {
-                AudioSource.PlayOneShot(mainAI.stepSounds[stepSoundIndex]);
+                try
+                {
+                    AudioSource.PlayOneShot(mainAI.stepSounds[stepSoundIndex]);
+                } catch (NullReferenceException e)
+                {
+                    bool AI = mainAI == null;
+                    BiodiversityPlugin.Logger.LogWarning($"Caught null on MicBird step sounds. Please forward this error to the Biodiversity discord thread. ({mainAI == null}, {(AI ? (mainAI.stepSounds == null) : false)})");
+                }
 
                 stepSoundIndex++;
                 if (stepSoundIndex > mainAI.stepSounds.Length - 1)
