@@ -266,7 +266,7 @@ namespace Biodiversity.Creatures.MicBird
 
         public override void Update()
         {
-            if (StartOfRound.Instance.shipIsLeaving && IsServer && !leaving && enemyHP > -4)
+            if (StartOfRound.Instance.shipIsLeaving && IsServer && !leaving && enemyHP >= 0)
             {
                 creatureAnimator.SetTrigger("Leave");
                 leaving = true;
