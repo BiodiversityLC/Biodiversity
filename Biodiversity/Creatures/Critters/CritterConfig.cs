@@ -38,7 +38,7 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	public bool LeafBoyEnabled { get; private set; } = true;
 	
 	[field: Tooltip("Spawn weight of the Leaf boys on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:15,Assurance:85,Artifice:2,Seichi:10,Fray:300,Vertigo:5,Integrity:25,Collateral:10,Hydro:38,Brutality:15,USC Vortex:12,Phaedra:35,Valiance:28,Natit:8,Starship-13:30,Motra:8,Filitrios:4,Utril:8,Kanie:10";
+	public string LeafBoyRarity { get; private set; } = "Vow:100,Adamance:15,Assurance:85,Artifice:2,Seichi:10,Fray:300,Vertigo:5,Integrity:25,Collateral:10,Hydro:38,Brutality:15,USC Vortex:12,Phaedra:35,Valiance:28,Natit:8,Starship-13:30,Motra:8,Filitrios:4,Utril:8,Kanie:10,Terra:25";
 
 	[field: Tooltip("The distance a player has to be from a LeafBoy for him to get scared.")]
 	[field: Range(1f, 20f)] 
