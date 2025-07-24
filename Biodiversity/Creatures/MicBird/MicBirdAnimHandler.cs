@@ -36,7 +36,7 @@ namespace Biodiversity.Creatures.MicBird
                 } catch (NullReferenceException e)
                 {
                     bool AI = mainAI == null;
-                    BiodiversityPlugin.Logger.LogWarning($"Caught null on MicBird step sounds. Please forward this error to the Biodiversity discord thread. ({mainAI == null}, {(AI ? (mainAI.stepSounds == null) : false)})");
+                    BiodiversityPlugin.LogVerbose($"Caught null on MicBird step sounds. This is caused by a mod incompatibility but can be ignored. ({mainAI == null}, {(AI ? (mainAI.stepSounds == null) : false)})");
                 }
 
                 stepSoundIndex++;
