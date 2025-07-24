@@ -100,24 +100,29 @@ internal class OgopogoAI : BiodiverseAI
         loseRange = OgopogoHandler.Instance.Config.LoseRange;
         attackDistance = OgopogoHandler.Instance.Config.AttackDistance;
 
+        BiodiversityPlugin.LogVerbose($"Ogo says the level name is:{Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name)}");
+
         //Gorgonzola
-        if (Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name) == "GorgonzolaLevel")
+        if (Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name) == "gorgonzolalevel")
         {
-            skinnedMeshRenderers[0].material = OgopogoHandler.Instance.Assets.CheeseOgoMaterial;
+            skinnedMeshRenderers[0].sharedMaterial = OgopogoHandler.Instance.Assets.CheeseOgoMaterial;
+        } else
+        {
+            skinnedMeshRenderers[0].sharedMaterial = OgopogoHandler.Instance.Assets.OgoMaterial;
         }
 
-        /*
-        foreach (SelectableLevel level in StartOfRound.Instance.levels)
-        {
-            Plugin.Log.LogInfo(level.PlanetName);
-            foreach (SpawnableEnemyWithRarity enemy in level.DaytimeEnemies)
+            /*
+            foreach (SelectableLevel level in StartOfRound.Instance.levels)
             {
-                Plugin.Log.LogInfo(enemy.enemyType.enemyName);
+                Plugin.Log.LogInfo(level.PlanetName);
+                foreach (SpawnableEnemyWithRarity enemy in level.DaytimeEnemies)
+                {
+                    Plugin.Log.LogInfo(enemy.enemyType.enemyName);
+                }
             }
-        }
-        */
+            */
 
-        _playerDistances = new float[StartOfRound.Instance.allPlayerScripts.Length];
+            _playerDistances = new float[StartOfRound.Instance.allPlayerScripts.Length];
 
         // Loop through all triggers and get all the water
         try

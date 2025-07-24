@@ -27,5 +27,8 @@ internal class OgopogoAssets(string filePath) : BiodiverseAssetBundle<OgopogoAss
 
 	[LoadFromBundle("CheeseOgo")]
 	public Material CheeseOgoMaterial;
+
+	[LoadFromBundle("The Ogopogo 1")]
+	public Material OgoMaterial;
 #pragma	warning restore 0649	
 }
