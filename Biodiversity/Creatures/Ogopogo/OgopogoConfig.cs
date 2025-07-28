@@ -35,7 +35,7 @@ public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<Ogopo
     public float OgopogoAmbienceMax { get; private set; } = 600;
 
     [field: Tooltip("Spawn weight of the Vermin on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
-	public string VerminRarity { get; private set; } = "All:100";
+	public string VerminRarity { get; private set; } = "All:1";
 
 	[field: Tooltip("Moons where Vermin is disabled during flooding.")]
 	public string VerminDisableLevels { get; private set; } = "AdamanceLevel,DineLevel,ArtificeLevel,Etern,Pelagia,Cesspool,Hyve,Affliction";
