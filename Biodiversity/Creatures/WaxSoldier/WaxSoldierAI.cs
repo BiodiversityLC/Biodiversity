@@ -92,6 +92,32 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         GlobalTransitions.Add(new TransitionToDeadState(this));
     }
 
+    private float heatGenPerSecond;
+    public void UpdateHeat()
+    {
+        WaxSoldierBlackboard bb = Context.Blackboard;
+        
+        float coolingFactor = Mathf.Exp(-Time.deltaTime / bb.CoolingTimeConstant);
+        bb.WaxTemperature = bb.WaxTemperature * coolingFactor + bb.AmbientTemperature * (1f - coolingFactor);
+        bb.WaxTemperature += heatGenPerSecond * Time.deltaTime;
+        
+        float targetDurability;
+        if (bb.WaxTemperature <= bb.WaxFullyMeltTemperature) targetDurability = 1f;
+        else if (bb.WaxTemperature >= bb.WaxMeltingTemperature) targetDurability = 0f;
+        else
+        {
+            float midTemperature = 0.5f * (bb.WaxMeltingTemperature + bb.WaxFullyMeltTemperature);
+            targetDurability = 1f / (1f + Mathf.Exp(0.35f * (bb.WaxTemperature - midTemperature)));
+        }
+
+        float lerpFactor = 1f - Mathf.Exp(-Time.deltaTime / 5f);
+        bb.WaxDurability = Mathf.Lerp(bb.WaxDurability, targetDurability, lerpFactor);
+        bb.WaxDurability = Mathf.Clamp01(bb.WaxDurability);
+    }
+
+    public void AddHeat(float deltaC) => Context.Blackboard.WaxTemperature += deltaC;
+    public void AddHeatRate(float deltaCdt) => heatGenPerSecond += deltaCdt;
+
     public void DetermineGuardPostPosition()
     {
         //todo: create tool that lets people easily select good guard spots for the wax soldier (nearly identical to the vending machine placement tool idea)

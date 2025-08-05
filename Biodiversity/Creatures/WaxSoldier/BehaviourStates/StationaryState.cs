@@ -30,6 +30,12 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
         EnemyAIInstance.netcodeController.AnimationParamInSalute.Set(true);
     }
 
+    internal override void UpdateBehaviour()
+    {
+        base.UpdateBehaviour();
+        EnemyAIInstance.UpdateHeat();
+    }
+
     internal override void OnStateExit()
     {
         base.OnStateExit();

@@ -15,6 +15,13 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float ViewWidth { get; set; }
     public float ViewRange { get; set; }
     
+    public float WaxDurability { get; set; }
+    public float WaxTemperature { get; set; }
+    public float AmbientTemperature { get; set; }
+    public float CoolingTimeConstant { get; set; }
+    public float WaxMeltingTemperature { get; set; }
+    public float WaxFullyMeltTemperature { get; set; }
+    
     public bool IsNetworkEventsSubscribed { get; set; }
     
     public Pose GuardPost { get; set; }

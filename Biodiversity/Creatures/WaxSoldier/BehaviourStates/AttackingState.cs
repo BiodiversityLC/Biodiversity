@@ -43,6 +43,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
+        EnemyAIInstance.UpdateHeat();
         
         if (lookAtTarget && EnemyAIInstance.Context.Adapter.TargetPlayer)
         {
