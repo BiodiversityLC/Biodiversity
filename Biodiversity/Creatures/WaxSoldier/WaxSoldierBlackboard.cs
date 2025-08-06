@@ -21,6 +21,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float CoolingTimeConstant { get; set; }
     public float WaxMeltingTemperature { get; set; }
     public float WaxFullyMeltTemperature { get; set; }
+    public WaxSoldierAI.MoltenState MoltenState { get; set; }
     
     public bool IsNetworkEventsSubscribed { get; set; }
     

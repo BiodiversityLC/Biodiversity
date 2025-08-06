@@ -20,6 +20,7 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
     
     public bool IsDead => instance.isEnemyDead;
 
+    public float StunNormalizedTimer => instance.stunNormalizedTimer;
     public float OpenDoorSpeedMultiplier { get => instance.openDoorSpeedMultiplier; set => instance.openDoorSpeedMultiplier = value; } //todo: turn this to "open door speed", see DoorLock.OnTriggerStay
     public float AIIntervalLength { get => instance.AIIntervalTime; set => instance.AIIntervalTime = value; }
 

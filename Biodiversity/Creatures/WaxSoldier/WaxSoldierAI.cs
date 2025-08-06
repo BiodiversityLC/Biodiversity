@@ -27,6 +27,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Pursuing,
         Attacking,
         Hunting,
+        TransformingToMolten,
+        Stunned,
         Dead,
     }
 
@@ -113,6 +115,11 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         float lerpFactor = 1f - Mathf.Exp(-Time.deltaTime / 5f);
         bb.WaxDurability = Mathf.Lerp(bb.WaxDurability, targetDurability, lerpFactor);
         bb.WaxDurability = Mathf.Clamp01(bb.WaxDurability);
+
+        if (bb.WaxDurability <= 0 && Context.Blackboard.MoltenState != MoltenState.Molten && CurrentState.GetStateType() != States.Stunned)
+        {
+            SwitchBehaviourState(States.TransformingToMolten);
+        }
     }
 
     public void AddHeat(float deltaC) => Context.Blackboard.WaxTemperature += deltaC;
@@ -160,16 +167,25 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     #region Lethal Company Vanilla Events
     public override void SetEnemyStunned(
-        bool setToStunned, 
-        float setToStunTime = 1f, 
+        bool setToStunned,
+        float setToStunTime = 1f,
         PlayerControllerB setStunnedByPlayer = null)
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
         if (!IsServer) return;
-        CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
+        
+        States curState = CurrentState.GetStateType();
+        if (curState != States.Stunned && curState != States.Dead && curState != States.Spawning)
+            SwitchBehaviourState(States.Stunned);
+        
+        // CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
     }
 
-    public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+    public override void HitEnemy(
+        int force = 1,
+        PlayerControllerB playerWhoHit = null,
+        bool playHitSFX = false,
+        int hitID = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
         if (!IsServer) return;
