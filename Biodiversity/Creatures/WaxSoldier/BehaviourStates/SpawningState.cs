@@ -20,6 +20,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
+        EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Unmolten;
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
 

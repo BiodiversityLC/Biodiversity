@@ -14,8 +14,9 @@ namespace Biodiversity.Core.Attributes;
 /// Overloading refers to methods that have the same name but different parameters.
 /// </para>
 /// <para>
-/// If you are having problems with getting the exact <see cref="AssemblyName"/>, <see cref="TargetClassName"/>, <see cref="TargetMethodName"/>,
+/// If you are having problems with getting the exact <see cref="AssemblyName"/>/<see cref="TargetClassName"/>/<see cref="TargetMethodName"/>,
 /// or are having problems in general, then turn on verbose logging in the <c>Lethal Company\BepInEx\config\com.github.biodiversitylc.Biodiversity.cfg</c> config file.
+/// Turning on verbose logging will allow you to see every <see cref="AssemblyName"/>, <see cref="TargetClassName"/> and <see cref="TargetMethodName"/> that was found.
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]

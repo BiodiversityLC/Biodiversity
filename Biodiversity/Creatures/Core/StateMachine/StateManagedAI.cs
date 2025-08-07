@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Unity.Netcode;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Core.StateMachine;
 

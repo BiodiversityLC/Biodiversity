@@ -321,7 +321,7 @@ public abstract class BiodiverseAI : EnemyAI
         float viewRange = 60f,
         float proximityAwareness = -1f)
     {
-        // LogVerbose($"In {nameof(HasLineOfSight)}");
+        LogVerbose($"In {nameof(HasLineOfSight)}");
         Vector3 eyePosition = eyeTransform.position;
         Vector3 directionToTarget = targetPosition - eyePosition;
         float distance = directionToTarget.magnitude;
@@ -329,7 +329,7 @@ public abstract class BiodiverseAI : EnemyAI
         // 1). Range check
         if (distance > viewRange)
         {
-            // LogVerbose($"Distance check failed.");
+            LogVerbose($"Distance check failed: {distance} (distance) > {viewRange} (viewRange)");
             return false;
         }
         
@@ -340,7 +340,7 @@ public abstract class BiodiverseAI : EnemyAI
             float dotProduct = Vector3.Dot(eyeTransform.forward, directionToTarget.normalized);
             if (dotProduct < Mathf.Cos(viewWidth * 0.5f * Mathf.Deg2Rad))
             {
-                // LogVerbose($"Dot product check failed: {dotProduct} < {Mathf.Cos(viewWidth * 0.5f * Mathf.Deg2Rad)}");
+                LogVerbose($"Dot product check failed: {dotProduct} (dotProduct) < {Mathf.Cos(viewWidth * 0.5f * Mathf.Deg2Rad)}");
                 return false;
             }
         }
@@ -348,7 +348,7 @@ public abstract class BiodiverseAI : EnemyAI
         // 3). Obstruction check
         if (Physics.Linecast(eyePosition, targetPosition, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
         {
-            // LogVerbose("Line of sight check failed");
+            LogVerbose("Line of sight check failed");
             return false;
         }
 
@@ -381,6 +381,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="viewRange">The maximum distance for the check.</param>
     /// <param name="currentTargetPlayer">The player currently being targeted.</param>
     /// <param name="bufferDistance">The distance buffer to prevent target switching. A new target must be this much closer to be chosen.</param>
+    /// <param name="proximityAwareness"></param>
     /// <returns>The best player target, or null if none are found.</returns>
     internal PlayerControllerB GetClosestVisiblePlayer(
         Transform eyeTransform,
@@ -390,7 +391,7 @@ public abstract class BiodiverseAI : EnemyAI
         float bufferDistance = 1.5f,
         float proximityAwareness = -1f)
     {
-        // LogVerbose($"In {nameof(GetClosestVisiblePlayer)}");
+        LogVerbose($"In {nameof(GetClosestVisiblePlayer)}");
         PlayerControllerB bestTarget = null;
         float bestTargetDistanceSqr = float.MaxValue;
         
@@ -413,20 +414,20 @@ public abstract class BiodiverseAI : EnemyAI
         for (int i = 0; i < allPlayers.Length; i++)
         {
             PlayerControllerB potentialTarget = allPlayers[i];
-            // LogVerbose($"Evaluating player {potentialTarget.playerUsername}");
+            LogVerbose($"Evaluating player {potentialTarget.playerUsername}");
             
             // Skip the check if this player is the current target player; they have already been validated
             if (potentialTarget == currentTargetPlayer) continue;
             if (!PlayerTargetableConditions.IsPlayerTargetable(potentialTarget))
             {
-                // LogVerbose($"Player {potentialTarget.playerUsername} is not targetable.");
+                LogVerbose($"Player {potentialTarget.playerUsername} is not targetable.");
                 continue;
             }
             
             Vector3 targetPosition = potentialTarget.gameplayCamera.transform.position;
             if (!HasLineOfSight(targetPosition, eyeTransform, viewWidth, viewRange, proximityAwareness))
             {
-                // LogVerbose($"Player {potentialTarget.playerUsername} is not in LOS.");
+                LogVerbose($"Player {potentialTarget.playerUsername} is not in LOS.");
                 continue;
             }
             
