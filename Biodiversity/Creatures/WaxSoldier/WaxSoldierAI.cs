@@ -1,4 +1,5 @@
-﻿using Biodiversity.Core.Integration;
+﻿using Biodiversity.Behaviours.Heat;
+using Biodiversity.Core.Integration;
 using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
@@ -19,6 +20,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private BoxCollider stabAttackTriggerArea;
     [SerializeField] private AttackSelector attackSelector;
+    [SerializeField] private HeatSensor heatSensor;
     [SerializeField] public WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
     
@@ -117,15 +119,16 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         GlobalTransitions.Add(new TransitionToDeadState(this));
     }
-
-    private float heatGenPerSecond;
+    
     public void UpdateHeat()
     {
         WaxSoldierBlackboard bb = Context.Blackboard;
+        float dt = Time.deltaTime;
+        float heatRatePerSec = heatSensor.heatRate;
         
-        float coolingFactor = Mathf.Exp(-Time.deltaTime / bb.CoolingTimeConstant);
+        float coolingFactor = Mathf.Exp(-dt / bb.CoolingTimeConstant);
         bb.WaxTemperature = bb.WaxTemperature * coolingFactor + bb.AmbientTemperature * (1f - coolingFactor);
-        bb.WaxTemperature += heatGenPerSecond * Time.deltaTime;
+        bb.WaxTemperature += heatRatePerSec * dt;
         
         float targetDurability;
         if (bb.WaxTemperature <= bb.WaxSofteningTemperature) targetDurability = 1f;
@@ -136,18 +139,14 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             targetDurability = 1f / (1f + Mathf.Exp(0.35f * (bb.WaxTemperature - midTemperature)));
         }
 
-        float lerpFactor = 1f - Mathf.Exp(-Time.deltaTime / 5f);
-        bb.WaxDurability = Mathf.Lerp(bb.WaxDurability, targetDurability, lerpFactor);
-        bb.WaxDurability = Mathf.Clamp01(bb.WaxDurability);
+        float lerpFactor = 1f - Mathf.Exp(-dt / 5f);
+        bb.WaxDurability = Mathf.Clamp01(Mathf.Lerp(bb.WaxDurability, targetDurability, lerpFactor));
 
         if (bb.WaxDurability <= 0 && Context.Blackboard.MoltenState != MoltenState.Molten && CurrentState.GetStateType() != States.Stunned)
         {
             SwitchBehaviourState(States.TransformingToMolten);
         }
     }
-
-    public void AddHeat(float deltaC) => Context.Blackboard.WaxTemperature += deltaC;
-    public void AddHeatRate(float deltaCdt) => heatGenPerSecond += deltaCdt;
 
     public void DetermineGuardPostPosition()
     {
@@ -255,7 +254,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
         Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
-        Context.Blackboard.AgentAngularSpeed = 200f;
+        Context.Blackboard.AgentAngularSpeed = 250f;
         Context.Blackboard.WaxDurability = 1f;
         Context.Blackboard.WaxTemperature = 20f;
         Context.Blackboard.AmbientTemperature = 20f;

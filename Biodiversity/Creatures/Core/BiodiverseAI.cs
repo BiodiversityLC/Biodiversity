@@ -285,7 +285,7 @@ public abstract class BiodiverseAI : EnemyAI
 
                 if (currentPathStatus == PathStatus.ValidButInLos && allowFallbackIfBlocked)
                 {
-                    if (bestNode == null)
+                    if (!bestNode)
                     {
                         pathStatus = PathStatus.ValidButInLos;
                         bestNode = node.transform;
@@ -321,34 +321,51 @@ public abstract class BiodiverseAI : EnemyAI
         float viewRange = 60f,
         float proximityAwareness = -1f)
     {
-        LogVerbose($"In {nameof(HasLineOfSight)}");
+        // LogVerbose($"In {nameof(HasLineOfSight)}");
+
+        if (!eyeTransform) return false;
+        
         Vector3 eyePosition = eyeTransform.position;
         Vector3 directionToTarget = targetPosition - eyePosition;
-        float distance = directionToTarget.magnitude;
+        float sqrDistance = directionToTarget.sqrMagnitude;
         
-        // 1). Range check
-        if (distance > viewRange)
+        // If the target is directly on top of you, then treat them as visible
+        if (sqrDistance <= 0.0001f) return true;
+        
+        // 1). Get effective range by taking fog into account
+        float effectiveRange = viewRange;
+        if (isOutside && !enemyType.canSeeThroughFog &&
+            TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Foggy)
         {
-            LogVerbose($"Distance check failed: {distance} (distance) > {viewRange} (viewRange)");
+            effectiveRange = Mathf.Clamp(viewRange, 0f, 30f);
+        }
+        
+        // 2). Range check
+        float effectiveRangeSqr = effectiveRange * effectiveRange;
+        if (sqrDistance > effectiveRangeSqr)
+        {
+            // LogVerbose($"Distance check failed: {Mathf.Sqrt(sqrDistance)} (distance) > {effectiveRange} (effectiveRange)");
             return false;
         }
         
-        // 2). FOV check
-        // The proximity can bypass the FOV check, but not the physics obstruction check
-        if (distance > proximityAwareness)
+        // 3). FOV check. The proximity can bypass the FOV check, but not the physics obstruction check.
+        float distance = Mathf.Sqrt(sqrDistance);
+        if (!(proximityAwareness >= 0f && distance <= proximityAwareness))
         {
-            float dotProduct = Vector3.Dot(eyeTransform.forward, directionToTarget.normalized);
-            if (dotProduct < Mathf.Cos(viewWidth * 0.5f * Mathf.Deg2Rad))
+            float halfFov = Mathf.Clamp(viewWidth, 0f, 180f) * 0.5f * Mathf.Deg2Rad;
+            float cosHalfFov = Mathf.Cos(halfFov);
+            float dotProduct = Vector3.Dot(eyeTransform.forward, directionToTarget / distance);
+            if (dotProduct < cosHalfFov)
             {
-                LogVerbose($"Dot product check failed: {dotProduct} (dotProduct) < {Mathf.Cos(viewWidth * 0.5f * Mathf.Deg2Rad)}");
+                // LogVerbose($"FOV check failed: {dotProduct} (dotProduct) < {cosHalfFov} (cosHalfFov)");
                 return false;
             }
         }
         
-        // 3). Obstruction check
-        if (Physics.Linecast(eyePosition, targetPosition, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
+        // 4). Obstruction check
+        if (Physics.Linecast(eyePosition, targetPosition, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
         {
-            LogVerbose("Line of sight check failed");
+            // LogVerbose("Line of sight check failed");
             return false;
         }
 
@@ -391,7 +408,7 @@ public abstract class BiodiverseAI : EnemyAI
         float bufferDistance = 1.5f,
         float proximityAwareness = -1f)
     {
-        LogVerbose($"In {nameof(GetClosestVisiblePlayer)}");
+        // LogVerbose($"In {nameof(GetClosestVisiblePlayer)}");
         PlayerControllerB bestTarget = null;
         float bestTargetDistanceSqr = float.MaxValue;
         
@@ -414,20 +431,20 @@ public abstract class BiodiverseAI : EnemyAI
         for (int i = 0; i < allPlayers.Length; i++)
         {
             PlayerControllerB potentialTarget = allPlayers[i];
-            LogVerbose($"Evaluating player {potentialTarget.playerUsername}");
+            // LogVerbose($"Evaluating player {potentialTarget.playerUsername}");
             
             // Skip the check if this player is the current target player; they have already been validated
             if (potentialTarget == currentTargetPlayer) continue;
             if (!PlayerTargetableConditions.IsPlayerTargetable(potentialTarget))
             {
-                LogVerbose($"Player {potentialTarget.playerUsername} is not targetable.");
+                // LogVerbose($"Player {potentialTarget.playerUsername} is not targetable.");
                 continue;
             }
             
             Vector3 targetPosition = potentialTarget.gameplayCamera.transform.position;
             if (!HasLineOfSight(targetPosition, eyeTransform, viewWidth, viewRange, proximityAwareness))
             {
-                LogVerbose($"Player {potentialTarget.playerUsername} is not in LOS.");
+                // LogVerbose($"Player {potentialTarget.playerUsername} is not in LOS.");
                 continue;
             }
             
