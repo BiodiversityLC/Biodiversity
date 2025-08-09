@@ -100,7 +100,7 @@ internal class OgopogoAI : BiodiverseAI
         loseRange = OgopogoHandler.Instance.Config.LoseRange;
         attackDistance = OgopogoHandler.Instance.Config.AttackDistance;
 
-        BiodiversityPlugin.LogVerbose($"Ogo says the level name is:{Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name)}");
+        BiodiversityPlugin.LogVerbose($"Ogo says the level name is:{Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name)}:{RoundManager.Instance.currentLevel.name}");
 
         //Gorgonzola
         if (Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name) == "gorgonzolalevel")
@@ -161,25 +161,11 @@ internal class OgopogoAI : BiodiverseAI
 
             bool usedPredefinedPos = false;
 
-            Dictionary<string, Vector3[]> Levels = new()
-            { 
-                { "VowLevel", [
-                        new Vector3(-104.800003f, -22.0610008f, 110.330002f), 
-                        new Vector3(27f, -22.0610008f, -61.2000008f)
-                    ]
-                },
-                { "AdamanceLevel", [
-                        new Vector3(58.1199989f, -11.04f, -1.85000002f), 
-                        new Vector3(52.0800018f, -11.04f, -12.5900002f)
-                    ]
-                }
-            };
-
-            if (Levels.TryGetValue(StartOfRound.Instance.currentLevel.name, out Vector3[] posVectors))
+            if (OgopogoHandler.LevelsParsedStaticSpawns.TryGetValue(StartOfRound.Instance.currentLevel.name, out List<Vector3> posVectors))
             {
                 //BiodiversityPlugin.Logger.LogInfo("The thing is working");
                 usedPredefinedPos = true;
-                int numberOfPos = posVectors.Length;
+                int numberOfPos = posVectors.Count;
 
                 int random = Random.Range(0, numberOfPos);
 

@@ -28,7 +28,10 @@ public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<Ogopo
 	[field: Tooltip("Moons where Ogopogo's wander is disabled.")]
 	public string OgopogoWanderDisable { get; private set; } = "VowLevel,Submersion,Gorgonzola,Natit,Bozoros,Phaedra";
 
-	[field: Tooltip("Ogopogo mineshaft ambient min timer.")]
+	[field: Tooltip("Static spawn positions for certain moons. Format: LevelName:(x,y,z)/(x2,y2,z2);LevelName2:(x,y,z)/(x2,y2,z2)")]
+	public string OgopogoStaticSpawns { get; private set; } = "VowLevel:(-104.800003, -22.0610008, 110.330002)/(27, -22.0610008, -61.2000008);AdamanceLevel:(58.1199989, -11.04, -1.85000002)/(52.0800018, -11.04, -12.5900002)";
+
+    [field: Tooltip("Ogopogo mineshaft ambient min timer.")]
 	public float OgopogoAmbienceMin { get; private set; } = 90;
 
     [field: Tooltip("Ogopogo mineshaft ambient max timer.")]
