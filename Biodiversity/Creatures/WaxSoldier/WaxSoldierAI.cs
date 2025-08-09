@@ -1,4 +1,6 @@
-﻿using Biodiversity.Creatures.Core;
+﻿using Biodiversity.Behaviours.Heat;
+using Biodiversity.Core.Integration;
+using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
@@ -12,9 +14,13 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 {
 #pragma warning disable 0649
+    [Header("Transforms")]
+    [SerializeField] private Transform ImperiumInsightsPanelAnchor;
+    
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private BoxCollider stabAttackTriggerArea;
     [SerializeField] private AttackSelector attackSelector;
+    [SerializeField] private HeatSensor heatSensor;
     [SerializeField] public WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
     
@@ -27,6 +33,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Pursuing,
         Attacking,
         Hunting,
+        TransformingToMolten,
+        Stunned,
         Dead,
     }
 
@@ -79,6 +87,26 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         CollectAudioClipsAndSources<WaxSoldierClient>();
         SubscribeToNetworkEvents();
         InitializeConfigValues();
+
+        if (ImperiumIntegration.IsLoaded)
+        {
+            bool isAgentNull = !Context.Adapter.Agent;
+
+            Imperium.API.Visualization.InsightsFor<WaxSoldierAI>()
+                .UnregisterInsight("Movement Speed")
+                .UnregisterInsight("Location")
+                
+                .SetPersonalNameGenerator(entity => entity.BioId)
+                .SetPositionOverride(entity => entity.ImperiumInsightsPanelAnchor.position)
+                
+                .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
+                .RegisterInsight("Speed",
+                    entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.speed:0.0}" : "0")
+                .RegisterInsight("Acceleration",
+                    entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.acceleration:0.0}" : "0")
+                .RegisterInsight("Wax Temperature", entity => $"{entity.Context.Blackboard.WaxTemperature:0.00} °C")
+                .RegisterInsight("Wax Durability", entity => $"{entity.Context.Blackboard.WaxDurability * 100} %");
+        }
         
         LogVerbose("Wax Soldier spawned!");
     }
@@ -90,6 +118,34 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         base.InitializeGlobalTransitions();
         
         GlobalTransitions.Add(new TransitionToDeadState(this));
+    }
+    
+    public void UpdateHeat()
+    {
+        WaxSoldierBlackboard bb = Context.Blackboard;
+        float dt = Time.deltaTime;
+        float heatRatePerSec = heatSensor.heatRate;
+        
+        float coolingFactor = Mathf.Exp(-dt / bb.CoolingTimeConstant);
+        bb.WaxTemperature = bb.WaxTemperature * coolingFactor + bb.AmbientTemperature * (1f - coolingFactor);
+        bb.WaxTemperature += heatRatePerSec * dt;
+        
+        float targetDurability;
+        if (bb.WaxTemperature <= bb.WaxSofteningTemperature) targetDurability = 1f;
+        else if (bb.WaxTemperature >= bb.WaxMeltTemperature) targetDurability = 0f;
+        else
+        {
+            float midTemperature = 0.5f * (bb.WaxSofteningTemperature + bb.WaxMeltTemperature);
+            targetDurability = 1f / (1f + Mathf.Exp(0.35f * (bb.WaxTemperature - midTemperature)));
+        }
+
+        float lerpFactor = 1f - Mathf.Exp(-dt / 5f);
+        bb.WaxDurability = Mathf.Clamp01(Mathf.Lerp(bb.WaxDurability, targetDurability, lerpFactor));
+
+        if (bb.WaxDurability <= 0 && Context.Blackboard.MoltenState != MoltenState.Molten && CurrentState.GetStateType() != States.Stunned)
+        {
+            SwitchBehaviourState(States.TransformingToMolten);
+        }
     }
 
     public void DetermineGuardPostPosition()
@@ -134,16 +190,25 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     #region Lethal Company Vanilla Events
     public override void SetEnemyStunned(
-        bool setToStunned, 
-        float setToStunTime = 1f, 
+        bool setToStunned,
+        float setToStunTime = 1f,
         PlayerControllerB setStunnedByPlayer = null)
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
         if (!IsServer) return;
-        CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
+        
+        States curState = CurrentState.GetStateType();
+        if (curState != States.Stunned && curState != States.Dead && curState != States.Spawning)
+            SwitchBehaviourState(States.Stunned);
+        
+        // CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
     }
 
-    public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+    public override void HitEnemy(
+        int force = 1,
+        PlayerControllerB playerWhoHit = null,
+        bool playHitSFX = false,
+        int hitID = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
         if (!IsServer) return;
@@ -189,7 +254,12 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
         Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
-        Context.Blackboard.AgentAngularSpeed = 200f;
+        Context.Blackboard.AgentAngularSpeed = 250f;
+        Context.Blackboard.WaxDurability = 1f;
+        Context.Blackboard.WaxTemperature = 20f;
+        Context.Blackboard.AmbientTemperature = 20f;
+        Context.Blackboard.WaxSofteningTemperature = 40f;
+        Context.Blackboard.WaxMeltTemperature = 60f;
         
         Context.Blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
         Context.Blackboard.AttackSelector = attackSelector;
@@ -208,7 +278,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     private void SubscribeToNetworkEvents()
     {
         if (!IsServer || Context.Blackboard.IsNetworkEventsSubscribed) return;
-        LogVerbose("Subscribing to network events.");
+        LogVerbose("Subscribing to network events...");
         
         netcodeController.OnSpawnMusket += HandleSpawnMusket;
         
@@ -218,7 +288,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     private void UnsubscribeFromNetworkEvents()
     {
         if (!IsServer || !Context.Blackboard.IsNetworkEventsSubscribed) return;
-        LogVerbose("Unsubscribing from network events.");
+        LogVerbose("Unsubscribing from network events...");
         
         netcodeController.OnSpawnMusket -= HandleSpawnMusket;
         
@@ -366,3 +436,5 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
     }
 }
+
+// https://discord.com/channels/1168655651455639582/1225942840282976316/1299356591795077131

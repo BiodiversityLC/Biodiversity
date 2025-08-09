@@ -32,6 +32,7 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
+        EnemyAIInstance.UpdateHeat();
         EnemyAIInstance.MoveWithAcceleration();
     }
 }

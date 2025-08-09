@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Biodiversity.Core.Integration;
+using System.Collections;
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
 using Biodiversity.Creatures.Aloe.Types.Networking;
@@ -99,6 +100,23 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         PlayerTargetableConditions.AddCondition(player => player.isInsideFactory);
         PlayerTargetableConditions.AddCondition(player => player.sinkingValue < 0.7300000190734863);
         PlayerTargetableConditions.AddCondition(player => !AloeSharedData.Instance.IsPlayerKidnapBound(player));
+
+        if (ImperiumIntegration.IsLoaded)
+        {
+            bool isAgentNull = !agent;
+
+            Imperium.API.Visualization.InsightsFor<AloeServerAI>()
+                .UnregisterInsight("Movement Speed")
+                .UnregisterInsight("Location")
+
+                .SetPersonalNameGenerator(entity => entity.BioId)
+
+                .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
+                .RegisterInsight("Speed",
+                    entity => !isAgentNull ? $"{agent.speed:0.0}" : "0")
+                .RegisterInsight("Acceleration",
+                    entity => !isAgentNull ? $"{agent.acceleration:0.0}" : "0");
+        }
         
         LogVerbose("Aloe spawned!");
     }

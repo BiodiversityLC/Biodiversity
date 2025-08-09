@@ -1,14 +1,15 @@
 ﻿using Biodiversity;
 using Biodiversity.Util;
 using GameNetcodeStuff;
-using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-// This component is used for bayonet collision detection when wielded by the Wax Soldier.
-// The collisions for when it is wielded by the player, is handled in the main Musket script (it is meant to mimic how the shovel works (monty wanted it this way)).
+/// <summary>
+/// This component is used for bayonet collision detection when wielded by the Wax Soldier.
+/// The collisions for when it is wielded by the player, is handled in the main Musket script (it is meant to mimic how the shovel works (monty wanted it this way)).
+/// </summary>
 [RequireComponent(typeof(Rigidbody), typeof(Collider))]
 public class MusketBayonetHitbox : NetworkBehaviour
 {

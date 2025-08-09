@@ -1,4 +1,5 @@
-﻿using Biodiversity.Items;
+﻿using Biodiversity.Core.Integration;
+using Biodiversity.Items;
 using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
@@ -120,6 +121,20 @@ public class Musket : BiodiverseItem
         base.Start();
 
         bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.5f);
+
+        if (ImperiumIntegration.IsLoaded)
+        {
+            Imperium.API.Visualization.InsightsFor<Musket>()
+                .UnregisterInsight("Used Up")
+                .UnregisterInsight("Cooldown")
+                .UnregisterInsight("Location")
+
+                .RegisterInsight("Ammo", item => item.currentAmmo.ToString())
+                .RegisterInsight("Trigger Safety", item => isSafetyOn.Value ? "On" : "Off")
+                .RegisterInsight("Attack Mode", item => item.currentAttackMode == AttackMode.Gun
+                    ? "Shoot"
+                    : "Stab");
+        }
     }
 
     private bool CanAttack(out AttackFailureReason failureReason)
@@ -429,6 +444,7 @@ public class Musket : BiodiverseItem
     {
         itemProperties.positionOffset = isHeldByWaxSoldier ? Vector3.zero : itemPositionOffset;
         itemProperties.rotationOffset = isHeldByWaxSoldier ? Vector3.zero : itemRotationOffset;
+        itemProperties.holdButtonUse = currentAttackMode == AttackMode.Bayonet;
         base.LateUpdate();
     }
 

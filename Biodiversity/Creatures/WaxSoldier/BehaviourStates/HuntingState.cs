@@ -75,8 +75,10 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.UpdateBehaviour();
         
+        EnemyAIInstance.UpdateHeat();
         searchStrategy.Update();
         EnemyAIInstance.MoveWithAcceleration();
+        
 
         searchTimeLeft -= Time.deltaTime;
         if (searchTimeLeft <= 0)

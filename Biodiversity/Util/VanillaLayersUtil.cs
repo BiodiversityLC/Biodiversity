@@ -66,6 +66,8 @@ public class VanillaLayersUtil
      * collidersAndRoomMask = 1107298560 -> Room, Colliders, Terrain and Vehicle
      * 
      * collidersAndRoomMaskAndPlayers = 1107298568 -> Players and collidersAndRoomMask
+     *
+     * collidersAndRoomMaskAndDefault = 1107298561 -> Default and collidersAndRoomMask
      * 
      * collidersRoomMaskDefaultAndPlayers = 1107298569 -> Default and collidersAndRoomMaskAndPlayers
      * 

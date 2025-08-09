@@ -4,8 +4,8 @@ using UnityEngine.AI;
 
 namespace Biodiversity.Creatures.WaxSoldier.Transitions;
 
-internal class TransitionToArrivingState(WaxSoldierAI enemyAIInstance)
-    : StateTransition<WaxSoldierAI.States, WaxSoldierAI>(enemyAIInstance)
+internal class TransitionToArrivingState(WaxSoldierAI enemyAiInstance)
+    : StateTransition<WaxSoldierAI.States, WaxSoldierAI>(enemyAiInstance)
 {
     internal override bool ShouldTransitionBeTaken()
     {
