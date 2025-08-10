@@ -16,9 +16,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float ViewRange { get; set; }
     
     public float WaxDurability { get; set; }
-    public float WaxTemperature { get; set; }
-    public float AmbientTemperature { get; set; }
-    public float CoolingTimeConstant { get; set; }
+    public float WaxDurabilityTau { get; set; }
     public float WaxSofteningTemperature { get; set; }
     public float WaxMeltTemperature { get; set; }
     public WaxSoldierAI.MoltenState MoltenState { get; set; }
@@ -30,6 +28,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public Vector3 LastKnownPlayerPosition { get; set; }
     public Vector3 LastKnownPlayerVelocity { get; set; }
     
+    public WaxSoldierNetcodeController NetcodeController { get; set; }
     public Musket HeldMusket { get; set; }
     public BoxCollider StabAttackTriggerArea { get; set; }
     public AttackSelector AttackSelector {get; set;}

@@ -18,7 +18,7 @@ internal class AloeSharedData
     private static readonly object Padlock = new();
     private static AloeSharedData _instance;
 
-    private readonly bool _hasRegisteredMessageHandlers;
+    private bool _hasRegisteredMessageHandlers;
 
     public static AloeSharedData Instance
     {
@@ -37,7 +37,6 @@ internal class AloeSharedData
     private AloeSharedData()
     {
         if (_hasRegisteredMessageHandlers) return;
-        _hasRegisteredMessageHandlers = true;
         RegisterMessageHandlers();
     }
 
@@ -157,6 +156,7 @@ internal class AloeSharedData
 
     private void RegisterMessageHandlers()
     {
+        _hasRegisteredMessageHandlers = true;
         BiodiversityPlugin.LogVerbose($"Registering message handlers for {nameof(AloeSharedData)}.");
         NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_BindMessage", HandleBindMessage);
         NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Aloe_UnbindMessage", HandleUnbindMessage);

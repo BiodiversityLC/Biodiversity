@@ -93,19 +93,14 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             bool isAgentNull = !Context.Adapter.Agent;
 
             Imperium.API.Visualization.InsightsFor<WaxSoldierAI>()
-                .UnregisterInsight("Movement Speed")
-                .UnregisterInsight("Location")
-                
                 .SetPersonalNameGenerator(entity => entity.BioId)
                 .SetPositionOverride(entity => entity.ImperiumInsightsPanelAnchor.position)
                 
                 .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
-                .RegisterInsight("Speed",
-                    entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.speed:0.0}" : "0")
                 .RegisterInsight("Acceleration",
                     entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.acceleration:0.0}" : "0")
-                .RegisterInsight("Wax Temperature", entity => $"{entity.Context.Blackboard.WaxTemperature:0.00} °C")
-                .RegisterInsight("Wax Durability", entity => $"{entity.Context.Blackboard.WaxDurability * 100} %");
+                .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
+                .RegisterInsight("Wax Durability", entity => $"{Mathf.Max(0, entity.Context.Blackboard.WaxDurability * 100)} %");
         }
         
         LogVerbose("Wax Soldier spawned!");
@@ -123,23 +118,17 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public void UpdateHeat()
     {
         WaxSoldierBlackboard bb = Context.Blackboard;
-        float dt = Time.deltaTime;
-        float heatRatePerSec = heatSensor.heatRate;
-        
-        float coolingFactor = Mathf.Exp(-dt / bb.CoolingTimeConstant);
-        bb.WaxTemperature = bb.WaxTemperature * coolingFactor + bb.AmbientTemperature * (1f - coolingFactor);
-        bb.WaxTemperature += heatRatePerSec * dt;
         
         float targetDurability;
-        if (bb.WaxTemperature <= bb.WaxSofteningTemperature) targetDurability = 1f;
-        else if (bb.WaxTemperature >= bb.WaxMeltTemperature) targetDurability = 0f;
+        if (heatSensor.TemperatureC <= bb.WaxSofteningTemperature) targetDurability = 1f;
+        else if (heatSensor.TemperatureC >= bb.WaxMeltTemperature) targetDurability = 0f;
         else
         {
             float midTemperature = 0.5f * (bb.WaxSofteningTemperature + bb.WaxMeltTemperature);
-            targetDurability = 1f / (1f + Mathf.Exp(0.35f * (bb.WaxTemperature - midTemperature)));
+            targetDurability = 1f / (1f + Mathf.Exp(0.35f * (heatSensor.TemperatureC - midTemperature)));
         }
 
-        float lerpFactor = 1f - Mathf.Exp(-dt / 5f);
+        float lerpFactor = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.001f, bb.WaxDurabilityTau));
         bb.WaxDurability = Mathf.Clamp01(Mathf.Lerp(bb.WaxDurability, targetDurability, lerpFactor));
 
         if (bb.WaxDurability <= 0 && Context.Blackboard.MoltenState != MoltenState.Molten && CurrentState.GetStateType() != States.Stunned)
@@ -256,13 +245,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
         Context.Blackboard.AgentAngularSpeed = 250f;
         Context.Blackboard.WaxDurability = 1f;
-        Context.Blackboard.WaxTemperature = 20f;
-        Context.Blackboard.AmbientTemperature = 20f;
+        Context.Blackboard.WaxDurabilityTau = 5f;
         Context.Blackboard.WaxSofteningTemperature = 40f;
         Context.Blackboard.WaxMeltTemperature = 60f;
         
         Context.Blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
         Context.Blackboard.AttackSelector = attackSelector;
+        Context.Blackboard.NetcodeController = netcodeController;
         
         Context.Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
         Context.Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;
@@ -432,7 +421,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         if (audibleInWalkieTalkie) WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
         if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
-
+        
         if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
     }
 }

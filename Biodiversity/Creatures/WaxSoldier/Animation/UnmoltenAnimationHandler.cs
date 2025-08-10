@@ -26,6 +26,7 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
 
     public void OnAttackAnimationFinish()
     {
+        ai.LogVerbose("Attack animation complete.");
         if (!IsServer) return;
         ai.TriggerCustomEvent(nameof(OnAttackAnimationFinish));
     }
@@ -37,22 +38,30 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         ai.TriggerCustomEvent(nameof(OnAnimationEventStabAttackLeap));
     }
     
-    public void OnAnimationEventStartTargetLook(string lookTransformName)
+    public void OnAnimationEventStartTargetLook(string aimTransformName)
     {
+        ai.LogVerbose("Starting to aim with musket.");
         if (!IsServer) return;
 
         StateData data = new();
-        data.Add("lookTransform",
-            lookTransformName == "musketMuzzle" ? ai.Context.Blackboard.HeldMusket.muzzleTip : transform);
+        data.Add("aimTransform",
+            aimTransformName == "musketMuzzle" ? ai.Context.Blackboard.HeldMusket.muzzleTip : ai.Context.Adapter.Transform);
         
         ai.TriggerCustomEvent(nameof(OnAnimationEventStartTargetLook), data);
     }
     
     public void OnAnimationEventStopTargetLook()
     {
+        ai.LogVerbose("Finished aiming with musket.");
         if (!IsServer) return;
-        ai.LogVerbose("Stop target look.");
         ai.TriggerCustomEvent(nameof(OnAnimationEventStopTargetLook));
+    }
+    
+    public void OnAnimationEventMusketShoot()
+    {
+        ai.LogVerbose("Firing musket.");
+        if (!IsServer) return;
+        ai.Context.Blackboard.HeldMusket.SetupShoot();
     }
 
     public void OnAnimationEventToggleBayonet()
@@ -79,13 +88,6 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
             ai.LogVerbose($"Toggling bayonet mode off.");
             bayonetHitbox.EndAttack();
         }
-    }
-    
-    public void OnAnimationEventMusketShoot()
-    {
-        ai.LogVerbose("Musket fired.");
-        if (!IsServer) return;
-        ai.Context.Blackboard.HeldMusket.SetupShoot();
     }
 
     public void OnAnimationEventPlayAudio(string sfxName)

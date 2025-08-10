@@ -11,9 +11,6 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.Attacking)]
 internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    private bool lookAtTarget;
-    private Transform lookTransform;
-    
     public AttackingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
@@ -31,35 +28,24 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             return;
         }
         
-        EnemyAIInstance.DecelerateAndStop();
-        EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.Context.Adapter.Agent.updateRotation = false;
-        
-        lookAtTarget = false;
-        EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(EnemyAIInstance.Context.Blackboard.currentAttackAction.AnimationTriggerHash);
-        EnemyAIInstance.Context.Blackboard.AttackSelector.StartCooldown(EnemyAIInstance.Context.Blackboard.currentAttackAction);
+        EnemyAIInstance.Context.Blackboard.currentAttackAction.Setup(EnemyAIInstance.Context);
     }
 
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        EnemyAIInstance.UpdateHeat();
         
-        if (lookAtTarget && EnemyAIInstance.Context.Adapter.TargetPlayer)
-        {
-            Vector3 direction = (EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position - EnemyAIInstance.transform.position).normalized;
-            direction.y = 0;
-            EnemyAIInstance.transform.rotation = Quaternion.Slerp(EnemyAIInstance.transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * EnemyAIInstance.Context.Blackboard.AgentAngularSpeed);
-        }
+        EnemyAIInstance.UpdateHeat();
+        EnemyAIInstance.Context.Blackboard.currentAttackAction.Update(EnemyAIInstance.Context);
     }
 
     internal override void OnStateExit()
     {
         base.OnStateExit();
         
-        EnemyAIInstance.Context.Adapter.Agent.updateRotation = true;
-        EnemyAIInstance.Context.Blackboard.currentAttackAction = null;
+        EnemyAIInstance.Context.Blackboard.currentAttackAction.Finish(EnemyAIInstance.Context);
         EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetHitbox.EndAttack();
+        EnemyAIInstance.Context.Blackboard.AttackSelector.StartCooldown(EnemyAIInstance.Context.Blackboard.currentAttackAction);
     }
 
     internal override void OnCustomEvent(string eventName, StateData eventData)
@@ -72,12 +58,11 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
                 break;
             
             case nameof(UnmoltenAnimationHandler.OnAnimationEventStartTargetLook):
-                lookAtTarget = true;
-                lookTransform = eventData.Get<Transform>("lookTransform");
+                EnemyAIInstance.Context.Blackboard.currentAttackAction.StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
                 break;
             
             case nameof(UnmoltenAnimationHandler.OnAnimationEventStopTargetLook):
-                lookAtTarget = false;
+                EnemyAIInstance.Context.Blackboard.currentAttackAction.StopLookAtTarget();
                 break;
         }
     }

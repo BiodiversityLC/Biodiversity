@@ -4,19 +4,16 @@ namespace Biodiversity.Behaviours.Heat;
 
 public abstract class HeatEmitter : MonoBehaviour
 {
-    private Rigidbody rb;
-
-    protected virtual void Awake()
+    private void OnDisable()
     {
-        rb = GetComponent<Rigidbody>() ?? gameObject.AddComponent<Rigidbody>();
-        rb.isKinematic = true;
-        rb.useGravity = false;
+        if (HeatController.HasInstance)
+            HeatController.Instance.OnHeatEmitterDisabled?.Invoke(this);
     }
 
     /// <summary>
-    /// Return contribution in °C/s for a target world position NOW.
+    /// Calculates the contribution in °C/s for a target world position NOW.
     /// </summary>
     /// <param name="targetPos">The target world position.</param>
-    /// <returns>Contribution in °C/s,</returns>
+    /// <returns>Contribution in °C/s.</returns>
     public abstract float GetHeatRateAt(Vector3 targetPos);
 }

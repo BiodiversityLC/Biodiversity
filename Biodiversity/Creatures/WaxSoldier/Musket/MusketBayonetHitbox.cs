@@ -1,5 +1,4 @@
-﻿using Biodiversity;
-using Biodiversity.Util;
+﻿using Biodiversity.Util;
 using GameNetcodeStuff;
 using System.Collections.Generic;
 using Unity.Netcode;
@@ -66,7 +65,7 @@ public class MusketBayonetHitbox : NetworkBehaviour
 
     private void Awake()
     {
-        bayonetHitBuffer = new Collider[35];
+        bayonetHitBuffer = new Collider[15];
     }
 
     private void FixedUpdate()
@@ -96,7 +95,6 @@ public class MusketBayonetHitbox : NetworkBehaviour
 
     private bool TryToDamageEntity(Collider entity)
     {
-        BiodiversityPlugin.LogVerbose($"Trying to damage {entity.name}");
         if (entity.CompareTag("Player") && entity.TryGetComponent(out PlayerControllerB player) && !PlayerUtil.IsPlayerDead(player) && !cooldownTracker.ContainsKey(player))
         {
             int damage = 0;

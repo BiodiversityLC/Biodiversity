@@ -1,4 +1,7 @@
-﻿namespace Biodiversity.Creatures.WaxSoldier.Misc;
+﻿using Biodiversity.Creatures.Core;
+using UnityEngine;
+
+namespace Biodiversity.Creatures.WaxSoldier.Misc;
 
 public class AttackAction
 {
@@ -51,5 +54,45 @@ public class AttackAction
         Cooldown = cooldown;
         RequiresLineOfSight = requiresLineOfSight;
         Priority = priority;
+    }
+
+    private Transform aimTransform;
+    private bool shouldLookAtTarget;
+
+    public virtual void Setup(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        BiodiversityPlugin.LogVerbose("In AttackAction.Setup().");
+        StopLookAtTarget();
+        ctx.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(AnimationTriggerHash);
+    }
+
+    public virtual void Update(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        if (shouldLookAtTarget && aimTransform)
+        {
+            Vector3 direction = (ctx.Adapter.TargetPlayer.transform.position - aimTransform.position).normalized;
+            direction.y = 0;
+            ctx.Adapter.Transform.rotation = Quaternion.Slerp(aimTransform.rotation, 
+                Quaternion.LookRotation(direction), Time.deltaTime * ctx.Blackboard.AgentAngularSpeed);
+        }
+    }
+
+    public virtual void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        BiodiversityPlugin.LogVerbose("In AttackAction.Finish().");
+        StopLookAtTarget();
+    }
+
+    // todo: move these over to ShootAttack.cs
+    public void StartLookAtTarget(Transform t)
+    {
+        aimTransform = t;
+        shouldLookAtTarget = true;
+    }
+
+    public void StopLookAtTarget()
+    {
+        shouldLookAtTarget = false;
+        aimTransform = null;
     }
 }

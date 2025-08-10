@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
+using GameNetcodeStuff;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
@@ -22,14 +23,14 @@ public class AttackSelector : NetworkBehaviour
 
     private void Start()
     {
-        AttackAction spinAttack = new(
+        SpinAttack spinAttack = new(
             WaxSoldierClient.SpinAttack, 0f, 2f, 2f, false, 3);
         
         AttackAction stabAttack = new(
-            WaxSoldierClient.StabAttack, 0f, 6f, 2f, true, 1);
+            WaxSoldierClient.StabAttack, 0f, 5.5f, 1.5f, true, 1);
         
-        AttackAction shootAttack = new(
-            WaxSoldierClient.AimMusket, 2f, 200f, 2f, true, 0);
+        ShootAttack shootAttack = new(
+            WaxSoldierClient.AimMusket, 2f, 200f, 4f, true, 0);
         
         availableAttacks.AddRange([spinAttack, stabAttack, shootAttack]);
         availableAttacks = availableAttacks.OrderByDescending(a => a.Priority).ToList();
