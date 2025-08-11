@@ -11,14 +11,13 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
 {
     public float AgentMaxSpeed { get; set; }
     public float AgentMaxAcceleration { get; set; }
-    public float AgentAngularSpeed { get; set; }
+    public float AgentAngularSpeed { get; set; } = 250f;
     public float ViewWidth { get; set; }
     public float ViewRange { get; set; }
-    
-    public float WaxDurability { get; set; }
-    public float WaxDurabilityTau { get; set; }
-    public float WaxSofteningTemperature { get; set; }
-    public float WaxMeltTemperature { get; set; }
+
+    public float WaxDurability { get; set; } = 1f;
+    public float WaxSofteningTemperature { get; } = 40f;
+    public float WaxMeltTemperature { get; } = 60f;
     public WaxSoldierAI.MoltenState MoltenState { get; set; }
     
     public bool IsNetworkEventsSubscribed { get; set; }

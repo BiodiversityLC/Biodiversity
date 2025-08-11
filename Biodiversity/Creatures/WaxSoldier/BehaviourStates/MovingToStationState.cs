@@ -22,6 +22,12 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
     {
         base.OnStateEnter(ref initData);
 
+        if (EnemyAIInstance.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0)
+        {
+            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Reloading);
+            return;
+        }
+
         // todo: name config values appropriately
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
@@ -32,7 +38,7 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        EnemyAIInstance.UpdateHeat();
+        EnemyAIInstance.UpdateWaxDurability();
         EnemyAIInstance.MoveWithAcceleration();
     }
 }

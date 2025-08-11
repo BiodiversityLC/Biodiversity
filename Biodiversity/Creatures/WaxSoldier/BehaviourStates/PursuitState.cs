@@ -37,7 +37,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        EnemyAIInstance.UpdateHeat();
+        EnemyAIInstance.UpdateWaxDurability();
         EnemyAIInstance.MoveWithAcceleration();
     }
 

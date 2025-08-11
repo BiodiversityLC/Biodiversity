@@ -78,7 +78,14 @@ public class AttackSelector : NetworkBehaviour
                 // BiodiversityPlugin.LogVerbose($"Attack failed: {distanceToTarget} >= {attack.MaxRange} || {distanceToTarget} <= {attack.MinRange}");
                 continue;
             }
-
+            
+            // todo: use the strategy pattern to make it so an attack action has a list of conditions that must be met
+            // Use the player targetable conditions thing
+            if (attack is ShootAttack && ai.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0)
+            {
+                continue;
+            }
+            
             if (attack.RequiresLineOfSight)
             {
                 bool hasLineOfSightToTarget = ai.HasLineOfSight(

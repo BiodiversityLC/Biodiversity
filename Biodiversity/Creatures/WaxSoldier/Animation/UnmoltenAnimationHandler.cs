@@ -16,21 +16,8 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
             enabled = false;
         }
     }
-    
-    public void OnSpawnAnimationStateExit()
-    {
-        ai.LogVerbose("Spawn animation complete.");
-        if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnSpawnAnimationStateExit));
-    }
 
-    public void OnAttackAnimationFinish()
-    {
-        ai.LogVerbose("Attack animation complete.");
-        if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAttackAnimationFinish));
-    }
-    
+    #region Animation Events
     public void OnAnimationEventStabAttackLeap()
     {
         ai.LogVerbose("Stab attack leap.");
@@ -50,18 +37,11 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         ai.TriggerCustomEvent(nameof(OnAnimationEventStartTargetLook), data);
     }
     
-    public void OnAnimationEventStopTargetLook()
-    {
-        ai.LogVerbose("Finished aiming with musket.");
-        if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventStopTargetLook));
-    }
-    
     public void OnAnimationEventMusketShoot()
     {
         ai.LogVerbose("Firing musket.");
         if (!IsServer) return;
-        ai.Context.Blackboard.HeldMusket.SetupShoot();
+        ai.TriggerCustomEvent(nameof(OnAnimationEventMusketShoot));
     }
 
     public void OnAnimationEventToggleBayonet()
@@ -95,5 +75,27 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         ai.LogVerbose($"Playing audio {sfxName}.");
         if (!IsServer) return;
         ai.PlayAudioClipTypeClientRpc(sfxName, "creatureVoice", 0, true);
+    }
+    #endregion
+    
+    public void OnSpawnAnimationFinish()
+    {
+        ai.LogVerbose("Spawn animation complete.");
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnSpawnAnimationFinish));
+    }
+
+    public void OnAttackAnimationFinish()
+    {
+        ai.LogVerbose("Attack animation complete.");
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnAttackAnimationFinish));
+    }
+    
+    public void OnReloadAnimationFinish()
+    {
+        ai.LogVerbose("Reload animation complete.");
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnReloadAnimationFinish));
     }
 }

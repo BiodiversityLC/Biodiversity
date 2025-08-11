@@ -28,6 +28,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         Spawning,
         MovingToStation,
+        Reloading,
         ArrivingAtStation,
         Stationary,
         Pursuing,
@@ -108,28 +109,23 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     #endregion
 
     #region Wax Soldier Specific AI Logic
-    protected override void InitializeGlobalTransitions()
-    {
-        base.InitializeGlobalTransitions();
-        
-        GlobalTransitions.Add(new TransitionToDeadState(this));
-    }
-    
-    public void UpdateHeat()
+    public void UpdateWaxDurability()
     {
         WaxSoldierBlackboard bb = Context.Blackboard;
-        
-        float targetDurability;
-        if (heatSensor.TemperatureC <= bb.WaxSofteningTemperature) targetDurability = 1f;
-        else if (heatSensor.TemperatureC >= bb.WaxMeltTemperature) targetDurability = 0f;
-        else
-        {
-            float midTemperature = 0.5f * (bb.WaxSofteningTemperature + bb.WaxMeltTemperature);
-            targetDurability = 1f / (1f + Mathf.Exp(0.35f * (heatSensor.TemperatureC - midTemperature)));
-        }
+        float newDurability = bb.WaxDurability;
 
-        float lerpFactor = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.001f, bb.WaxDurabilityTau));
-        bb.WaxDurability = Mathf.Clamp01(Mathf.Lerp(bb.WaxDurability, targetDurability, lerpFactor));
+        if (heatSensor.TemperatureC > bb.WaxSofteningTemperature)
+        {
+            float t = Mathf.InverseLerp(bb.WaxSofteningTemperature, bb.WaxMeltTemperature,
+                Mathf.Min(heatSensor.TemperatureC, bb.WaxMeltTemperature));
+
+            float bandDps = Mathf.Lerp(0f, 0.5f, Mathf.Pow(t, 2));
+            float extraDps = heatSensor.TemperatureC >= bb.WaxMeltTemperature ? 0.75f : 0f;
+            float dps = bandDps + extraDps;
+            newDurability = bb.WaxDurability - dps * Time.deltaTime;
+        }
+        
+        bb.WaxDurability = Mathf.Clamp01(Mathf.Min(bb.WaxDurability, newDurability));
 
         if (bb.WaxDurability <= 0 && Context.Blackboard.MoltenState != MoltenState.Molten && CurrentState.GetStateType() != States.Stunned)
         {
@@ -206,6 +202,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     #endregion
     
     #region Little Misc Stuff
+    protected override void InitializeGlobalTransitions()
+    {
+        base.InitializeGlobalTransitions();
+        
+        GlobalTransitions.Add(new TransitionToDeadState(this));
+    }
+    
     protected override States DetermineInitialState()
     {
         return States.Spawning;
@@ -229,7 +232,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context.Blackboard.AgentMaxSpeed = 0;
         
         // Boost the acceleration immediately so it can decelerate quickly
-        Context.Adapter.Agent.acceleration *= 3;
+        Context.Adapter.Agent.acceleration = Mathf.Min(Context.Adapter.Agent.acceleration * 3, Context.Blackboard.AgentMaxAcceleration);
     }
     
     /// <summary>
@@ -241,17 +244,12 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (!IsServer) return;
         LogVerbose("Initializing config values...");
         
-        Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
-        Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
-        Context.Blackboard.AgentAngularSpeed = 250f;
-        Context.Blackboard.WaxDurability = 1f;
-        Context.Blackboard.WaxDurabilityTau = 5f;
-        Context.Blackboard.WaxSofteningTemperature = 40f;
-        Context.Blackboard.WaxMeltTemperature = 60f;
-        
         Context.Blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
         Context.Blackboard.AttackSelector = attackSelector;
         Context.Blackboard.NetcodeController = netcodeController;
+        
+        Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
+        Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
         
         Context.Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
         Context.Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;

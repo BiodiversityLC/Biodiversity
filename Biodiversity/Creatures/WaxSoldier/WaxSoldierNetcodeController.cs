@@ -7,6 +7,7 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierNetcodeController : NetworkBehaviour
 {
     internal readonly NetworkVariable<ulong> TargetPlayerClientId = new();
+    
     internal readonly NetworkVariable<bool> AnimationParamInSalute = new();
 
     internal event Action<NetworkObjectReference, int> OnSpawnMusket;

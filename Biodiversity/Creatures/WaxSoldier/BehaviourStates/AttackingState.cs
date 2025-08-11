@@ -2,6 +2,7 @@
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
 using Biodiversity.Creatures.WaxSoldier.Misc;
+using Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -35,7 +36,8 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     {
         base.UpdateBehaviour();
         
-        EnemyAIInstance.UpdateHeat();
+        EnemyAIInstance.UpdateWaxDurability();
+        EnemyAIInstance.MoveWithAcceleration();
         EnemyAIInstance.Context.Blackboard.currentAttackAction.Update(EnemyAIInstance.Context);
     }
 
@@ -56,14 +58,24 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             case nameof(UnmoltenAnimationHandler.OnAttackAnimationFinish):
                 EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Pursuing);
                 break;
-            
+
             case nameof(UnmoltenAnimationHandler.OnAnimationEventStartTargetLook):
-                EnemyAIInstance.Context.Blackboard.currentAttackAction.StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
+            {
+                if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)
+                    shootAttackAction.StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
                 break;
+            }
             
-            case nameof(UnmoltenAnimationHandler.OnAnimationEventStopTargetLook):
-                EnemyAIInstance.Context.Blackboard.currentAttackAction.StopLookAtTarget();
+            case nameof(UnmoltenAnimationHandler.OnAnimationEventMusketShoot):
+            {
+                if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)
+                {
+                    shootAttackAction.StopLookAtTarget();
+                    EnemyAIInstance.Context.Blackboard.HeldMusket.SetupShoot();
+                }
+                
                 break;
+            }
         }
     }
 }

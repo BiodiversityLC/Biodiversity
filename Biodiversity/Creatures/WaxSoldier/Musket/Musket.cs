@@ -84,7 +84,7 @@ public class Musket : BiodiverseItem
     private const int bulletHitBufferCapacity = 35;
     private const int bayonetHitBufferCapacity = 35;
 
-    private readonly NetworkVariable<int> currentAmmo = new(1);
+    public NetworkVariable<int> currentAmmo { get; private set; } = new(1);
     private int bulletHitMask;
     private int bayonetHitMask;
     private int maxAmmo;
@@ -129,7 +129,7 @@ public class Musket : BiodiverseItem
                 .UnregisterInsight("Cooldown")
                 .UnregisterInsight("Location")
 
-                .RegisterInsight("Ammo", item => item.currentAmmo.ToString())
+                .RegisterInsight("Ammo", item => item.currentAmmo.Value.ToString())
                 .RegisterInsight("Trigger Safety", item => isSafetyOn.Value ? "On" : "Off")
                 .RegisterInsight("Attack Mode", item => item.currentAttackMode == AttackMode.Gun
                     ? "Shoot"
@@ -176,7 +176,7 @@ public class Musket : BiodiverseItem
 
     public IEnumerator Shoot()
     {
-        LogVerbose($"In {nameof(Shoot)}");
+        LogVerbose($"In {nameof(Shoot)}.");
         isPerformingAttackAction = true;
         
         PlayRandomAudioClipTypeServerRpc(nameof(shootSfx), nameof(shootAudioSource), true, audibleByEnemies: true);

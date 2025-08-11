@@ -30,6 +30,9 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         
+        // todo: change state initialization to be done in start() instead of awake(), because we should have InitializeConfig() before any state starts doing stuff
+        // EnemyAIInstance.Context.Blackboard.NetcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
+        
         EnemyAIInstance.DetermineGuardPostPosition();
     }
 
@@ -39,7 +42,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         switch (eventName)
         {
-            case nameof(UnmoltenAnimationHandler.OnSpawnAnimationStateExit):
+            case nameof(UnmoltenAnimationHandler.OnSpawnAnimationFinish):
                 EnemyAIInstance.StartCoroutine(SpawnMusketWhenNetworkIsReady());
                 break;
         }

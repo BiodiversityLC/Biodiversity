@@ -16,6 +16,7 @@ public class WaxSoldierClient : MonoBehaviour
     public static readonly int StabAttack = Animator.StringToHash("StabAttack");
     public static readonly int AimMusket = Animator.StringToHash("AimMusket");
     public static readonly int ShootMusket = Animator.StringToHash("ShootMusket");
+    public static readonly int ReloadMusket = Animator.StringToHash("ReloadMusket");
     
     public static readonly int VelocityX = Animator.StringToHash("VelocityX");
     public static readonly int VelocityZ = Animator.StringToHash("VelocityZ");
