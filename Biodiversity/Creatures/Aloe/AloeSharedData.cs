@@ -219,7 +219,7 @@ internal class AloeSharedData
         BiodiversityPlugin.LogVerbose($"Received player teleported message: BioId: {message.BioId}, playerId: {message.PlayerId}");
         AloeServerAI aloeServerAI = _aloeBoundKidnapsServer.Keys.FirstOrDefault(aloe => aloe.BioId == message.BioId);
         
-        if (aloeServerAI == null) BiodiversityPlugin.Logger.LogError($"In {nameof(HandlePlayerTeleportedMessage)}, the given Aloe ID: '{message.BioId}' does not belong to any Aloe currently in the game.");
+        if (!aloeServerAI) BiodiversityPlugin.Logger.LogError($"In {nameof(HandlePlayerTeleportedMessage)}, the given Aloe ID: '{message.BioId}' does not belong to any Aloe currently in the game.");
         else aloeServerAI.SetTargetPlayerEscapedByTeleportation();
     }
 
@@ -236,7 +236,7 @@ internal class AloeSharedData
     /// <returns>The player's max health</returns>
     public int GetPlayerMaxHealth(PlayerControllerB player)
     {
-        if (player == null)
+        if (!player)
         {
             BiodiversityPlugin.Logger.LogWarning("The provided player is null, we will assume that their max health is 100.");
             return 100;

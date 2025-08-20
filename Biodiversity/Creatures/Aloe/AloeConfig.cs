@@ -128,7 +128,11 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("The distance from the player the Aloe will stop and stare at the player from.")]
     [field: Range(0.5f, 100f)]
-    public float PassiveStalkStaredownDistance { get; private set; } = 10f;
+    public float PassiveStalkStaredownDistance { get; private set; } = 15f;
+    
+    [field: Tooltip("The maximum distance that the Aloe can grab a player from.")]
+    [field: Range(0.1f, 200f)]
+    public float GrabRange { get; private set; } = 5f;
     
     [field: Tooltip("The time it takes for the Aloe to fully heal the player (from 1 to 100 health).")]
     [field: Range(1f, 120f)]
@@ -162,8 +166,8 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
     #region Alternative Behaviours
     [field: Header("Alternative Behaviours")]
     
-    [field: Tooltip("If true, then the Aloe WILL NOT run away if looked at while she's in her kidnap animation.")]
-    public bool ForceGrabOnceInAnimation { get; private set; } = true;
+    [field: Tooltip("If false, then the Aloe WILL NOT run away IF LOOKED AT while she's in her kidnap animation.")]
+    public bool CanBeSpookedInGrabAnimation { get; private set; } = false;
     
     [field: Tooltip("Whether to use an alternative behaviour for the Aloe where she will damage players instead of heal them. To adjust the amount of damage she does (per second), just adjust the `DamageDeltPerSecondInsteadOfHealing` setting.")]
     public bool DamageInsteadOfHeal { get; private set; } = false;

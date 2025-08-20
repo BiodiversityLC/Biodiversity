@@ -168,6 +168,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     public void DropMusket()
     {
+        LogVerbose("Dropping musket...");
         Context.Blackboard.HeldMusket = null;
         netcodeController.DropMusketClientRpc();
     }

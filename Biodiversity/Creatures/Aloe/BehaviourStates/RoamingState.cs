@@ -102,14 +102,20 @@ internal class RoamingState : BehaviourState<AloeServerAI.States, AloeServerAI>
 
         internal override bool ShouldTransitionBeTaken()
         {
-            // Check if a player has below "playerHealthThresholdForStalking" % of health
+            // Check if a player has below "playerHealthThresholdForStalking" % of health.
+            // Or, if the damage instead of heal config is enabled, then just pick a random player and stalk them.
             for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
             {
                 PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+                
                 if (!EnemyAIInstance.PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
-                if (player.health > EnemyAIInstance.PlayerHealthThresholdForStalking) continue;
                 if (AloeSharedData.Instance.IsPlayerStalkBound(player)) continue;
 
+                if (!AloeHandler.Instance.Config.DamageInsteadOfHeal)
+                {
+                    if (player.health > EnemyAIInstance.PlayerHealthThresholdForStalking) continue;
+                }
+                
                 _stalkablePlayer = player;
                 return true;
             }

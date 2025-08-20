@@ -118,8 +118,8 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
 
         internal override bool ShouldTransitionBeTaken()
         {
-            // If the ForceGrabOnceInAnimation config is enabled and the Aloe is currently in her kidnap/grab animation, then we just don't transition to the avoiding player state.
-            if (aggressiveStalkingState._inGrabAnimation && AloeHandler.Instance.Config.ForceGrabOnceInAnimation)
+            // If the CanBeSpookedInGrabAnimation config is disabled and the Aloe is currently in her kidnap/grab animation, then we just don't transition to the avoiding player state.
+            if (aggressiveStalkingState._inGrabAnimation && !AloeHandler.Instance.Config.CanBeSpookedInGrabAnimation)
                 return false;
             
             // Check if a player sees the Aloe

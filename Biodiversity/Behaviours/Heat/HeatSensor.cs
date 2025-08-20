@@ -32,7 +32,8 @@ public class HeatSensor : NetworkBehaviour
 
     private void Awake()
     {
-        if (!TryGetComponent(out Rigidbody rb)) {
+        if (!TryGetComponent(out Rigidbody rb)) 
+        {
             rb = gameObject.AddComponent<Rigidbody>();
             rb.isKinematic = true; 
             rb.useGravity = false;
@@ -43,11 +44,13 @@ public class HeatSensor : NetworkBehaviour
 
     private void OnEnable()
     {
+        HeatController.Instance.NotifySensorAdded();
         HeatController.Instance.OnHeatEmitterDisabled += OnHeatEmitterDisabled;
     }
 
     private void OnDisable()
     {
+        HeatController.Instance.NotifySensorRemoved();
         HeatController.Instance.OnHeatEmitterDisabled -= OnHeatEmitterDisabled;
     }
 
@@ -60,11 +63,6 @@ public class HeatSensor : NetworkBehaviour
             overlaps.Clear();
             return;
         }
-    }
-
-    private void Start()
-    {
-        var bob = HeatController.Instance;
     }
 
     private void Update()

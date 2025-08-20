@@ -454,8 +454,7 @@ public class AloeClient : MonoBehaviour
     }
 
     /// <summary>
-    /// Heals the target player by the given amount.
-    /// It also updates their health bar.
+    /// Heals the target player by the given amount and updates their health bar.
     /// </summary>
     /// <param name="healAmount">The amount to heal the target player by.</param>
     private void HandleHealTargetPlayerByAmount(int healAmount)
@@ -553,11 +552,9 @@ public class AloeClient : MonoBehaviour
             _targetPlayerInCaptivity = false;
             return;
         }
-        
-        PlayerControllerB targetPlayer = _targetPlayer.Value;
 
-        if (setToInCaptivity) SetupCaptivity(targetPlayer);
-        else ReleaseCaptivity(targetPlayer);
+        if (setToInCaptivity) SetupCaptivity(_targetPlayer.Value);
+        else ReleaseCaptivity(_targetPlayer.Value);
 
         _targetPlayerInCaptivity = setToInCaptivity;
         BiodiversityPlugin.LogVerbose($"Set {_targetPlayer.Value.playerUsername} in captivity: {setToInCaptivity}");
@@ -586,20 +583,24 @@ public class AloeClient : MonoBehaviour
     private void ReleaseCaptivity(PlayerControllerB targetPlayer)
     {
         CleanupRagdoll();
-        CorrectlySetTargetPlayerLocalRenderers(true, targetPlayer);
-        
         // healingOrbEffect.Stop();
         healingLightEffect.enabled = false;
-        _targetPlayer.Value.inSpecialInteractAnimation = false;
-        _targetPlayer.Value.inAnimationWithEnemy = null;
-        _targetPlayer.Value.ResetZAndXRotation();
         
-        // Make sure the player is on a navmesh
-        Vector3 validPosition =
-            RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
-        _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
+        if (!_targetPlayer.Value.isPlayerDead)
+        {
+            CorrectlySetTargetPlayerLocalRenderers(true, targetPlayer);
             
-        HandleUnMuffleTargetPlayerVoice();
+            _targetPlayer.Value.inSpecialInteractAnimation = false;
+            _targetPlayer.Value.inAnimationWithEnemy = null;
+            _targetPlayer.Value.ResetZAndXRotation();
+        
+            // Make sure the player is on a navmesh
+            Vector3 validPosition =
+                RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
+            _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
+            
+            HandleUnMuffleTargetPlayerVoice();
+        }
     }
 
     private void CorrectlySetTargetPlayerLocalRenderers(bool enable, PlayerControllerB targetPlayer)
@@ -742,17 +743,16 @@ public class AloeClient : MonoBehaviour
 
     private void HandleDamagePlayer(ulong playerId, int damage)
     {
-        if (!netcodeController.IsServer) return;
         PlayerControllerB playerToDamage = StartOfRound.Instance.allPlayerScripts[playerId];
+        if (playerToDamage != GameNetworkManager.Instance.localPlayerController) return;
         
         if (PlayerUtil.IsPlayerDead(playerToDamage))
         {
-            BiodiversityPlugin.Logger.LogWarning($"Cannot damage player with id {playerId}, because they do not exist.");
+            BiodiversityPlugin.LogVerbose($"Cannot damage player with id {playerId}, because they are dead.");
             return;
         }
         
-        BiodiversityPlugin.LogVerbose($"Damaging player {playerToDamage.playerUsername} for {damage} damage!");
-        playerToDamage.DamagePlayer(damage, true, true, CauseOfDeath.Bludgeoning, force: playerToDamage.turnCompass.forward * (-1 * 5));
+        playerToDamage.DamagePlayer(damage, true, true, CauseOfDeath.Strangulation);
     }
 
     /// <summary>

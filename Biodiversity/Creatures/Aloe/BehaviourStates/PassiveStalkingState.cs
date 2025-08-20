@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier;
 using Biodiversity.Util;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -38,6 +39,12 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
 
         _isPlayerReachable = true;
         EnemyAIInstance.IsStaringAtTargetPlayer = false;
+
+        if (AloeHandler.Instance.Config.DamageInsteadOfHeal)
+        {
+            EnemyAIInstance.LogVerbose("Switching to the aggressive stalking state because the damage instead of heal config is enabled.");
+            EnemyAIInstance.SwitchBehaviourState(AloeServerAI.States.AggressiveStalking);
+        }
     }
 
     internal override void AIIntervalBehaviour()
@@ -49,8 +56,8 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
 
         // See if the aloe can stare at the player
         if (Vector3.Distance(
-                EnemyAIInstance.transform.position,
-                EnemyAIInstance.ActualTargetPlayer.Value.transform.position) <=
+                EnemyAIInstance.eye.position,
+                EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position) <=
             EnemyAIInstance.PassiveStalkStaredownDistance &&
             !Physics.Linecast(EnemyAIInstance.eye.position,
                 EnemyAIInstance.ActualTargetPlayer.Value.gameplayCamera.transform.position,

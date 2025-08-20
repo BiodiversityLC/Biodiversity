@@ -317,6 +317,7 @@ public class Musket : BiodiverseItem
 
     internal void OnGrabbedByWaxSoldier(EnemyAI waxSoldier)
     {
+        LogVerbose("Got grabbed by a WaxSoldier.");
         isHeldByWaxSoldier = true;
         bayonetCollider.isTrigger = true;
         GrabItemFromEnemy(waxSoldier);
@@ -324,6 +325,7 @@ public class Musket : BiodiverseItem
 
     internal void OnDroppedByWaxSoldier()
     {
+        LogVerbose("Got dropped by a WaxSoldier.");
         isHeldByWaxSoldier = false;
         bayonetCollider.isTrigger = false;
         DiscardItemFromEnemy();

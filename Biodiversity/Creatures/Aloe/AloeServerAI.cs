@@ -604,7 +604,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     }
     
     #region Animation State Callbacks
-
     public void OnSpawnAnimationStateExit()
     {
         LogVerbose("Spawn animation complete.");
@@ -635,7 +634,11 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
 
         if (!ActualTargetPlayer.HasValue ||
             PlayerUtil.IsPlayerDead(ActualTargetPlayer.Value) ||
-            !ActualTargetPlayer.Value.isInsideFactory)
+            !ActualTargetPlayer.Value.isInsideFactory ||
+            Vector3.Distance(eye.position, ActualTargetPlayer.Value.gameplayCamera.transform.position) > AloeHandler.Instance.Config.GrabRange ||
+            Physics.Linecast(eye.position,
+                ActualTargetPlayer.Value.gameplayCamera.transform.position,
+                StartOfRound.Instance.collidersAndRoomMask, QueryTriggerInteraction.Ignore))
         {
             SwitchBehaviourState(States.Roaming);
         }
@@ -645,7 +648,6 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         }
             
     }
-
     #endregion
     
     /// <summary>

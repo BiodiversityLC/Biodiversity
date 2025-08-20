@@ -89,4 +89,8 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     [field: Range(0.001f, 1f)]
     public float AiIntervalTime { get; private set; } = 0.03f;
     #endregion
+
+    #region Debug Settings
+    public bool EnableDebugWireframeForRadialHeatEmitters { get; private set; } = false;
+    #endregion
 }

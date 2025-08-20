@@ -139,20 +139,24 @@ public abstract class BehaviourState<TState, TEnemyAI>
     /// <param name="force">The amount of damage that was done by the hit.</param>
     /// <param name="playerWhoHit">The player object that hit the AI, if it was hit by a player.</param>
     /// <param name="hitId">The ID of hit which dealt the damage.</param>
-    internal virtual void OnHitEnemy(
+    /// <returns>Whether the function "handled" the event.</returns>
+    internal virtual bool OnHitEnemy(
         int force = 1, 
         PlayerControllerB playerWhoHit = null, 
         int hitId = -1)
     {
         EnemyAIInstance.LogVerbose($"{nameof(OnHitEnemy)} called for {_stateType}.");
+        return false;
     }
 
-    internal virtual void OnSetEnemyStunned(
+    /// <returns>Whether the function "handled" the event.</returns>
+    internal virtual bool OnSetEnemyStunned(
         bool setToStunned, 
         float setToStunTime = 1f,
         PlayerControllerB setStunnedByPlayer = null)
     {
         EnemyAIInstance.LogVerbose($"{nameof(OnSetEnemyStunned)} called for {_stateType}.");
+        return false;
     }
 
     /// <summary>

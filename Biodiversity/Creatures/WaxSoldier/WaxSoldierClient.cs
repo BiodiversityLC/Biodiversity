@@ -133,6 +133,7 @@ public class WaxSoldierClient : MonoBehaviour
     private void HandleDropMusket()
     {
         if (!musket) return;
+        BiodiversityPlugin.LogVerbose("[WaxSoldierClient] Dropping musket...");
         musket.OnDroppedByWaxSoldier();
         musket.parentObject = null;
         musket.transform.SetParent(StartOfRound.Instance.propsContainer, true);

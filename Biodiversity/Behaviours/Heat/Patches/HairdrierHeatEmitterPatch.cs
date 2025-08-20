@@ -1,0 +1,20 @@
+﻿using HarmonyLib;
+
+namespace Biodiversity.Behaviours.Heat.Patches;
+
+[HarmonyPatch(typeof(NoisemakerProp))]
+internal static class HairdrierHeatEmitterPatch
+{
+    [HarmonyPatch(nameof(NoisemakerProp.ItemActivate))]
+    [HarmonyPostfix]
+    private static void EmitHeatOnActivate(NoisemakerProp __instance, bool used, bool buttonDown = true)
+    {
+        if (!HeatController.HasInstance) return;
+        
+        // When an item is used, the UseItemOnClient() function is called, where it checks if the item has enough charge
+        // in the batteries to use it. If it does, then ItemActivate() is called. Therefore, we don't need to check
+        // the battery in this function; we can just apply the heat straight away.
+        
+        // todo: do a cone-cast type thingy
+    }
+}

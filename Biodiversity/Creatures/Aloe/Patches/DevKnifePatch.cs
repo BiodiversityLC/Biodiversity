@@ -11,12 +11,12 @@ internal static class DevKnifePatch
     [HarmonyPostfix]
     private static void DealDamageToSelf(GrabbableObject __instance)
     {
-        // NOTE: Don't be an idiot (talking to myself) and add the compiler directives #if DEBUG etc, because it doesn't work when other people compile the mod you dunce
+        // NOTE: Don't be an idiot (talking to myself) and add the compiler directives #if DEBUG etc, because it doesn't work when other people compile the mod
         // Just comment and uncomment the HarmonyPatch attributes
         
         if (!BiodiversityPlugin.Config.StabIsReal) return;
 
-        if (__instance.playerHeldBy == null) return;
+        if (!__instance.playerHeldBy) return;
         __instance.playerHeldBy.DamagePlayer(5);
     }
 }

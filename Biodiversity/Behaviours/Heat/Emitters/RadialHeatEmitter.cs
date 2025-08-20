@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Biodiversity.Creatures.WaxSoldier;
+using UnityEngine;
 
 namespace Biodiversity.Behaviours.Heat;
 
@@ -6,11 +7,11 @@ namespace Biodiversity.Behaviours.Heat;
 public class RadialHeatEmitter : HeatEmitter
 {
     [Header("Heat Settings")]
-    [Tooltip("Continuous contribution at the center (°C/s). Negative = cooling.")]
+    [Tooltip("Continuous contribution at the centre (°C/s). Negative = cooling.")]
     public float strengthCPerSec = 20f;
 
     [Tooltip("World radius of influence (units).")]
-    public float radius = 7f;
+    public float radius = 10f;
 
     [Tooltip("1 at centre -> 0 at edge.")]
     public AnimationCurve falloff = AnimationCurve.EaseInOut(0, 1, 1, 0);
@@ -48,6 +49,8 @@ public class RadialHeatEmitter : HeatEmitter
         losBlockers = LayerMask.GetMask("Water", "Room", "Terrain", "Vehicle");
         
         lineMaterial = new Material(Shader.Find("Sprites/Default"));
+
+        showDebugWireframe = WaxSoldierHandler.Instance.Config.EnableDebugWireframeForRadialHeatEmitters;
     }
 
     private void OnEnable()
@@ -80,6 +83,9 @@ public class RadialHeatEmitter : HeatEmitter
         if (distance >= radius)
             return 0f;
 
+        // todo: maybe introduce an "accuracy" parameter which controlls the hertz/time between raycasts of the LOS raycast.
+        // It would make it so a raycast could only be done maybe once every half a second, instead of every single time the GetHeatRateAt function is called,
+        // the same could be done for other heat emitter stuff maybe
         float los = 1f;
         if (useLineOfSight && Physics.Raycast(
                 transform.position, (targetPos - transform.position).normalized,
@@ -160,7 +166,7 @@ public class RadialHeatEmitter : HeatEmitter
             ringYZ.SetPosition(i, new Vector3(0f, Mathf.Cos(a) * radius, Mathf.Sin(a) * radius));
         }
 
-        // keep colors/widths synced if changed at runtime
+        // Keep colors/widths synced if changed at runtime
         for (int i = 0; i < new[] { ringXY, ringXZ, ringYZ }.Length; i++)
         {
             LineRenderer lr = new[] { ringXY, ringXZ, ringYZ }[i];
