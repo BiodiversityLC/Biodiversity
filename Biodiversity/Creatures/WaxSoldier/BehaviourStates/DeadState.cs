@@ -19,16 +19,11 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnStateEnter(ref initData);
         
-        EnemyAIInstance.Context.Adapter.Agent.speed *= 0.1f;
-        EnemyAIInstance.Context.Adapter.Agent.acceleration = 200f;
-        EnemyAIInstance.Context.Adapter.OpenDoorSpeedMultiplier = 0f;
-        EnemyAIInstance.Context.Adapter.StopAllPathing();
-        
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
-        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 200f;
-        
+        EnemyAIInstance.KillAllSpeed();
         EnemyAIInstance.DropMusket();
-        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
+        
+        EnemyAIInstance.Context.Blackboard.NetcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
+        EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.Death);
         
         EnemyAIInstance.KillEnemyServerRpc(false);
     }

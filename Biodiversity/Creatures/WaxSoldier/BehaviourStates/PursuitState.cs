@@ -66,4 +66,13 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Attacking, initData: data);
         }
     }
+    
+    internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
+    {
+        base.OnHitEnemy(force, playerWhoHit, hitId);
+        
+        // Apply the damage and do nothing else
+        EnemyAIInstance.Context.Adapter.ApplyDamage(force);
+        return true;
+    }
 }

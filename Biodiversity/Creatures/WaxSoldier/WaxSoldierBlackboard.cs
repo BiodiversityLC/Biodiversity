@@ -18,14 +18,16 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float WaxDurability { get; set; } = 1f;
     public float WaxSofteningTemperature { get; } = 40f;
     public float WaxMeltTemperature { get; } = 60f;
-    public WaxSoldierAI.MoltenState MoltenState { get; set; }
     
     public bool IsNetworkEventsSubscribed { get; set; }
+    public bool IsFriendlyFireEnabled { get; set; }
     
     public Pose GuardPost { get; set; }
     
     public Vector3 LastKnownPlayerPosition { get; set; }
     public Vector3 LastKnownPlayerVelocity { get; set; }
+    
+    public WaxSoldierAI.MoltenState MoltenState { get; set; }
     
     public WaxSoldierNetcodeController NetcodeController { get; set; }
     public Musket HeldMusket { get; set; }

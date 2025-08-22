@@ -52,7 +52,7 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.States, AloeSe
         base.OnStateExit();
         if (EnemyAIInstance.BackupTargetPlayer)
         {
-            EnemyAIInstance.netcodeController.TargetPlayerClientId.Value = EnemyAIInstance.BackupTargetPlayer.actualClientId;
+            EnemyAIInstance.netcodeController.TargetPlayerClientId.Value = PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.BackupTargetPlayer);
             EnemyAIInstance.BackupTargetPlayer = null;
         }
     }
@@ -68,7 +68,7 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.States, AloeSe
                     EnemyAIInstance.transform.position) <= 1.5f)) return !attackingPlayerState._isPlayerTargetable;
 
             EnemyAIInstance.LogVerbose("Player is close to aloe! Killing them!");
-            EnemyAIInstance.netcodeController.CrushPlayerClientRpc(EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+            EnemyAIInstance.netcodeController.CrushPlayerClientRpc(PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.ActualTargetPlayer.Value));
 
             return true;
         }

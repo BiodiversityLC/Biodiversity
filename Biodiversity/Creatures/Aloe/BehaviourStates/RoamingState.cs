@@ -131,7 +131,7 @@ internal class RoamingState : BehaviourState<AloeServerAI.States, AloeServerAI>
         internal override void OnTransition()
         {
             AloeSharedData.Instance.Bind(EnemyAIInstance, _stalkablePlayer, BindType.Stalk);
-            EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(_stalkablePlayer.actualClientId);
+            EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(PlayerUtil.GetClientIdFromPlayer(_stalkablePlayer));
         }
     }
 }

@@ -36,9 +36,9 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
         EnemyAIInstance.UpdateWaxDurability();
     }
 
-    internal override void OnStateExit()
+    internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
     {
-        base.OnStateExit();
+        base.OnStateExit(transition);
         EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamInSalute.Set(false);
     }
 }

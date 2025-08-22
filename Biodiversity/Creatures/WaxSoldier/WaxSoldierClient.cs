@@ -17,6 +17,7 @@ public class WaxSoldierClient : MonoBehaviour
     public static readonly int AimMusket = Animator.StringToHash("AimMusket");
     public static readonly int ShootMusket = Animator.StringToHash("ShootMusket");
     public static readonly int ReloadMusket = Animator.StringToHash("ReloadMusket");
+    public static readonly int Death = Animator.StringToHash("Death");
     
     public static readonly int VelocityX = Animator.StringToHash("VelocityX");
     public static readonly int VelocityZ = Animator.StringToHash("VelocityZ");
@@ -33,7 +34,7 @@ public class WaxSoldierClient : MonoBehaviour
     [SerializeField] private Animator unmoltenAnimator;
     [SerializeField] private Animator moltenAnimator;
     [SerializeField] private Transform musketContainer;
-
+    
     [Header("Audio")] [Space(5f)]
     [SerializeField] private AudioSource creatureVoice;
     [SerializeField] private AudioSource footstepsSource;

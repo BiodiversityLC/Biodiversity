@@ -47,10 +47,11 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
             );
     }
 
-    internal override void OnStateExit()
+    internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
     {
-        base.OnStateExit();
+        base.OnStateExit(transition);
         
+        EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.Agent.updateRotation = true;
         DesiredRotation = Quaternion.identity;
     }

@@ -1,6 +1,7 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -23,6 +24,7 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.Agent.speed = 0;
+        EnemyAIInstance.Context.Adapter.Agent.velocity = Vector3.zero;
         
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;

@@ -327,16 +327,24 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
 
     /// <summary>
     /// Transitions the AI to a new behavior state.
-    /// This involves calling <see cref="BehaviourState{TState,TEnemyAI}.OnStateExit"/> on the current state (if any),
-    /// then <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/> on the new state.
+    /// This involves calling <see cref="BehaviourState{TState,TEnemyAI}.OnStateExit(StateTransition{TState, TEnemyAI})"/>
+    /// on the current state (if any), then <paramref name="stateTransition"/>'s <see cref="StateTransition{TState,TEnemyAI}.OnTransition"/>
+    /// method is called if provided, then <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/> is called on the new state.
+    /// 
     /// The <see cref="NetworkCurrentBehaviourStateIndex"/> is updated to reflect the new state.
-    /// The <paramref name="stateTransition"/>'s <see cref="StateTransition{TState,TEnemyAI}.OnTransition"/> method is called if provided.
     /// </summary>
-    /// <param name="newState">The enum value of the <see cref="TState"/> to transition to.</param>
-    /// <param name="stateTransition">The <see cref="StateTransition{TState,TEnemyAI}"/> object that triggered this state change, if applicable.
-    /// Its <see cref="StateTransition{TState,TEnemyAI}.OnTransition"/> method will be called.</param>
-    /// <param name="initData">Optional <see cref="StateData"/> to pass to the <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/>
-    /// method of the new state.</param>
+    /// 
+    /// <param name="newState">
+    /// The enum value of the <see cref="TState"/> to transition to.
+    /// </param>
+    /// <param name="stateTransition">
+    /// The <see cref="StateTransition{TState,TEnemyAI}"/> object that triggered this state change, if applicable.
+    /// Its <see cref="StateTransition{TState,TEnemyAI}.OnTransition"/> method will be called.
+    /// </param>
+    /// <param name="initData">
+    /// Optional <see cref="StateData"/> to pass to the <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/>
+    /// method of the new state.
+    /// </param>
     internal void SwitchBehaviourState(
         TState newState,
         StateTransition<TState, TEnemyAI> stateTransition = null,
@@ -345,17 +353,19 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         if (!IsServer) return;
         
         BehaviourState<TState, TEnemyAI> previousStateInstance = CurrentState;
+        TState previousStateInstanceType = previousStateInstance.GetStateType();
+        
         if (previousStateInstance != null)
         {
-            LogVerbose($"Exiting state {previousStateInstance.GetStateType()}.");
+            LogVerbose($"Exiting state {previousStateInstanceType}.");
 
             try
             {
-                previousStateInstance.OnStateExit();
+                previousStateInstance.OnStateExit(stateTransition);
             }
             catch (Exception e)
             {
-                LogError($"Exception during OnStateExit for {previousStateInstance.GetStateType()}: {e}");
+                LogError($"Exception during OnStateExit for {previousStateInstanceType}: {e}");
             }
             
             PreviousState = previousStateInstance;
@@ -373,7 +383,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         if (_stateDictionary.TryGetValue(newState, out BehaviourState<TState, TEnemyAI> newStateInstance))
         {
             CurrentState = newStateInstance;
-            currentBehaviourStateIndex = Convert.ToInt32(newState);
+            currentBehaviourStateIndex = (int)(object)newState;
             NetworkCurrentBehaviourStateIndex.SafeSet(currentBehaviourStateIndex);
             
             LogVerbose($"Entering state {newState}.");
@@ -490,9 +500,8 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         
         AudioClips = new Dictionary<string, AudioClip[]>();
         AudioSources = new Dictionary<string, AudioSource>();
-
-        T component = GetComponent<T>();
-        if (component == null)
+        
+        if (!TryGetComponent(out T component))
         {
             LogWarning($"No component of type {typeof(T).Name} found on {gameObject.name}. Cannot load audio clips & sources.");
             return;

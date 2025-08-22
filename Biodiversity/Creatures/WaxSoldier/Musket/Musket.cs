@@ -215,7 +215,7 @@ public class Musket : BiodiverseItem
                 if (isHeldByPlayer && playerHeldBy == player) continue;
                 
                 int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.Player);
-                DamagePlayerServerRpc(player.actualClientId, bulletDamage, CauseOfDeath.Gunshots); // RPC is needed because `PlayerControllerB.DamagePlayer` has an `if (!IsOwner) return;` statement at the start
+                DamagePlayerServerRpc(PlayerUtil.GetClientIdFromPlayer(player), bulletDamage, CauseOfDeath.Gunshots); // RPC is needed because `PlayerControllerB.DamagePlayer` has an `if (!IsOwner) return;` statement at the start
                 LogVerbose($"Musket bullet delt {bulletDamage} damage to {player.playerUsername}.");
                 //break;
             }
@@ -304,7 +304,7 @@ public class Musket : BiodiverseItem
             if (collider.CompareTag("Player") && collider.transform.TryGetComponent(out PlayerControllerB player))
             {
                 if (isHeldByPlayer && playerHeldBy == player) continue;
-                DamagePlayerServerRpc(player.actualClientId, 100, CauseOfDeath.Stabbing);
+                DamagePlayerServerRpc(PlayerUtil.GetClientIdFromPlayer(player), 100, CauseOfDeath.Stabbing);
                 continue;
             }
 

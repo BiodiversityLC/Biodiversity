@@ -11,6 +11,13 @@ internal static class PlayerUtil
         return StartOfRound.Instance.allPlayerScripts[playerClientId];
     }
     
+    // Used so I dont mix up `PlayerControllerB.playerClientId` and `PlayerControllerB.actualClientId`
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static ulong GetClientIdFromPlayer(PlayerControllerB player)
+    {
+        return player.playerClientId;
+    }
+    
     /// <summary>
     /// Determines whether the specified player is dead.
     /// </summary>

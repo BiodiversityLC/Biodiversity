@@ -51,7 +51,11 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
      * Ambush attacks (figure out ambush points by considering where scrap is, apparatus, etc), but don't do cheap annoying stuff like guarding the entrance to the dungeon
      */
     
+    // Make reload time slower as wax durability goes down?
+    
     public AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> Context { get; private set; }
+
+    private float _lastHitTime = -Mathf.Infinity;
 
     #region Event Functions
     public void Awake()
@@ -172,6 +176,25 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context.Blackboard.HeldMusket = null;
         netcodeController.DropMusketClientRpc();
     }
+    
+    internal void PostAnimationLosCheck()
+    {
+        PlayerControllerB player = GetClosestVisiblePlayer(
+            Context.Adapter.EyeTransform,
+            Context.Blackboard.ViewWidth,
+            Context.Blackboard.ViewRange,
+            proximityAwareness: 1f);
+        
+        if (player)
+        {
+            Context.Adapter.TargetPlayer = player; 
+            SwitchBehaviourState(States.Pursuing);
+        }
+        else
+        {
+           SwitchBehaviourState(States.MovingToStation);
+        }
+    }
     #endregion
 
     #region Lethal Company Vanilla Events
@@ -198,7 +221,34 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
         if (!IsServer) return;
-        CurrentState?.OnHitEnemy(force, playerWhoHit, hitID);
+
+        // Hit cooldown
+        if (Time.time - _lastHitTime < 0.03f)
+            return;
+        
+        // If friendly fire is disabled, and we weren't hit by a player, then ignore the hit
+        bool isPlayerWhoHitNull = !playerWhoHit;
+        if (!Context.Blackboard.IsFriendlyFireEnabled && isPlayerWhoHitNull)
+            return;
+
+        if (CurrentState?.OnHitEnemy(force, playerWhoHit, hitID) ?? false)
+            return;
+        
+        // Default reaction when hit is to start chasing the player that hit them
+
+        Context.Adapter.ApplyDamage(force);
+        if (Context.Adapter.Health > 0)
+        {
+            if (!isPlayerWhoHitNull)
+            {
+                Context.Adapter.TargetPlayer = playerWhoHit;
+                SwitchBehaviourState(States.Pursuing);
+            }
+        }
+        else
+        {
+            SwitchBehaviourState(States.Dead);
+        }
     }
     #endregion
     
@@ -216,7 +266,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     }
     
     /// <summary>
-    /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth
+    /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth.
     /// </summary>
     internal void MoveWithAcceleration()
     {
@@ -230,10 +280,20 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     internal void DecelerateAndStop()
     {
         // Make the agent's speed smoothly go to zero
-        Context.Blackboard.AgentMaxSpeed = 0;
+        Context.Blackboard.AgentMaxSpeed = 0f;
         
         // Boost the acceleration immediately so it can decelerate quickly
         Context.Adapter.Agent.acceleration = Mathf.Min(Context.Adapter.Agent.acceleration * 3, Context.Blackboard.AgentMaxAcceleration);
+    }
+
+    internal void KillAllSpeed()
+    {
+        Context.Blackboard.AgentMaxSpeed = 0f;
+        Context.Blackboard.AgentMaxAcceleration = 0f;
+
+        Context.Adapter.Agent.speed = 0f;
+        Context.Adapter.Agent.acceleration = 0f;
+        Context.Adapter.Agent.velocity = Vector3.zero;
     }
     
     /// <summary>
@@ -245,17 +305,22 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (!IsServer) return;
         LogVerbose("Initializing config values...");
         
-        Context.Blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
-        Context.Blackboard.AttackSelector = attackSelector;
-        Context.Blackboard.NetcodeController = netcodeController;
+        WaxSoldierBlackboard bb = Context.Blackboard;
+        WaxSoldierAdapter ad = Context.Adapter;
+        WaxSoldierConfig cfg = WaxSoldierHandler.Instance.Config;
         
-        Context.Blackboard.ViewWidth = WaxSoldierHandler.Instance.Config.ViewWidth;
-        Context.Blackboard.ViewRange = WaxSoldierHandler.Instance.Config.ViewRange;
+        bb.StabAttackTriggerArea = stabAttackTriggerArea;
+        bb.AttackSelector = attackSelector;
+        bb.NetcodeController = netcodeController;
         
-        Context.Adapter.Health = WaxSoldierHandler.Instance.Config.Health;
-        Context.Adapter.AIIntervalLength = WaxSoldierHandler.Instance.Config.AiIntervalTime;
-        Context.Adapter.OpenDoorSpeedMultiplier = WaxSoldierHandler.Instance.Config.OpenDoorSpeedMultiplier;
-        Context.Adapter.Agent.angularSpeed = Context.Blackboard.AgentAngularSpeed;
+        bb.ViewWidth = cfg.ViewWidth;
+        bb.ViewRange = cfg.ViewRange;
+        bb.IsFriendlyFireEnabled = cfg.FriendlyFire;
+        
+        ad.Health = cfg.Health;
+        ad.AIIntervalLength = cfg.AiIntervalTime;
+        ad.OpenDoorSpeedMultiplier = cfg.OpenDoorSpeedMultiplier;
+        ad.Agent.angularSpeed = bb.AgentAngularSpeed;
     }
     
     protected override string GetLogPrefix()

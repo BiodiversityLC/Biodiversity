@@ -39,7 +39,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeS
         EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(true);
         EnemyAIInstance.netcodeController.AnimationParamCrawling.SafeSet(false);
         EnemyAIInstance.netcodeController.AnimationParamHealing.SafeSet(false);
-        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.ActualTargetPlayer.Value));
 
         // Spawn fake player body ragdoll
         GameObject fakePlayerBodyRagdollGameObject =
@@ -56,7 +56,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeS
         EnemyAIInstance.SetTargetPlayerInCaptivity(true);
         EnemyAIInstance.netcodeController.SpawnFakePlayerBodyRagdollClientRpc(fakePlayerBodyRagdollNetworkObject);
         EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(false);
-        EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(3f, EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+        EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(3f, PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.ActualTargetPlayer.Value));
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
             nameof(AloeClient.AudioClipTypes.snatchAndDragSfx), nameof(AloeClient.AudioSourceTypes.aloeVoiceSource), false, true, false, true);
 
@@ -100,7 +100,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeS
             
             EnemyAIInstance.LogVerbose($"Increasing fear for player {player.playerUsername}");
             
-            EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(0.4f, player.actualClientId);
+            EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(0.4f, PlayerUtil.GetClientIdFromPlayer(player));
         }
 
         ListPool<PlayerControllerB>.Release(playersLookingAtAloe);

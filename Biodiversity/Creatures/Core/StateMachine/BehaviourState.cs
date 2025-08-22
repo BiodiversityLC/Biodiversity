@@ -99,11 +99,26 @@ public abstract class BehaviourState<TState, TEnemyAI>
     /// Called when the AI exits this state.
     /// Override this method to define behavior that should happen when the AI transitions out of this state.
     /// </summary>
+    /// <remarks>
+    /// Common usages of this method are to clean up any resources, stop coroutines, or reset variables.
+    /// </remarks>
     internal virtual void OnStateExit()
+    {
+        OnStateExit(null);
+    }
+
+    /// <summary>
+    /// Called when the AI exits this state.
+    /// Override this method to define behavior that should happen when the AI transitions out of this state.
+    /// </summary>
+    /// <param name="transition">The transition that is causing the state to exit. Can be null if the state change was forced.</param>
+    /// <remarks>
+    /// Common usages of this method are to clean up any resources, stop coroutines, or reset variables.
+    /// </remarks>
+    internal virtual void OnStateExit(StateTransition<TState, TEnemyAI> transition)
     {
         EnemyAIInstance.LogVerbose($"{nameof(OnStateExit)} called for {_stateType}.");
     }
-    
 
     /// <summary>
     /// Performs behavior in the AI's Update cycle while it is in this state.
@@ -135,27 +150,52 @@ public abstract class BehaviourState<TState, TEnemyAI>
     internal virtual void FixedUpdateBehaviour()
     {
     }
-
-    /// <param name="force">The amount of damage that was done by the hit.</param>
-    /// <param name="playerWhoHit">The player object that hit the AI, if it was hit by a player.</param>
-    /// <param name="hitId">The ID of hit which dealt the damage.</param>
-    /// <returns>Whether the function "handled" the event.</returns>
-    internal virtual bool OnHitEnemy(
-        int force = 1, 
-        PlayerControllerB playerWhoHit = null, 
-        int hitId = -1)
-    {
-        EnemyAIInstance.LogVerbose($"{nameof(OnHitEnemy)} called for {_stateType}.");
-        return false;
-    }
-
-    /// <returns>Whether the function "handled" the event.</returns>
+    
+    /// <summary>
+    /// Called when <see cref="TEnemyAI"/> is stunned. This lets the current behaviour state react, and optionally supress
+    /// the <see cref="TEnemyAI"/>'s default stun reaction.
+    /// </summary>
+    /// <param name="setToStunned">If <c>true</c>, then make the AI stunned.</param>
+    /// <param name="setToStunTime">How long the stun lasts for in seconds.</param>
+    /// <param name="setStunnedByPlayer">The player that caused the stun, if any; otherwise <c>null</c></param>
+    /// <returns>
+    /// <c>true</c> if this state fully handled the event and the default reaction should NOT run;
+    /// otherwise <c>false</c> to allow the <see cref="TEnemyAI"/>'s default handling.
+    /// </returns>
+    /// <remarks>
+    /// Override in states that need custom behavior. Return <c>false</c> to run the shared default logic;
+    /// return <c>true</c> to suppress it.
+    /// </remarks>
     internal virtual bool OnSetEnemyStunned(
         bool setToStunned, 
         float setToStunTime = 1f,
         PlayerControllerB setStunnedByPlayer = null)
     {
         EnemyAIInstance.LogVerbose($"{nameof(OnSetEnemyStunned)} called for {_stateType}.");
+        return false;
+    }
+
+    /// <summary>
+    /// Called when <see cref="TEnemyAI"/> is hit. This lets the current behaviour state react, and optionally supress
+    /// the <see cref="TEnemyAI"/>'s default hit reaction.
+    /// </summary>
+    /// <param name="force">The amount of damage that was done by the hit.</param>
+    /// <param name="playerWhoHit">The player that caused the hit, if any; otherwise <c>null</c></param>
+    /// <param name="hitId">The ID of the hit.</param>
+    /// <returns>
+    /// <c>true</c> if this state fully handled the event and the default reaction should NOT run;
+    /// otherwise <c>false</c> to allow the <see cref="TEnemyAI"/>'s default handling.
+    /// </returns>
+    /// <remarks>
+    /// Override in states that need custom behavior. Return <c>false</c> to run the shared default logic;
+    /// return <c>true</c> to suppress it.
+    /// </remarks>
+    internal virtual bool OnHitEnemy(
+        int force = 1, 
+        PlayerControllerB playerWhoHit = null, 
+        int hitId = -1)
+    {
+        EnemyAIInstance.LogVerbose($"{nameof(OnHitEnemy)} called for {_stateType}.");
         return false;
     }
 

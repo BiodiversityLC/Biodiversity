@@ -57,6 +57,8 @@ public class HeatController : MonoBehaviour
         _heatEmitterRules.Add((
             go => go.name.IndexOf("FireplaceFire", StringComparison.OrdinalIgnoreCase) >= 0,
             AttachFireplace));
+        
+        // todo: add apparatus heat emitter with similar settings to fireplace (radial heat emitter)
     }
 
     private void OnDestroy()

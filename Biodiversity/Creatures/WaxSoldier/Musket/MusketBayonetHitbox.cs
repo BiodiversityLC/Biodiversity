@@ -113,7 +113,7 @@ public class MusketBayonetHitbox : NetworkBehaviour
             }
 
             Vector3 forceDirection = (player.transform.position - transform.position).normalized;
-            DamagePlayerClientRpc(player.actualClientId, damage, forceDirection * knockback, CauseOfDeath.Stabbing);
+            DamagePlayerClientRpc(PlayerUtil.GetClientIdFromPlayer(player), damage, forceDirection * knockback, CauseOfDeath.Stabbing);
             cooldownTracker.Add(player, Time.time + hitCooldown);
             return true;
         }

@@ -608,7 +608,7 @@ public class AloeClient : MonoBehaviour
         if (GameNetworkManager.Instance.localPlayerController == targetPlayer)
         {
             GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = enable;
-            _playerVisorRenderers[targetPlayer.actualClientId].enabled = enable;
+            _playerVisorRenderers[PlayerUtil.GetClientIdFromPlayer(targetPlayer)].enabled = enable;
         }
         else
         {
@@ -651,7 +651,7 @@ public class AloeClient : MonoBehaviour
     /// <param name="playerClientId">.</param>
     private void HandleIncreasePlayerFearLevel(float targetInsanity, ulong playerClientId)
     {
-        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
+        PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerClientId);
         if (!player || player != GameNetworkManager.Instance.localPlayerController) return;
         player.JumpToFearLevel(targetInsanity);
         player.IncreaseFearLevelOverTime(0.8f);
@@ -666,9 +666,11 @@ public class AloeClient : MonoBehaviour
         if (!_targetPlayer.Value.currentVoiceChatAudioSource) return;
 
         BiodiversityPlugin.LogVerbose($"Muffling {_targetPlayer.Value.playerUsername}");
-        _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 5f;
-        _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = true;
-        _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 500f;
+        ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(_targetPlayer.Value);
+        
+        _playerAudioLowPassFilters[playerClientId].lowpassResonanceQ = 5f;
+        _playerOccludeAudios[playerClientId].overridingLowPass = true;
+        _playerOccludeAudios[playerClientId].lowPassOverride = 500f;
         _targetPlayer.Value.voiceMuffledByEnemy = true;
     }
 
@@ -681,9 +683,11 @@ public class AloeClient : MonoBehaviour
         if (!_targetPlayer.Value.currentVoiceChatAudioSource) return;
 
         BiodiversityPlugin.LogVerbose($"UnMuffling {_targetPlayer.Value.playerUsername}");
-        _playerAudioLowPassFilters[_targetPlayer.Value.actualClientId].lowpassResonanceQ = 1f;
-        _playerOccludeAudios[_targetPlayer.Value.actualClientId].overridingLowPass = false;
-        _playerOccludeAudios[_targetPlayer.Value.actualClientId].lowPassOverride = 20000f;
+        ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(_targetPlayer.Value);
+        
+        _playerAudioLowPassFilters[playerClientId].lowpassResonanceQ = 1f;
+        _playerOccludeAudios[playerClientId].overridingLowPass = false;
+        _playerOccludeAudios[playerClientId].lowPassOverride = 20000f;
         _targetPlayer.Value.voiceMuffledByEnemy = false;
     }
 
@@ -705,7 +709,7 @@ public class AloeClient : MonoBehaviour
             return;
         }
         
-        ulong targetPlayerId = _targetPlayer.Value.actualClientId;
+        ulong targetPlayerId = _targetPlayer.Value.playerClientId;
         List<Tuple<Component, bool>> cachedRenderers = _playersCachedRenderers[targetPlayerId];
         
         if (cachedRenderers == null || cachedRenderers.Count == 0)
@@ -743,7 +747,7 @@ public class AloeClient : MonoBehaviour
 
     private void HandleDamagePlayer(ulong playerId, int damage)
     {
-        PlayerControllerB playerToDamage = StartOfRound.Instance.allPlayerScripts[playerId];
+        PlayerControllerB playerToDamage = PlayerUtil.GetPlayerFromClientId(playerId);
         if (playerToDamage != GameNetworkManager.Instance.localPlayerController) return;
         
         if (PlayerUtil.IsPlayerDead(playerToDamage))

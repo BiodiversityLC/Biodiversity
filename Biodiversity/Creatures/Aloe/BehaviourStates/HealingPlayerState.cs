@@ -38,7 +38,7 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.States, AloeServ
             : "Starting to heal the player.");
         
         EnemyAIInstance.netcodeController.ShouldHaveDarkSkin.SafeSet(false);
-        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(EnemyAIInstance.ActualTargetPlayer.Value.actualClientId);
+        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.ActualTargetPlayer.Value));
         EnemyAIInstance.netcodeController.AnimationParamHealing.SafeSet(true);
         EnemyAIInstance.netcodeController.SetTargetPlayerAbleToEscapeClientRpc(true);
         EnemyAIInstance.netcodeController.UnMuffleTargetPlayerVoiceClientRpc();
@@ -87,7 +87,7 @@ internal class HealingPlayerState : BehaviourState<AloeServerAI.States, AloeServ
             if (secondsTimer >= 1f)
             {
                 secondsTimer -= 1f;
-                EnemyAIInstance.netcodeController.DamagePlayerClientRpc(EnemyAIInstance.ActualTargetPlayer.Value.actualClientId, _healingPerInterval);
+                EnemyAIInstance.netcodeController.DamagePlayerClientRpc(PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.ActualTargetPlayer.Value), _healingPerInterval);
                 EnemyAIInstance.LogVerbose($"Damaged player by amount: {_healingPerInterval}");
             }
         }

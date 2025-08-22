@@ -8,29 +8,54 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
 {
     #region Unity Components
+
     public NavMeshAgent Agent => instance.agent;
     public Animator Animator => instance.creatureAnimator;
     public Transform Transform => instance.transform;
     public Transform EyeTransform => instance.eye;
+
     #endregion
-    
-    public GameObject[] AssignedAINodes { get => instance.allAINodes; set => instance.allAINodes = value; }
-    
-    public PlayerControllerB TargetPlayer { get => instance.targetPlayer; set => instance.targetPlayer = value; }
-    
+
+    public GameObject[] AssignedAINodes
+    {
+        get => instance.allAINodes;
+        set => instance.allAINodes = value;
+    }
+
+    public PlayerControllerB TargetPlayer
+    {
+        get => instance.targetPlayer;
+        set => instance.targetPlayer = value;
+    }
+
     public bool IsDead => instance.isEnemyDead;
 
     public float StunNormalizedTimer => instance.stunNormalizedTimer;
-    public float OpenDoorSpeedMultiplier { get => instance.openDoorSpeedMultiplier; set => instance.openDoorSpeedMultiplier = value; } //todo: turn this to "open door speed", see DoorLock.OnTriggerStay
-    public float AIIntervalLength { get => instance.AIIntervalTime; set => instance.AIIntervalTime = value; }
 
-    public int Health { get => instance.enemyHP; set => instance.enemyHP = value; }
+    public float OpenDoorSpeedMultiplier
+    {
+        get => instance.openDoorSpeedMultiplier;
+        set => instance.openDoorSpeedMultiplier = value;
+    } //todo: turn this to "open door speed", see DoorLock.OnTriggerStay
+
+    public float AIIntervalLength
+    {
+        get => instance.AIIntervalTime;
+        set => instance.AIIntervalTime = value;
+    }
+
+    public int Health
+    {
+        get => instance.enemyHP;
+        set => instance.enemyHP = value;
+    }
 
     public void StopAllPathing()
     {
         // Resets the destination (so imperium doesn't draw the path to some old destination vector we arent using anymore)
-        instance.destination = RoundManager.Instance.GetNavMeshPosition(instance.transform.position, RoundManager.Instance.navHit, -1f);
-        
+        instance.destination =
+            RoundManager.Instance.GetNavMeshPosition(instance.transform.position, RoundManager.Instance.navHit, -1f);
+
         instance.movingTowardsTargetPlayer = false;
         instance.moveTowardsDestination = false;
     }
@@ -64,5 +89,11 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
             return true;
 
         return false;
+    }
+
+    public void ApplyDamage(int damage)
+    { 
+        Health -= damage;
+        // todo: play damage/hurt sfx
     }
 }

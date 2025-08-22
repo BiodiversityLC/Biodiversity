@@ -3,6 +3,7 @@ using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
 using Biodiversity.Creatures.WaxSoldier.Misc;
 using Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
+using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -49,6 +50,15 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetHitbox.EndAttack();
         EnemyAIInstance.Context.Blackboard.AttackSelector.StartCooldown(EnemyAIInstance.Context.Blackboard.currentAttackAction);
     }
+    
+    internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
+    {
+        base.OnHitEnemy(force, playerWhoHit, hitId);
+        
+        // Apply the damage and do nothing else
+        EnemyAIInstance.Context.Adapter.ApplyDamage(force);
+        return true;
+    }
 
     internal override void OnCustomEvent(string eventName, StateData eventData)
     {
@@ -56,9 +66,11 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         switch (eventName)
         {
             case nameof(UnmoltenAnimationHandler.OnAttackAnimationFinish):
-                EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Pursuing);
+            {
+                EnemyAIInstance.PostAnimationLosCheck();
                 break;
-
+            }
+            
             case nameof(UnmoltenAnimationHandler.OnAnimationEventStartTargetLook):
             {
                 if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)

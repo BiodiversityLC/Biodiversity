@@ -2,6 +2,7 @@
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
 using Biodiversity.Util;
+using GameNetcodeStuff;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -56,5 +57,17 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.PlayAudioClipTypeClientRpc("activateSfx", "creatureVoice", 0, true);
         yield return null;
         EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
+    }
+    
+    internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
+    {
+        base.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
+        return true; // Makes nothing happen
+    }
+
+    internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
+    {
+        base.OnHitEnemy(force, playerWhoHit, hitId);
+        return true; // Makes nothing happen 
     }
 }

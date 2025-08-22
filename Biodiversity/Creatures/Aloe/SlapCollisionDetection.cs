@@ -24,9 +24,11 @@ public class SlapCollisionDetection : MonoBehaviour
         if (!_canBeSlapped) return;
         if (other.CompareTag("Player") && other.TryGetComponent(out PlayerControllerB player))
         {
-            if (_playersAlreadyHitBySlap.Contains(player.actualClientId)) return;
+            ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
             
-            SlapPlayerServerRpc(player.actualClientId);
+            if (_playersAlreadyHitBySlap.Contains(playerClientId)) return;
+            
+            SlapPlayerServerRpc(playerClientId);
         }
         else if (other.CompareTag("Enemy") && other.TryGetComponent(out EnemyAICollisionDetect enemyAICollisionDetect))
         {

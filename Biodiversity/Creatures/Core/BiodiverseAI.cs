@@ -306,7 +306,6 @@ public abstract class BiodiverseAI : EnemyAI
     #region Line Of Sight Stuff
     /// <summary>
     /// Determines if there is an unobstructed line of sight to a position within a specified view cone and range.
-    /// This is a pure geometric and physics check.
     /// </summary>
     /// <param name="targetPosition">The position to check line of sight to.</param>
     /// <param name="eyeTransform">The transform representing the eye's position and forward direction.</param>
@@ -399,7 +398,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="currentTargetPlayer">The player currently being targeted.</param>
     /// <param name="bufferDistance">The distance buffer to prevent target switching. A new target must be this much closer to be chosen.</param>
     /// <param name="proximityAwareness"></param>
-    /// <returns>The best player target, or null if none are found.</returns>
+    /// <returns>The "best" (according to the parameters) player target, or null if none are found.</returns>
     internal PlayerControllerB GetClosestVisiblePlayer(
         Transform eyeTransform,
         float viewWidth = 45f,

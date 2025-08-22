@@ -41,4 +41,14 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
         EnemyAIInstance.UpdateWaxDurability();
         EnemyAIInstance.MoveWithAcceleration();
     }
+
+    internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
+    {
+        base.OnStateExit(transition);
+
+        if (transition is not TransitionToArrivingState)
+        {
+            EnemyAIInstance.Context.Adapter.StopAllPathing();
+        }
+    }
 }

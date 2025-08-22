@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Aloe.Types;
 using Biodiversity.Creatures.Aloe.Types.Networking;
+using Biodiversity.Util;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Concurrent;
@@ -64,14 +65,15 @@ internal class AloeSharedData
     
     public void Bind(AloeServerAI serverAI, PlayerControllerB player, BindType bindType)
     {
+        ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
         if (NetworkManager.Singleton.IsServer)
         {
-            SendBindToClients(serverAI.BioId, player.actualClientId, bindType);
+            SendBindToClients(serverAI.BioId, playerClientId, bindType);
             if (bindType == BindType.Kidnap) _aloeBoundKidnapsServer.TryAdd(serverAI, player);
         }
         else
         {
-            SendBindRequestToServer(serverAI.BioId, player.actualClientId, bindType);
+            SendBindRequestToServer(serverAI.BioId, playerClientId, bindType);
         }
     }
 
@@ -104,7 +106,7 @@ internal class AloeSharedData
                 "The given player object instance is null, cannot determine whether they are kidnap bound.");
         }
         
-        return _kidnappedPlayerToAloe.ContainsKey(player.actualClientId);
+        return _kidnappedPlayerToAloe.ContainsKey(PlayerUtil.GetClientIdFromPlayer(player));
     }
     
     public bool IsPlayerStalkBound(PlayerControllerB player)
@@ -115,7 +117,7 @@ internal class AloeSharedData
                 "The given player object instance is null, cannot determine whether they are stalk bound.");
         }
 
-        return _stalkedPlayerToAloe.ContainsKey(player.actualClientId);
+        return _stalkedPlayerToAloe.ContainsKey(PlayerUtil.GetClientIdFromPlayer(player));
     }
 
     private static void SendBindRequestToServer(string bioId, ulong playerId, BindType bindType)
@@ -225,7 +227,7 @@ internal class AloeSharedData
 
     public void SetPlayerMaxHealth(PlayerControllerB player, int maxHealth)
     {
-        _playersMaxHealth[player.actualClientId] = maxHealth;
+        _playersMaxHealth[PlayerUtil.GetClientIdFromPlayer(player)] = maxHealth;
     }
 
     /// <summary>
@@ -242,7 +244,7 @@ internal class AloeSharedData
             return 100;
         }
         
-        _playersMaxHealth.TryGetValue(player.actualClientId, out int maxHealth);
+        _playersMaxHealth.TryGetValue(PlayerUtil.GetClientIdFromPlayer(player), out int maxHealth);
         if (maxHealth > 0) return maxHealth;
         
         BiodiversityPlugin.Logger.LogWarning($"Max health of given player {player.playerUsername} is {maxHealth}. This should not happen. Returning a max health of 100 as a failsafe.");

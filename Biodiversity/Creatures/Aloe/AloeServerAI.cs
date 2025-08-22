@@ -287,7 +287,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
             case States.AttackingPlayer:
             {
                 LogVerbose("Player is touching the aloe! Killing them!");
-                netcodeController.CrushPlayerClientRpc(ActualTargetPlayer.Value.actualClientId);
+                
+                netcodeController.CrushPlayerClientRpc(PlayerUtil.GetClientIdFromPlayer(ActualTargetPlayer.Value));
                 SwitchBehaviourState(States.ChasingEscapedPlayer);
                 break;
             }
@@ -358,7 +359,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                     {
                         SetTargetPlayerInCaptivity(false);
                         BackupTargetPlayer = ActualTargetPlayer.Value;
-                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
+                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.playerClientId;
                         SwitchBehaviourState(States.AttackingPlayer);
                     }
                     else
@@ -378,7 +379,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                     if (playerWhoHitMe.HasValue)
                     {
                         BackupTargetPlayer = ActualTargetPlayer.Value;
-                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
+                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.playerClientId;
                         SwitchBehaviourState(States.AttackingPlayer);
                     }
                     else
@@ -396,7 +397,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                 {
                     if (playerWhoHitMe.HasValue && ActualTargetPlayer.Value != playerWhoHitMe.Value)
                     {
-                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.actualClientId;
+                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.playerClientId;
                     }
                     else
                     {
@@ -460,7 +461,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                 if (stunnedByPlayer2.HasValue)
                 {
                     BackupTargetPlayer = ActualTargetPlayer.Value;
-                    netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
+                    netcodeController.TargetPlayerClientId.Value = PlayerUtil.GetClientIdFromPlayer(stunnedByPlayer2.Value);
                     SwitchBehaviourState(States.AttackingPlayer);
                 }
                 else
@@ -477,7 +478,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                 if (!stunnedByPlayer2.HasValue) break;
 
                 if (ActualTargetPlayer.Value != setStunnedByPlayer)
-                    netcodeController.TargetPlayerClientId.Value = stunnedByPlayer2.Value.actualClientId;
+                    netcodeController.TargetPlayerClientId.Value = PlayerUtil.GetClientIdFromPlayer(stunnedByPlayer2.Value);
                 
                 break;
             }

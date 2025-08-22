@@ -45,10 +45,6 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     [field: Range(1, 100)]
     public int Health { get; private set; } = 8; // todo: check if this is the correct default health value
     
-    [field: Tooltip("The speed multiplier for how quickly the Wax Soldier can open doors.")]
-    [field: Range(0f, 100f)]
-    public float OpenDoorSpeedMultiplier { get; private set; } = 3f;
-    
     [field: Tooltip("The view width in degrees of the Wax Soldier.")]
     [field: Range(1f, 360f)]
     public float ViewWidth { get; private set; } = 115f;
@@ -56,6 +52,13 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     [field: Tooltip("The view range in meters of the Wax Soldier.")]
     [field: Range(0.1f, 200f)]
     public float ViewRange { get; private set; } = 65f;
+
+    [field: Tooltip("Whether the Wax Soldier can be killed by something other than a player e.g. an eyeless dog. WARNING: May be incompatible with weapons from some mods (if friendly fire is off).")]
+    public bool FriendlyFire { get; private set; } = true;
+    
+    [field: Tooltip("The speed multiplier for how quickly the Wax Soldier can open doors.")]
+    [field: Range(0f, 100f)]
+    public float OpenDoorSpeedMultiplier { get; private set; } = 3f;
     
     [field: Tooltip("Whether landmines and seamines (from the Surfaced mod) will blow up if the Wax Soldier moves over one.")]
     public bool LandminesBlowUpWaxSoldier { get; private set; } = true;

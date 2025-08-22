@@ -106,9 +106,11 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         }
     }
 
-    internal override void OnStateExit()
+    internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
     {
-        base.OnStateExit();
+        base.OnStateExit(transition);
+        
         searchStrategy.Conclude();
+        EnemyAIInstance.Context.Adapter.StopAllPathing();
     }
 }
