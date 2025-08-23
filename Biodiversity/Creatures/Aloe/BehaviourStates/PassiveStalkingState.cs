@@ -124,8 +124,11 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
             // Greatly increase fear level if the player turns around to see the Aloe starting at them
             if (EnemyAIInstance.IsStaringAtTargetPlayer &&
                 EnemyAIInstance.ActualTargetPlayer.Value == EnemyAIInstance.AvoidingPlayer.Value)
-                EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(0.8f, EnemyAIInstance.AvoidingPlayer.Value.playerClientId);
-
+            {
+                EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(0.8f,
+                    PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.AvoidingPlayer.Value));
+            }
+            
             EnemyAIInstance.IsStaringAtTargetPlayer = false;
         }
     }

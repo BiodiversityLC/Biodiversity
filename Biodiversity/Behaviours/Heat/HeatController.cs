@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 
 namespace Biodiversity.Behaviours.Heat;
@@ -25,9 +26,9 @@ public class HeatController : MonoBehaviour
                 {
                     if (!_instance)
                     {
-                        GameObject singleton = new() { name = "HeatController" };
+                        GameObject singleton = new() { name = "BiodiverseHeatController" };
                         _instance = singleton.AddComponent<HeatController>();
-                        BiodiversityPlugin.LogVerbose("Created new HeatController.");
+                        BiodiversityPlugin.LogVerbose("[HeatController] Created new HeatController.");
                     }
                 }
             }
@@ -50,7 +51,7 @@ public class HeatController : MonoBehaviour
 
     private void Awake()
     {
-        // Flashlight Items
+        // Flashlight items
         _heatEmitterRules.Add((go => go.TryGetComponent(out FlashlightItem _), AttachFlashlight));
         
         // Fireplace in the vanilla mansion
@@ -58,7 +59,7 @@ public class HeatController : MonoBehaviour
             go => go.name.IndexOf("FireplaceFire", StringComparison.OrdinalIgnoreCase) >= 0,
             AttachFireplace));
         
-        // todo: add apparatus heat emitter with similar settings to fireplace (radial heat emitter)
+        _heatEmitterRules.Add((go => go.TryGetComponent(out LungProp _), AttachApparatus));
     }
 
     private void OnDestroy()
@@ -90,7 +91,7 @@ public class HeatController : MonoBehaviour
             }
             catch (Exception e)
             {
-                BiodiversityPlugin.LogVerbose($"Failed to attach heat emitter to '{go.name}'. {e}");
+                BiodiversityPlugin.LogVerbose($"[HeatController] Failed to attach heat emitter to '{go.name}'. {e}");
             }
         }
     }
@@ -98,23 +99,31 @@ public class HeatController : MonoBehaviour
     private IEnumerator InitialSceneSweep()
     {
         _hasDoneInitialSweep = true;
+
+        const float maxFrameTimeMilliseconds = 2f;
+        Stopwatch stopwatch = new();
+        
+        BiodiversityPlugin.LogVerbose($"[HeatController] Starting initial scene sweep.");
         
         Transform[] trs = FindObjectsOfType<Transform>(true);
+        
+        stopwatch.Start();
         for (int i = 0; i < trs.Length; i++)
         {
             Transform tr = trs[i];
-            if (!tr) continue;
-            
-            GameObject go = tr.gameObject;
-            if (!go.activeInHierarchy) continue;
-            
-            TryAttachEmitter(tr.gameObject);
-            yield return null;
+            if (tr && tr.gameObject.activeInHierarchy)
+            {
+                TryAttachEmitter(tr.gameObject);
+            }
+
+            if (stopwatch.Elapsed.TotalMilliseconds > maxFrameTimeMilliseconds)
+            {
+                yield return null;
+                stopwatch.Restart();
+            }
         }
         
         BiodiversityPlugin.LogVerbose($"[HeatController] Initial scene sweep complete.");
-        // Finds all of the objects that should be given a heat emitter component.
-        // If more objects spawn later on in the game, a harmony patch attached to their main component will make it give itself a heat emitter component.
     }
 
     public void NotifySensorAdded()
@@ -132,20 +141,20 @@ public class HeatController : MonoBehaviour
     {
         if (!go.TryGetComponent(out FlashlightItem flashlightItem))
         {
-            BiodiversityPlugin.LogVerbose($"[{nameof(AttachFlashlight)}] The given gameobject has no FlashlightItem component.");
+            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The given gameobject has no {nameof(FlashlightItem)} component.");
             return;
         }
 
         Light bulb = flashlightItem.flashlightBulb;
         if (!bulb)
         {
-            BiodiversityPlugin.LogVerbose($"[{nameof(AttachFlashlight)}] The FlashlightItem's flashlightBulb is null.");
+            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The {nameof(FlashlightItem)}'s flashlightBulb is null.");
             return;
         }
 
         if (bulb.type != LightType.Spot)
         {
-            BiodiversityPlugin.LogVerbose($"[{nameof(AttachFlashlight)}] The flashlightBulb's light type is invalid ({bulb.type}), it must be a Spot.");
+            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The flashlightBulb's light type is invalid ({bulb.type}), it must be a Spot.");
             return;
         }
         
@@ -164,22 +173,42 @@ public class HeatController : MonoBehaviour
     private void AttachFireplace(GameObject go)
     {
         Light fireplaceLight = go.GetComponentInChildren<Light>();
-
         if (!fireplaceLight)
         {
-            BiodiversityPlugin.LogVerbose($"[{nameof(AttachFireplace)}] 'FireplaceFire' has no child Light component.");
+            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFireplace)}] 'FireplaceFire' has no child Light component.");
             return;
+        }
+
+        RadialHeatEmitter emitter = fireplaceLight.GetComponent<RadialHeatEmitter>();
+        if (!emitter)
+        {
+            emitter = fireplaceLight.gameObject.AddComponent<RadialHeatEmitter>();
         }
         
         if (fireplaceLight.type == LightType.Directional)
         {
-            BiodiversityPlugin.LogVerbose($"[{nameof(AttachFireplace)}] 'Light' is Directional, hence the radius of the light can't be used as the heat emitter radius. The default radius will be used.");
+            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFireplace)}] 'Light' is Directional, hence the radius of the light can't be used as the heat emitter radius. The default radius will be used.");
         }
-                
-        RadialHeatEmitter emitter = fireplaceLight.GetComponent<RadialHeatEmitter>() 
-                                    ?? fireplaceLight.gameObject.AddComponent<RadialHeatEmitter>();
-        emitter.radius = fireplaceLight.range;
-                
-        //configured++;
+        else
+        {
+            emitter.radius = fireplaceLight.range;
+        }
+    }
+
+    private void AttachApparatus(GameObject go)
+    {
+        if (!go.TryGetComponent(out LungProp apparatus))
+        {
+            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachApparatus)}] The given gameobject has no {nameof(LungProp)} component.");
+            return;
+        }
+        
+        RadialHeatEmitter emitter = apparatus.GetComponent<RadialHeatEmitter>();
+        if (!emitter)
+        {
+            emitter = apparatus.gameObject.AddComponent<RadialHeatEmitter>();
+        }
+        
+        // todo: make the heat emitter turn off/on when the `apparatus.isLungPowered` gets toggled
     }
 }

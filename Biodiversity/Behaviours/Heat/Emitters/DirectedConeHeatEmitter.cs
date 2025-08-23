@@ -18,15 +18,45 @@ public class DirectedConeHeatEmitter : HeatEmitter
     private MeshCollider meshCollider;
     private Mesh coneMesh;
 
-    private void OnEnable()
+    private float _tanOuterAngle;
+    private float _tanInnerAngle;
+
+#if UNITY_EDITOR
+    private void OnValidate()
     {
+        // Clamp inner angle to be less than outer angle to prevent invalid configurations
+        innerAngle = Mathf.Min(innerAngle, outerAngle);
+        
+        PrecomputeAngles();
+        EnsureCollider();
+        RebuildMesh();
+    }
+#endif
+
+    private void Awake()
+    {
+        emitterCentre ??= transform;
+        PrecomputeAngles();
         EnsureCollider(); 
         RebuildMesh(); 
     }
-    
-    private void Start()
+
+    private void OnEnable()
     {
-        emitterCentre ??= transform;
+        if (meshCollider)
+        {
+            meshCollider.enabled = true;
+        }
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnDisable();
+        
+        if (meshCollider)
+        {
+            meshCollider.enabled = false;
+        }
     }
 
     public override float GetHeatRateAt(Vector3 targetPos)
@@ -35,22 +65,32 @@ public class DirectedConeHeatEmitter : HeatEmitter
         Vector3 local = transform.InverseTransformPoint(targetPos);
         if (local.z <= 0f || local.z > range) return 0f;
 
-        float radiusAtZ = Mathf.Tan(0.5f * Mathf.Deg2Rad * outerAngle) * local.z;
-        float radial = new Vector2(local.x, local.y).magnitude;
-        if (radial > radiusAtZ) return 0f; // Outside cone range
+        float radialSqr = local.x * local.x + local.y * local.y;
+        float radiusAtZSqr = _tanOuterAngle * local.z;
+        radiusAtZSqr *= radiusAtZSqr;
+        if (radialSqr > radiusAtZSqr) return 0f; // Outside cone range
 
         // Angular weighting (innerAngle gets full power)
-        float ang = Mathf.Atan2(radial, Mathf.Max(1e-4f, local.z)) * Mathf.Rad2Deg;
-        float angT = Mathf.InverseLerp(outerAngle, innerAngle, ang);
+        float radial = Mathf.Sqrt(radialSqr);
+        float tanOfCurrentAngle = radial / Mathf.Max(1e-4f, local.z);
+        
+        // Lerp between the precomputed tangents
+        float angT = Mathf.InverseLerp(_tanOuterAngle, _tanInnerAngle, tanOfCurrentAngle);
         float angular = Mathf.Clamp01(angT);
 
         // Distance falloff along the axis
-        float distT = Mathf.Clamp01(local.z / range);
-        float axial = falloff.Evaluate(1f - distT);
+        float distT = local.z / range;
+        float axial = falloff.Evaluate(distT);
 
         // 1m normalization
         float norm = 1f / (1f + local.sqrMagnitude);
         return centreRateCPerSec * angular * axial * norm;
+    }
+    
+    private void PrecomputeAngles()
+    {
+        _tanOuterAngle = Mathf.Tan(0.5f * Mathf.Deg2Rad * outerAngle);
+        _tanInnerAngle = Mathf.Tan(0.5f * Mathf.Deg2Rad * innerAngle);
     }
 
     private void EnsureCollider()

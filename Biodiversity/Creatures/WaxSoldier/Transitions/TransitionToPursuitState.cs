@@ -12,7 +12,7 @@ internal class TransitionToPursuitState(WaxSoldierAI enemyAIInstance)
             EnemyAIInstance.Context.Adapter.EyeTransform,
             EnemyAIInstance.Context.Blackboard.ViewWidth,
             EnemyAIInstance.Context.Blackboard.ViewRange,
-            proximityAwareness: 1f);
+            proximityAwareness: 3f);
         
         if (player)
         {

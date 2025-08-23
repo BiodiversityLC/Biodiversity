@@ -368,7 +368,7 @@ public class AloeClient : MonoBehaviour
     /// <param name="playerClientId">The player's client id whose head will be crushed.</param>
     private void HandleCrushPlayerAnimation(ulong playerClientId)
     {
-        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerClientId];
+        PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerClientId);
         if (!player) return;
 
         StartCoroutine(CrushPlayerAnimation(player));

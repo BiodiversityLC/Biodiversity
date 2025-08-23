@@ -50,7 +50,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         PlayerControllerB player = EnemyAIInstance.GetClosestVisiblePlayer(
             EnemyAIInstance.Context.Adapter.EyeTransform,
             EnemyAIInstance.Context.Blackboard.ViewWidth,
-            EnemyAIInstance.Context.Blackboard.ViewRange, proximityAwareness: 2f);
+            EnemyAIInstance.Context.Blackboard.ViewRange, proximityAwareness: 3f);
         if (player)
         {
             EnemyAIInstance.Context.Adapter.TargetPlayer = player;
@@ -79,7 +79,6 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         searchStrategy.Update();
         EnemyAIInstance.MoveWithAcceleration();
         
-
         searchTimeLeft -= Time.deltaTime;
         if (searchTimeLeft <= 0)
         {

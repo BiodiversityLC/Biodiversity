@@ -22,54 +22,77 @@ public class RadialHeatEmitter : HeatEmitter
     public LayerMask losBlockers = ~0;
 
     [Header("Debug Wireframe")]
-    public bool showDebugWireframe = false;
+    public bool showDebugWireframe;
     public int segments = 64;
     public float lineWidth = 0.03f;
-    public Color runtimeColour = new(1f, 0.45f, 0f, 0.9f);
+    public Color colour = new(1f, 0.45f, 0f, 0.9f);
 
     private SphereCollider triggerCollider;
 
     private LineRenderer ringXY, ringXZ, ringYZ;
-    private Material lineMaterial;
+    private static Material lineMaterial;
 
+#if UNITY_EDITOR
     private void OnValidate()
     {
         if (radius <= 0)
         {
-            Debug.LogError("Radius must be greater than zero.");
+            Debug.LogWarning("Radius must be greater than zero.");
+            radius = 0.01f;
+        }
+        
+        if (!triggerCollider) triggerCollider = GetComponent<SphereCollider>();
+        if (triggerCollider) triggerCollider.radius = radius;
+
+        if (showDebugWireframe && Application.isPlaying)
+        {
+            UpdateWire();
         }
     }
+#endif
     
     private void Awake()
     {
-        triggerCollider = GetComponent<SphereCollider>() ?? gameObject.AddComponent<SphereCollider>();
+        if (!triggerCollider) triggerCollider = GetComponent<SphereCollider>();
+        if (!triggerCollider) triggerCollider = gameObject.AddComponent<SphereCollider>();
         triggerCollider.isTrigger = true;
         triggerCollider.radius = radius;
-        
-        losBlockers = LayerMask.GetMask("Water", "Room", "Terrain", "Vehicle");
-        
-        lineMaterial = new Material(Shader.Find("Sprites/Default"));
 
+        if (!lineMaterial)
+        {
+            lineMaterial = new Material(Shader.Find("Sprites/Default"));
+        }
+
+        if (losBlockers.value == 0)
+        {
+            losBlockers = LayerMask.GetMask("Water", "Room", "Terrain", "Vehicle");
+        }
+
+        #if !UNITY_EDITOR
         showDebugWireframe = WaxSoldierHandler.Instance.Config.EnableDebugWireframeForRadialHeatEmitters;
+        #endif
     }
 
     private void OnEnable()
     {
+        if (triggerCollider)
+        {
+            triggerCollider.enabled = true;
+        }
+        
         EnsureWire(showDebugWireframe);
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
-        EnsureWire(false);
-    }
-
-    private void Update()
-    {
-        // ReSharper disable once CompareOfFloatsByEqualityOperator
-        if (triggerCollider.radius != radius)
+        base.OnDisable();
+        
+        if (triggerCollider)
         {
-            triggerCollider.radius = radius;
+            triggerCollider.enabled = true;
         }
+        
+        EnsureWire(false);
     }
 
     private void LateUpdate()
@@ -95,10 +118,11 @@ public class RadialHeatEmitter : HeatEmitter
         }
 
         float normalizedDistance = Mathf.Clamp01(distance / radius);
-        float attenuation = falloff.Evaluate(1f - normalizedDistance);
+        float attenuation = falloff.Evaluate(normalizedDistance);
         return strengthCPerSec * attenuation * los;
     }
 
+    #region Debug Wireframe
     private void EnsureWire(bool enable)
     {
         if (enable)
@@ -127,7 +151,7 @@ public class RadialHeatEmitter : HeatEmitter
         lr.textureMode = LineTextureMode.Stretch;
         lr.positionCount = Mathf.Max(8, segments);
         lr.startWidth = lr.endWidth = lineWidth;
-        lr.startColor = lr.endColor = runtimeColour;
+        lr.startColor = lr.endColor = colour;
         return lr;
     }
 
@@ -171,7 +195,8 @@ public class RadialHeatEmitter : HeatEmitter
         {
             LineRenderer lr = new[] { ringXY, ringXZ, ringYZ }[i];
             lr.startWidth = lr.endWidth = lineWidth;
-            lr.startColor = lr.endColor = runtimeColour;
+            lr.startColor = lr.endColor = colour;
         }
     }
+    #endregion
 }

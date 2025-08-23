@@ -1,6 +1,7 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
+using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -30,5 +31,20 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
         
         // play stun animation
+    }
+    
+    internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
+    {
+        base.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
+        return true; // Makes nothing happen
+    }
+    
+    internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
+    {
+        base.OnHitEnemy(force, playerWhoHit, hitId);
+        
+        // Apply the damage and do nothing else
+        EnemyAIInstance.Context.Adapter.ApplyDamage(force);
+        return true;
     }
 }

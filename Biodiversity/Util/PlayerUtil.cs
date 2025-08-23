@@ -21,8 +21,8 @@ internal static class PlayerUtil
     /// <summary>
     /// Determines whether the specified player is dead.
     /// </summary>
-    /// <param name="player">The player to check.</param>
-    /// <returns>Returns true if the player is dead or not controlled; otherwise, false.</returns>
+    /// <param name="player">The player to check if dead.</param>
+    /// <returns>Returns <c>true</c> if the player is dead or not controlled; otherwise, <c>false</c>.</returns>
     internal static bool IsPlayerDead(PlayerControllerB player)
     {
         if (!player) return true; // todo: remove null check maybe? Idk if null check should be this functions responsibility

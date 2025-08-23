@@ -65,9 +65,10 @@ internal class RoamingState : BehaviourState<AloeServerAI.States, AloeServerAI>
         }
     }
 
-    internal override void OnStateExit()
+    internal override void OnStateExit(StateTransition<AloeServerAI.States, AloeServerAI> transition)
     {
-        base.OnStateExit();
+        base.OnStateExit(transition);
+        
         if (EnemyAIInstance.roamMap.inProgress)
             EnemyAIInstance.StopSearch(EnemyAIInstance.roamMap);
     }

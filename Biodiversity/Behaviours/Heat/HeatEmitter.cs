@@ -4,7 +4,7 @@ namespace Biodiversity.Behaviours.Heat;
 
 public abstract class HeatEmitter : MonoBehaviour
 {
-    private void OnDisable()
+    protected virtual void OnDisable()
     {
         if (HeatController.HasInstance)
             HeatController.Instance.OnHeatEmitterDisabled?.Invoke(this);

@@ -72,6 +72,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     private void OnEnable()
     {
         if (!IsServer) return;
+        
         SubscribeToNetworkEvents();
     }
     
@@ -82,6 +83,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         SetTargetPlayerInCaptivity(false);
         if (NetworkManager.Singleton && NetworkManager.Singleton.CustomMessagingManager != null)
             AloeSharedData.Instance.UnOccupyBrackenRoomAloeNode(FavouriteSpot);
+        
         UnsubscribeFromNetworkEvents();
     }
 
@@ -271,6 +273,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     public override void OnCollideWithPlayer(Collider other)
     {
         base.OnCollideWithPlayer(other);
+        
         if (!IsServer) return;
         switch (CurrentState.GetStateType())
         {
@@ -358,8 +361,10 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                     if (playerWhoHitMe.HasValue)
                     {
                         SetTargetPlayerInCaptivity(false);
+                        
                         BackupTargetPlayer = ActualTargetPlayer.Value;
-                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.playerClientId;
+                        netcodeController.TargetPlayerClientId.Value = PlayerUtil.GetClientIdFromPlayer(playerWhoHitMe.Value);
+                        
                         SwitchBehaviourState(States.AttackingPlayer);
                     }
                     else
@@ -379,7 +384,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                     if (playerWhoHitMe.HasValue)
                     {
                         BackupTargetPlayer = ActualTargetPlayer.Value;
-                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.playerClientId;
+                        netcodeController.TargetPlayerClientId.Value = PlayerUtil.GetClientIdFromPlayer(playerWhoHitMe.Value);
+                        
                         SwitchBehaviourState(States.AttackingPlayer);
                     }
                     else
@@ -397,7 +403,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                 {
                     if (playerWhoHitMe.HasValue && ActualTargetPlayer.Value != playerWhoHitMe.Value)
                     {
-                        netcodeController.TargetPlayerClientId.Value = playerWhoHitMe.Value!.playerClientId;
+                        netcodeController.TargetPlayerClientId.Value = PlayerUtil.GetClientIdFromPlayer(playerWhoHitMe.Value);
                     }
                     else
                     {

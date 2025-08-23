@@ -128,9 +128,10 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
         _avoidPlayerIntervalTimer = waitTimer;
     }
 
-    internal override void OnStateExit()
+    internal override void OnStateExit(StateTransition<AloeServerAI.States, AloeServerAI> transition)
     {
-        base.OnStateExit();
+        base.OnStateExit(transition);
+        
         EnemyAIInstance.AvoidingPlayer.Reset();
         EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.SafeSet(false);
     }

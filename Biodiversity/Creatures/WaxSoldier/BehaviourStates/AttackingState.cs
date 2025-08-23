@@ -42,9 +42,9 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         EnemyAIInstance.Context.Blackboard.currentAttackAction.Update(EnemyAIInstance.Context);
     }
 
-    internal override void OnStateExit()
+    internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
     {
-        base.OnStateExit();
+        base.OnStateExit(transition);
         
         EnemyAIInstance.Context.Blackboard.currentAttackAction.Finish(EnemyAIInstance.Context);
         EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetHitbox.EndAttack();

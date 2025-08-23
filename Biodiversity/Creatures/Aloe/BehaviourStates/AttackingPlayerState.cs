@@ -47,9 +47,9 @@ internal class AttackingPlayerState : BehaviourState<AloeServerAI.States, AloeSe
         else _isPlayerTargetable = false;
     }
 
-    internal override void OnStateExit()
+    internal override void OnStateExit(StateTransition<AloeServerAI.States, AloeServerAI> transition)
     {
-        base.OnStateExit();
+        base.OnStateExit(transition);
         if (EnemyAIInstance.BackupTargetPlayer)
         {
             EnemyAIInstance.netcodeController.TargetPlayerClientId.Value = PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.BackupTargetPlayer);

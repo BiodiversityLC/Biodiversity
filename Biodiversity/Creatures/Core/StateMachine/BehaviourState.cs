@@ -99,18 +99,6 @@ public abstract class BehaviourState<TState, TEnemyAI>
     /// Called when the AI exits this state.
     /// Override this method to define behavior that should happen when the AI transitions out of this state.
     /// </summary>
-    /// <remarks>
-    /// Common usages of this method are to clean up any resources, stop coroutines, or reset variables.
-    /// </remarks>
-    internal virtual void OnStateExit()
-    {
-        OnStateExit(null);
-    }
-
-    /// <summary>
-    /// Called when the AI exits this state.
-    /// Override this method to define behavior that should happen when the AI transitions out of this state.
-    /// </summary>
     /// <param name="transition">The transition that is causing the state to exit. Can be null if the state change was forced.</param>
     /// <remarks>
     /// Common usages of this method are to clean up any resources, stop coroutines, or reset variables.

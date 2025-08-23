@@ -120,18 +120,23 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
         if (heatSensor.TemperatureC > bb.WaxSofteningTemperature)
         {
-            float t = Mathf.InverseLerp(bb.WaxSofteningTemperature, bb.WaxMeltTemperature,
-                Mathf.Min(heatSensor.TemperatureC, bb.WaxMeltTemperature));
+            float t = Mathf.InverseLerp(bb.WaxSofteningTemperature, bb.WaxMeltTemperature, heatSensor.TemperatureC);
 
+            // The Pow curve gives an accelerating melt feel 
             float bandDps = Mathf.Lerp(0f, 0.5f, Mathf.Pow(t, 2));
+            
+            // Add a flat damage bonus when fully melting
             float extraDps = heatSensor.TemperatureC >= bb.WaxMeltTemperature ? 0.75f : 0f;
-            float dps = bandDps + extraDps;
-            newDurability = bb.WaxDurability - dps * Time.deltaTime;
+            
+            float totalDps = bandDps + extraDps;
+            newDurability = bb.WaxDurability - totalDps * Time.deltaTime;
         }
         
         bb.WaxDurability = Mathf.Clamp01(Mathf.Min(bb.WaxDurability, newDurability));
 
-        if (bb.WaxDurability <= 0 && Context.Blackboard.MoltenState != MoltenState.Molten && CurrentState.GetStateType() != States.Stunned)
+        if (bb.WaxDurability <= 0 && 
+            Context.Blackboard.MoltenState != MoltenState.Molten && 
+            CurrentState.GetStateType() != States.Stunned)
         {
             SwitchBehaviourState(States.TransformingToMolten);
         }
@@ -183,7 +188,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             Context.Adapter.EyeTransform,
             Context.Blackboard.ViewWidth,
             Context.Blackboard.ViewRange,
-            proximityAwareness: 1f);
+            proximityAwareness: 3f);
         
         if (player)
         {
@@ -191,8 +196,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             SwitchBehaviourState(States.Pursuing);
         }
         else
-        {
-           SwitchBehaviourState(States.MovingToStation);
+        { 
+            // the problem with this is that depending on whats going on, waxy will need to go to the hunting state rather than moving to station
+            SwitchBehaviourState(States.MovingToStation);
         }
     }
     #endregion
@@ -223,8 +229,10 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (!IsServer) return;
 
         // Hit cooldown
-        if (Time.time - _lastHitTime < 0.03f)
+        if (Time.time - _lastHitTime < 0.02f)
             return;
+        
+        _lastHitTime = Time.time;
         
         // If friendly fire is disabled, and we weren't hit by a player, then ignore the hit
         bool isPlayerWhoHitNull = !playerWhoHit;
@@ -351,28 +359,27 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     
     /// <summary>
     /// Requests the server to play a specific category of audio clip on a designated <see cref="UnityEngine.AudioSource"/>.
-    /// It will randomly select an audio clip from the array of clips assigned to that particular audio  .
+    /// It will randomly select an audio clip from the array of clips assigned to that particular audio.
     /// This method ensures that the selected audio clip is synchronized across all clients.
     /// </summary>
     /// <param name="audioClipType">
-    /// A string identifier representing the type/category of the audio clip to be played 
+    /// A string identifier representing the type/category of the audio clip to be played
     /// (e.g., "Stun", "Laugh", "Ambient").
     /// </param>
     /// <param name="audioSourceType">
-    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played 
+    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played
     /// (e.g., "CreatureVoice", "CreatureSFX", "Footsteps").
     /// </param>
     /// <param name="interrupt">
-    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted 
+    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted
     /// before playing the new audio clip.
     /// </param>
     /// <param name="audibleInWalkieTalkie">
-    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible
     /// to players using walkie-talkies.
     /// </param>
     /// <param name="audibleByEnemies">
-    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
-    /// actions.
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's actions.
     /// </param>
     /// <param name="slightlyVaryPitch">
     /// Whether to slightly vary the pitch between 0.9 and 1.1 randomly.
@@ -432,7 +439,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /// </param>
     /// <param name="audibleByEnemies">
     /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
-    /// actions.
     /// </param>
     /// <param name="slightlyVaryPitch">
     /// Whether to slightly vary the pitch between the original pitch +/- 0.1.
@@ -489,5 +495,3 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
     }
 }
-
-// https://discord.com/channels/1168655651455639582/1225942840282976316/1299356591795077131

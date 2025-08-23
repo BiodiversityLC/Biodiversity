@@ -247,26 +247,6 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     }
 
     /// <summary>
-    /// Checks and executes any valid state transitions given in the <paramref name="transitions"/> parameter.
-    /// </summary>
-    /// <param name="transitions">The list of transitions to evaluate.</param>
-    /// <returns>A bool representing whether a transition was triggered (true) or not (false).</returns>
-    private bool EvaluateTransitions(List<StateTransition<TState, TEnemyAI>> transitions)
-    {
-        for (int i = 0; i < transitions.Count; i++)
-        {
-            StateTransition<TState, TEnemyAI> transition = transitions[i];
-            if (!transition.ShouldTransitionBeTaken()) continue;
-            
-            transition.OnTransition();
-            SwitchBehaviourState(transition.NextState());
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
     /// Executes the <see cref="BehaviourState{TState,TEnemyAI}.LateUpdateBehaviour"/> method of the <see cref="CurrentState"/>
     /// if <see cref="ShouldRunLateUpdate"/> returns <c>true</c>.
     /// </summary>
@@ -324,13 +304,36 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         }
         LogVerbose($"Initialized state dictionary for this instance with {_stateDictionary.Count} states.");
     }
+    
+    /// <summary>
+    /// Checks and executes any valid state transitions given in the <paramref name="transitions"/> parameter.
+    /// </summary>
+    /// <param name="transitions">The list of transitions to evaluate.</param>
+    /// <returns>A bool representing whether a transition was triggered (true) or not (false).</returns>
+    private bool EvaluateTransitions(List<StateTransition<TState, TEnemyAI>> transitions)
+    {
+        if (transitions == null || transitions.Count == 0)
+        {
+            return false;
+        }
+        
+        for (int i = 0; i < transitions.Count; i++)
+        {
+            StateTransition<TState, TEnemyAI> transition = transitions[i];
+            if (!transition.ShouldTransitionBeTaken()) continue;
+            
+            SwitchBehaviourState(transition.NextState(), transition);
+            return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Transitions the AI to a new behavior state.
     /// This involves calling <see cref="BehaviourState{TState,TEnemyAI}.OnStateExit(StateTransition{TState, TEnemyAI})"/>
     /// on the current state (if any), then <paramref name="stateTransition"/>'s <see cref="StateTransition{TState,TEnemyAI}.OnTransition"/>
     /// method is called if provided, then <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/> is called on the new state.
-    /// 
     /// The <see cref="NetworkCurrentBehaviourStateIndex"/> is updated to reflect the new state.
     /// </summary>
     /// 
@@ -353,11 +356,10 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         if (!IsServer) return;
         
         BehaviourState<TState, TEnemyAI> previousStateInstance = CurrentState;
-        TState previousStateInstanceType = previousStateInstance.GetStateType();
-        
         if (previousStateInstance != null)
         {
-            LogVerbose($"Exiting state {previousStateInstanceType}.");
+            TState previousStateInstanceType = previousStateInstance.GetStateType();
+            // LogVerbose($"Exiting state {previousStateInstanceType}.");
 
             try
             {
@@ -369,7 +371,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             }
             
             PreviousState = previousStateInstance;
-            previousBehaviourStateIndex = Convert.ToInt32(previousStateInstance.GetStateType());
+            previousBehaviourStateIndex = Convert.ToInt32(previousStateInstanceType);
             
             stateTransition?.OnTransition();
         }
@@ -386,7 +388,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             currentBehaviourStateIndex = (int)(object)newState;
             NetworkCurrentBehaviourStateIndex.SafeSet(currentBehaviourStateIndex);
             
-            LogVerbose($"Entering state {newState}.");
+            // LogVerbose($"Entering state {newState}.");
 
             try
             {
@@ -397,7 +399,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                 LogError($"Exception during OnStateEnter for {newState}: {e}");
             }
             
-            LogVerbose($"Successfully switched to behaviour state {newState}.");
+            // LogVerbose($"Successfully switched to behaviour state {newState}.");
         }
         else
         {
