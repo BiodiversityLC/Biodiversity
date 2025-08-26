@@ -74,11 +74,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
                 _inGrabAnimation = true;
             }
 
-            else if (EnemyAIInstance.IsPlayerReachable(
-                         player: EnemyAIInstance.ActualTargetPlayer.Value,
-                         eyeTransform: EnemyAIInstance.eye,
-                         viewWidth: EnemyAIInstance.ViewWidth,
-                         viewRange: EnemyAIInstance.ViewRange))
+            else if (EnemyAIInstance.IsPlayerReachableAndTargetable(EnemyAIInstance.ActualTargetPlayer.Value))
             {
                 if (Vector3.Distance(
                         EnemyAIInstance.transform.position,
@@ -99,8 +95,13 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
                         bufferDistance: 0.2f);
 
                     if (pathStatus == BiodiverseAI.PathStatus.Invalid)
+                    {
                         EnemyAIInstance.moveTowardsDestination = false;
-                    else EnemyAIInstance.SetDestinationToPosition(closestNodeToPlayer.position);
+                    }
+                    else
+                    {
+                        EnemyAIInstance.SetDestinationToPosition(closestNodeToPlayer.position);
+                    }
                 }
             }
             else

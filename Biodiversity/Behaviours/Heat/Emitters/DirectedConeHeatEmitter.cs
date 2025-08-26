@@ -13,39 +13,49 @@ public class DirectedConeHeatEmitter : HeatEmitter
     public AnimationCurve falloff = AnimationCurve.Linear(0,1, 1,0);
     public Transform emitterCentre;
 
+    [Header("Mesh Settings")]
     [Range(8, 64)] public int segments = 24;
     
-    private MeshCollider meshCollider;
-    private Mesh coneMesh;
+    [Header("Debug Settings")]
+    [Tooltip("If true, a semi-transparent mesh will be rendered to show the cone's shape.")]
+    public bool showDebugVisualizer;
+    
+    private Mesh _coneMesh;
+    private MeshCollider _meshCollider;
+    private MeshFilter _meshFilter;
+    private MeshRenderer _meshRenderer;
+    private static Material _meshMaterial;
 
     private float _tanOuterAngle;
     private float _tanInnerAngle;
-
-#if UNITY_EDITOR
+    
     private void OnValidate()
     {
         // Clamp inner angle to be less than outer angle to prevent invalid configurations
         innerAngle = Mathf.Min(innerAngle, outerAngle);
-        
-        PrecomputeAngles();
-        EnsureCollider();
-        RebuildMesh();
     }
-#endif
 
     private void Awake()
     {
+        showDebugVisualizer = true;
+        
         emitterCentre ??= transform;
         PrecomputeAngles();
         EnsureCollider(); 
-        RebuildMesh(); 
+        RebuildMesh();
+        SetupDebugVisualizer(showDebugVisualizer);
     }
 
     private void OnEnable()
     {
-        if (meshCollider)
+        if (_meshCollider)
         {
-            meshCollider.enabled = true;
+            _meshCollider.enabled = true;
+        }
+
+        if (_meshRenderer)
+        {
+            _meshRenderer.enabled = showDebugVisualizer;
         }
     }
 
@@ -53,16 +63,21 @@ public class DirectedConeHeatEmitter : HeatEmitter
     {
         base.OnDisable();
         
-        if (meshCollider)
+        if (_meshCollider)
         {
-            meshCollider.enabled = false;
+            _meshCollider.enabled = false;
+        }
+        
+        if (_meshRenderer)
+        {
+            _meshRenderer.enabled = false;
         }
     }
 
     public override float GetHeatRateAt(Vector3 targetPos)
     {
         // Quick reject if outside cone range
-        Vector3 local = transform.InverseTransformPoint(targetPos);
+        Vector3 local = emitterCentre.InverseTransformPoint(targetPos);
         if (local.z <= 0f || local.z > range) return 0f;
 
         float radialSqr = local.x * local.x + local.y * local.y;
@@ -95,10 +110,9 @@ public class DirectedConeHeatEmitter : HeatEmitter
 
     private void EnsureCollider()
     {
-        meshCollider ??= GetComponent<MeshCollider>();
-        meshCollider ??= gameObject.AddComponent<MeshCollider>();
-        meshCollider.convex = true;
-        meshCollider.isTrigger = true;
+        _meshCollider = gameObject.TryGetComponent(out MeshCollider collider) ? collider : gameObject.AddComponent<MeshCollider>();
+        _meshCollider.convex = true;
+        _meshCollider.isTrigger = true;
     }
 
     private void RebuildMesh()
@@ -106,15 +120,15 @@ public class DirectedConeHeatEmitter : HeatEmitter
         float halfRad = 0.5f * Mathf.Deg2Rad * outerAngle;
         float radius = Mathf.Tan(halfRad) * range;
 
-        if (!coneMesh)
+        if (!_coneMesh)
         {
-            coneMesh = new Mesh { name = "ConeTriggerMesh" };
+            _coneMesh = new Mesh { name = "ConeTriggerMesh" };
 #if UNITY_EDITOR
             // Prevent saving an ever-growing mesh to the scene file in editor
             coneMesh.hideFlags = HideFlags.DontSave;
 #endif
         }
-        coneMesh.Clear();
+        _coneMesh.Clear();
 
         // Build a closed cone whose apex is at (0,0,0) and base circle at z = length
         int vCount = 1 + segments + 1; // apex + ring + centre of base
@@ -156,11 +170,31 @@ public class DirectedConeHeatEmitter : HeatEmitter
             t[ti++] = c; t[ti++] = i2; t[ti++] = i1;
         }
 
-        coneMesh.vertices = v;
-        coneMesh.triangles = t;
-        coneMesh.RecalculateNormals();
-        coneMesh.RecalculateBounds();
+        _coneMesh.vertices = v;
+        _coneMesh.triangles = t;
+        _coneMesh.RecalculateNormals();
+        _coneMesh.RecalculateBounds();
 
-        meshCollider.sharedMesh = coneMesh;
+        _meshCollider.sharedMesh = _coneMesh;
+    }
+
+    private void SetupDebugVisualizer(bool enable)
+    {
+        _meshFilter = gameObject.TryGetComponent(out MeshFilter meshFilter) ? meshFilter : gameObject.AddComponent<MeshFilter>();
+        _meshRenderer = gameObject.TryGetComponent(out MeshRenderer meshRenderer) ? meshRenderer : gameObject.AddComponent<MeshRenderer>();
+
+        if (!_meshMaterial)
+        {
+            Shader shader = Shader.Find("Sprites/Default");
+            _meshMaterial = new Material(shader)
+            {
+                color = new Color(1f, 0.92f, 0.016f, 0.25f)
+            };
+        }
+
+        _meshFilter.sharedMesh = _coneMesh;
+        
+        _meshRenderer.sharedMaterial = _meshMaterial;
+        _meshRenderer.enabled = enable;
     }
 }

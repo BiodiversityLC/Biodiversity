@@ -73,11 +73,8 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
         {
             EnemyAIInstance.IsStaringAtTargetPlayer = false;
 
-            if (EnemyAIInstance.IsPlayerReachable(
-                    player: EnemyAIInstance.ActualTargetPlayer.Value,
-                    eyeTransform: EnemyAIInstance.eye,
-                    viewWidth: EnemyAIInstance.ViewWidth,
-                    viewRange: EnemyAIInstance.ViewRange))
+            if (EnemyAIInstance.IsPlayerReachableAndTargetable(
+                    player: EnemyAIInstance.ActualTargetPlayer.Value))
             {
                 Transform closestNodeToPlayer = BiodiverseAI.GetClosestValidNodeToPosition(
                     pathStatus: out BiodiverseAI.PathStatus pathStatus,

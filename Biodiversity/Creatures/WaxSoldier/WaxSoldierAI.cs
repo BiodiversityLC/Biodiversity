@@ -181,25 +181,24 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context.Blackboard.HeldMusket = null;
         netcodeController.DropMusketClientRpc();
     }
-    
-    internal void PostAnimationLosCheck()
+
+    internal bool UpdatePlayerLastKnownPosition()
     {
         PlayerControllerB player = GetClosestVisiblePlayer(
             Context.Adapter.EyeTransform,
             Context.Blackboard.ViewWidth,
             Context.Blackboard.ViewRange,
             proximityAwareness: 3f);
-        
+
         if (player)
         {
-            Context.Adapter.TargetPlayer = player; 
-            SwitchBehaviourState(States.Pursuing);
+            Context.Adapter.TargetPlayer = player;
+            Context.Blackboard.LastKnownPlayerPosition = player.transform.position;
+            Context.Blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(player);
+            return true;
         }
-        else
-        { 
-            // the problem with this is that depending on whats going on, waxy will need to go to the hunting state rather than moving to station
-            SwitchBehaviourState(States.MovingToStation);
-        }
+        
+        return false;
     }
     #endregion
 
@@ -291,6 +290,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context.Blackboard.AgentMaxSpeed = 0f;
         
         // Boost the acceleration immediately so it can decelerate quickly
+        Context.Blackboard.AgentMaxAcceleration = 100;
         Context.Adapter.Agent.acceleration = Mathf.Min(Context.Adapter.Agent.acceleration * 3, Context.Blackboard.AgentMaxAcceleration);
     }
 

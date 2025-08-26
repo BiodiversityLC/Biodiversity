@@ -13,6 +13,9 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.Attacking)]
 internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
+    private float timeSincePlayerLastSeen;
+    private const float thresholdTimeWherePlayerGone = 4f;
+    
     public AttackingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
@@ -39,7 +42,24 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         
         EnemyAIInstance.UpdateWaxDurability();
         EnemyAIInstance.MoveWithAcceleration();
+        
         EnemyAIInstance.Context.Blackboard.currentAttackAction.Update(EnemyAIInstance.Context);
+    }
+
+    internal override void AIIntervalBehaviour()
+    {
+        base.AIIntervalBehaviour();
+        
+        if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
+        {
+            timeSincePlayerLastSeen = Time.time;
+        }
+        else if (Time.time - timeSincePlayerLastSeen >= thresholdTimeWherePlayerGone)
+        {
+            EnemyAIInstance.Context.Adapter.TargetPlayer = null;
+            EnemyAIInstance.Context.Blackboard.LastKnownPlayerPosition = default;
+            EnemyAIInstance.Context.Blackboard.LastKnownPlayerVelocity = default;
+        }
     }
 
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
@@ -67,7 +87,20 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         {
             case nameof(UnmoltenAnimationHandler.OnAttackAnimationFinish):
             {
-                EnemyAIInstance.PostAnimationLosCheck();
+                bool playerFound = EnemyAIInstance.UpdatePlayerLastKnownPosition();
+                if (playerFound)
+                {
+                    EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Pursuing);
+                }
+                else if (EnemyAIInstance.Context.Adapter.TargetPlayer)
+                {
+                    EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Hunting);
+                }
+                else
+                {
+                    EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Reloading);
+                }
+                
                 break;
             }
             

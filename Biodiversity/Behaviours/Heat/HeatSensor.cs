@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Biodiversity.Util;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,9 +12,13 @@ public class HeatSensor : NetworkBehaviour
     public float updateHz = 20f;
     
     [Space(2f)]
-    [Header("Environment")]
+    [Header("Environment Settings")]
     public float ambientC = 20f;
     public float coolingTimeConstant = 6f;
+
+    [Space(2f)]
+    [Header("Debug Settings")]
+    public bool debug = true;
     
     public float TemperatureC { get; private set; }
     
@@ -45,13 +50,13 @@ public class HeatSensor : NetworkBehaviour
     private void OnEnable()
     {
         HeatController.Instance.NotifySensorAdded();
-        HeatController.Instance.OnHeatEmitterDisabled += OnHeatEmitterDisabled;
+        HeatController.Instance.OnHeatEmitterDisabled += HandleHeatEmitterDisabled;
     }
 
     private void OnDisable()
     {
         HeatController.Instance.NotifySensorRemoved();
-        HeatController.Instance.OnHeatEmitterDisabled -= OnHeatEmitterDisabled;
+        HeatController.Instance.OnHeatEmitterDisabled -= HandleHeatEmitterDisabled;
     }
 
     public override void OnNetworkSpawn()
@@ -67,6 +72,8 @@ public class HeatSensor : NetworkBehaviour
 
     private void Update()
     {
+        DrawRuntimeDebug();
+        
         timeSinceLastUpdate += Time.deltaTime;
         float step = 1f / Mathf.Max(1f, updateHz);
 
@@ -111,8 +118,56 @@ public class HeatSensor : NetworkBehaviour
     
     public void AddHeatImpulse(float deltaC) => impulseBufferC += deltaC;
 
-    public void OnHeatEmitterDisabled(HeatEmitter emitter)
+    public void HandleHeatEmitterDisabled(HeatEmitter emitter)
     {
         overlaps.Remove(emitter);
+    }
+    
+    private void DrawRuntimeDebug()
+    {
+        if (!debug) return;
+
+        // Every frame, reset the visualizer so old lines disappear.
+        DebugLineVisualizer.Reset();
+
+        // Create a color gradient (same as the Gizmo version).
+        Gradient heatGradient = new();
+        heatGradient.SetKeys(
+            [new GradientColorKey(Color.blue, 0.0f), new GradientColorKey(Color.yellow, 0.5f), new GradientColorKey(Color.red, 1.0f)],
+            [new GradientAlphaKey(0.8f, 0.0f), new GradientAlphaKey(0.8f, 1.0f)] // 80% alpha
+        );
+    
+        Vector3 position = transform.position;
+
+        // Use a temporary list to avoid issues if the overlaps set is modified.
+        List<HeatEmitter> emittersToRemove = new()
+        {
+            Capacity = 0
+        };
+
+        foreach (HeatEmitter emitter in overlaps)
+        {
+            if (!emitter || !emitter.isActiveAndEnabled)
+            {
+                emittersToRemove.Add(emitter);
+                continue;
+            }
+
+            float heatRate = emitter.GetHeatRateAt(position);
+        
+            // Normalize the heat rate for the gradient color.
+            float colorT = Mathf.InverseLerp(0, 30, heatRate);
+            Color lineColor = heatGradient.Evaluate(colorT);
+
+            // Use our new tool to draw a line in the game world.
+            DebugLineVisualizer.DrawLine(position, emitter.transform.position, lineColor);
+        }
+    
+        // Cleanup any dead emitters
+        for (int i = 0; i < emittersToRemove.Count; i++)
+        {
+            HeatEmitter emitter = emittersToRemove[i];
+            overlaps.Remove(emitter);
+        }
     }
 }

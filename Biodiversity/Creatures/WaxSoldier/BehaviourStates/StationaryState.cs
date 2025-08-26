@@ -21,11 +21,8 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
     {
         base.OnStateEnter(ref initData);
         
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
-        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
-        
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.DecelerateAndStop();
+        EnemyAIInstance.KillAllSpeed();
         
         EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamInSalute.Set(true);
     }
@@ -33,12 +30,14 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
+        
         EnemyAIInstance.UpdateWaxDurability();
     }
 
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
     {
         base.OnStateExit(transition);
+        
         EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamInSalute.Set(false);
     }
 }

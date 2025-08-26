@@ -61,6 +61,9 @@ public class Musket : BiodiverseItem
         SafetyIsOn,
         AlreadyPerformingAttackAction
     }
+    
+    // The float represents the time that the cooldown expires at
+    private readonly Dictionary<ulong, float> playerDamageCooldowns = new();
 
     private RaycastHit[] bulletHitBuffer;
     private Collider[] bayonetHitBuffer;
@@ -81,8 +84,8 @@ public class Musket : BiodiverseItem
     
     private const int bulletHitId = 8832676;
     private const int bayonetHitId = 8832677;
-    private const int bulletHitBufferCapacity = 35;
-    private const int bayonetHitBufferCapacity = 35;
+    private const int bulletHitBufferCapacity = 10;
+    private const int bayonetHitBufferCapacity = 25;
 
     public NetworkVariable<int> currentAmmo { get; private set; } = new(1);
     private int bulletHitMask;
@@ -130,7 +133,7 @@ public class Musket : BiodiverseItem
                 .UnregisterInsight("Location")
 
                 .RegisterInsight("Ammo", item => item.currentAmmo.Value.ToString())
-                .RegisterInsight("Trigger Safety", item => isSafetyOn.Value ? "On" : "Off")
+                .RegisterInsight("Trigger Safety", _ => isSafetyOn.Value ? "On" : "Off")
                 .RegisterInsight("Attack Mode", item => item.currentAttackMode == AttackMode.Gun
                     ? "Shoot"
                     : "Stab");
@@ -174,9 +177,9 @@ public class Musket : BiodiverseItem
         return true;
     }
 
-    public IEnumerator Shoot()
+    private IEnumerator Shoot()
     {
-        LogVerbose($"In {nameof(Shoot)}.");
+        // LogVerbose($"In {nameof(Shoot)}.");
         isPerformingAttackAction = true;
         
         PlayRandomAudioClipTypeServerRpc(nameof(shootSfx), nameof(shootAudioSource), true, audibleByEnemies: true);
@@ -213,9 +216,14 @@ public class Musket : BiodiverseItem
             if (hit.transform.TryGetComponent(out PlayerControllerB player))
             {
                 if (isHeldByPlayer && playerHeldBy == player) continue;
+
+                ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
+                if (IsPlayerOnDamageCooldown(playerClientId)) continue;
                 
                 int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.Player);
-                DamagePlayerServerRpc(PlayerUtil.GetClientIdFromPlayer(player), bulletDamage, CauseOfDeath.Gunshots); // RPC is needed because `PlayerControllerB.DamagePlayer` has an `if (!IsOwner) return;` statement at the start
+                DamagePlayerServerRpc(playerClientId, bulletDamage, CauseOfDeath.Gunshots); // RPC is needed because `PlayerControllerB.DamagePlayer` has an `if (!IsOwner) return;` statement at the start
+                StartPlayerDamageCooldown(playerClientId, 0.2f);
+                
                 LogVerbose($"Musket bullet delt {bulletDamage} damage to {player.playerUsername}.");
                 //break;
             }
@@ -227,21 +235,11 @@ public class Musket : BiodiverseItem
 
                 int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.IHittable);
                 iHittable.Hit(bulletDamage, bulletRay.origin, playerHeldBy, true, bulletHitId);
+                
                 LogVerbose($"Musket bullet delt {bulletDamage} damage to {iHittable}.");
                 //break;
             }
         }
-    }
-
-    public void Reload()
-    {
-        LogVerbose("Reloading...");
-        currentAmmo.Value = Mathf.Clamp(currentAmmo.Value + 1, 0, maxAmmo);
-    }
-
-    private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
-    {
-        return 110;
     }
 
     private IEnumerator ReelUpBayonet()
@@ -304,7 +302,13 @@ public class Musket : BiodiverseItem
             if (collider.CompareTag("Player") && collider.transform.TryGetComponent(out PlayerControllerB player))
             {
                 if (isHeldByPlayer && playerHeldBy == player) continue;
-                DamagePlayerServerRpc(PlayerUtil.GetClientIdFromPlayer(player), 100, CauseOfDeath.Stabbing);
+                
+                ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
+                if (IsPlayerOnDamageCooldown(playerClientId)) continue;
+                
+                DamagePlayerServerRpc(playerClientId, 100, CauseOfDeath.Stabbing);
+                StartPlayerDamageCooldown(playerClientId, 0.2f);
+                
                 continue;
             }
 
@@ -313,6 +317,33 @@ public class Musket : BiodiverseItem
                 iHittable.Hit(4, bayonetTip.forward, playerHeldBy, true, bayonetHitId);
             }
         }
+    }
+
+    private bool IsPlayerOnDamageCooldown(ulong player)
+    {
+        if (playerDamageCooldowns.TryGetValue(player, out float expiresAt))
+        {
+            if (!(Time.time >= expiresAt)) return true;
+            playerDamageCooldowns.Remove(player);
+        }
+        
+        return false;
+    }
+    
+    private void StartPlayerDamageCooldown(ulong player, float duration)
+    {
+        playerDamageCooldowns[player] = Time.time + duration;
+    }
+    
+    public void Reload()
+    {
+        LogVerbose("Reloading...");
+        currentAmmo.Value = Mathf.Clamp(currentAmmo.Value + 1, 0, maxAmmo);
+    }
+
+    private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
+    {
+        return 110;
     }
 
     internal void OnGrabbedByWaxSoldier(EnemyAI waxSoldier)
@@ -439,7 +470,6 @@ public class Musket : BiodiverseItem
             isSafetyOn.Value = !isSafetyOn.Value;
             PlayRandomAudioClipTypeServerRpc(clipToPlay, nameof(otherAudioSource), true, true, true);
         }
-        
     }
 
     public override void LateUpdate()

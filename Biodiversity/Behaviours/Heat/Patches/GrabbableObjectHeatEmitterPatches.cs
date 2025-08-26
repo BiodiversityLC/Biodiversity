@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Unity.Netcode;
 
 namespace Biodiversity.Behaviours.Heat.Patches;
 
@@ -9,7 +10,7 @@ internal static class GrabbableObjectHeatEmitterPatches
     [HarmonyPostfix]
     private static void AttachHeatEmitterToGrabbableObject(GrabbableObject __instance)
     {
-        if (HeatController.HasInstance)
+        if (NetworkManager.Singleton.IsServer && HeatController.HasInstance)
         {
             HeatController.Instance.TryAttachEmitter(__instance.gameObject);
         }

@@ -9,6 +9,7 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
     internal readonly NetworkVariable<ulong> TargetPlayerClientId = new();
     
     internal readonly NetworkVariable<bool> AnimationParamInSalute = new();
+    internal readonly NetworkVariable<bool> AnimationParamIsDead = new();
 
     internal event Action<NetworkObjectReference, int> OnSpawnMusket;
     internal event Action OnDropMusket;

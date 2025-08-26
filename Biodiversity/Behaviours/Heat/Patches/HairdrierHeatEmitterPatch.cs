@@ -15,6 +15,8 @@ internal static class HairdrierHeatEmitterPatch
         // in the batteries to use it. If it does, then ItemActivate() is called. Therefore, we don't need to check
         // the battery in this function; we can just apply the heat straight away.
         
+        // The UseItemOnClient function calls a Server RPC that calls ItemActivate if and only if itemProperties.syncUseFunction is true
+        
         // todo: do a cone-cast type thingy
     }
 }

@@ -17,7 +17,7 @@ public class WaxSoldierClient : MonoBehaviour
     public static readonly int AimMusket = Animator.StringToHash("AimMusket");
     public static readonly int ShootMusket = Animator.StringToHash("ShootMusket");
     public static readonly int ReloadMusket = Animator.StringToHash("ReloadMusket");
-    public static readonly int Death = Animator.StringToHash("Death");
+    public static readonly int Dead = Animator.StringToHash("Dead");
     
     public static readonly int VelocityX = Animator.StringToHash("VelocityX");
     public static readonly int VelocityZ = Animator.StringToHash("VelocityZ");
@@ -87,6 +87,7 @@ public class WaxSoldierClient : MonoBehaviour
     private void Update()
     {
         currentAnimator.SetBool(InSalute, netcodeController.AnimationParamInSalute.Value);
+        currentAnimator.SetBool(Dead, netcodeController.AnimationParamIsDead.Value);
     }
 
     #region Animation

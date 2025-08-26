@@ -1,10 +1,8 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
-using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -34,13 +32,13 @@ public abstract class BiodiverseAI : EnemyAI
     
     internal readonly PlayerTargetableConditions PlayerTargetableConditions = new();
 
-    public static CachedList<GameObject> CachedInsideAINodes;
-    public static CachedList<GameObject> CachedOutsideAINodes;
+    // public static CachedList<GameObject> CachedInsideAINodes;
+    // public static CachedList<GameObject> CachedOutsideAINodes;
 
     private void Awake()
     {
-        CachedInsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("AINode").ToList());
-        CachedOutsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("OutsideAINode").ToList());
+        // CachedInsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("AINode").ToList());
+        // CachedOutsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("OutsideAINode").ToList());
     }
 
     public override void OnNetworkSpawn()
@@ -124,11 +122,13 @@ public abstract class BiodiverseAI : EnemyAI
                 }
             }
 
-            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+            PlayerControllerB[] allPlayers = StartOfRound.Instance.allPlayerScripts;
+            for (int i = 0; i < allPlayers.Length; i++)
             {
-                PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+                PlayerControllerB player = allPlayers[i];
                 if (PlayerUtil.IsPlayerDead(player)) continue;
-                if (player.HasLineOfSightToPosition(targetPosition, 70f, 80, 1)) return PathStatus.ValidButInLos;
+                if (player.HasLineOfSightToPosition(targetPosition, 70f, 80, 1)) 
+                    return PathStatus.ValidButInLos;
             }
         }
 
@@ -315,60 +315,21 @@ public abstract class BiodiverseAI : EnemyAI
     /// <returns>Returns true if the AI has line of sight to the given position; otherwise, false.</returns>
     internal bool HasLineOfSight(
         Vector3 targetPosition,
-        Transform eyeTransform,
+        Transform eyeTransform = null,
         float viewWidth = 45f,
         float viewRange = 60f,
         float proximityAwareness = -1f)
     {
-        // LogVerbose($"In {nameof(HasLineOfSight)}");
+        if (!eyeTransform)
+        {
+            eyeTransform = eye;
+        }
+        
+        bool isFoggy = isOutside && !enemyType.canSeeThroughFog &&
+                       TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Foggy;
 
-        if (!eyeTransform) return false;
-        
-        Vector3 eyePosition = eyeTransform.position;
-        Vector3 directionToTarget = targetPosition - eyePosition;
-        float sqrDistance = directionToTarget.sqrMagnitude;
-        
-        // If the target is directly on top of you, then treat them as visible
-        if (sqrDistance <= 0.0001f) return true;
-        
-        // 1). Get effective range by taking fog into account
-        float effectiveRange = viewRange;
-        if (isOutside && !enemyType.canSeeThroughFog &&
-            TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Foggy)
-        {
-            effectiveRange = Mathf.Clamp(viewRange, 0f, 30f);
-        }
-        
-        // 2). Range check
-        float effectiveRangeSqr = effectiveRange * effectiveRange;
-        if (sqrDistance > effectiveRangeSqr)
-        {
-            // LogVerbose($"Distance check failed: {Mathf.Sqrt(sqrDistance)} (distance) > {effectiveRange} (effectiveRange)");
-            return false;
-        }
-        
-        // 3). FOV check. The proximity can bypass the FOV check, but not the physics obstruction check.
-        float distance = Mathf.Sqrt(sqrDistance);
-        if (!(proximityAwareness >= 0f && distance <= proximityAwareness))
-        {
-            float halfFov = Mathf.Clamp(viewWidth, 0f, 180f) * 0.5f * Mathf.Deg2Rad;
-            float cosHalfFov = Mathf.Cos(halfFov);
-            float dotProduct = Vector3.Dot(eyeTransform.forward, directionToTarget / distance);
-            if (dotProduct < cosHalfFov)
-            {
-                // LogVerbose($"FOV check failed: {dotProduct} (dotProduct) < {cosHalfFov} (cosHalfFov)");
-                return false;
-            }
-        }
-        
-        // 4). Obstruction check
-        if (Physics.Linecast(eyePosition, targetPosition, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
-        {
-            // LogVerbose("Line of sight check failed");
-            return false;
-        }
-
-        return true;
+        return LineOfSightUtil.HasLineOfSight(targetPosition, eyeTransform, viewWidth, viewRange, proximityAwareness,
+            isFoggy);
     }
     
     internal bool IsAPlayerInLineOfSightToEye(
@@ -376,9 +337,10 @@ public abstract class BiodiverseAI : EnemyAI
         float width = 45f,
         float range = 60f)
     {
-        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        PlayerControllerB[] allPlayers = StartOfRound.Instance.allPlayerScripts;
+        for (int i = 0; i < allPlayers.Length; i++)
         {
-            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+            PlayerControllerB player = allPlayers[i];
             
             if (!PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
             if (HasLineOfSight(player.gameplayCamera.transform.position, eyeTransform, width, range))
@@ -566,41 +528,29 @@ public abstract class BiodiverseAI : EnemyAI
         return players;
     }
     #endregion
-    
+
     /// <summary>
-    /// Detects whether the player is reachable by the NavMeshAgent via a path.
+    /// Detects whether the player is reachable by the NavMeshAgent via a path, and targetable according to <see cref="PlayerTargetableConditions"/>.
     /// </summary>
     /// <param name="player">The target player to check for reachability.</param>
-    /// <param name="eyeTransform">The transform representing the eye.</param>
-    /// <param name="viewWidth">The view width of the AI's field of view in degrees.</param>
-    /// <param name="viewRange">The view range of the AI in units.</param>
-    /// <param name="bufferDistance">The buffer distance within which the player is considered reachable without further checks.</param>
-    /// <param name="requireLineOfSight">Indicates whether a clear line of sight to the player is required.</param>
-    /// <returns>Returns true if the player is reachable by the AI; otherwise, false.</returns>
-    internal bool IsPlayerReachable(
-        PlayerControllerB player,
-        Transform eyeTransform,
-        float viewWidth = 45f,
-        int viewRange = 60,
-        float bufferDistance = 1.5f,
-        bool requireLineOfSight = false)
+    /// <returns>Returns <c>true</c> if the player is reachable by the AI; otherwise, <c>false</c>.</returns>
+    internal bool IsPlayerReachableAndTargetable(
+        PlayerControllerB player)
     {
-        if (PlayerUtil.IsPlayerDead(player))
-            return false;
-        
-        float currentDistance = Vector3.Distance(transform.position, player.transform.position);
-        float optimalDistance = currentDistance;
-        
-        if (PlayerTargetableConditions.IsPlayerTargetable(player) && 
-            IsPathValid(agent, player.transform.position) == PathStatus.Valid && 
-            (!requireLineOfSight || HasLineOfSight(player.gameplayCamera.transform.position, eyeTransform, viewWidth, viewRange)))
+        // 1). Check if the player is targetable
+        if (!PlayerTargetableConditions.IsPlayerTargetable(player))
         {
-            if (currentDistance < optimalDistance)
-                optimalDistance = currentDistance;
+            return false;
         }
         
-        bool isReachable = Mathf.Abs(optimalDistance - currentDistance) < bufferDistance;
-        return isReachable;
+        // 2). Check if we can draw a valid path to the player
+        if (IsPathValid(agent, player.transform.position) == PathStatus.Invalid)
+        {
+            return false;
+        }
+
+        // A valid path exists
+        return true;
     }
     
     public static float Distance2d(GameObject obj1, GameObject obj2)

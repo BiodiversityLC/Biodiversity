@@ -41,7 +41,10 @@ public class HeatController : MonoBehaviour
     private bool _hasDoneInitialSweep;
 
     // A simple registry of "rules": if predicate matches, run attach action
-    private readonly List<(Func<GameObject, bool> match, Action<GameObject> attach)> _heatEmitterRules = [];
+    private readonly List<(Func<GameObject, Component> match, Func<GameObject, HeatEmitter> attach)> _heatEmitterRules = [];
+    
+    private readonly Dictionary<Component, HeatEmitter> _componentToEmitterMap = new();
+    private readonly Dictionary<HeatEmitter, Component> _emitterToComponentMap = new();
     
     private readonly HashSet<int> _seenGameObjects = [];
     
@@ -52,14 +55,28 @@ public class HeatController : MonoBehaviour
     private void Awake()
     {
         // Flashlight items
-        _heatEmitterRules.Add((go => go.TryGetComponent(out FlashlightItem _), AttachFlashlight));
+        _heatEmitterRules.Add((go => go.TryGetComponent(out FlashlightItem flashlight) ? flashlight : null, 
+            AttachFlashlight));
         
         // Fireplace in the vanilla mansion
         _heatEmitterRules.Add((
-            go => go.name.IndexOf("FireplaceFire", StringComparison.OrdinalIgnoreCase) >= 0,
+            go => go.name.IndexOf("FireplaceFire", StringComparison.OrdinalIgnoreCase) >= 0 ? go.transform : null,
             AttachFireplace));
         
-        _heatEmitterRules.Add((go => go.TryGetComponent(out LungProp _), AttachApparatus));
+        _heatEmitterRules.Add((go => go.TryGetComponent(out LungProp lungProp) ? lungProp : null, 
+            AttachApparatus));
+    }
+    
+    private void OnEnable()
+    {
+        if (HasInstance)
+            Instance.OnHeatEmitterDisabled += HandleHeatEmitterDisabled;
+    }
+
+    private void OnDisable()
+    {
+        if (HasInstance)
+            Instance.OnHeatEmitterDisabled -= HandleHeatEmitterDisabled;
     }
 
     private void OnDestroy()
@@ -69,8 +86,7 @@ public class HeatController : MonoBehaviour
 
     public void TryAttachEmitter(GameObject go)
     {
-        if (SensorCount <= 0) return;
-        if (!go || !go.activeInHierarchy) return;
+        if (SensorCount <= 0 || !go || !go.activeInHierarchy) return;
 
         // Check if the gameobject already has an emitter
         if (go.TryGetComponent(out HeatEmitter _)) return;
@@ -79,15 +95,31 @@ public class HeatController : MonoBehaviour
         int id = go.GetInstanceID();
         if (_seenGameObjects.Contains(id)) return;
 
+        bool verboseEnabled = BiodiversityPlugin.Config.VerboseLoggingEnabled;
         for (int i = 0; i < _heatEmitterRules.Count; i++)
         {
-            (Func<GameObject, bool> match, Action<GameObject> attach) = _heatEmitterRules[i];
-            if (!match(go)) continue;
+            (Func<GameObject, Component> match, Func<GameObject, HeatEmitter> attach) = _heatEmitterRules[i];
+
+            Component matchedComponent = match(go);
+            if (!matchedComponent) continue;
 
             try
             {
-                attach(go);
+                HeatEmitter createdEmitter = attach(go);
+                if (createdEmitter)
+                {
+                    _componentToEmitterMap[matchedComponent] = createdEmitter;
+                    _emitterToComponentMap[createdEmitter] = matchedComponent;
+                    
+                    // Just to make sure we dont use GetType() if verbose logging is not enabled
+                    if (verboseEnabled)
+                    {
+                        BiodiversityPlugin.LogVerbose($"[HeatController] Mapped {matchedComponent.GetType().Name} to {createdEmitter.GetType().Name}.");
+                    }
+                }
+                
                 _seenGameObjects.Add(id);
+                break;
             }
             catch (Exception e)
             {
@@ -125,6 +157,26 @@ public class HeatController : MonoBehaviour
         
         BiodiversityPlugin.LogVerbose($"[HeatController] Initial scene sweep complete.");
     }
+    
+    /// <summary>
+    /// Retrieves the HeatEmitter associated with a specific component instance.
+    /// </summary>
+    /// <param name="componentKey">The original component instance (e.g., a FlashlightItem).</param>
+    /// <returns>The associated HeatEmitter, or null if none exists.</returns>
+    public HeatEmitter GetEmitterForComponent(Component componentKey)
+    {
+        _componentToEmitterMap.TryGetValue(componentKey, out HeatEmitter emitter);
+        return emitter;
+    }
+
+    public void HandleHeatEmitterDisabled(HeatEmitter emitter)
+    {
+        if (_emitterToComponentMap.TryGetValue(emitter, out Component component))
+        {
+            _componentToEmitterMap.Remove(component);
+            _emitterToComponentMap.Remove(emitter);
+        }
+    }
 
     public void NotifySensorAdded()
     {
@@ -137,25 +189,25 @@ public class HeatController : MonoBehaviour
         SensorCount = Mathf.Max(0, SensorCount - 1);
     }
 
-    private void AttachFlashlight(GameObject go)
+    private DirectedConeHeatEmitter AttachFlashlight(GameObject go)
     {
         if (!go.TryGetComponent(out FlashlightItem flashlightItem))
         {
             BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The given gameobject has no {nameof(FlashlightItem)} component.");
-            return;
+            return null;
         }
 
         Light bulb = flashlightItem.flashlightBulb;
         if (!bulb)
         {
             BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The {nameof(FlashlightItem)}'s flashlightBulb is null.");
-            return;
+            return null;
         }
 
         if (bulb.type != LightType.Spot)
         {
             BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The flashlightBulb's light type is invalid ({bulb.type}), it must be a Spot.");
-            return;
+            return null;
         }
         
         GameObject coneObject = new("HeatCone");
@@ -168,19 +220,32 @@ public class HeatController : MonoBehaviour
         cone.outerAngle = bulb.spotAngle;
         cone.innerAngle = Mathf.Clamp(bulb.innerSpotAngle, 0f, bulb.spotAngle);
         cone.segments = 24;
+
+        switch (flashlightItem.itemProperties.itemName)
+        {
+            case "Pro-flashlight":
+                cone.centreRateCPerSec = 30f;
+                cone.range *= 2f;
+                break;
+            case "Flashlight":
+                cone.centreRateCPerSec = 20f;
+                cone.range *= 1.5f;
+                break;
+        }
+
+        return cone;
     }
 
-    private void AttachFireplace(GameObject go)
+    private RadialHeatEmitter AttachFireplace(GameObject go)
     {
         Light fireplaceLight = go.GetComponentInChildren<Light>();
         if (!fireplaceLight)
         {
             BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFireplace)}] 'FireplaceFire' has no child Light component.");
-            return;
+            return null;
         }
-
-        RadialHeatEmitter emitter = fireplaceLight.GetComponent<RadialHeatEmitter>();
-        if (!emitter)
+        
+        if (!fireplaceLight.TryGetComponent(out RadialHeatEmitter emitter))
         {
             emitter = fireplaceLight.gameObject.AddComponent<RadialHeatEmitter>();
         }
@@ -193,22 +258,26 @@ public class HeatController : MonoBehaviour
         {
             emitter.radius = fireplaceLight.range;
         }
+
+        return emitter;
     }
 
-    private void AttachApparatus(GameObject go)
+    private RadialHeatEmitter AttachApparatus(GameObject go)
     {
         if (!go.TryGetComponent(out LungProp apparatus))
         {
             BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachApparatus)}] The given gameobject has no {nameof(LungProp)} component.");
-            return;
+            return null;
         }
         
-        RadialHeatEmitter emitter = apparatus.GetComponent<RadialHeatEmitter>();
-        if (!emitter)
+        if (!apparatus.TryGetComponent(out RadialHeatEmitter emitter))
         {
             emitter = apparatus.gameObject.AddComponent<RadialHeatEmitter>();
         }
         
-        // todo: make the heat emitter turn off/on when the `apparatus.isLungPowered` gets toggled
+        emitter.enabled = apparatus.isLungPowered;
+        emitter.radius = 20f;
+        
+        return emitter;
     }
 }

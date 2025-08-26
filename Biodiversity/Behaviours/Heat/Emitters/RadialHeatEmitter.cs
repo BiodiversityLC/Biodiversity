@@ -1,5 +1,4 @@
-﻿using Biodiversity.Creatures.WaxSoldier;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Biodiversity.Behaviours.Heat;
 
@@ -11,7 +10,7 @@ public class RadialHeatEmitter : HeatEmitter
     public float strengthCPerSec = 20f;
 
     [Tooltip("World radius of influence (units).")]
-    public float radius = 10f;
+    public float radius = 20f;
 
     [Tooltip("1 at centre -> 0 at edge.")]
     public AnimationCurve falloff = AnimationCurve.EaseInOut(0, 1, 1, 0);
@@ -19,20 +18,19 @@ public class RadialHeatEmitter : HeatEmitter
     [Tooltip("Require line-of-sight for full effect.")]
     public bool useLineOfSight = true;
 
-    public LayerMask losBlockers = ~0;
+    public LayerMask losBlockers = 0;
 
-    [Header("Debug Wireframe")]
-    public bool showDebugWireframe;
+    [Header("Debug Settings")]
+    public bool showDebugVisualizer;
     public int segments = 64;
     public float lineWidth = 0.03f;
     public Color colour = new(1f, 0.45f, 0f, 0.9f);
 
-    private SphereCollider triggerCollider;
+    private SphereCollider _triggerCollider;
 
-    private LineRenderer ringXY, ringXZ, ringYZ;
-    private static Material lineMaterial;
-
-#if UNITY_EDITOR
+    private LineRenderer _ringXY, _ringXZ, _ringYZ;
+    private static Material _lineMaterial;
+    
     private void OnValidate()
     {
         if (radius <= 0)
@@ -41,55 +39,47 @@ public class RadialHeatEmitter : HeatEmitter
             radius = 0.01f;
         }
         
-        if (!triggerCollider) triggerCollider = GetComponent<SphereCollider>();
-        if (triggerCollider) triggerCollider.radius = radius;
-
-        if (showDebugWireframe && Application.isPlaying)
-        {
-            UpdateWire();
-        }
+        if (!_triggerCollider) _triggerCollider = GetComponent<SphereCollider>();
+        if (_triggerCollider) _triggerCollider.radius = radius;
     }
-#endif
     
     private void Awake()
     {
-        if (!triggerCollider) triggerCollider = GetComponent<SphereCollider>();
-        if (!triggerCollider) triggerCollider = gameObject.AddComponent<SphereCollider>();
-        triggerCollider.isTrigger = true;
-        triggerCollider.radius = radius;
+        showDebugVisualizer = true;
+        
+        if (!_triggerCollider) _triggerCollider = GetComponent<SphereCollider>();
+        if (!_triggerCollider) _triggerCollider = gameObject.AddComponent<SphereCollider>();
+        _triggerCollider.isTrigger = true;
+        _triggerCollider.radius = radius;
 
-        if (!lineMaterial)
+        if (!_lineMaterial)
         {
-            lineMaterial = new Material(Shader.Find("Sprites/Default"));
+            _lineMaterial = new Material(Shader.Find("Sprites/Default"));
         }
 
         if (losBlockers.value == 0)
         {
             losBlockers = LayerMask.GetMask("Water", "Room", "Terrain", "Vehicle");
         }
-
-        #if !UNITY_EDITOR
-        showDebugWireframe = WaxSoldierHandler.Instance.Config.EnableDebugWireframeForRadialHeatEmitters;
-        #endif
     }
 
     private void OnEnable()
     {
-        if (triggerCollider)
+        if (_triggerCollider)
         {
-            triggerCollider.enabled = true;
+            _triggerCollider.enabled = true;
         }
         
-        EnsureWire(showDebugWireframe);
+        EnsureWire(showDebugVisualizer);
     }
 
     protected override void OnDisable()
     {
         base.OnDisable();
         
-        if (triggerCollider)
+        if (_triggerCollider)
         {
-            triggerCollider.enabled = true;
+            _triggerCollider.enabled = true;
         }
         
         EnsureWire(false);
@@ -97,7 +87,7 @@ public class RadialHeatEmitter : HeatEmitter
 
     private void LateUpdate()
     {
-        if (showDebugWireframe) UpdateWire();
+        if (showDebugVisualizer) UpdateWire();
     }
 
     public override float GetHeatRateAt(Vector3 targetPos)
@@ -127,16 +117,16 @@ public class RadialHeatEmitter : HeatEmitter
     {
         if (enable)
         {
-            if (!ringXY) ringXY = CreateRing("RingXY");
-            if (!ringXZ) ringXZ = CreateRing("RingXZ");
-            if (!ringYZ) ringYZ = CreateRing("RingYZ");
+            if (!_ringXY) _ringXY = CreateRing("RingXY");
+            if (!_ringXZ) _ringXZ = CreateRing("RingXZ");
+            if (!_ringYZ) _ringYZ = CreateRing("RingYZ");
             UpdateWire();
         }
         else
         {
-            DestroyRing(ref ringXY);
-            DestroyRing(ref ringXZ);
-            DestroyRing(ref ringYZ);
+            DestroyRing(ref _ringXY);
+            DestroyRing(ref _ringXZ);
+            DestroyRing(ref _ringYZ);
         }
     }
 
@@ -147,7 +137,7 @@ public class RadialHeatEmitter : HeatEmitter
         LineRenderer lr = go.AddComponent<LineRenderer>();
         lr.useWorldSpace = false;
         lr.loop = true;
-        lr.material = lineMaterial;
+        lr.material = _lineMaterial;
         lr.textureMode = LineTextureMode.Stretch;
         lr.positionCount = Mathf.Max(8, segments);
         lr.startWidth = lr.endWidth = lineWidth;
@@ -164,7 +154,7 @@ public class RadialHeatEmitter : HeatEmitter
 
     private void UpdateWire()
     {
-        if (!ringXY || !ringXZ || !ringYZ) return;
+        if (!_ringXY || !_ringXZ || !_ringYZ) return;
 
         int n = Mathf.Max(8, segments);
         float step = Mathf.PI * 2f / n;
@@ -173,27 +163,27 @@ public class RadialHeatEmitter : HeatEmitter
         for (int i = 0; i < n; i++)
         {
             float a = i * step;
-            ringXY.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f));
+            _ringXY.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f));
         }
         
         // XZ plane
         for (int i = 0; i < n; i++)
         {
             float a = i * step;
-            ringXZ.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, 0f, Mathf.Sin(a) * radius));
+            _ringXZ.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, 0f, Mathf.Sin(a) * radius));
         }
         
         // YZ plane
         for (int i = 0; i < n; i++)
         {
             float a = i * step;
-            ringYZ.SetPosition(i, new Vector3(0f, Mathf.Cos(a) * radius, Mathf.Sin(a) * radius));
+            _ringYZ.SetPosition(i, new Vector3(0f, Mathf.Cos(a) * radius, Mathf.Sin(a) * radius));
         }
 
         // Keep colors/widths synced if changed at runtime
-        for (int i = 0; i < new[] { ringXY, ringXZ, ringYZ }.Length; i++)
+        for (int i = 0; i < new[] { _ringXY, _ringXZ, _ringYZ }.Length; i++)
         {
-            LineRenderer lr = new[] { ringXY, ringXZ, ringYZ }[i];
+            LineRenderer lr = new[] { _ringXY, _ringXZ, _ringYZ }[i];
             lr.startWidth = lr.endWidth = lineWidth;
             lr.startColor = lr.endColor = colour;
         }

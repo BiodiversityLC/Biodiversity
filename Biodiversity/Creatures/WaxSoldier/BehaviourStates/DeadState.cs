@@ -23,7 +23,7 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.DropMusket();
         
         EnemyAIInstance.Context.Blackboard.NetcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
-        EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.Death);
+        EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamIsDead.Value = true;
         
         EnemyAIInstance.KillEnemyServerRpc(false);
     }

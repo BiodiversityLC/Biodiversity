@@ -1,7 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
-using Biodiversity.Creatures.WaxSoldier.Transitions;
 using Biodiversity.Util;
 using GameNetcodeStuff;
 using System.Collections.Generic;
@@ -15,12 +14,12 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.Pursuing)]
 internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
+    private float timeSincePlayerLastSeen;
+    private const float thresholdTimeWherePlayerGone = 1f;
+    
     public PursuitState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
-        Transitions = 
-        [
-            new TransitionToHuntingState(EnemyAIInstance)
-        ];
+        Transitions = [];
     }
 
     internal override void OnStateEnter(ref StateData initData)
@@ -32,38 +31,39 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
         
         EnemyAIInstance.Context.Adapter.MoveToPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer);
+
+        timeSincePlayerLastSeen = Time.time;
     }
 
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
+        
         EnemyAIInstance.UpdateWaxDurability();
         EnemyAIInstance.MoveWithAcceleration();
     }
-
+    
     internal override void AIIntervalBehaviour()
     {
         base.AIIntervalBehaviour();
-
-        // Sort (alive) players by distance to the wax soldier, and cache the distance calculation
-        List<(PlayerControllerB player, float distance)> playersWithDistance = StartOfRound.Instance.allPlayerScripts
-            .Where(player => !PlayerUtil.IsPlayerDead(player))
-            .Select(player => (
-                player,
-                distance: Vector3.Distance(player.transform.position, EnemyAIInstance.transform.position)
-            ))
-            .OrderBy(player => player.distance)
-            .ToList();
-
-        AttackAction selectedAttack =
-            EnemyAIInstance.Context.Blackboard.AttackSelector.SelectAttack(EnemyAIInstance,
-                playersWithDistance[0].player, playersWithDistance[0].distance);
         
-        if (selectedAttack != null)
+        if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
         {
-            StateData data = new();
-            data.Add("attackAction", selectedAttack);
-            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Attacking, initData: data);
+            timeSincePlayerLastSeen = Time.time;
+
+            AttackAction selectedAttack =
+                EnemyAIInstance.Context.Blackboard.AttackSelector.SelectAttack(EnemyAIInstance, EnemyAIInstance.Context.Adapter.TargetPlayer);
+        
+            if (selectedAttack != null)
+            {
+                StateData data = new();
+                data.Add("attackAction", selectedAttack);
+                EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Attacking, initData: data);
+            }
+        }
+        else if (Time.time - timeSincePlayerLastSeen >= thresholdTimeWherePlayerGone)
+        {
+            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Hunting);
         }
     }
     
