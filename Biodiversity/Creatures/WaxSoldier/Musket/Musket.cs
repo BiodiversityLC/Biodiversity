@@ -93,6 +93,7 @@ public class Musket : BiodiverseItem
     private int maxAmmo;
 
     private readonly NetworkVariable<bool> isSafetyOn = new();
+    private static bool _hasRegisteredImperiumInsights;
     private bool isPerformingAttackAction;
     private bool isHoldingButton;
     private bool isHeldByWaxSoldier;
@@ -125,7 +126,7 @@ public class Musket : BiodiverseItem
 
         bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.5f);
 
-        if (ImperiumIntegration.IsLoaded)
+        if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
         {
             Imperium.API.Visualization.InsightsFor<Musket>()
                 .UnregisterInsight("Used Up")
@@ -137,6 +138,8 @@ public class Musket : BiodiverseItem
                 .RegisterInsight("Attack Mode", item => item.currentAttackMode == AttackMode.Gun
                     ? "Shoot"
                     : "Stab");
+            
+            _hasRegisteredImperiumInsights = true;
         }
     }
 
@@ -476,7 +479,7 @@ public class Musket : BiodiverseItem
     {
         itemProperties.positionOffset = isHeldByWaxSoldier ? Vector3.zero : itemPositionOffset;
         itemProperties.rotationOffset = isHeldByWaxSoldier ? Vector3.zero : itemRotationOffset;
-        itemProperties.holdButtonUse = currentAttackMode == AttackMode.Bayonet;
+        
         base.LateUpdate();
     }
 

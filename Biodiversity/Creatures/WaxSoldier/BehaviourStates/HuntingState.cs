@@ -51,6 +51,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             EnemyAIInstance.Context.Adapter.EyeTransform,
             EnemyAIInstance.Context.Blackboard.ViewWidth,
             EnemyAIInstance.Context.Blackboard.ViewRange, proximityAwareness: 3f);
+        
         if (player)
         {
             EnemyAIInstance.Context.Adapter.TargetPlayer = player;
@@ -63,7 +64,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         searchStrategy.Start();
         if (!searchStrategy.TryGetNextSearchPosition(out Vector3 searchPosition))
         {
-            EnemyAIInstance.LogError("No search position found; moving back guard post.");
+            EnemyAIInstance.LogVerbose("No search position found; moving back guard post.");
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
             return;
         }

@@ -9,26 +9,39 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.TransformingToMolten)]
 internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
+    private bool hasTriggeredAnimation;
+    
     public TransformingToMoltenState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
-        Transitions =
-        [
-            
-        ];
+        Transitions = [];
     }
 
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
+        
         EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Molten;
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.Context.Adapter.Agent.speed = 0;
+        EnemyAIInstance.DecelerateAndStop();
         
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
-        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
+        hasTriggeredAnimation = false;
     }
-    
+
+    internal override void UpdateBehaviour()
+    {
+        base.UpdateBehaviour();
+        
+        if (!hasTriggeredAnimation && EnemyAIInstance.Context.Adapter.Agent.velocity.sqrMagnitude <= 0.5f)
+        {
+            EnemyAIInstance.LogVerbose("Starting melt animation...");
+            EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.Melt);
+            
+            hasTriggeredAnimation = true;
+            EnemyAIInstance.KillAllSpeed();
+        }
+    }
+
     internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
     {
         base.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);

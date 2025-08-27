@@ -91,9 +91,16 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
         return false;
     }
 
-    public void ApplyDamage(int damage)
+    /// <summary>
+    /// Applies the given damage parameter to the health variable.
+    /// </summary>
+    /// <param name="damage">The damage to apply.</param>
+    /// <returns>True if the applied damage results in death.</returns>
+    public bool ApplyDamage(int damage)
     { 
         Health -= damage;
         // todo: play damage/hurt sfx
+        
+        return Health <= 0;
     }
 }

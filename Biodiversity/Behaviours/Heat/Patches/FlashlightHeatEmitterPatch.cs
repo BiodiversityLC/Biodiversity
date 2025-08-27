@@ -14,10 +14,23 @@ internal static class FlashlightHeatEmitterPatch
         if (!NetworkManager.Singleton.IsServer || !HeatController.HasInstance) return;
 
         HeatEmitter emitter = HeatController.Instance.GetEmitterForComponent(__instance);
-        if (emitter)
+        if (emitter && emitter.enabled != on)
         {
             // BiodiversityPlugin.LogVerbose($"Flashlight on: {on}.");
             emitter.enabled = on;
+        }
+    }
+
+    [HarmonyPatch(nameof(FlashlightItem.PocketItem))]
+    [HarmonyPrefix]
+    private static void PocketFlashlightToggle(FlashlightItem __instance)
+    {
+        if (!NetworkManager.Singleton.IsServer || !HeatController.HasInstance) return;
+        
+        HeatEmitter emitter = HeatController.Instance.GetEmitterForComponent(__instance);
+        if (emitter)
+        {
+            emitter.enabled = false;
         }
     }
 }

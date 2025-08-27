@@ -66,6 +66,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     internal bool IsStaringAtTargetPlayer;
     internal bool InSlapAnimation;
     [HideInInspector] public bool inCrushHeadAnimation;
+
+    private static bool _hasRegisteredImperiumInsights;
     private bool _networkEventsSubscribed;
     private bool _inStunAnimation;
 
@@ -103,7 +105,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         PlayerTargetableConditions.AddCondition(player => player.sinkingValue < 0.7300000190734863);
         PlayerTargetableConditions.AddCondition(player => !AloeSharedData.Instance.IsPlayerKidnapBound(player));
 
-        if (ImperiumIntegration.IsLoaded)
+        if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
         {
             bool isAgentNull = !agent;
 
@@ -113,6 +115,8 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
                 .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
                 .RegisterInsight("Acceleration",
                     entity => !isAgentNull ? $"{agent.acceleration:0.0}" : "0");
+
+            _hasRegisteredImperiumInsights = true;
         }
         
         LogVerbose("Aloe spawned!");

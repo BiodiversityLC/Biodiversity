@@ -13,7 +13,21 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
 
     internal event Action<NetworkObjectReference, int> OnSpawnMusket;
     internal event Action OnDropMusket;
+    internal event Action OnSlamIntoGround;
     internal event Action<int> OnSetAnimationTrigger;
+    internal event Action<bool> OnSetAnimationControllerToFrozen;
+
+    [ClientRpc]
+    public void SetAnimationControllerToFrozenClientRpc(bool setToFrozen)
+    {
+        OnSetAnimationControllerToFrozen?.Invoke(setToFrozen);
+    }
+
+    [ClientRpc]
+    public void SlamIntoGroundClientRpc()
+    {
+        OnSlamIntoGround?.Invoke();
+    }
 
     [ClientRpc]
     public void DropMusketClientRpc()

@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Animation;
 using Biodiversity.Util;
 using GameNetcodeStuff;
 using UnityEngine.Scripting;
@@ -20,12 +21,9 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.OnStateEnter(ref initData);
         
         EnemyAIInstance.KillAllSpeed();
-        EnemyAIInstance.DropMusket();
         
         EnemyAIInstance.Context.Blackboard.NetcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamIsDead.Value = true;
-        
-        EnemyAIInstance.KillEnemyServerRpc(false);
     }
 
     internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
@@ -38,5 +36,21 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);
         return true; // Makes nothing happen 
+    }
+
+    internal override void OnCustomEvent(string eventName, StateData eventData)
+    {
+        base.OnCustomEvent(eventName, eventData);
+
+        switch (eventName)
+        {
+            case nameof(UnmoltenAnimationHandler.OnAnimationEventSlamIntoGround):
+            {
+                EnemyAIInstance.Context.Blackboard.NetcodeController.SlamIntoGroundClientRpc();
+                EnemyAIInstance.KillEnemyServerRpc(false);
+                
+                break;
+            }
+        }
     }
 }

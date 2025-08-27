@@ -3,8 +3,6 @@ using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
 using Biodiversity.Util;
 using GameNetcodeStuff;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -14,9 +12,6 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.Pursuing)]
 internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    private float timeSincePlayerLastSeen;
-    private const float thresholdTimeWherePlayerGone = 1f;
-    
     public PursuitState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
@@ -29,10 +24,9 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         // todo: name config values appropriately
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
+        EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Override(1.5f);
         
         EnemyAIInstance.Context.Adapter.MoveToPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer);
-
-        timeSincePlayerLastSeen = Time.time;
     }
 
     internal override void UpdateBehaviour()
@@ -49,8 +43,6 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         
         if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
         {
-            timeSincePlayerLastSeen = Time.time;
-
             AttackAction selectedAttack =
                 EnemyAIInstance.Context.Blackboard.AttackSelector.SelectAttack(EnemyAIInstance, EnemyAIInstance.Context.Adapter.TargetPlayer);
         
@@ -61,18 +53,49 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
                 EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Attacking, initData: data);
             }
         }
-        else if (Time.time - timeSincePlayerLastSeen >= thresholdTimeWherePlayerGone)
+        else if (Time.time - EnemyAIInstance.Context.Blackboard.TimeWhenTargetPlayerLastSeen >= EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Value)
         {
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Hunting);
         }
     }
-    
+
+    internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
+    {
+        base.OnStateExit(transition);
+        
+        EnemyAIInstance.Context.Adapter.StopAllPathing();
+        EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.UseDefault();
+    }
+
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);
         
-        // Apply the damage and do nothing else
-        EnemyAIInstance.Context.Adapter.ApplyDamage(force);
+        if (!EnemyAIInstance.Context.Adapter.ApplyDamage(force))
+        {
+            if (playerWhoHit)
+            {
+                // If the player who hit isn't our current target player that we are chasing, then we will make them our new
+                // target player IF our current target player is more than 6 units away (to prevent rapid target switcing).
+                if (PlayerUtil.GetClientIdFromPlayer(playerWhoHit) != 
+                    PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer) &&
+                    Vector3.Distance(EnemyAIInstance.Context.Adapter.Transform.position,
+                        EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position) > 6f)
+                {
+                    EnemyAIInstance.Context.Adapter.MoveToPlayer(playerWhoHit);
+
+                    EnemyAIInstance.Context.Adapter.TargetPlayer = playerWhoHit;
+                    EnemyAIInstance.Context.Blackboard.LastKnownPlayerPosition = playerWhoHit.transform.position;
+                    EnemyAIInstance.Context.Blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(playerWhoHit);
+                    EnemyAIInstance.Context.Blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
+                }
+            }
+        }
+        else
+        {
+            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Dead);
+        }
+        
         return true;
     }
 }

@@ -97,9 +97,7 @@ public class DirectedConeHeatEmitter : HeatEmitter
         float distT = local.z / range;
         float axial = falloff.Evaluate(distT);
 
-        // 1m normalization
-        float norm = 1f / (1f + local.sqrMagnitude);
-        return centreRateCPerSec * angular * axial * norm;
+        return centreRateCPerSec * angular * axial;
     }
     
     private void PrecomputeAngles()

@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.WaxSoldier.Misc;
+using Biodiversity.Util.DataStructures;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier;
@@ -18,6 +19,9 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float WaxDurability { get; set; } = 1f;
     public float WaxSofteningTemperature { get; } = 40f;
     public float WaxMeltTemperature { get; } = 60f;
+    
+    public float TimeWhenTargetPlayerLastSeen { get; set; }
+    public OverridableFloat ThresholdTimeWherePlayerGone { get; set; }
     
     public bool IsNetworkEventsSubscribed { get; set; }
     public bool IsFriendlyFireEnabled { get; set; }

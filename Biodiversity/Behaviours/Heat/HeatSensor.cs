@@ -24,6 +24,9 @@ public class HeatSensor : NetworkBehaviour
     
     private readonly HashSet<HeatEmitter> overlaps = [];
     
+    private Gradient _debugHeatGradient;
+    private readonly List<HeatEmitter> _emittersToRemoveCache = [];
+    
     private float timeSinceLastUpdate;
     private float impulseBufferC;
 
@@ -45,6 +48,15 @@ public class HeatSensor : NetworkBehaviour
         }
 
         TemperatureC = ambientC;
+        
+        if (_debugHeatGradient == null)
+        {
+            _debugHeatGradient = new Gradient();
+            _debugHeatGradient.SetKeys(
+                [new GradientColorKey(Color.blue, 0.0f), new GradientColorKey(Color.yellow, 0.5f), new GradientColorKey(Color.red, 1.0f)],
+                [new GradientAlphaKey(0.8f, 0.0f), new GradientAlphaKey(0.8f, 1.0f)]
+            );
+        }
     }
 
     private void OnEnable()
@@ -122,7 +134,8 @@ public class HeatSensor : NetworkBehaviour
     {
         overlaps.Remove(emitter);
     }
-    
+
+    #region Debug
     private void DrawRuntimeDebug()
     {
         if (!debug) return;
@@ -130,26 +143,14 @@ public class HeatSensor : NetworkBehaviour
         // Every frame, reset the visualizer so old lines disappear.
         DebugLineVisualizer.Reset();
 
-        // Create a color gradient (same as the Gizmo version).
-        Gradient heatGradient = new();
-        heatGradient.SetKeys(
-            [new GradientColorKey(Color.blue, 0.0f), new GradientColorKey(Color.yellow, 0.5f), new GradientColorKey(Color.red, 1.0f)],
-            [new GradientAlphaKey(0.8f, 0.0f), new GradientAlphaKey(0.8f, 1.0f)] // 80% alpha
-        );
-    
-        Vector3 position = transform.position;
-
-        // Use a temporary list to avoid issues if the overlaps set is modified.
-        List<HeatEmitter> emittersToRemove = new()
-        {
-            Capacity = 0
-        };
+        Vector3 position = transform.position + Vector3.up * 0.5f;
+        _emittersToRemoveCache.Clear();
 
         foreach (HeatEmitter emitter in overlaps)
         {
             if (!emitter || !emitter.isActiveAndEnabled)
             {
-                emittersToRemove.Add(emitter);
+                _emittersToRemoveCache.Add(emitter);
                 continue;
             }
 
@@ -157,17 +158,17 @@ public class HeatSensor : NetworkBehaviour
         
             // Normalize the heat rate for the gradient color.
             float colorT = Mathf.InverseLerp(0, 30, heatRate);
-            Color lineColor = heatGradient.Evaluate(colorT);
+            Color lineColor = _debugHeatGradient.Evaluate(colorT);
 
             // Use our new tool to draw a line in the game world.
             DebugLineVisualizer.DrawLine(position, emitter.transform.position, lineColor);
         }
-    
-        // Cleanup any dead emitters
-        for (int i = 0; i < emittersToRemove.Count; i++)
+
+        for (int i = 0; i < _emittersToRemoveCache.Count; i++)
         {
-            HeatEmitter emitter = emittersToRemove[i];
+            HeatEmitter emitter = _emittersToRemoveCache[i];
             overlaps.Remove(emitter);
         }
     }
+    #endregion
 }

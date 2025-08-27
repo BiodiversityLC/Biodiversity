@@ -21,13 +21,13 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Unmolten;
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-
         EnemyAIInstance.Context.Adapter.Agent.speed = 0;
+        
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
+        EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Unmolten;
 
         EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         

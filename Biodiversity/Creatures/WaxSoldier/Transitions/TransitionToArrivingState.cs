@@ -1,5 +1,4 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
-using UnityEngine;
 using UnityEngine.AI;
 
 namespace Biodiversity.Creatures.WaxSoldier.Transitions;
@@ -13,7 +12,7 @@ internal class TransitionToArrivingState(WaxSoldierAI enemyAiInstance)
         
         if (agent.pathPending) return false;
         return agent.remainingDistance <= agent.stoppingDistance && 
-               Vector3.Distance(EnemyAIInstance.transform.position, EnemyAIInstance.Context.Blackboard.GuardPost.position) <= 2;
+               (EnemyAIInstance.Context.Adapter.Transform.position - EnemyAIInstance.Context.Blackboard.GuardPost.position).sqrMagnitude <= 4;
     }
 
     internal override WaxSoldierAI.States NextState() => WaxSoldierAI.States.ArrivingAtStation;

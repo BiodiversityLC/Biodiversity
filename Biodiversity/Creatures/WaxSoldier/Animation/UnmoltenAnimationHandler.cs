@@ -39,7 +39,7 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
     
     public void OnAnimationEventMusketShoot()
     {
-        ai.LogVerbose("Firing musket.");
+        //ai.LogVerbose("Firing musket.");
         if (!IsServer) return;
         ai.TriggerCustomEvent(nameof(OnAnimationEventMusketShoot));
     }
@@ -51,6 +51,8 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         MusketBayonetHitbox bayonetHitbox = ai.Context.Blackboard.HeldMusket.bayonetHitbox;
         if (bayonetHitbox.currentBayonetMode == MusketBayonetHitbox.BayonentMode.None)
         {
+            ai.LogVerbose($"Toggling bayonet on.");
+            
             int hash = ai.Context.Blackboard.currentAttackAction.AnimationTriggerHash;
             if (hash == WaxSoldierClient.SpinAttack)
             {
@@ -60,8 +62,6 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
             {
                 bayonetHitbox.BeginAttack(MusketBayonetHitbox.BayonentMode.Stab);
             }
-            
-            ai.LogVerbose($"Toggling bayonet on.");
         }
         else
         {
@@ -75,6 +75,18 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         ai.LogVerbose($"Playing audio {sfxName}.");
         if (!IsServer) return;
         ai.PlayAudioClipTypeClientRpc(sfxName, "creatureVoice", 0, true);
+    }
+
+    public void OnAnimationEventDropMusket()
+    {
+        if (!IsServer) return;
+        ai.DropMusket();
+    }
+
+    public void OnAnimationEventSlamIntoGround()
+    {
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnAnimationEventSlamIntoGround));
     }
     #endregion
     

@@ -3,8 +3,8 @@ using Biodiversity.Core.Integration;
 using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
-using Biodiversity.Creatures.WaxSoldier.Transitions;
 using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
@@ -57,6 +57,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     private float _lastHitTime = -Mathf.Infinity;
 
+    private static bool _hasRegisteredImperiumInsights;
+
     #region Event Functions
     public void Awake()
     {
@@ -93,7 +95,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         SubscribeToNetworkEvents();
         InitializeConfigValues();
 
-        if (ImperiumIntegration.IsLoaded)
+        if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
         {
             bool isAgentNull = !Context.Adapter.Agent;
 
@@ -106,6 +108,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
                     entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.acceleration:0.0}" : "0")
                 .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
                 .RegisterInsight("Wax Durability", entity => $"{Mathf.Max(0, entity.Context.Blackboard.WaxDurability * 100)} %");
+
+            _hasRegisteredImperiumInsights = true;
         }
         
         LogVerbose("Wax Soldier spawned!");
@@ -182,22 +186,37 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         netcodeController.DropMusketClientRpc();
     }
 
+    /// <summary>
+    /// Checks if a player is in line of sight, and updates the last known position and velocity.
+    /// </summary>
+    /// <returns>Whether a player is in line of sight in THIS frame.</returns>
     internal bool UpdatePlayerLastKnownPosition()
     {
         PlayerControllerB player = GetClosestVisiblePlayer(
             Context.Adapter.EyeTransform,
             Context.Blackboard.ViewWidth,
             Context.Blackboard.ViewRange,
-            proximityAwareness: 3f);
+            Context.Adapter.TargetPlayer,
+            3f,
+            3f);
 
         if (player)
         {
             Context.Adapter.TargetPlayer = player;
             Context.Blackboard.LastKnownPlayerPosition = player.transform.position;
             Context.Blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(player);
+            Context.Blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
+
             return true;
         }
-        
+
+        // if (Time.time - Context.Blackboard.TimeWhenTargetPlayerLastSeen >= Context.Blackboard.ThresholdTimeWherePlayerGone)
+        // {
+        //     Context.Adapter.TargetPlayer = null;
+        //     Context.Blackboard.LastKnownPlayerPosition = Vector3.zero;
+        //     Context.Blackboard.LastKnownPlayerVelocity = Vector3.zero;
+        // }
+
         return false;
     }
     #endregion
@@ -209,13 +228,22 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         PlayerControllerB setStunnedByPlayer = null)
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
-        if (!IsServer) return;
+        if (!IsServer || Context.Adapter.IsDead) return;
         
-        States curState = CurrentState.GetStateType();
-        if (curState != States.Stunned && curState != States.Dead && curState != States.Spawning)
-            SwitchBehaviourState(States.Stunned);
+        // If the current state (fully) handles the stun event, then don't run the default reaction
+        if (CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer) ?? false)
+            return;
         
-        // CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
+        if (setStunnedByPlayer)
+        {
+            Context.Adapter.TargetPlayer = setStunnedByPlayer;
+            Context.Blackboard.LastKnownPlayerPosition = setStunnedByPlayer.transform.position;
+            Context.Blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(setStunnedByPlayer);
+            Context.Blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
+        }
+        
+        // Default reaction when stunned:
+        SwitchBehaviourState(States.Stunned);
     }
 
     public override void HitEnemy(
@@ -225,7 +253,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         int hitID = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-        if (!IsServer) return;
+        if (!IsServer || Context.Adapter.IsDead) return;
 
         // Hit cooldown
         if (Time.time - _lastHitTime < 0.02f)
@@ -238,17 +266,21 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (!Context.Blackboard.IsFriendlyFireEnabled && isPlayerWhoHitNull)
             return;
 
+        // If the current state (fully) handles the hit event, then don't run the default reaction
         if (CurrentState?.OnHitEnemy(force, playerWhoHit, hitID) ?? false)
             return;
         
-        // Default reaction when hit is to start chasing the player that hit them
-
-        Context.Adapter.ApplyDamage(force);
-        if (Context.Adapter.Health > 0)
+        // Default reaction when hit is to start chasing the player that hit them:
+        
+        if (!Context.Adapter.ApplyDamage(force))
         {
             if (!isPlayerWhoHitNull)
             {
                 Context.Adapter.TargetPlayer = playerWhoHit;
+                Context.Blackboard.LastKnownPlayerPosition = playerWhoHit.transform.position;
+                Context.Blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(playerWhoHit);
+                Context.Blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
+                
                 SwitchBehaviourState(States.Pursuing);
             }
         }
@@ -264,7 +296,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.InitializeGlobalTransitions();
         
-        GlobalTransitions.Add(new TransitionToDeadState(this));
+        // GlobalTransitions.Add(new TransitionToDeadState(this));
     }
     
     protected override States DetermineInitialState()
@@ -324,6 +356,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         bb.ViewWidth = cfg.ViewWidth;
         bb.ViewRange = cfg.ViewRange;
         bb.IsFriendlyFireEnabled = cfg.FriendlyFire;
+        bb.ThresholdTimeWherePlayerGone = new OverridableFloat(10f);
         
         ad.Health = cfg.Health;
         ad.AIIntervalLength = cfg.AiIntervalTime;

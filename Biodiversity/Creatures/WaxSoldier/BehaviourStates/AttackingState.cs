@@ -13,9 +13,6 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.Attacking)]
 internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
-    private float timeSincePlayerLastSeen;
-    private const float thresholdTimeWherePlayerGone = 4f;
-    
     public AttackingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
@@ -50,16 +47,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     {
         base.AIIntervalBehaviour();
         
-        if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
-        {
-            timeSincePlayerLastSeen = Time.time;
-        }
-        else if (Time.time - timeSincePlayerLastSeen >= thresholdTimeWherePlayerGone)
-        {
-            EnemyAIInstance.Context.Adapter.TargetPlayer = null;
-            EnemyAIInstance.Context.Blackboard.LastKnownPlayerPosition = default;
-            EnemyAIInstance.Context.Blackboard.LastKnownPlayerVelocity = default;
-        }
+        EnemyAIInstance.UpdatePlayerLastKnownPosition();
     }
 
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
@@ -76,30 +64,40 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         base.OnHitEnemy(force, playerWhoHit, hitId);
         
         // Apply the damage and do nothing else
-        EnemyAIInstance.Context.Adapter.ApplyDamage(force);
+        if (EnemyAIInstance.Context.Adapter.ApplyDamage(force))
+            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Dead);
+        
         return true;
     }
 
     internal override void OnCustomEvent(string eventName, StateData eventData)
     {
         base.OnCustomEvent(eventName, eventData);
+        
         switch (eventName)
         {
             case nameof(UnmoltenAnimationHandler.OnAttackAnimationFinish):
             {
-                bool playerFound = EnemyAIInstance.UpdatePlayerLastKnownPosition();
-                if (playerFound)
+                WaxSoldierAI.States nextState;
+                
+                if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
                 {
-                    EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Pursuing);
+                    nextState = WaxSoldierAI.States.Pursuing;
                 }
-                else if (EnemyAIInstance.Context.Adapter.TargetPlayer)
+                else if (EnemyAIInstance.Context.Adapter.TargetPlayer && Time.time - EnemyAIInstance.Context.Blackboard.TimeWhenTargetPlayerLastSeen >= EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Value)
                 {
-                    EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Hunting);
+                    nextState = WaxSoldierAI.States.Hunting;
+                }
+                else if (EnemyAIInstance.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0)
+                {
+                    nextState = WaxSoldierAI.States.Reloading;
                 }
                 else
                 {
-                    EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Reloading);
+                    nextState = WaxSoldierAI.States.MovingToStation;
                 }
+
+                EnemyAIInstance.SwitchBehaviourState(nextState);
                 
                 break;
             }
@@ -107,7 +105,10 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             case nameof(UnmoltenAnimationHandler.OnAnimationEventStartTargetLook):
             {
                 if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)
+                {
                     shootAttackAction.StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
+                }
+                
                 break;
             }
             
