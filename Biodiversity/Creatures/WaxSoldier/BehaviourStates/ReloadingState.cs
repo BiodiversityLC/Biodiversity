@@ -36,7 +36,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         EnemyAIInstance.MoveWithAcceleration();
         EnemyAIInstance.UpdateWaxDurability();
 
-        if (!hasTriggeredAnimation && EnemyAIInstance.Context.Adapter.Agent.velocity.sqrMagnitude <= 0.2f)
+        if (!hasTriggeredAnimation && EnemyAIInstance.Context.Adapter.Agent.velocity.sqrMagnitude <= 0.6f)
         {
             EnemyAIInstance.LogVerbose("Starting reload animation...");
             EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.ReloadMusket);

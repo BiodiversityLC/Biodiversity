@@ -69,6 +69,8 @@ public class HeatSensor : NetworkBehaviour
     {
         HeatController.Instance.NotifySensorRemoved();
         HeatController.Instance.OnHeatEmitterDisabled -= HandleHeatEmitterDisabled;
+        
+        DebugShapeVisualizer.Clear(this);
     }
 
     public override void OnNetworkSpawn()
@@ -140,8 +142,8 @@ public class HeatSensor : NetworkBehaviour
     {
         if (!debug) return;
 
-        // Every frame, reset the visualizer so old lines disappear.
-        DebugLineVisualizer.Reset();
+        // Every frame, reset the visualizer so old lines disappear
+        DebugShapeVisualizer.Clear(this);
 
         Vector3 position = transform.position + Vector3.up * 0.5f;
         _emittersToRemoveCache.Clear();
@@ -156,12 +158,11 @@ public class HeatSensor : NetworkBehaviour
 
             float heatRate = emitter.GetHeatRateAt(position);
         
-            // Normalize the heat rate for the gradient color.
+            // Normalize the heat rate for the gradient color
             float colorT = Mathf.InverseLerp(0, 30, heatRate);
             Color lineColor = _debugHeatGradient.Evaluate(colorT);
-
-            // Use our new tool to draw a line in the game world.
-            DebugLineVisualizer.DrawLine(position, emitter.transform.position, lineColor);
+            
+            DebugShapeVisualizer.DrawLine(this, position, emitter.transform.position, lineColor);
         }
 
         for (int i = 0; i < _emittersToRemoveCache.Count; i++)

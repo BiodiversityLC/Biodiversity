@@ -27,6 +27,7 @@ public class WaxSoldierClient : MonoBehaviour
     
     #region Unity Inspector Variables
 #pragma warning disable 0649
+#pragma warning disable CS0169
     [SerializeField] private NavMeshAgent agent;
     
     [SerializeField] private GameObject unmoltenGameObject;
@@ -45,6 +46,7 @@ public class WaxSoldierClient : MonoBehaviour
     
     [SerializeField] private AudioClip[] activateSfx;
     [SerializeField] private AudioClip[] aimSfx;
+    [SerializeField] private AudioClip[] reloadSfx;
     [SerializeField] private AudioClip[] spinSfx;
     [SerializeField] private AudioClip[] lightFootstepSfx;
     [SerializeField] private AudioClip[] heavyFootstepSfx;
@@ -52,6 +54,7 @@ public class WaxSoldierClient : MonoBehaviour
     [Header("Controllers")] [Space(5f)] 
     [SerializeField] private WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
+#pragma warning restore CS0169
     #endregion
 
     private Animator _currentAnimator;
@@ -120,13 +123,13 @@ public class WaxSoldierClient : MonoBehaviour
     {
         if (!objectReference.TryGet(out NetworkObject networkObject))
         {
-            BiodiversityPlugin.Logger.LogError("Received null network object for the musket.");
+            BiodiversityPlugin.Logger.LogError("[WaxSoldierClient] Received null network object for the musket.");
             return;
         }
 
         if (!networkObject.TryGetComponent(out Musket receivedMusket))
         {
-            BiodiversityPlugin.Logger.LogError("The musket component on the musket network object is null.");
+            BiodiversityPlugin.Logger.LogError("[WaxSoldierClient] The musket component on the musket network object is null.");
             return;
         }
         

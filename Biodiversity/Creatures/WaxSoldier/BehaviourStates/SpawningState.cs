@@ -1,7 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
-using Biodiversity.Util;
 using GameNetcodeStuff;
 using System.Collections;
 using UnityEngine;
@@ -28,11 +27,11 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
         EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Unmolten;
-
-        EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         
         // todo: change state initialization to be done in start() instead of awake(), because we should have InitializeConfig() before any state starts doing stuff
         // EnemyAIInstance.Context.Blackboard.NetcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
+        
+        // EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         
         EnemyAIInstance.DetermineGuardPostPosition();
     }
@@ -52,7 +51,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     private IEnumerator SpawnMusketWhenNetworkIsReady()
     {
         yield return new WaitUntil(() => EnemyAIInstance.Context.Blackboard.IsNetworkEventsSubscribed);
-        EnemyAIInstance.netcodeController.SpawnMusketServerRpc();
+        EnemyAIInstance.Context.Blackboard.NetcodeController.SpawnMusketServerRpc();
         yield return null;
         EnemyAIInstance.PlayAudioClipTypeClientRpc("activateSfx", "creatureVoice", 0, true);
         yield return null;

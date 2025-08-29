@@ -3,7 +3,6 @@ using Biodiversity.Items;
 using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
@@ -17,7 +16,6 @@ public class Musket : BiodiverseItem
     private static readonly int ShovelHitAnimatorHash = Animator.StringToHash("shovelHit");
 
     #region Unity Inspector Variables
-
     [Header("Audio")]
     [SerializeField] private AudioSource shootAudioSource;
     [SerializeField] private AudioSource otherAudioSource;
@@ -38,13 +36,24 @@ public class Musket : BiodiverseItem
     [SerializeField] public Transform muzzleTip;
     [SerializeField] public Transform bulletRayOrigin;
     
+    [Header("Controllers")]
     [SerializeField] public MusketBayonetHitbox bayonetHitbox;
+
+    [Header("Debug")]
+    public bool enableDebugVisuals = false;
     #endregion
     
     private enum DamageType
     {
         Player,
         IHittable
+    }
+
+    private enum HitResult
+    {
+        None,
+        Target,
+        Scenery,
     }
 
     private enum AttackMode
@@ -63,68 +72,78 @@ public class Musket : BiodiverseItem
     }
     
     // The float represents the time that the cooldown expires at
-    private readonly Dictionary<ulong, float> playerDamageCooldowns = new();
+    private readonly Dictionary<ulong, float> _playerDamageCooldowns = new();
 
-    private RaycastHit[] bulletHitBuffer;
-    private Collider[] bayonetHitBuffer;
-    private Comparer<RaycastHit> raycastHitDistanceComparer;
+    private RaycastHit[] _bulletHitBuffer;
+    private Collider[] _bayonetHitBuffer;
 
-    private CachedValue<Vector3> bayonetColliderHalfExtents;
+    private CachedValue<Vector3> _bayonetColliderHalfExtents;
 
-    private Coroutine reelingUpCoroutine;
-    private Coroutine shootingCoroutine;
+    private Coroutine _reelingUpCoroutine;
+    private Coroutine _shootingCoroutine;
 
-    private AttackMode currentAttackMode;
+    private AttackMode _currentAttackMode;
 
-    private Vector3 itemPositionOffset;
-    private Vector3 itemRotationOffset;
-    
-    private float bulletRadius;
-    private float maxBulletDistance;
+    private Vector3 _itemPositionOffset;
+    private Vector3 _itemRotationOffset;
     
     private const int bulletHitId = 8832676;
     private const int bayonetHitId = 8832677;
     private const int bulletHitBufferCapacity = 10;
     private const int bayonetHitBufferCapacity = 25;
+    
+    private float _bulletRadius;
+    private float _bulletMaxDistance;
+    
+    [Tooltip("How much the AI's vertical aim is corrected. 0 = no help, 1 = perfect Y-axis aimbot.")]
+    [Range(0f, 1f)]
+    public float verticalAimAssist = 0.95f;
 
     public NetworkVariable<int> currentAmmo { get; private set; } = new(1);
-    private int bulletHitMask;
-    private int bayonetHitMask;
-    private int maxAmmo;
+    private int _bulletHitMask;
+    private int _bayonetHitMask;
+    private int _maxAmmo;
 
-    private readonly NetworkVariable<bool> isSafetyOn = new();
+    private readonly NetworkVariable<bool> _isSafetyOn = new();
     private static bool _hasRegisteredImperiumInsights;
-    private bool isPerformingAttackAction;
-    private bool isHoldingButton;
-    private bool isHeldByWaxSoldier;
+    private bool _isPerformingAttackAction;
+    private bool _isHoldingButton;
+    private bool _isHeldByWaxSoldier;
+    private bool _piercingRoundsEnabled;
     
     private void Awake()
     {
-        bulletHitBuffer = new RaycastHit[bulletHitBufferCapacity];
-        bayonetHitBuffer = new Collider[bayonetHitBufferCapacity];
+        _bulletHitBuffer = new RaycastHit[bulletHitBufferCapacity];
+        _bayonetHitBuffer = new Collider[bayonetHitBufferCapacity];
         
-        bulletHitMask = StartOfRound.Instance.collidersRoomMaskDefaultAndPlayers | (1 << LayerMask.NameToLayer("Enemies"));
-        bayonetHitMask = 1084754248; // See Util.VanillaLayersUtil for more details
-        raycastHitDistanceComparer = Comparer<RaycastHit>.Create((a, b) => a.distance.CompareTo(b.distance));
+        _bayonetHitMask = 1084754248; // This is the mask used by the vanilla shovel, see Util.VanillaLayersUtil for more details
+        Comparer<RaycastHit>.Create((a, b) => a.distance.CompareTo(b.distance));
         
-        bulletRadius = 0.5f;
-        maxBulletDistance = 200f;
-        maxAmmo = 1;
+        _currentAttackMode = AttackMode.Gun;
+        _piercingRoundsEnabled = true;
+        _bulletRadius = 0.1f;
+        _bulletMaxDistance = 200f;
+        _maxAmmo = 1;
+        
+        _itemPositionOffset = new Vector3(0.02f, 0.65f, -0.05f);
+        _itemRotationOffset = new Vector3(265f, 6f, 270f);
+    }
 
-        currentAttackMode = AttackMode.Gun;
-        isSafetyOn.Value = false;
-        
-        itemPositionOffset = itemProperties.positionOffset;
-        itemRotationOffset = itemProperties.rotationOffset;
-
-        bayonetHitbox.bayonetCollider = bayonetCollider;
+    private void OnDisable()
+    {
+        DebugShapeVisualizer.Clear(this);
     }
 
     public override void Start()
     {
         base.Start();
 
-        bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.5f);
+        _bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.5f);
+        bayonetHitbox.bayonetCollider = bayonetCollider;
+        
+        // todo: check the vanilla shotgun's bullet mask, cuz the musket bullet can go through doors rn which is bad
+        _bulletHitMask = StartOfRound.Instance.collidersRoomMaskDefaultAndPlayers | (1 << LayerMask.NameToLayer("Enemies"));
+        _isSafetyOn.Value = false;
 
         if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
         {
@@ -134,114 +153,181 @@ public class Musket : BiodiverseItem
                 .UnregisterInsight("Location")
 
                 .RegisterInsight("Ammo", item => item.currentAmmo.Value.ToString())
-                .RegisterInsight("Trigger Safety", _ => isSafetyOn.Value ? "On" : "Off")
-                .RegisterInsight("Attack Mode", item => item.currentAttackMode == AttackMode.Gun
+                .RegisterInsight("Trigger Safety", _ => _isSafetyOn.Value ? "On" : "Off")
+                .RegisterInsight("Attack Mode", item => item._currentAttackMode == AttackMode.Gun
                     ? "Shoot"
                     : "Stab");
             
             _hasRegisteredImperiumInsights = true;
         }
     }
+    
+    public override void LateUpdate()
+    {
+        itemProperties.positionOffset = _isHeldByWaxSoldier ? Vector3.zero : _itemPositionOffset;
+        itemProperties.rotationOffset = _isHeldByWaxSoldier ? Vector3.zero : _itemRotationOffset;
+        
+        base.LateUpdate();
+    }
 
     private bool CanAttack(out AttackFailureReason failureReason)
     {
         failureReason = AttackFailureReason.None;
-        if (!isHeld || !isHeldByPlayer && !isHeldByEnemy)
+        
+        if (!isHeld || (!isHeldByPlayer && !isHeldByEnemy))
         {
             failureReason = AttackFailureReason.NotHeld;
             return false;
         }
 
-        if (isPerformingAttackAction)
+        if (_isPerformingAttackAction)
         {
             failureReason = AttackFailureReason.AlreadyPerformingAttackAction;
             return false;
         }
 
-        if (currentAttackMode == AttackMode.Bayonet) return true;
-
-        if (!isHoldingButton) //  `&& currentAttackMode == AttackMode.Gun` is implied
+        switch (_currentAttackMode)
         {
-            return false;
-        }
+            case AttackMode.Bayonet:
+                return true;
+            
+            case AttackMode.Gun:
+                if (!_isHoldingButton)
+                {
+                    return false;
+                }
+                
+                if (currentAmmo.Value <= 0)
+                {
+                    failureReason = AttackFailureReason.NeedsReloading;
+                    return false;
+                }
+                
+                if (_isSafetyOn.Value)
+                {
+                    failureReason = AttackFailureReason.SafetyIsOn;
+                    return false;
+                }
 
-        if (currentAmmo.Value <= 0)
-        {
-            failureReason = AttackFailureReason.NeedsReloading;
-            return false;
+                return true;
+            
+            default:
+                return false;
         }
-        
-        if (isSafetyOn.Value)
-        {
-            failureReason = AttackFailureReason.SafetyIsOn;
-            return false;
-        }
-
-        return true;
     }
 
     private IEnumerator Shoot()
     {
         // LogVerbose($"In {nameof(Shoot)}.");
-        isPerformingAttackAction = true;
+        _isPerformingAttackAction = true;
         
         PlayRandomAudioClipTypeServerRpc(nameof(shootSfx), nameof(shootAudioSource), true, audibleByEnemies: true);
         yield return new WaitForSeconds(0.09f); // The actual gunshot happens 0.09 seconds into the shoot audio clip
         PerformBulletLogic();
-        isPerformingAttackAction = false;
+        _isPerformingAttackAction = false;
     }
 
     private void PerformBulletLogic()
     {
-        currentAmmo.Value = Mathf.Clamp(currentAmmo.Value - 1, 0, maxAmmo);
+        currentAmmo.Value = Mathf.Clamp(currentAmmo.Value - 1, 0, _maxAmmo);
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+        
+        Ray bulletRay;
 
-        Ray bulletRay = isHeldByPlayer
-            ? new Ray(
+        if (false && isHeldByPlayer)
+        {
+            bulletRay = new Ray(
                 localPlayer.gameplayCamera.transform.position - localPlayer.gameplayCamera.transform.up * 0.45f,
-                localPlayer.gameplayCamera.transform.forward)
-            : new Ray(
-                bulletRayOrigin.position,
-                bulletRayOrigin.forward);
+                localPlayer.gameplayCamera.transform.forward);
+        }
+        else
+        {
+            Vector3 bulletOrigin = bulletRayOrigin.position;
+            Vector3 finalDirection;
 
-        int hitCount = Physics.SphereCastNonAlloc(bulletRay, bulletRadius, bulletHitBuffer, maxBulletDistance, bulletHitMask,
+            if (enemyHeldBy && enemyHeldBy.targetPlayer)
+            {
+                Vector3 naturalAimDirection = bulletRayOrigin.forward;
+                
+                PlayerControllerB targetPlayer = enemyHeldBy.targetPlayer;
+                Vector3 targetCentre = targetPlayer.gameplayCamera.transform.position;
+                
+                Vector3 correctedTargetPoint = new(targetCentre.x, bulletOrigin.y, targetCentre.z);
+                Vector3 perfectAimDirection = (correctedTargetPoint - bulletOrigin).normalized;
+                
+                finalDirection = Vector3.Slerp(naturalAimDirection, perfectAimDirection, verticalAimAssist);
+            }
+            else
+            {
+                finalDirection = bulletRayOrigin.forward;
+            }
+
+            bulletRay = new Ray(bulletOrigin, finalDirection);
+        }
+
+        int hitCount = Physics.SphereCastNonAlloc(bulletRay, _bulletRadius, _bulletHitBuffer, _bulletMaxDistance, _bulletHitMask,
             QueryTriggerInteraction.Collide);
 
-        if (hitCount == 0) return;
-        if (hitCount > 1)
-            Array.Sort(bulletHitBuffer, 0, hitCount, raycastHitDistanceComparer);
+        if (hitCount == 0)
+        {
+            if (enableDebugVisuals) DrawBulletDebug(bulletRay, null);
+            return;
+        }
 
-        // We have >1 colliders in the buffer to make sure that we don't accidently only capture the collider of the shooter
+        List<int> successfulHitIndicies = enableDebugVisuals ? new List<int>(hitCount) : null;
+
         for (int i = 0; i < hitCount; i++)
         {
-            RaycastHit hit = bulletHitBuffer[i];
-
-            if (hit.transform.TryGetComponent(out PlayerControllerB player))
-            {
-                if (isHeldByPlayer && playerHeldBy == player) continue;
-
-                ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
-                if (IsPlayerOnDamageCooldown(playerClientId)) continue;
-                
-                int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.Player);
-                DamagePlayerServerRpc(playerClientId, bulletDamage, CauseOfDeath.Gunshots); // RPC is needed because `PlayerControllerB.DamagePlayer` has an `if (!IsOwner) return;` statement at the start
-                StartPlayerDamageCooldown(playerClientId, 0.2f);
-                
-                LogVerbose($"Musket bullet delt {bulletDamage} damage to {player.playerUsername}.");
-                //break;
-            }
+            // Find the closest valid hit without sorting the whole array
+            int closestHitIndex = FindClosestValidHit(hitCount);
+            if (closestHitIndex == -1) break; // No valid targets found
             
-            if (hit.transform.TryGetComponent(out IHittable iHittable))
-            {
-                if (hit.transform.TryGetComponent(out EnemyAICollisionDetect enemyAICollisionDetect)
-                    && isHeldByEnemy && enemyHeldBy == enemyAICollisionDetect.mainScript) continue;
+            RaycastHit hit = _bulletHitBuffer[closestHitIndex];
+            Transform hitTransform = hit.transform;
 
+            // Mark this hit as processed
+            _bulletHitBuffer[closestHitIndex].distance = float.MaxValue;
+
+            HitResult hitResult = HitResult.None;
+
+            if (hitTransform.TryGetComponent(out PlayerControllerB player))
+            {
+                ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
+                if (!IsPlayerOnDamageCooldown(playerClientId))
+                {
+                    int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.Player);
+                    DamagePlayerServerRpc(playerClientId, bulletDamage, CauseOfDeath.Gunshots);
+                    StartPlayerDamageCooldown(playerClientId, 0.2f);
+                    LogVerbose($"Musket bullet dealt {bulletDamage} damage to {player.playerUsername}.");
+                    hitResult = HitResult.Target;
+                }
+            }
+            else if (hitTransform.TryGetComponent(out IHittable iHittable))
+            {
                 int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.IHittable);
                 iHittable.Hit(bulletDamage, bulletRay.origin, playerHeldBy, true, bulletHitId);
-                
-                LogVerbose($"Musket bullet delt {bulletDamage} damage to {iHittable}.");
-                //break;
+                LogVerbose($"Musket bullet dealt {bulletDamage} damage to {iHittable}.");
+                hitResult = HitResult.Target;
             }
+            else
+            {
+                LogVerbose("Musket bullet hit scenery.");
+                hitResult = HitResult.Scenery;
+            }
+            
+            if (hitResult is HitResult.Target or HitResult.Scenery)
+            {
+                successfulHitIndicies?.Add(closestHitIndex);
+                if (hitResult == HitResult.Target && _piercingRoundsEnabled)
+                    continue;
+            }
+            
+            break;
+        }
+
+        if (enableDebugVisuals)
+        {
+            DrawBulletDebug(bulletRay, successfulHitIndicies);
         }
     }
 
@@ -258,13 +344,13 @@ public class Musket : BiodiverseItem
         PlayRandomAudioClipTypeServerRpc(nameof(reelUpSfx), nameof(otherAudioSource), true, true, true, true);
 
         yield return new WaitForSeconds(0.35f);
-        yield return new WaitUntil(() => !isHoldingButton || !isHeld);
+        yield return new WaitUntil(() => !_isHoldingButton || !isHeld);
         
         playerUsingBayonet.playerBodyAnimator.SetBool(ReelingUpAnimatorHash, false);
         if (!isHeld)
         {
             LogVerbose("Musket has been dropped, cancelling bayonet stab.");
-            isPerformingAttackAction = false;
+            _isPerformingAttackAction = false;
             yield break;
         }
         
@@ -278,7 +364,7 @@ public class Musket : BiodiverseItem
         if (!isHeld)
         {
             LogVerbose("Musket has been dropped, cancelling bayonet stab.");
-            isPerformingAttackAction = false;
+            _isPerformingAttackAction = false;
             yield break;
         }
         
@@ -287,20 +373,20 @@ public class Musket : BiodiverseItem
         HitBayonet();
         
         yield return new WaitForSeconds(0.3f);
-        isPerformingAttackAction = false;
+        _isPerformingAttackAction = false;
     }
 
     public void HitBayonet()
     {
         LogVerbose($"In {nameof(HitBayonet)}");
         
-        int hitCount = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, bayonetColliderHalfExtents.Value,
-            bayonetHitBuffer, Quaternion.identity, bayonetHitMask, QueryTriggerInteraction.Collide);
+        int hitCount = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, _bayonetColliderHalfExtents.Value,
+            _bayonetHitBuffer, Quaternion.identity, _bayonetHitMask, QueryTriggerInteraction.Collide);
         
         if (hitCount == 0) return;
         for (int i = 0; i < hitCount; i++)
         {
-            Collider collider = bayonetHitBuffer[i];
+            Collider collider = _bayonetHitBuffer[i];
 
             if (collider.CompareTag("Player") && collider.transform.TryGetComponent(out PlayerControllerB player))
             {
@@ -321,13 +407,39 @@ public class Musket : BiodiverseItem
             }
         }
     }
+    
+    private int FindClosestValidHit(int hitCount)
+    {
+        int closestIndex = -1;
+        float minDistance = float.MaxValue;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit hit = _bulletHitBuffer[i];
+
+            if (hit.distance <= 0.001f) continue;
+            if (hit.distance >= minDistance) continue;
+
+            // Check for self-collision
+            if (isHeldByPlayer && hit.transform.GetComponent<PlayerControllerB>() == playerHeldBy) continue;
+            if (isHeldByEnemy && hit.transform.GetComponentInParent<EnemyAI>() == enemyHeldBy) continue;
+
+            minDistance = hit.distance;
+            closestIndex = i;
+        }
+        
+        return closestIndex;
+    }
 
     private bool IsPlayerOnDamageCooldown(ulong player)
     {
-        if (playerDamageCooldowns.TryGetValue(player, out float expiresAt))
+        if (_playerDamageCooldowns.TryGetValue(player, out float expiresAt))
         {
-            if (!(Time.time >= expiresAt)) return true;
-            playerDamageCooldowns.Remove(player);
+            // If the current time is less than the expiration time, then they are on cooldown
+            if (Time.time < expiresAt) return true;
+            
+            // Otherwise the cooldown has expired, and shall be removed
+            _playerDamageCooldowns.Remove(player);
         }
         
         return false;
@@ -335,13 +447,13 @@ public class Musket : BiodiverseItem
     
     private void StartPlayerDamageCooldown(ulong player, float duration)
     {
-        playerDamageCooldowns[player] = Time.time + duration;
+        _playerDamageCooldowns[player] = Time.time + duration;
     }
     
     public void Reload()
     {
         LogVerbose("Reloading...");
-        currentAmmo.Value = Mathf.Clamp(currentAmmo.Value + 1, 0, maxAmmo);
+        currentAmmo.Value = Mathf.Clamp(currentAmmo.Value + 1, 0, _maxAmmo);
     }
 
     private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
@@ -352,7 +464,7 @@ public class Musket : BiodiverseItem
     internal void OnGrabbedByWaxSoldier(EnemyAI waxSoldier)
     {
         LogVerbose("Got grabbed by a WaxSoldier.");
-        isHeldByWaxSoldier = true;
+        _isHeldByWaxSoldier = true;
         bayonetCollider.isTrigger = true;
         GrabItemFromEnemy(waxSoldier);
     }
@@ -360,7 +472,7 @@ public class Musket : BiodiverseItem
     internal void OnDroppedByWaxSoldier()
     {
         LogVerbose("Got dropped by a WaxSoldier.");
-        isHeldByWaxSoldier = false;
+        _isHeldByWaxSoldier = false;
         bayonetCollider.isTrigger = false;
         DiscardItemFromEnemy();
     }
@@ -380,10 +492,40 @@ public class Musket : BiodiverseItem
     }
     #endregion
 
-    protected override string GetLogPrefix()
+    public void SetupShoot()
     {
-        base.GetLogPrefix();
-        return $"[Musket {BioId}]";
+        if (_shootingCoroutine != null) StopCoroutine(_shootingCoroutine);
+        _shootingCoroutine = null;
+        _isPerformingAttackAction = true;
+        _shootingCoroutine = StartCoroutine(Shoot());
+    }
+
+    private void DrawBulletDebug(Ray ray, List<int> successfulHitIndicies)
+    {
+        // 1). Clear previous drawings
+        DebugShapeVisualizer.Clear(this);
+
+        Color translucentYellow = Color.yellow;
+        translucentYellow.a = 0.5f;
+        Color translucentRed = Color.red;
+        translucentRed.a = 0.5f;
+        
+        // 2). Draw the starting sphere from where the bullet originated
+        DebugShapeVisualizer.DrawSphere(this, ray.origin, _bulletRadius, translucentYellow);
+
+        // 3). Draw all hit points and the corresponding bullet trajectory
+        if (successfulHitIndicies is { Count: > 0 })
+        {
+            foreach (int i in successfulHitIndicies)
+            {
+                DebugShapeVisualizer.DrawSphere(this, _bulletHitBuffer[i].point, _bulletRadius, translucentRed);
+                DebugShapeVisualizer.DrawLine(this, ray.origin, _bulletHitBuffer[i].point, Color.red);
+            }
+        }
+        
+        // 4). Draw the raw trajectory line
+        Vector3 endPoint = ray.origin + ray.direction * _bulletMaxDistance;
+        DebugShapeVisualizer.DrawLine(this, ray.origin, endPoint, Color.blue);
     }
     
     protected override void CollectAudioClipsAndSources()
@@ -401,25 +543,23 @@ public class Musket : BiodiverseItem
         AudioClips.Add(nameof(swingSfx), [swingSfx]);
         AudioClips.Add(nameof(stabIntoFleshSfx), [stabIntoFleshSfx]);
     }
-
-    public void SetupShoot()
+    
+    protected override string GetLogPrefix()
     {
-        if (shootingCoroutine != null) StopCoroutine(shootingCoroutine);
-        shootingCoroutine = null;
-        isPerformingAttackAction = true;
-        shootingCoroutine = StartCoroutine(Shoot());
+        base.GetLogPrefix();
+        return $"[Musket {BioId}]";
     }
 
     #region Abstract Item Class Event Functions
     public override void ItemActivate(bool used, bool buttonDown = true)
     {
         base.ItemActivate(used, buttonDown);
-        isHoldingButton = buttonDown;
+        _isHoldingButton = buttonDown;
         
         if (!playerHeldBy) return;
 
         bool canAttack = CanAttack(out AttackFailureReason failureReason);
-        switch (currentAttackMode)
+        switch (_currentAttackMode)
         {
             case AttackMode.Gun:
             {
@@ -444,10 +584,10 @@ public class Musket : BiodiverseItem
             {
                 if (canAttack)
                 {
-                    if (reelingUpCoroutine != null) StopCoroutine(reelingUpCoroutine);
-                    reelingUpCoroutine = null;
-                    isPerformingAttackAction = true;
-                    reelingUpCoroutine = StartCoroutine(ReelUpBayonet());
+                    if (_reelingUpCoroutine != null) StopCoroutine(_reelingUpCoroutine);
+                    _reelingUpCoroutine = null;
+                    _isPerformingAttackAction = true;
+                    _reelingUpCoroutine = StartCoroutine(ReelUpBayonet());
                     break;
                 }
                 
@@ -461,26 +601,18 @@ public class Musket : BiodiverseItem
     public override void ItemInteractLeftRight(bool right)
     {
         base.ItemInteractLeftRight(right);
-        if (isPerformingAttackAction) return;
+        if (_isPerformingAttackAction) return;
         if (right)
         {
-            currentAttackMode = currentAttackMode == AttackMode.Gun ? AttackMode.Bayonet : AttackMode.Gun;
-            LogVerbose($"Changed attack mode to {currentAttackMode}.");
+            _currentAttackMode = _currentAttackMode == AttackMode.Gun ? AttackMode.Bayonet : AttackMode.Gun;
+            LogVerbose($"Changed attack mode to {_currentAttackMode}.");
         }
         else
         {
-            string clipToPlay = isSafetyOn.Value ? nameof(turnSafetyOffSfx) : nameof(turnSafetyOnSfx);
-            isSafetyOn.Value = !isSafetyOn.Value;
+            string clipToPlay = _isSafetyOn.Value ? nameof(turnSafetyOffSfx) : nameof(turnSafetyOnSfx);
+            _isSafetyOn.Value = !_isSafetyOn.Value;
             PlayRandomAudioClipTypeServerRpc(clipToPlay, nameof(otherAudioSource), true, true, true);
         }
-    }
-
-    public override void LateUpdate()
-    {
-        itemProperties.positionOffset = isHeldByWaxSoldier ? Vector3.zero : itemPositionOffset;
-        itemProperties.rotationOffset = isHeldByWaxSoldier ? Vector3.zero : itemRotationOffset;
-        
-        base.LateUpdate();
     }
 
     public override int GetItemDataToSave()

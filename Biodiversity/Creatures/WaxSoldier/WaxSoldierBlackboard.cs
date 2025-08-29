@@ -21,7 +21,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float WaxMeltTemperature { get; } = 60f;
     
     public float TimeWhenTargetPlayerLastSeen { get; set; }
-    public OverridableFloat ThresholdTimeWherePlayerGone { get; set; }
+    public OverridableFloat ThresholdTimeWherePlayerGone;
     
     public bool IsNetworkEventsSubscribed { get; set; }
     public bool IsFriendlyFireEnabled { get; set; }
