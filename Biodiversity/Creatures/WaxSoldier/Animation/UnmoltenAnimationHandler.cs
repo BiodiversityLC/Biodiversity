@@ -48,25 +48,25 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        MusketBayonetHitbox bayonetHitbox = ai.Context.Blackboard.HeldMusket.bayonetHitbox;
-        if (bayonetHitbox.currentBayonetMode == MusketBayonetHitbox.BayonentMode.None)
+        WaxSoldierBayonetAttackPhysics bayonetAttackPhysics = ai.Context.Blackboard.HeldMusket.bayonetAttackPhysics;
+        if (bayonetAttackPhysics.currentBayonetMode == WaxSoldierBayonetAttackPhysics.BayonentMode.None)
         {
             ai.LogVerbose($"Toggling bayonet on.");
             
             int hash = ai.Context.Blackboard.currentAttackAction.AnimationTriggerHash;
             if (hash == WaxSoldierClient.SpinAttack)
             {
-                bayonetHitbox.BeginAttack(MusketBayonetHitbox.BayonentMode.Spin);
+                bayonetAttackPhysics.BeginAttack(WaxSoldierBayonetAttackPhysics.BayonentMode.Spin);
             }
             if (hash == WaxSoldierClient.StabAttack)
             {
-                bayonetHitbox.BeginAttack(MusketBayonetHitbox.BayonentMode.Stab);
+                bayonetAttackPhysics.BeginAttack(WaxSoldierBayonetAttackPhysics.BayonentMode.Stab);
             }
         }
         else
         {
             ai.LogVerbose($"Toggling bayonet mode off.");
-            bayonetHitbox.EndAttack();
+            bayonetAttackPhysics.EndAttack();
         }
     }
 

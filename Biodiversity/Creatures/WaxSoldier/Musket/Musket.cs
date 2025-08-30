@@ -37,7 +37,7 @@ public class Musket : BiodiverseItem
     [SerializeField] public Transform bulletRayOrigin;
     
     [Header("Controllers")]
-    [SerializeField] public MusketBayonetHitbox bayonetHitbox;
+    [SerializeField] public WaxSoldierBayonetAttackPhysics bayonetAttackPhysics;
 
     [Header("Debug")]
     public bool enableDebugVisuals = false;
@@ -71,8 +71,7 @@ public class Musket : BiodiverseItem
         AlreadyPerformingAttackAction
     }
     
-    // The float represents the time that the cooldown expires at
-    private readonly Dictionary<ulong, float> _playerDamageCooldowns = new();
+    private readonly PlayerCooldownTracker _playerDamageCooldowns = new();
 
     private RaycastHit[] _bulletHitBuffer;
     private Collider[] _bayonetHitBuffer;
@@ -91,7 +90,7 @@ public class Musket : BiodiverseItem
     private const int bayonetHitId = 8832677;
     private const int bulletHitBufferCapacity = 10;
     private const int bayonetHitBufferCapacity = 25;
-    
+
     private float _bulletRadius;
     private float _bulletMaxDistance;
     
@@ -139,7 +138,7 @@ public class Musket : BiodiverseItem
         base.Start();
 
         _bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.5f);
-        bayonetHitbox.bayonetCollider = bayonetCollider;
+        bayonetAttackPhysics.bayonetCollider = bayonetCollider;
         
         // todo: check the vanilla shotgun's bullet mask, cuz the musket bullet can go through doors rn which is bad
         _bulletHitMask = StartOfRound.Instance.collidersRoomMaskDefaultAndPlayers | (1 << LayerMask.NameToLayer("Enemies"));
@@ -293,11 +292,12 @@ public class Musket : BiodiverseItem
             if (hitTransform.TryGetComponent(out PlayerControllerB player))
             {
                 ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
-                if (!IsPlayerOnDamageCooldown(playerClientId))
+                if (!_playerDamageCooldowns.IsOnCooldown(playerClientId))
                 {
                     int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.Player);
                     DamagePlayerServerRpc(playerClientId, bulletDamage, CauseOfDeath.Gunshots);
-                    StartPlayerDamageCooldown(playerClientId, 0.2f);
+                    _playerDamageCooldowns.Start(playerClientId, 0.2f);
+                    
                     LogVerbose($"Musket bullet dealt {bulletDamage} damage to {player.playerUsername}.");
                     hitResult = HitResult.Target;
                 }
@@ -393,10 +393,10 @@ public class Musket : BiodiverseItem
                 if (isHeldByPlayer && playerHeldBy == player) continue;
                 
                 ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
-                if (IsPlayerOnDamageCooldown(playerClientId)) continue;
+                if (_playerDamageCooldowns.IsOnCooldown(playerClientId)) continue;
                 
                 DamagePlayerServerRpc(playerClientId, 100, CauseOfDeath.Stabbing);
-                StartPlayerDamageCooldown(playerClientId, 0.2f);
+                _playerDamageCooldowns.Start(playerClientId, 0.2f);
                 
                 continue;
             }
@@ -429,25 +429,6 @@ public class Musket : BiodiverseItem
         }
         
         return closestIndex;
-    }
-
-    private bool IsPlayerOnDamageCooldown(ulong player)
-    {
-        if (_playerDamageCooldowns.TryGetValue(player, out float expiresAt))
-        {
-            // If the current time is less than the expiration time, then they are on cooldown
-            if (Time.time < expiresAt) return true;
-            
-            // Otherwise the cooldown has expired, and shall be removed
-            _playerDamageCooldowns.Remove(player);
-        }
-        
-        return false;
-    }
-    
-    private void StartPlayerDamageCooldown(ulong player, float duration)
-    {
-        _playerDamageCooldowns[player] = Time.time + duration;
     }
     
     public void Reload()

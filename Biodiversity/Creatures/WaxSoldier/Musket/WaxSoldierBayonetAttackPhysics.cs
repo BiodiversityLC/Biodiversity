@@ -1,6 +1,6 @@
 ﻿using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
-using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -10,19 +10,16 @@ using Random = UnityEngine.Random;
 /// The collisions for when it is wielded by the player, is handled in the main Musket script (it is meant to mimic how the shovel works (monty wanted it this way)).
 /// </summary>
 [RequireComponent(typeof(Rigidbody), typeof(Collider))]
-public class MusketBayonetHitbox : NetworkBehaviour
+public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
 {
-    [Header("Configuration")]
-    [Tooltip("The layers that the bayonet can hit.")]
-    [SerializeField] private LayerMask hitLayers;
-    [Tooltip("How long (in seconds) a player is immune after being hit.")]
-    [SerializeField] private float hitCooldown = 1f;
-    
     [Header("Attack Properties")]
     [SerializeField] private int spinDamage = 40;
     [SerializeField] private float spinKnockback = 16f;
     [SerializeField] private int stabDamage = 50;
     [SerializeField] private float stabKnockback = 8f;
+    
+    [Tooltip("How long (in seconds) a player is immune after being hit.")]
+    [SerializeField] private float hitCooldown = 0.5f;
     
     [Header("References")]
     [SerializeField] private Transform bayonetTip;
@@ -35,21 +32,25 @@ public class MusketBayonetHitbox : NetworkBehaviour
     
     private Collider[] bayonetHitBuffer;
     
-    private readonly Dictionary<PlayerControllerB, float> cooldownTracker = new();
-    private readonly List<PlayerControllerB> cooldownsToRemove = [];
-
+    private readonly PlayerCooldownTracker _playerCooldownTracker = new();
+    
+    private CachedValue<Vector3> _bayonetColliderHalfExtents;
     private Vector3 previousTipPosition;
-
-    private void OnValidate()
+    
+    private int _bayonetHitMask;
+    
+    private void Awake()
     {
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (!rb.isKinematic)
+        bayonetHitBuffer = new Collider[15];
+        _bayonetHitMask = 1084754248; // This is the mask used by the vanilla shovel, see Util.VanillaLayersUtil for more details
+
+        if (TryGetComponent(out Rigidbody rb))
         {
-            Debug.LogWarning("Rigidbody on BayonetHitbox is not Kinematic. This is required for animation-driven hit detection. Forcing it to true.", this);
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
             rb.isKinematic = true;
         }
     }
-
+    
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -63,9 +64,9 @@ public class MusketBayonetHitbox : NetworkBehaviour
         EndAttack();
     }
 
-    private void Awake()
+    private void Start()
     {
-        bayonetHitBuffer = new Collider[15];
+        _bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.75f);
     }
 
     private void FixedUpdate()
@@ -74,13 +75,12 @@ public class MusketBayonetHitbox : NetworkBehaviour
         
         Vector3 currentTipPosition = bayonetTip.position;
         Vector3 direction = currentTipPosition - previousTipPosition;
-        float distance = direction.magnitude;
 
         // Only do the cast if the tip has moved
-        if (distance > 0.01f)
+        if (direction.magnitude > 0.01f)
         {
-            int hits = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, bayonetCollider.size * 0.75f, 
-                bayonetHitBuffer, Quaternion.identity, hitLayers, QueryTriggerInteraction.Ignore);
+            int hits = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, _bayonetColliderHalfExtents.Value, 
+                bayonetHitBuffer, bayonetCollider.transform.rotation, _bayonetHitMask, QueryTriggerInteraction.Collide);
 
             for (int i = 0; i < hits; i++)
             {
@@ -90,13 +90,16 @@ public class MusketBayonetHitbox : NetworkBehaviour
         }
 
         previousTipPosition = currentTipPosition;
-        UpdateCooldowns();
     }
 
     private bool TryToDamageEntity(Collider entity)
     {
-        if (entity.CompareTag("Player") && entity.TryGetComponent(out PlayerControllerB player) && !PlayerUtil.IsPlayerDead(player) && !cooldownTracker.ContainsKey(player))
+        if (entity.CompareTag("Player") && entity.TryGetComponent(out PlayerControllerB player) && !PlayerUtil.IsPlayerDead(player))
         {
+            ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
+            if (_playerCooldownTracker.IsOnCooldown(playerClientId))
+                return false;
+            
             int damage = 0;
             float knockback = 0f;
             
@@ -113,8 +116,9 @@ public class MusketBayonetHitbox : NetworkBehaviour
             }
 
             Vector3 forceDirection = (player.transform.position - transform.position).normalized;
-            DamagePlayerClientRpc(PlayerUtil.GetClientIdFromPlayer(player), damage, forceDirection * knockback, CauseOfDeath.Stabbing);
-            cooldownTracker.Add(player, Time.time + hitCooldown);
+            DamagePlayerClientRpc(playerClientId, damage, forceDirection * knockback, CauseOfDeath.Stabbing);
+            _playerCooldownTracker.Start(playerClientId, hitCooldown);
+            
             return true;
         }
 
@@ -124,7 +128,6 @@ public class MusketBayonetHitbox : NetworkBehaviour
     public void BeginAttack(BayonentMode mode)
     {
         currentBayonetMode = mode;
-        cooldownTracker.Clear();
         previousTipPosition = bayonetTip.transform.position;
         enabled = true; // Enables FixedUpdate
     }
@@ -133,26 +136,6 @@ public class MusketBayonetHitbox : NetworkBehaviour
     {
         currentBayonetMode = BayonentMode.None;
         enabled = false; // Disables FixedUpdate
-    }
-
-    private void UpdateCooldowns()
-    {
-        if (cooldownTracker.Count == 0) return;
-        
-        cooldownsToRemove.Clear();
-        foreach (KeyValuePair<PlayerControllerB, float> entry in cooldownTracker)
-        {
-            if (Time.time >= entry.Value)
-            {
-                cooldownsToRemove.Add(entry.Key);
-            }
-        }
-
-        for (int i = 0; i < cooldownsToRemove.Count; i++)
-        {
-            PlayerControllerB player = cooldownsToRemove[i];
-            cooldownTracker.Remove(player);
-        }
     }
     
     #region RPCs
