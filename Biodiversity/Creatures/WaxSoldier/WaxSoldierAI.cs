@@ -107,7 +107,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
                 .RegisterInsight("Acceleration",
                     entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.acceleration:0.0}" : "0")
                 .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
-                .RegisterInsight("Wax Durability", entity => $"{Mathf.Max(0, entity.Context.Blackboard.WaxDurability * 100)} %");
+                .RegisterInsight("Wax Durability", entity => $"{Mathf.Max(0, entity.Context.Blackboard.WaxDurability * 100)} %")
+                .RegisterInsight("TSTPWLS", entity => $"{Time.time - entity.Context.Blackboard.TimeWhenTargetPlayerLastSeen}"); // Time since target player was last seen
 
             _hasRegisteredImperiumInsights = true;
         }
