@@ -148,14 +148,14 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float escapeChargeDecayRate = 15f;
     [SerializeField] private float escapeChargeThreshold = 100f;
 
-    private CachedNullable<PlayerControllerB> _targetPlayer;
+    private CachedUnityObject<PlayerControllerB> _targetPlayer;
 
     private CachedValue<AloeServerAI> _aloeServer;
 
-    private PerKeyCachedDictionary<ulong, List<Tuple<Component, bool>>> _playersCachedRenderers;
-    private PerKeyCachedDictionary<ulong, MeshRenderer> _playerVisorRenderers;
-    private PerKeyCachedDictionary<ulong, AudioLowPassFilter> _playerAudioLowPassFilters;
-    private PerKeyCachedDictionary<ulong, OccludeAudio> _playerOccludeAudios;
+    private LazyDictionary<ulong, List<Tuple<Component, bool>>> _playersCachedRenderers;
+    private LazyUnityObjectDictionary<ulong, MeshRenderer> _playerVisorRenderers;
+    private LazyUnityObjectDictionary<ulong, AudioLowPassFilter> _playerAudioLowPassFilters;
+    private LazyUnityObjectDictionary<ulong, OccludeAudio> _playerOccludeAudios;
     
     private FakePlayerBodyRagdoll _currentFakePlayerBodyRagdoll;
 
@@ -184,7 +184,7 @@ public class AloeClient : MonoBehaviour
         if (!netcodeController) netcodeController = GetComponent<AloeNetcodeController>();
         _aloeServer = new CachedValue<AloeServerAI>(GetComponent<AloeServerAI>);
         
-        _playersCachedRenderers = new PerKeyCachedDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
+        _playersCachedRenderers = new LazyDictionary<ulong, List<Tuple<Component, bool>>>(playerId =>
         {
             List<Tuple<Component, bool>> rendererComponents = [];
             PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerId);
@@ -230,15 +230,15 @@ public class AloeClient : MonoBehaviour
             return rendererComponents;
         });
         
-        _playerVisorRenderers = new PerKeyCachedDictionary<ulong, MeshRenderer>(playerId =>
+        _playerVisorRenderers = new LazyUnityObjectDictionary<ulong, MeshRenderer>(playerId =>
             PlayerUtil.GetPlayerFromClientId(playerId).localVisor.gameObject
                 .GetComponentsInChildren<MeshRenderer>()[0]);
 
-        _playerAudioLowPassFilters = new PerKeyCachedDictionary<ulong, AudioLowPassFilter>(playerId =>
+        _playerAudioLowPassFilters = new LazyUnityObjectDictionary<ulong, AudioLowPassFilter>(playerId =>
             PlayerUtil.GetPlayerFromClientId(playerId).currentVoiceChatAudioSource
                 .GetComponent<AudioLowPassFilter>());
 
-        _playerOccludeAudios = new PerKeyCachedDictionary<ulong, OccludeAudio>(playerId =>
+        _playerOccludeAudios = new LazyUnityObjectDictionary<ulong, OccludeAudio>(playerId =>
             PlayerUtil.GetPlayerFromClientId(playerId).currentVoiceChatAudioSource.GetComponent<OccludeAudio>());
 
         escapeTooltipHeader = LangParser.GetTranslation("tooltip.header.aloe.escape");

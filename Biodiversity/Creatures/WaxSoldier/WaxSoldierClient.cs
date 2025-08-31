@@ -59,7 +59,7 @@ public class WaxSoldierClient : MonoBehaviour
 
     private Animator _currentAnimator;
     
-    private CachedNullable<PlayerControllerB> _targetPlayer;
+    private CachedUnityObject<PlayerControllerB> _targetPlayer;
     private CachedValue<EnemyAI> _enemyAIReference;
     private Musket _musket;
     

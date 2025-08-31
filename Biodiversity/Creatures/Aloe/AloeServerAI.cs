@@ -48,9 +48,9 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         Dead,
     }
 
-    internal CachedNullable<PlayerControllerB> ActualTargetPlayer;
-    internal CachedNullable<PlayerControllerB> AvoidingPlayer;
-    internal CachedNullable<PlayerControllerB> SlappingPlayer;
+    internal CachedUnityObject<PlayerControllerB> ActualTargetPlayer;
+    internal CachedUnityObject<PlayerControllerB> AvoidingPlayer;
+    internal CachedUnityObject<PlayerControllerB> SlappingPlayer;
     internal PlayerControllerB BackupTargetPlayer;
     
     internal Vector3 FavouriteSpot;
@@ -326,7 +326,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         {
             if (currentStateType is States.Spawning) return;
 
-            CachedNullable<PlayerControllerB> playerWhoHitMe = new(playerWhoHit);
+            CachedUnityObject<PlayerControllerB> playerWhoHitMe = new(playerWhoHit);
             
             StateData stateData = new();
             stateData.Add("overridePlaySpottedAnimation", true);
@@ -453,7 +453,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         StateData stateData = new();
         stateData.Add("overridePlaySpottedAnimation", true);
         
-        CachedNullable<PlayerControllerB> stunnedByPlayer2 = new(setStunnedByPlayer);
+        CachedUnityObject<PlayerControllerB> stunnedByPlayer2 = new(setStunnedByPlayer);
         switch (currentState)
         { 
             case States.Spawning or States.Roaming or States.PassiveStalking or States.AggressiveStalking:

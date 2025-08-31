@@ -14,7 +14,7 @@ namespace Biodiversity.Creatures.Aloe.BehaviourStates;
 [State(AloeServerAI.States.AvoidingPlayer)]
 internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeServerAI>
 {
-    private CachedNullable<PlayerControllerB> _playerLookingAtAloe;
+    private CachedUnityObject<PlayerControllerB> _playerLookingAtAloe;
 
     private float _avoidPlayerIntervalTimer;
     private float _avoidPlayerTimerTotal;

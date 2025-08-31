@@ -11,6 +11,12 @@ internal static class PlayerUtil
         return StartOfRound.Instance.allPlayerScripts[playerClientId];
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static PlayerControllerB GetPlayerFromClientId(int playerClientId) 
+    {
+        return StartOfRound.Instance.allPlayerScripts[playerClientId];
+    }
+    
     // Used so I dont mix up `PlayerControllerB.playerClientId` and `PlayerControllerB.actualClientId`
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static ulong GetClientIdFromPlayer(PlayerControllerB player)

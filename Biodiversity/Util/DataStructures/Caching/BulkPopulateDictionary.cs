@@ -4,39 +4,42 @@ using System.Collections.Generic;
 namespace Biodiversity.Util.DataStructures;
 
 /// <summary>
-/// A specialized dictionary that bulk populates key-value pairs on the first access to any key.
-/// Once populated, the values are cached and retrieved from the cache on subsequent accesses.
+/// A dictionary that populates its entire cache from a bulk function on the first access.
+/// This version is for standard C# types.
 /// </summary>
-/// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
-/// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
-public class BulkPopulateDictionary<TKey, TValue> : PerKeyCachedDictionary<TKey, TValue>
+public class BulkPopulateDictionary<TKey, TValue>
 {
-    private readonly Action<Dictionary<TKey, CachedNullable<TValue>>> _populateFunction;
-    private bool _isPopulated;
+    private readonly Lazy<Dictionary<TKey, TValue>> _lazyCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BulkPopulateDictionary{TKey, TValue}"/> class.
-    /// The dictionary will populate all key-value pairs using the provided function the first time any key is accessed.
     /// </summary>
     /// <param name="populateFunction">
     /// A parameterless function that populates the dictionary with key-value pairs. 
-    /// This function is called the first time any key is accessed, and after that, 
-    /// the dictionary will return cached values for all subsequent accesses.
     /// </param>
     /// <exception cref="ArgumentNullException">
     /// Thrown if <paramref name="populateFunction"/> is <c>null</c>.
     /// </exception>
-    public BulkPopulateDictionary(Action<Dictionary<TKey, CachedNullable<TValue>>> populateFunction)
-        : base(_ => default!) // We override this, so base function doesn't matter.
+    public BulkPopulateDictionary(Action<Dictionary<TKey, TValue>> populateFunction)
     {
-        _populateFunction = populateFunction ?? throw new ArgumentNullException(nameof(populateFunction));
-        _isPopulated = false;
+        if (populateFunction == null) throw new ArgumentNullException(nameof(populateFunction));
+        
+        _lazyCache = new Lazy<Dictionary<TKey, TValue>>(() =>
+        {
+            Dictionary<TKey, TValue> cache = new();
+            populateFunction(cache);
+            return cache;
+        });
     }
+    
+    /// <summary>
+    /// Gets the dictionary cache, populating it if this is the first access.
+    /// </summary>
+    private Dictionary<TKey, TValue> Cache => _lazyCache.Value;
 
     /// <summary>
     /// Gets the value associated with the specified key. 
-    /// If the dictionary has not been populated yet, it will be populated first by invoking the populate function.
-    /// Once populated, values are returned from the cache.
+    /// Triggers the bulk population if this is the first time the dictionary is accessed.
     /// </summary>
     /// <param name="key">The key whose associated value is to be returned.</param>
     /// <returns>
@@ -45,38 +48,29 @@ public class BulkPopulateDictionary<TKey, TValue> : PerKeyCachedDictionary<TKey,
     /// <exception cref="KeyNotFoundException">
     /// Thrown if the key is not found after the dictionary is populated.
     /// </exception>
-    public override TValue this[TKey key]
+    public TValue this[TKey key]
     {
         get
         {
-            // Populate the dictionary on first access
-            if (!_isPopulated)
+            if (Cache.TryGetValue(key, out TValue value))
             {
-                _populateFunction(Cache);
-                _isPopulated = true;
-            }
-
-            // Try to retrieve the value
-            if (Cache.TryGetValue(key, out CachedNullable<TValue> cachedValue) && cachedValue.HasValue)
-            {
-                return cachedValue.Value;
+                return value;
             }
 
             throw new KeyNotFoundException($"The key '{key}' was not found in the dictionary.");
         }
     }
+    
+    public bool TryGetValue(TKey key, out TValue value)
+    {
+        return Cache.TryGetValue(key, out value);
+    }
 
     /// <summary>
-    /// Resets the cached dictionary, causing the populate function to be invoked again 
-    /// the next time any key is accessed.
+    /// Resets the cached dictionary, causing the populate function to be invoked again the next time any key is accessed.
     /// </summary>
-    /// <remarks>
-    /// This method clears the entire cache and marks the dictionary as unpopulated. 
-    /// The next time a key is accessed, the populate function will run again to repopulate the dictionary.
-    /// </remarks>
     public void Reset()
     {
-        ResetAll();
-        _isPopulated = false;
+        throw new NotImplementedException();
     }
 }

@@ -37,7 +37,7 @@ public class PlayerTargetableConditions
         return true;
     }
     
-    public bool IsPlayerTargetable(CachedNullable<PlayerControllerB> player)
+    public bool IsPlayerTargetable(CachedUnityObject<PlayerControllerB> player)
     {
         if (!player.HasValue) return false;
         

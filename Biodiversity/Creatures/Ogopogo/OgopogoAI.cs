@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util.Scripts;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.Scripts;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using LethalLib.Modules;
@@ -58,9 +59,9 @@ internal class OgopogoAI : BiodiverseAI
     [SerializeField] private Transform GrabPos;
 
     // Player references
-    private readonly NullableObject<PlayerControllerB> playerGrabbed = new();
-    private readonly NullableObject<PlayerControllerB> chasedPlayer = new();
-    private PerKeyCachedDictionary<ulong, MeshRenderer> playerVisorRenderers;
+    private CachedUnityObject<PlayerControllerB> playerGrabbed;
+    private CachedUnityObject<PlayerControllerB> chasedPlayer;
+    private LazyUnityObjectDictionary<ulong, MeshRenderer> playerVisorRenderers;
     private float[] _playerDistances;
 
     // Audio
@@ -100,7 +101,7 @@ internal class OgopogoAI : BiodiverseAI
         loseRange = OgopogoHandler.Instance.Config.LoseRange;
         attackDistance = OgopogoHandler.Instance.Config.AttackDistance;
 
-        BiodiversityPlugin.LogVerbose($"Ogo says the level name is:{Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name)}:{RoundManager.Instance.currentLevel.name}");
+        LogVerbose($"Ogo says the level name is:{Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name)}:{RoundManager.Instance.currentLevel.name}");
 
         //Gorgonzola
         if (Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name) == "gorgonzolalevel")
@@ -114,10 +115,10 @@ internal class OgopogoAI : BiodiverseAI
             /*
             foreach (SelectableLevel level in StartOfRound.Instance.levels)
             {
-                Plugin.Log.LogInfo(level.PlanetName);
+                LogInfo(level.PlanetName);
                 foreach (SpawnableEnemyWithRarity enemy in level.DaytimeEnemies)
                 {
-                    Plugin.Log.LogInfo(enemy.enemyType.enemyName);
+                    LogInfo(enemy.enemyType.enemyName);
                 }
             }
             */
@@ -129,10 +130,10 @@ internal class OgopogoAI : BiodiverseAI
         {
             foreach (QuicksandTrigger maybeWater in sandAndWater)
             {
-                // BiodiversityPlugin.Logger.LogInfo(maybeWater);
-                // BiodiversityPlugin.Logger.LogInfo(maybeWater.isWater);
-                // BiodiversityPlugin.Logger.LogInfo(maybeWater.gameObject.CompareTag("SpawnDenialPoint"));
-                //BiodiversityPlugin.Logger.LogInfo(maybeWater.transform.root.gameObject.name);
+                // LogInfo(maybeWater);
+                // LogInfo(maybeWater.isWater);
+                // LogInfo(maybeWater.gameObject.CompareTag("SpawnDenialPoint"));
+                // LogInfo(maybeWater.transform.root.gameObject.name);
                 if (maybeWater.isWater && !maybeWater.gameObject.CompareTag("SpawnDenialPoint") && maybeWater.transform.root.gameObject.name != "Systems")
                 {
                     waters.Add(maybeWater);
@@ -141,7 +142,7 @@ internal class OgopogoAI : BiodiverseAI
 
             if (waters.Count == 0 || TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Flooded)
             {
-                BiodiversityPlugin.Logger.LogWarning("Despawning because no water exists that is spawnable or there is a flood.");
+                LogWarning("Despawning because no water exists that is spawnable or there is a flood.");
                 RoundManager.Instance.DespawnEnemyOnServer(new NetworkObjectReference(gameObject.GetComponent<NetworkObject>()));
                 return;
             }
@@ -163,7 +164,7 @@ internal class OgopogoAI : BiodiverseAI
 
             if (OgopogoHandler.LevelsParsedStaticSpawns.TryGetValue(StartOfRound.Instance.currentLevel.name, out List<Vector3> posVectors))
             {
-                //BiodiversityPlugin.Logger.LogInfo("The thing is working");
+                //LogInfo("The thing is working");
                 usedPredefinedPos = true;
                 int numberOfPos = posVectors.Count;
 
@@ -187,7 +188,7 @@ internal class OgopogoAI : BiodiverseAI
         }
         catch (Exception ex)
         {
-            BiodiversityPlugin.Logger.LogError(ex);
+            LogError(ex);
         }
 
         // Set default y pos of audio
@@ -199,9 +200,9 @@ internal class OgopogoAI : BiodiverseAI
         // set raycast pos to top of water
         RaycastPos.position = new Vector3(transform.position.x, collider.bounds.max.y, transform.position.z);
 
-        playerVisorRenderers = new PerKeyCachedDictionary<ulong, MeshRenderer>(playerId =>
+        playerVisorRenderers = new LazyUnityObjectDictionary<ulong, MeshRenderer>(playerId =>
         {
-            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
+            PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerId);
             if (player != null && player.localVisor != null)
             {
                 return player.localVisor.gameObject.GetComponentInChildren<MeshRenderer>();
@@ -253,7 +254,7 @@ internal class OgopogoAI : BiodiverseAI
             eye.position = defaultEye.transform.position;
             eye.rotation = defaultEye.transform.rotation;
         } 
-        else if (chasedPlayer.IsNotNull)
+        else if (chasedPlayer.HasValue)
         {
             eye.position = chasedPlayer.Value.transform.position + chasedPlayer.Value.transform.forward * 1;
             TurnObjectTowardsLocation(chasedPlayer.Value.transform.position, eye);
@@ -272,17 +273,18 @@ internal class OgopogoAI : BiodiverseAI
         }
 
         // Move the grabbed player
-        if (playerGrabbed.IsNotNull)
+        if (playerGrabbed.HasValue)
         {
             playerGrabbed.Value.transform.position = Vector3.SmoothDamp(playerGrabbed.Value.transform.position, SavedGrabPos, ref PlayerVelocity, 0.1f);
             playerGrabbed.Value.transform.rotation = Quaternion.Slerp(playerGrabbed.Value.transform.rotation, GrabPos.rotation, Time.deltaTime / 0.1f);
-
-            if (playerGrabbed.Value.playerClientId == GameNetworkManager.Instance.localPlayerController.playerClientId)
+            
+            ulong playerGrabbedId = PlayerUtil.GetClientIdFromPlayer(playerGrabbed.Value);
+            if (playerGrabbedId == GameNetworkManager.Instance.localPlayerController.playerClientId)
             {
                 try
                 {
                     playerGrabbed.Value.thisPlayerModelArms.enabled = false;
-                    playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = false;
+                    playerVisorRenderers[playerGrabbedId].enabled = false;
                 }
                 catch 
                 {
@@ -294,7 +296,7 @@ internal class OgopogoAI : BiodiverseAI
             if (!GameNetworkManager.Instance.localPlayerController.isPlayerDead)
             {
                 GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
-                playerVisorRenderers[playerGrabbed.Value.actualClientId].enabled = true;
+                playerVisorRenderers[playerGrabbedId].enabled = true;
             }
             */
         } 
@@ -303,7 +305,7 @@ internal class OgopogoAI : BiodiverseAI
             try
             {
                 GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
-                playerVisorRenderers[GameNetworkManager.Instance.localPlayerController.actualClientId].enabled = true;
+                playerVisorRenderers[PlayerUtil.GetClientIdFromPlayer(GameNetworkManager.Instance.localPlayerController)].enabled = true;
             } catch 
             {
                 // players joined after the match started
@@ -367,7 +369,7 @@ internal class OgopogoAI : BiodiverseAI
         for (int i = 0; i < players.Length; i++)
         {
             PlayerControllerB player = players[i];
-            // BiodiversityPlugin.Logger.LogInfo(PlayerDistances[0]);
+            // LogInfo(PlayerDistances[0]);
             if (Distance2dSq(player.gameObject, gameObject) < rangeSq &&
                 (player.transform.position.y >= transform.position.y ||
                  currentBehaviourStateIndex == (int)State.Rising) && !player.isInsideFactory &&
@@ -427,7 +429,7 @@ internal class OgopogoAI : BiodiverseAI
     [ClientRpc]
     public void SetPlayerChasedClientRpc(int playerID)
     {
-        chasedPlayer.Value = StartOfRound.Instance.allPlayerScripts[playerID];
+        chasedPlayer.Set(PlayerUtil.GetPlayerFromClientId(playerID));
     }
 
     // Set the grabbed player or set as null
@@ -436,12 +438,12 @@ internal class OgopogoAI : BiodiverseAI
     {
         if (!setNull)
         {
-            playerGrabbed.Value = StartOfRound.Instance.allPlayerScripts[playerID];
+            playerGrabbed.Set(PlayerUtil.GetPlayerFromClientId(playerID));
             playerHasBeenGrabbed = true;
         }
         else
         {
-            playerGrabbed.Value = null;
+            playerGrabbed.Reset();
             playerHasBeenGrabbed = false;
         }
         try
@@ -474,7 +476,8 @@ internal class OgopogoAI : BiodiverseAI
         if (id == 0)
         {
             insideAudio.PlayOneShot(insideWarning);
-        } else if (id == 1)
+        } 
+        else if (id == 1)
         {
             insideAudio.PlayOneShot(insideEmerge);
         }
@@ -497,8 +500,8 @@ internal class OgopogoAI : BiodiverseAI
     // Reset enemy variables
     private void ResetEnemy()
     {
-        playerGrabbed.Value = null;
-        chasedPlayer.Value = null;
+        playerGrabbed.Reset();
+        chasedPlayer.Reset();
         splineDone = false;
         wanderTimer = 0f;
         wanderPos = Vector3.zero;
@@ -574,7 +577,7 @@ internal class OgopogoAI : BiodiverseAI
     public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-        // BiodiversityPlugin.Logger.LogInfo("It's running");
+        // LogInfo("It's running");
         enemyHP -= force;
         if (enemyHP <= 0)
         {
@@ -637,7 +640,7 @@ internal class OgopogoAI : BiodiverseAI
                 // I doubt this works with flooding.
                 if (wallInFront)
                 {
-                    // BiodiversityPlugin.Logger.LogInfo("Found wall while wandering");
+                    // LogInfo("Found wall while wandering");
                     SetWanderPos();
                 }
                 else
@@ -659,7 +662,7 @@ internal class OgopogoAI : BiodiverseAI
                 PlayerControllerB player = GetClosestPlayer();
 
                 SetPlayerChasedClientRpc((int)player.playerClientId);
-                chasedPlayer.Value = player;
+                chasedPlayer.Set(player);
 
                 Vector3 newLocation = Vector3.MoveTowards(transform.position, new Vector3(player.gameObject.transform.position.x, water.transform.position.y, player.gameObject.transform.position.z), step2);
 
@@ -738,9 +741,9 @@ internal class OgopogoAI : BiodiverseAI
                     GoDown(RiseSpeed);
                 }
                     
-                if (playerGrabbed.IsNotNull && dropRaycast && splineDone)
+                if (playerGrabbed.HasValue && dropRaycast && splineDone)
                 {
-                    // BiodiversityPlugin.Logger.LogInfo("dropping player");
+                    // LogInfo("dropping player");
                     playerGrabbed.Value.fallValue = 0f;
                     playerGrabbed.Value.fallValueUncapped = 0f;
                     SetPlayerGrabbedClientRpc(0, true);
