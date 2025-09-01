@@ -39,6 +39,8 @@ public class UtilityDrivenSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldi
 
     public override bool TryGetNextSearchPosition(out Vector3 nextPosition)
     {
+        // DebugShapeVisualizer.Clear(this);
+        
         Vector3 lkp = context.Blackboard.LastKnownPlayerPosition;
         List<GameObject> nearbyNodes = GetNearbyNodes(lkp, _searchRadius);
 
@@ -70,7 +72,8 @@ public class UtilityDrivenSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldi
                 ScorerWeight scorerWeight = _scorerWeights[j];
                 if (scorerWeight.Weight <= 0) continue;
                 
-                float score = scorerWeight.Scorer.Score(node.transform.position);
+                float score = scorerWeight.Scorer.Score(node.transform.position, null);
+                
                 totalUtility += score * scorerWeight.Weight;
                 totalWeight += scorerWeight.Weight;
             }

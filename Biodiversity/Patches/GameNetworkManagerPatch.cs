@@ -20,7 +20,7 @@ internal static class GameNetworkManagerPatch
             
             foreach (GameObject prefab in NetworkPrefabsToRegister)
             {
-                if (prefab == null) continue;
+                if (!prefab) continue;
                 NetworkManager.Singleton.AddNetworkPrefab(prefab);
                 BiodiversityPlugin.LogVerbose($"Registered {prefab.name} as a network prefab.");
             }

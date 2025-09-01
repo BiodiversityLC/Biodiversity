@@ -47,14 +47,8 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
         EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
         
-        PlayerControllerB player = EnemyAIInstance.GetClosestVisiblePlayer(
-            EnemyAIInstance.Context.Adapter.EyeTransform,
-            EnemyAIInstance.Context.Blackboard.ViewWidth,
-            EnemyAIInstance.Context.Blackboard.ViewRange, proximityAwareness: 3f);
-        
-        if (player)
+        if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
         {
-            EnemyAIInstance.Context.Adapter.TargetPlayer = player;
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Pursuing);
             return;
         }

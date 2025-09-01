@@ -34,7 +34,8 @@ internal class DeveloperScrapHandler : BiodiverseItemHandler<DeveloperScrapHandl
                     if (scrapItem.AssetName != loadFromBundleAttribute.BundleFile) continue;
 
                     Item item = (Item)field.GetValue(Assets);
-
+                    if (!item) continue;
+                    
                     item.isScrap = true;
                     item.weight = scrapItem.Weight;
                     item.minValue = scrapItem.MinimumValue;

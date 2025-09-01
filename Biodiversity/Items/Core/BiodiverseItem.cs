@@ -173,7 +173,7 @@ public class BiodiverseItem : PhysicsProp
             return;
         }
         
-        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource selectedAudioSource) || selectedAudioSource == null)
+        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource selectedAudioSource) || !selectedAudioSource)
         {
             LogWarning($"Client: Audio Source Type '{audioSourceType}' not found or is null.");
             return;

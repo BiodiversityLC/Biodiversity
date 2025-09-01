@@ -53,7 +53,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
                 EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Attacking, initData: data);
             }
         }
-        else if (Time.time - EnemyAIInstance.Context.Blackboard.TimeWhenTargetPlayerLastSeen >= EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Value)
+        else if (Time.time - EnemyAIInstance.Context.Blackboard.TimeWhenTargetPlayerLastSeen < EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Value)
         {
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Hunting);
         }

@@ -10,14 +10,12 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// </summary>
 [CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(StartOfRound))]
-[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class StartOfRoundPatch
 {
     /// <summary>
     /// It makes sure to clear the round specific data when the round is finished.
     /// It is called on all clients.
     /// </summary>
-    /// <param name="__instance"></param>
     [HarmonyPatch(nameof(StartOfRound.ShipLeave))]
     [HarmonyPostfix]
     private static void ResetData(StartOfRound __instance)
@@ -28,7 +26,6 @@ internal static class StartOfRoundPatch
     /// <summary>
     /// Gets the max health of all the players
     /// </summary>
-    /// <param name="__instance"></param>
     [HarmonyPatch(nameof(StartOfRound.StartGame))]
     [HarmonyPostfix]
     private static void GetAllPlayersMaxHealth(StartOfRound __instance)
@@ -36,7 +33,10 @@ internal static class StartOfRoundPatch
         for (int i = 0; i < __instance.allPlayerScripts.Length; i++)
         {
             PlayerControllerB player = __instance.allPlayerScripts[i];
-            AloeSharedData.Instance.SetPlayerMaxHealth(player, player.health);
+            if (player)
+            {
+                AloeSharedData.Instance.SetPlayerMaxHealth(player, player.health);
+            }
         }
     }
 }

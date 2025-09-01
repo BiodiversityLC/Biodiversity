@@ -61,23 +61,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             case nameof(UnmoltenAnimationHandler.OnReloadAnimationFinish):
             {
                 EnemyAIInstance.Context.Blackboard.HeldMusket.Reload();
-                WaxSoldierAI.States nextState;
-                
-                if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
-                {
-                    nextState = WaxSoldierAI.States.Pursuing;
-                }
-                else if (EnemyAIInstance.Context.Adapter.TargetPlayer && Time.time - EnemyAIInstance.Context.Blackboard.TimeWhenTargetPlayerLastSeen >= EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Value)
-                {
-                    nextState = WaxSoldierAI.States.Hunting;
-                }
-                else
-                {
-                    nextState = WaxSoldierAI.States.MovingToStation;
-                }
-
-                EnemyAIInstance.SwitchBehaviourState(nextState);
-                
+                EnemyAIInstance.Bacalhau();
                 break;
             }
         }

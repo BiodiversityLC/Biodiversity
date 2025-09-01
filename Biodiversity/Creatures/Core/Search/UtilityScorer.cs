@@ -8,5 +8,5 @@ public abstract class UtilityScorer<TBlackboard, TAdapter>(AIContext<TBlackboard
 {
     protected readonly AIContext<TBlackboard, TAdapter> context = ctx;
 
-    public abstract float Score(Vector3 candidatePosition);
+    public abstract float Score(Vector3 candidatePosition, object visualizerOwner);
 }

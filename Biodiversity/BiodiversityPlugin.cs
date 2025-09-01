@@ -389,9 +389,14 @@ public class BiodiversityPlugin : BaseUnityPlugin
         catch (ReflectionTypeLoadException reflectionException)
         {
             Logger.LogError($"[NetcodePatcher] Error loading types from assembly: {reflectionException}");
-            foreach (Exception loaderException in reflectionException.LoaderExceptions.Where(e => e != null))
+            
+            for (int i = 0; i < reflectionException.LoaderExceptions.Length; i++)
             {
-                Logger.LogError($"[NetcodePatcher] Loader Exception: {loaderException.Message}");
+                Exception loaderException = reflectionException.LoaderExceptions[i];
+                if (loaderException != null)
+                {
+                    Logger.LogError($"[NetcodePatcher] Loader Exception: {loaderException.Message}");
+                }
             }
         }
     }

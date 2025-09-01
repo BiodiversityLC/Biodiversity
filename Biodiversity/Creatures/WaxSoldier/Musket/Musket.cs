@@ -527,7 +527,6 @@ public class Musket : BiodiverseItem
     
     protected override string GetLogPrefix()
     {
-        base.GetLogPrefix();
         return $"[Musket {BioId}]";
     }
 

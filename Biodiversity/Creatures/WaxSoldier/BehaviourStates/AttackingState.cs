@@ -78,27 +78,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         {
             case nameof(UnmoltenAnimationHandler.OnAttackAnimationFinish):
             {
-                WaxSoldierAI.States nextState;
-                
-                if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
-                {
-                    nextState = WaxSoldierAI.States.Pursuing;
-                }
-                else if (EnemyAIInstance.Context.Adapter.TargetPlayer && Time.time - EnemyAIInstance.Context.Blackboard.TimeWhenTargetPlayerLastSeen >= EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Value)
-                {
-                    nextState = WaxSoldierAI.States.Hunting;
-                }
-                else if (EnemyAIInstance.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0)
-                {
-                    nextState = WaxSoldierAI.States.Reloading;
-                }
-                else
-                {
-                    nextState = WaxSoldierAI.States.MovingToStation;
-                }
-
-                EnemyAIInstance.SwitchBehaviourState(nextState);
-                
+                EnemyAIInstance.Bacalhau();
                 break;
             }
             

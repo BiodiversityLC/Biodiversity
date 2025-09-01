@@ -1,12 +1,23 @@
-﻿using UnityEngine;
+﻿using Biodiversity.Core.Config;
+using Biodiversity.Items.Developeritems;
+using UnityEngine;
 
 namespace Biodiversity.Items.DeveloperItems;
 
 public class IronDogBehaviour : BiodiverseItem
 {
-    //todo: add config for this
-    public float bigShakeMaxDistance = 3f;
-    public float smallShakeMaxDistance = 6f;
+    public float bigShakeMaxDistance;
+    public float smallShakeMaxDistance;
+
+    public override void Start()
+    {
+        base.Start();
+
+        GenericScrapItem config = DeveloperScrapHandler.Instance.Config.IronDog;
+        
+        bigShakeMaxDistance = config?.Get<float>("Big Shake Distance") ?? 3f;
+        smallShakeMaxDistance = config?.Get<float>("Small Shake Distance") ?? 6f;
+    }
     
     public override void OnHitGround()
     {

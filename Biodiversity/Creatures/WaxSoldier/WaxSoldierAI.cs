@@ -83,6 +83,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public override void OnDestroy()
     {
         DropMusket();
+        DebugShapeVisualizer.Clear(this);
         base.OnDestroy();
     }
 
@@ -102,13 +103,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             Imperium.API.Visualization.InsightsFor<WaxSoldierAI>()
                 .SetPersonalNameGenerator(entity => entity.BioId)
                 .SetPositionOverride(entity => entity.ImperiumInsightsPanelAnchor.position)
-                
+
                 .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
                 .RegisterInsight("Acceleration",
                     entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.acceleration:0.0}" : "0")
                 .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
-                .RegisterInsight("Wax Durability", entity => $"{Mathf.Max(0, entity.Context.Blackboard.WaxDurability * 100)} %")
-                .RegisterInsight("TSTPWLS", entity => $"{Time.time - entity.Context.Blackboard.TimeWhenTargetPlayerLastSeen}"); // Time since target player was last seen
+                .RegisterInsight("Wax Durability",
+                    entity => $"{Mathf.Max(0, entity.Context.Blackboard.WaxDurability * 100)} %");
 
             _hasRegisteredImperiumInsights = true;
         }
@@ -199,7 +200,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             Context.Blackboard.ViewRange,
             Context.Adapter.TargetPlayer,
             3f,
-            3f);
+            2f);
 
         if (player)
         {
@@ -211,14 +212,33 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             return true;
         }
 
-        // if (Time.time - Context.Blackboard.TimeWhenTargetPlayerLastSeen >= Context.Blackboard.ThresholdTimeWherePlayerGone)
-        // {
-        //     Context.Adapter.TargetPlayer = null;
-        //     Context.Blackboard.LastKnownPlayerPosition = Vector3.zero;
-        //     Context.Blackboard.LastKnownPlayerVelocity = Vector3.zero;
-        // }
-
         return false;
+    }
+
+    internal void Bacalhau()
+    {
+        States nextState;
+        WaxSoldierBlackboard bb = Context.Blackboard;
+        // todo: make a variable called Blackboard => Context.Blackboard
+                
+        if (UpdatePlayerLastKnownPosition())
+        {
+            nextState = States.Pursuing;
+        }
+        else if (Context.Adapter.TargetPlayer && Time.time - bb.TimeWhenTargetPlayerLastSeen < bb.ThresholdTimeWherePlayerGone.Value)
+        {
+            nextState = States.Hunting;
+        }
+        else if (bb.HeldMusket.currentAmmo.Value <= 0)
+        {
+            nextState = States.Reloading;
+        }
+        else
+        {
+            nextState = States.MovingToStation;
+        }
+
+        SwitchBehaviourState(nextState);
     }
     #endregion
 

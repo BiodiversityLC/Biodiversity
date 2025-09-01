@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using Biodiversity.Behaviours.Player;
+using GameNetcodeStuff;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -39,7 +40,22 @@ internal static class PlayerUtil
     internal static Vector3 GetVelocityOfPlayer(PlayerControllerB player)
     {
         if (player.IsOwner)
-            return Vector3.Normalize(player.thisController.velocity * 100f);
-        return player.timeSincePlayerMoving < 0.25 ? Vector3.Normalize((player.serverPlayerPosition - player.oldPlayerPosition) * 100f) : Vector3.zero;
+        {
+            if (Time.deltaTime > 0f)
+            {
+                // Return the true velocity
+                return player.thisController.velocity / Time.deltaTime;
+            }
+
+            return Vector3.zero;
+        }
+
+        if (player.TryGetComponent(out PlayerVelocityTracker playerVelocityTracker))
+        {
+            return playerVelocityTracker.Velocity;
+        }
+        
+        BiodiversityPlugin.LogVerbose($"Player {player.playerUsername} is missing a PlayerVelocityTracker component.");
+        return Vector3.zero;
     }
 }
