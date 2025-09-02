@@ -10,8 +10,6 @@ namespace Biodiversity.Creatures.WaxSoldier;
 // holds variables that the AI needs in all states, and it doesnt include the ones included with the vanilla EnemyAi class (the adapter contains those)
 public class WaxSoldierBlackboard : IEnemyBlackboard
 {
-    public float AgentMaxSpeed { get; set; }
-    public float AgentMaxAcceleration { get; set; }
     public float AgentAngularSpeed { get; set; } = 250f;
     public float ViewWidth { get; set; }
     public float ViewRange { get; set; }
@@ -21,7 +19,9 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float WaxMeltTemperature { get; } = 60f;
     
     public float TimeWhenTargetPlayerLastSeen { get; set; }
-    public OverridableFloat ThresholdTimeWherePlayerGone;
+    public float PursuitLingerTime { get; set; } = 2f;
+    public float HuntingLingerTime { get; set; } = 30f;
+    public float TimeSincePlayerLastSeen => Time.time - TimeWhenTargetPlayerLastSeen;
     
     public bool IsNetworkEventsSubscribed { get; set; }
     public bool IsFriendlyFireEnabled { get; set; }

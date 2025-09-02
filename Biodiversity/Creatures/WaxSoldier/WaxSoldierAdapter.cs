@@ -8,12 +8,10 @@ namespace Biodiversity.Creatures.WaxSoldier;
 public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
 {
     #region Unity Components
-
     public NavMeshAgent Agent => instance.agent;
     public Animator Animator => instance.creatureAnimator;
     public Transform Transform => instance.transform;
     public Transform EyeTransform => instance.eye;
-
     #endregion
 
     public GameObject[] AssignedAINodes
@@ -50,6 +48,40 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
         set => instance.enemyHP = value;
     }
 
+    #region Agent Stuff
+    public float AgentSpeedChangeRate { get; set; } = 10f;
+    
+    private float _targetSpeed;
+    
+    internal void MoveAgent()
+    {
+        Agent.speed = Mathf.MoveTowards(Agent.speed, _targetSpeed, AgentSpeedChangeRate * Time.deltaTime);
+    }
+    
+    /// <summary>
+    /// Sets the desired movement profile for the agent.
+    /// The agent's speed will smoothly transition to the new target.
+    /// </summary>
+    /// <param name="maxSpeed">The desired maximum speed.</param>
+    /// <param name="acceleration">The acceleration to use to reach that speed.</param>
+    internal void SetMovementProfile(float maxSpeed, float acceleration)
+    {
+        _targetSpeed = maxSpeed;
+        Agent.acceleration = acceleration;
+    }
+    
+    internal void BeginGracefulStop()
+    {
+        SetMovementProfile(0f, 100f);
+    }
+    
+    internal void KillAllSpeed()
+    {
+        Agent.speed = 0f;
+        Agent.velocity = Vector3.zero;
+        _targetSpeed = 0f;
+    }
+    
     public void StopAllPathing()
     {
         // Resets the destination (so imperium doesn't draw the path to some old destination vector we arent using anymore)
@@ -90,6 +122,7 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
 
         return false;
     }
+    #endregion
 
     /// <summary>
     /// Applies the given damage parameter to the health variable.

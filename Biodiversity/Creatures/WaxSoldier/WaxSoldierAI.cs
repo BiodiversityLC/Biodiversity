@@ -4,7 +4,6 @@ using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
 using Biodiversity.Util;
-using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
@@ -54,6 +53,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     // Make reload time slower as wax durability goes down?
     
     public AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> Context { get; private set; }
+    private WaxSoldierBlackboard _blackboard => Context.Blackboard;
+    private WaxSoldierAdapter _adapter => Context.Adapter;
 
     private float _lastHitTime = -Mathf.Infinity;
 
@@ -109,7 +110,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
                     entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.acceleration:0.0}" : "0")
                 .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
                 .RegisterInsight("Wax Durability",
-                    entity => $"{Mathf.Max(0, entity.Context.Blackboard.WaxDurability * 100)} %");
+                    entity => $"{Mathf.Max(0, entity._blackboard.WaxDurability * 100)} %");
 
             _hasRegisteredImperiumInsights = true;
         }
@@ -121,27 +122,26 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     #region Wax Soldier Specific AI Logic
     public void UpdateWaxDurability()
     {
-        WaxSoldierBlackboard bb = Context.Blackboard;
-        float newDurability = bb.WaxDurability;
+        float newDurability = _blackboard.WaxDurability;
 
-        if (heatSensor.TemperatureC > bb.WaxSofteningTemperature)
+        if (heatSensor.TemperatureC > _blackboard.WaxSofteningTemperature)
         {
-            float t = Mathf.InverseLerp(bb.WaxSofteningTemperature, bb.WaxMeltTemperature, heatSensor.TemperatureC);
+            float t = Mathf.InverseLerp(_blackboard.WaxSofteningTemperature, _blackboard.WaxMeltTemperature, heatSensor.TemperatureC);
 
             // The Pow curve gives an accelerating melt feel 
             float bandDps = Mathf.Lerp(0f, 0.5f, Mathf.Pow(t, 2));
             
             // Add a flat damage bonus when fully melting
-            float extraDps = heatSensor.TemperatureC >= bb.WaxMeltTemperature ? 0.75f : 0f;
+            float extraDps = heatSensor.TemperatureC >= _blackboard.WaxMeltTemperature ? 0.75f : 0f;
             
             float totalDps = bandDps + extraDps;
-            newDurability = bb.WaxDurability - totalDps * Time.deltaTime;
+            newDurability = _blackboard.WaxDurability - totalDps * Time.deltaTime;
         }
         
-        bb.WaxDurability = Mathf.Clamp01(Mathf.Min(bb.WaxDurability, newDurability));
+        _blackboard.WaxDurability = Mathf.Clamp01(Mathf.Min(_blackboard.WaxDurability, newDurability));
 
-        if (bb.WaxDurability <= 0 && 
-            Context.Blackboard.MoltenState != MoltenState.Molten && 
+        if (_blackboard.WaxDurability <= 0 && 
+            _blackboard.MoltenState != MoltenState.Molten && 
             CurrentState.GetStateType() != States.Stunned)
         {
             SwitchBehaviourState(States.TransformingToMolten);
@@ -158,7 +158,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Vector3 calculatedPos = tempGuardPostPosition;
         Quaternion calculatedRot = transform.rotation;
 
-        Context.Blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
+        _blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
     }
     
     private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)
@@ -178,13 +178,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         }
 
         LogVerbose("Musket spawned successfully.");
-        Context.Blackboard.HeldMusket = receivedMusket;
+        _blackboard.HeldMusket = receivedMusket;
     }
 
     public void DropMusket()
     {
         LogVerbose("Dropping musket...");
-        Context.Blackboard.HeldMusket = null;
+        _blackboard.HeldMusket = null;
         netcodeController.DropMusketClientRpc();
     }
 
@@ -195,19 +195,19 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     internal bool UpdatePlayerLastKnownPosition()
     {
         PlayerControllerB player = GetClosestVisiblePlayer(
-            Context.Adapter.EyeTransform,
-            Context.Blackboard.ViewWidth,
-            Context.Blackboard.ViewRange,
-            Context.Adapter.TargetPlayer,
+            _adapter.EyeTransform,
+            _blackboard.ViewWidth,
+            _blackboard.ViewRange,
+            _adapter.TargetPlayer,
             3f,
             2f);
 
         if (player)
         {
-            Context.Adapter.TargetPlayer = player;
-            Context.Blackboard.LastKnownPlayerPosition = player.transform.position;
-            Context.Blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(player);
-            Context.Blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
+            _adapter.TargetPlayer = player;
+            _blackboard.LastKnownPlayerPosition = player.transform.position;
+            _blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(player);
+            _blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
 
             return true;
         }
@@ -215,21 +215,72 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         return false;
     }
 
-    internal void Bacalhau()
+    /// <summary>
+    /// Evaluates perception and switches to the appropriate behaviour state.
+    /// </summary>
+    /// <remarks>
+    /// Delegates selection to <see cref="GetNextBehaviourStateFromPerception"/> and then calls
+    /// <see cref="StateManagedAI{TState,TEnemyAI}.SwitchBehaviourState"/> with the result.
+    /// </remarks>
+    /// <seealso cref="GetNextBehaviourStateFromPerception"/>
+    /// <seealso cref="StateManagedAI{TState,TEnemyAI}.SwitchBehaviourState"/>
+    internal void UpdateBehaviourStateFromPerception()
+    {
+        SwitchBehaviourState(GetNextBehaviourStateFromPerception());
+    }
+    
+    /// <summary>
+    /// Evaluates current perception/combat context and returns the next behaviour state while it continues navigating.
+    /// </summary>
+    /// <remarks>
+    /// Decision priority (highest first):
+    /// <list type="number">
+    ///   <item>
+    ///     <description>
+    ///       If the player is visible, or if there is a target and the time since last seen is less
+    ///       than <see cref="WaxSoldierBlackboard.PursuitLingerTime"/>, then transition to
+    ///       <see cref="States.Pursuing"/>.
+    ///     </description>
+    ///   </item>
+    ///   <item>
+    ///     <description>
+    ///       Else, if there is a target and the time since last seen is less than
+    ///       <see cref="WaxSoldierBlackboard.HuntingLingerTime"/>, then transition to
+    ///       <see cref="States.Hunting"/>.
+    ///     </description>
+    ///   </item>
+    ///   <item>
+    ///     <description>
+    ///       Else, if the held musket has no ammo, then transition to <see cref="States.Reloading"/>.
+    ///     </description>
+    ///   </item>
+    ///   <item>
+    ///     <description>
+    ///       Otherwise, transition to <see cref="States.MovingToStation"/>.
+    ///     </description>
+    ///   </item>
+    /// </list>
+    ///
+    /// This method queries visibility via <see cref="UpdatePlayerLastKnownPosition"/> and then returns the next state
+    /// that it should transition to.
+    /// </remarks>
+    internal States GetNextBehaviourStateFromPerception()
     {
         States nextState;
-        WaxSoldierBlackboard bb = Context.Blackboard;
-        // todo: make a variable called Blackboard => Context.Blackboard
+
+        bool isPlayerVisible = UpdatePlayerLastKnownPosition();
+        bool hasTarget = _adapter.TargetPlayer;
+        float timeSincePlayerLastSeen = hasTarget ? _blackboard.TimeSincePlayerLastSeen : float.MaxValue;
                 
-        if (UpdatePlayerLastKnownPosition())
+        if (isPlayerVisible || (hasTarget && timeSincePlayerLastSeen < _blackboard.PursuitLingerTime))
         {
             nextState = States.Pursuing;
         }
-        else if (Context.Adapter.TargetPlayer && Time.time - bb.TimeWhenTargetPlayerLastSeen < bb.ThresholdTimeWherePlayerGone.Value)
+        else if (hasTarget && timeSincePlayerLastSeen < _blackboard.HuntingLingerTime)
         {
             nextState = States.Hunting;
         }
-        else if (bb.HeldMusket.currentAmmo.Value <= 0)
+        else if (_blackboard.HeldMusket.currentAmmo.Value <= 0)
         {
             nextState = States.Reloading;
         }
@@ -238,7 +289,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             nextState = States.MovingToStation;
         }
 
-        SwitchBehaviourState(nextState);
+        return nextState;
     }
     #endregion
 
@@ -249,7 +300,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         PlayerControllerB setStunnedByPlayer = null)
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
-        if (!IsServer || Context.Adapter.IsDead) return;
+        if (!IsServer || _adapter.IsDead) return;
         
         // If the current state (fully) handles the stun event, then don't run the default reaction
         if (CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer) ?? false)
@@ -257,10 +308,11 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         if (setStunnedByPlayer)
         {
-            Context.Adapter.TargetPlayer = setStunnedByPlayer;
-            Context.Blackboard.LastKnownPlayerPosition = setStunnedByPlayer.transform.position;
-            Context.Blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(setStunnedByPlayer);
-            Context.Blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
+            // todo: create function for these 4 duplicate lines
+            _adapter.TargetPlayer = setStunnedByPlayer;
+            _blackboard.LastKnownPlayerPosition = setStunnedByPlayer.transform.position;
+            _blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(setStunnedByPlayer);
+            _blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
         }
         
         // Default reaction when stunned:
@@ -274,7 +326,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         int hitID = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-        if (!IsServer || Context.Adapter.IsDead) return;
+        if (!IsServer || _adapter.IsDead) return;
 
         // Hit cooldown
         if (Time.time - _lastHitTime < 0.02f)
@@ -284,7 +336,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         // If friendly fire is disabled, and we weren't hit by a player, then ignore the hit
         bool isPlayerWhoHitNull = !playerWhoHit;
-        if (!Context.Blackboard.IsFriendlyFireEnabled && isPlayerWhoHitNull)
+        if (!_blackboard.IsFriendlyFireEnabled && isPlayerWhoHitNull)
             return;
 
         // If the current state (fully) handles the hit event, then don't run the default reaction
@@ -293,14 +345,14 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         
         // Default reaction when hit is to start chasing the player that hit them:
         
-        if (!Context.Adapter.ApplyDamage(force))
+        if (!_adapter.ApplyDamage(force))
         {
             if (!isPlayerWhoHitNull)
             {
-                Context.Adapter.TargetPlayer = playerWhoHit;
-                Context.Blackboard.LastKnownPlayerPosition = playerWhoHit.transform.position;
-                Context.Blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(playerWhoHit);
-                Context.Blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
+                _adapter.TargetPlayer = playerWhoHit;
+                _blackboard.LastKnownPlayerPosition = playerWhoHit.transform.position;
+                _blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(playerWhoHit);
+                _blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
                 
                 SwitchBehaviourState(States.Pursuing);
             }
@@ -313,50 +365,33 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     #endregion
     
     #region Little Misc Stuff
-    protected override void InitializeGlobalTransitions()
-    {
-        base.InitializeGlobalTransitions();
-        
-        // GlobalTransitions.Add(new TransitionToDeadState(this));
-    }
-    
     protected override States DetermineInitialState()
     {
         return States.Spawning;
     }
-    
-    /// <summary>
-    /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth.
-    /// </summary>
-    internal void MoveWithAcceleration()
+
+    protected override bool ShouldRunLateUpdate()
     {
-        float speedAdjustment = Time.deltaTime / 2f;
-        Context.Adapter.Agent.speed = Mathf.Lerp(Context.Adapter.Agent.speed, Context.Blackboard.AgentMaxSpeed, speedAdjustment);
-        
-        float accelerationAdjustment = Time.deltaTime;
-        Context.Adapter.Agent.acceleration = Mathf.Lerp(Context.Adapter.Agent.acceleration, Context.Blackboard.AgentMaxAcceleration, accelerationAdjustment);
+        // DebugShapeVisualizer.Clear(this);
+        //
+        // Vector3 origin = transform.position;
+        // float lineLength = 2.5f;
+        //
+        // if (agent.velocity.sqrMagnitude > 0.1f)
+        // {
+        //     Vector3 velocityDir = agent.velocity.normalized;
+        //     DebugShapeVisualizer.DrawLine(this, origin, origin + velocityDir * lineLength, Color.red);
+        // }
+        //
+        // Vector3 parentForward = transform.forward;
+        // DebugShapeVisualizer.DrawLine(this, origin, origin + parentForward * lineLength, Color.blue);
+        //
+        // Vector3 childForward = _adapter.Animator.gameObject.transform.forward;
+        // DebugShapeVisualizer.DrawLine(this, origin, origin + childForward * lineLength, Color.green);
+
+        return ShouldRunUpdate();
     }
 
-    internal void DecelerateAndStop()
-    {
-        // Make the agent's speed smoothly go to zero
-        Context.Blackboard.AgentMaxSpeed = 0f;
-        
-        // Boost the acceleration immediately so it can decelerate quickly
-        Context.Blackboard.AgentMaxAcceleration = 100;
-        Context.Adapter.Agent.acceleration = Mathf.Min(Context.Adapter.Agent.acceleration * 3, Context.Blackboard.AgentMaxAcceleration);
-    }
-
-    internal void KillAllSpeed()
-    {
-        Context.Blackboard.AgentMaxSpeed = 0f;
-        Context.Blackboard.AgentMaxAcceleration = 0f;
-
-        Context.Adapter.Agent.speed = 0f;
-        Context.Adapter.Agent.acceleration = 0f;
-        Context.Adapter.Agent.velocity = Vector3.zero;
-    }
-    
     /// <summary>
     /// Gets the config values and assigns them to their respective [SerializeField] variables.
     /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
@@ -366,23 +401,20 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (!IsServer) return;
         LogVerbose("Initializing config values...");
         
-        WaxSoldierBlackboard bb = Context.Blackboard;
-        WaxSoldierAdapter ad = Context.Adapter;
         WaxSoldierConfig cfg = WaxSoldierHandler.Instance.Config;
         
-        bb.StabAttackTriggerArea = stabAttackTriggerArea;
-        bb.AttackSelector = attackSelector;
-        bb.NetcodeController = netcodeController;
+        _blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
+        _blackboard.AttackSelector = attackSelector;
+        _blackboard.NetcodeController = netcodeController;
         
-        bb.ViewWidth = cfg.ViewWidth;
-        bb.ViewRange = cfg.ViewRange;
-        bb.IsFriendlyFireEnabled = cfg.FriendlyFire;
-        bb.ThresholdTimeWherePlayerGone = new OverridableFloat(10f);
+        _blackboard.ViewWidth = cfg.ViewWidth;
+        _blackboard.ViewRange = cfg.ViewRange;
+        _blackboard.IsFriendlyFireEnabled = cfg.FriendlyFire;
         
-        ad.Health = cfg.Health;
-        ad.AIIntervalLength = cfg.AiIntervalTime;
-        ad.OpenDoorSpeedMultiplier = cfg.OpenDoorSpeedMultiplier;
-        ad.Agent.angularSpeed = bb.AgentAngularSpeed;
+        _adapter.Health = cfg.Health;
+        _adapter.AIIntervalLength = cfg.AiIntervalTime;
+        _adapter.OpenDoorSpeedMultiplier = cfg.OpenDoorSpeedMultiplier;
+        _adapter.Agent.angularSpeed = _blackboard.AgentAngularSpeed;
     }
     
     protected override string GetLogPrefix()
@@ -392,22 +424,22 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     
     private void SubscribeToNetworkEvents()
     {
-        if (!IsServer || Context.Blackboard.IsNetworkEventsSubscribed) return;
+        if (!IsServer || _blackboard.IsNetworkEventsSubscribed) return;
         LogVerbose("Subscribing to network events...");
         
         netcodeController.OnSpawnMusket += HandleSpawnMusket;
         
-        Context.Blackboard.IsNetworkEventsSubscribed = true;
+        _blackboard.IsNetworkEventsSubscribed = true;
     }
 
     private void UnsubscribeFromNetworkEvents()
     {
-        if (!IsServer || !Context.Blackboard.IsNetworkEventsSubscribed) return;
+        if (!IsServer || !_blackboard.IsNetworkEventsSubscribed) return;
         LogVerbose("Unsubscribing from network events...");
         
         netcodeController.OnSpawnMusket -= HandleSpawnMusket;
         
-        Context.Blackboard.IsNetworkEventsSubscribed = false;
+        _blackboard.IsNetworkEventsSubscribed = false;
     }
     #endregion
     

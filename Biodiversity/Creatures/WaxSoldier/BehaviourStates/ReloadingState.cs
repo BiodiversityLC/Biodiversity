@@ -24,7 +24,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         base.OnStateEnter(ref initData);
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.DecelerateAndStop();
+        EnemyAIInstance.Context.Adapter.BeginGracefulStop();
         
         hasTriggeredAnimation = false;
     }
@@ -33,7 +33,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     {
         base.UpdateBehaviour();
         
-        EnemyAIInstance.MoveWithAcceleration();
+        EnemyAIInstance.Context.Adapter.MoveAgent();
         EnemyAIInstance.UpdateWaxDurability();
 
         if (!hasTriggeredAnimation && EnemyAIInstance.Context.Adapter.Agent.velocity.sqrMagnitude <= 0.6f)
@@ -41,7 +41,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             EnemyAIInstance.LogVerbose("Starting reload animation...");
             EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.ReloadMusket);
             hasTriggeredAnimation = true;
-            EnemyAIInstance.KillAllSpeed();
+            EnemyAIInstance.Context.Adapter.KillAllSpeed();
         }
     }
 
@@ -61,7 +61,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             case nameof(UnmoltenAnimationHandler.OnReloadAnimationFinish):
             {
                 EnemyAIInstance.Context.Blackboard.HeldMusket.Reload();
-                EnemyAIInstance.Bacalhau();
+                EnemyAIInstance.UpdateBehaviourStateFromPerception();
                 break;
             }
         }

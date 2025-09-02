@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Core;
+using System.Collections;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
@@ -9,27 +10,33 @@ public class SpinAttack : AttackAction
     {
     }
 
-    public override void Setup(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        base.Setup(ctx);
-        
-        ctx.Blackboard.AgentMaxAcceleration = 50f;
-        ctx.Blackboard.AgentMaxSpeed = 1f;
-        
+        ctx.Adapter.SetMovementProfile(1f, 50f);
         ctx.Adapter.Agent.updateRotation = false;
-        ctx.Adapter.Agent.acceleration =
-            Mathf.Min(ctx.Adapter.Agent.acceleration * 3, ctx.Blackboard.AgentMaxAcceleration);
+
+        Vector3 initialDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
+        initialDirection.y = 0;
+        ctx.Adapter.Transform.rotation = Quaternion.LookRotation(initialDirection);
+        
+        // todo: make the whole attack action thing not poopoo. We calling base here because it triggeres the animation and we wanna set the speed and rotation before doing the anim
+        base.Start(ctx);
         
         ctx.Adapter.MoveToPlayer(ctx.Adapter.TargetPlayer);
     }
     
-    public override void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
         base.Finish(ctx);
         
-        ctx.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
-        ctx.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
+        Vector3 finalDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
+        finalDirection.y = 0;
+        ctx.Adapter.Transform.rotation = Quaternion.LookRotation(finalDirection);
+
+        yield return null;
+        ctx.Adapter.Animator.gameObject.transform.localRotation = Quaternion.identity;
         
         ctx.Adapter.Agent.updateRotation = true;
+        ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
     }
 }

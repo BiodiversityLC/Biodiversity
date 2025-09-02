@@ -22,10 +22,8 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.OnStateEnter(ref initData);
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.Context.Adapter.Agent.speed = 0;
+        EnemyAIInstance.Context.Adapter.SetMovementProfile(0f, 50f);
         
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 0f;
-        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = 50f;
         EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Unmolten;
         
         // todo: change state initialization to be done in start() instead of awake(), because we should have InitializeConfig() before any state starts doing stuff

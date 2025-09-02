@@ -25,9 +25,7 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = 1.5f;
-        EnemyAIInstance.Context.Adapter.Agent.acceleration *= 3f; // So it can decelerate quickly
-
+        EnemyAIInstance.Context.Adapter.SetMovementProfile(1.5f, 100f);
         EnemyAIInstance.Context.Adapter.Agent.updateRotation = false;
 
         DesiredRotation = Quaternion.LookRotation(EnemyAIInstance.Context.Blackboard.GuardPost.forward);
@@ -38,10 +36,10 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
         base.UpdateBehaviour();
         
         EnemyAIInstance.UpdateWaxDurability();
-        EnemyAIInstance.MoveWithAcceleration();
+        EnemyAIInstance.Context.Adapter.MoveAgent();
 
-        EnemyAIInstance.transform.rotation = Quaternion.RotateTowards(
-            EnemyAIInstance.transform.rotation,
+        EnemyAIInstance.Context.Adapter.Transform.rotation = Quaternion.RotateTowards(
+            EnemyAIInstance.Context.Adapter.Transform.rotation,
             DesiredRotation,
             EnemyAIInstance.Context.Blackboard.AgentAngularSpeed * Time.deltaTime
             );

@@ -24,17 +24,14 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
 
                 if (backingField.GetCustomAttribute(typeof(NonSerializedAttribute)) != null) continue;
 
-                HeaderAttribute headerAttribute =
-                    (HeaderAttribute)backingField.GetCustomAttribute(typeof(HeaderAttribute));
+                HeaderAttribute headerAttribute = (HeaderAttribute)backingField.GetCustomAttribute(typeof(HeaderAttribute));
                 if (headerAttribute != null)
                 {
                     currentHeader = headerAttribute.header.Replace(" ", "");
                 }
 
-                string description =
-                    "This config option hasn't used [Tooltip] to set a description, so this default one will be here instead.";
-                TooltipAttribute tooltipAttribute =
-                    (TooltipAttribute)backingField.GetCustomAttribute(typeof(TooltipAttribute));
+                string description = "This config option hasn't used [Tooltip] to set a description, so this default one will be here instead.";
+                TooltipAttribute tooltipAttribute = (TooltipAttribute)backingField.GetCustomAttribute(typeof(TooltipAttribute));
                 if (tooltipAttribute != null)
                 {
                     description = tooltipAttribute.tooltip;

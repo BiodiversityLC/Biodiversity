@@ -89,24 +89,23 @@ public class GenericScrapItem
 
     public void Bind(ConfigFile file, string section)
     {
-        Rarity = file.Bind(section, CleanConfigString($"{ItemName} Rarity"), Rarity,
+        Rarity = file.Bind(section, "Rarity", Rarity,
             new ConfigDescription(string.Format(RarityTooltip, ItemName))).Value;
 
-        Weight = file.Bind(section, CleanConfigString($"{ItemName} Weight"), Weight,
+        Weight = file.Bind(section, "Weight", Weight,
             new ConfigDescription(string.Format(WeightTooltip, ItemName), WeightRange)).Value;
         
-        MinimumValue = file.Bind(section, CleanConfigString($"{ItemName} Minimum Value"), MinimumValue,
+        MinimumValue = file.Bind(section, "Minimum Value", MinimumValue,
             new ConfigDescription(string.Format(MinimumValueTooltip, ItemName), MinimumValueRange)).Value;
         
-        MaximumValue = file.Bind(section, CleanConfigString($"{ItemName} Maximum Value"), MaximumValue,
+        MaximumValue = file.Bind(section, "Maximum Value", MaximumValue,
             new ConfigDescription(string.Format(MaximumValueTooltip, ItemName), MaximumValueRange)).Value;
 
         for (int i = 0; i < _customSettingDefinitions.Count; i++)
         {
             CustomSettingDefinition definition = _customSettingDefinitions[i];
             
-            string customSection = $"{section}.{definition.Name}";
-            definition.Bind(file, customSection);
+            definition.Bind(file, section);
             _boundCustomSettings[definition.Name] = definition;
         }
     }

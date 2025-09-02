@@ -7,7 +7,6 @@ namespace Biodiversity.Creatures.WaxSoldier.Transitions;
 internal class TransitionToStationaryState(WaxSoldierAI enemyAIInstance, ArrivingAtStationState arrivingState)
     : StateTransition<WaxSoldierAI.States, WaxSoldierAI>(enemyAIInstance)
 {
-    // todo: fix this
     internal override bool ShouldTransitionBeTaken() =>
         Quaternion.Angle(EnemyAIInstance.transform.rotation, arrivingState.DesiredRotation) <= 0.1f;
 

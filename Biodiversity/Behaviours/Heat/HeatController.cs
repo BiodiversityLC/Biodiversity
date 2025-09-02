@@ -220,6 +220,7 @@ public class HeatController : MonoBehaviour
         cone.outerAngle = bulb.spotAngle;
         cone.innerAngle = Mathf.Clamp(bulb.innerSpotAngle, 0f, bulb.spotAngle);
         cone.segments = 24;
+        cone.enabled = false;
 
         switch (flashlightItem.itemProperties.itemName)
         {

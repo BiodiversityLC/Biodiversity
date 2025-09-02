@@ -28,7 +28,7 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.ForceWalk);
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.KillAllSpeed();
+        EnemyAIInstance.Context.Adapter.KillAllSpeed();
         EnemyAIInstance.Context.Adapter.Agent.isStopped = true;
     }
 
@@ -53,7 +53,7 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationControllerToFrozenClientRpc(false);
         EnemyAIInstance.Context.Adapter.Agent.isStopped = false;
         
-        EnemyAIInstance.Bacalhau();
+        EnemyAIInstance.UpdateBehaviourStateFromPerception();
     }
 
     internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)

@@ -21,11 +21,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnStateEnter(ref initData);
         
-        // todo: name config values appropriately
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
-        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
-        EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Override(1.5f);
-        
+        EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
         EnemyAIInstance.Context.Adapter.MoveToPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer);
     }
 
@@ -34,7 +30,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.UpdateBehaviour();
         
         EnemyAIInstance.UpdateWaxDurability();
-        EnemyAIInstance.MoveWithAcceleration();
+        EnemyAIInstance.Context.Adapter.MoveAgent();
     }
     
     internal override void AIIntervalBehaviour()
@@ -53,7 +49,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
                 EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Attacking, initData: data);
             }
         }
-        else if (Time.time - EnemyAIInstance.Context.Blackboard.TimeWhenTargetPlayerLastSeen < EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.Value)
+        else if (EnemyAIInstance.Context.Blackboard.TimeSincePlayerLastSeen >= EnemyAIInstance.Context.Blackboard.PursuitLingerTime)
         {
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Hunting);
         }
@@ -64,7 +60,6 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.OnStateExit(transition);
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.Context.Blackboard.ThresholdTimeWherePlayerGone.UseDefault();
     }
 
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)

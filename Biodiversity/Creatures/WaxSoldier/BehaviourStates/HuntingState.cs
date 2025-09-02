@@ -43,9 +43,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnStateEnter(ref initData);
         
-        // todo: name config values appropriately
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
-        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
+        EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
         
         if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
         {
@@ -72,7 +70,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         
         EnemyAIInstance.UpdateWaxDurability();
         searchStrategy.Update();
-        EnemyAIInstance.MoveWithAcceleration();
+        EnemyAIInstance.Context.Adapter.MoveAgent();
         
         searchTimeLeft -= Time.deltaTime;
         if (searchTimeLeft <= 0)

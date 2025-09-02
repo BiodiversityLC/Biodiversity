@@ -23,7 +23,7 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
         EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Molten;
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.DecelerateAndStop();
+        EnemyAIInstance.Context.Adapter.BeginGracefulStop();
         
         hasTriggeredAnimation = false;
     }
@@ -38,7 +38,7 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
             EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.Melt);
             
             hasTriggeredAnimation = true;
-            EnemyAIInstance.KillAllSpeed();
+            EnemyAIInstance.Context.Adapter.KillAllSpeed();
         }
     }
 

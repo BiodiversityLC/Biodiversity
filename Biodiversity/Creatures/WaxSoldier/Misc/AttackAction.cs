@@ -1,5 +1,5 @@
 ﻿using Biodiversity.Creatures.Core;
-using UnityEngine;
+using System.Collections;
 
 namespace Biodiversity.Creatures.WaxSoldier.Misc;
 
@@ -51,9 +51,9 @@ public class AttackAction
         Priority = priority;
     }
 
-    public virtual void Setup(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public virtual void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        BiodiversityPlugin.LogVerbose("In AttackAction.Setup().");
+        // BiodiversityPlugin.LogVerbose("In AttackAction.Setup().");
         ctx.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(AnimationTriggerHash);
     }
 
@@ -62,8 +62,9 @@ public class AttackAction
         
     }
 
-    public virtual void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public virtual IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        BiodiversityPlugin.LogVerbose("In AttackAction.Finish().");
+        yield break;
+        // BiodiversityPlugin.LogVerbose("In AttackAction.Finish().");
     }
 }

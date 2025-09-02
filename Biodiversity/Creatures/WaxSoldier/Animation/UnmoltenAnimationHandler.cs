@@ -18,11 +18,16 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
     }
 
     #region Animation Events
-    public void OnAnimationEventStabAttackLeap()
+    public void OnAnimationEventStartStabAttackLunge()
     {
-        ai.LogVerbose("Stab attack leap.");
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventStabAttackLeap));
+        ai.TriggerCustomEvent(nameof(OnAnimationEventStartStabAttackLunge));
+    }
+    
+    public void OnAnimationEventEndStabAttackLunge()
+    {
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnAnimationEventEndStabAttackLunge));
     }
     
     public void OnAnimationEventStartTargetLook(string aimTransformName)

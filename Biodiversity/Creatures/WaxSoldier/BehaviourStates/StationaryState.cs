@@ -22,7 +22,7 @@ internal class StationaryState : BehaviourState<WaxSoldierAI.States, WaxSoldierA
         base.OnStateEnter(ref initData);
         
         EnemyAIInstance.Context.Adapter.StopAllPathing();
-        EnemyAIInstance.KillAllSpeed();
+        EnemyAIInstance.Context.Adapter.KillAllSpeed();
         
         EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamInSalute.Set(true);
     }

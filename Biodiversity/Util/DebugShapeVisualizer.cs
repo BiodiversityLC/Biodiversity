@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Biodiversity.Util.DataStructures;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Biodiversity.Util;
@@ -20,23 +21,29 @@ public static class DebugShapeVisualizer
     // Value: A list of the GameObjects (lines/spheres) that client is currently using
     private static readonly Dictionary<int, List<GameObject>> _activeVisuals = new();
 
-    private static void CreateMaterial()
+    private static CachedUnityObject<Transform> _parent;
+
+    public static Transform Parent
     {
-        if (_debugMaterial) return;
-        
-        Shader shader = Shader.Find("Hidden/Internal-Colored");
-        _debugMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
-        
-        // Set properties for transparency
-        _debugMaterial.SetInt(SrcBlend, (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        _debugMaterial.SetInt(DstBlend, (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        _debugMaterial.SetInt(ZWrite, 0);
-        _debugMaterial.SetInt(Cull, (int)UnityEngine.Rendering.CullMode.Off);
-        _debugMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        get
+        {
+            if (!_parent.HasValue)
+            {
+                GameObject parentObject = GameObject.Find("BiodiverseDebugShapeVisualizer");
+                if (!parentObject)
+                {
+                    parentObject = new GameObject("BiodiverseDebugShapeVisualizer");
+                }
+                
+                _parent.Set(parentObject.transform);
+            }
+            
+            return _parent.Value;
+        }
     }
     
     /// <summary>
-    /// Hides all visuals created by a specific owner.
+    /// Clears all visuals created by a specific owner.
     /// </summary>
     /// <param name="owner">The instance of the object that created the visuals (e.g., 'this').</param>
     public static void Clear(object owner)
@@ -50,7 +57,7 @@ public static class DebugShapeVisualizer
                 visual.SetActive(false);
             }
 
-            visuals.Clear(); // Clear the list for the next use
+            visuals.Clear();
         }
     }
 
@@ -106,6 +113,8 @@ public static class DebugShapeVisualizer
         CreateMaterial();
 
         GameObject newLineObj = new("DebugLine") { hideFlags = HideFlags.HideAndDontSave };
+        newLineObj.transform.SetParent(Parent);
+        
         LineRenderer newLine = newLineObj.AddComponent<LineRenderer>();
         newLine.material = _debugMaterial;
         newLine.positionCount = 2;
@@ -131,6 +140,7 @@ public static class DebugShapeVisualizer
         GameObject newSphereObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         newSphereObj.name = "DebugSphere";
         newSphereObj.hideFlags = HideFlags.HideAndDontSave;
+        newSphereObj.transform.SetParent(Parent);
 
         if (newSphereObj.TryGetComponent(out Collider collider))
         {
@@ -148,5 +158,20 @@ public static class DebugShapeVisualizer
         _spherePool.Add(newSphere);
         
         return newSphere;
+    }
+    
+    private static void CreateMaterial()
+    {
+        if (_debugMaterial) return;
+        
+        Shader shader = Shader.Find("Hidden/Internal-Colored");
+        _debugMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+        
+        // Set properties for transparency
+        _debugMaterial.SetInt(SrcBlend, (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        _debugMaterial.SetInt(DstBlend, (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        _debugMaterial.SetInt(ZWrite, 0);
+        _debugMaterial.SetInt(Cull, (int)UnityEngine.Rendering.CullMode.Off);
+        _debugMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
     }
 }

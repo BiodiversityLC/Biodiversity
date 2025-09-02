@@ -20,7 +20,7 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnStateEnter(ref initData);
         
-        EnemyAIInstance.KillAllSpeed();
+        EnemyAIInstance.Context.Adapter.KillAllSpeed();
         
         EnemyAIInstance.Context.Blackboard.NetcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
         EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamIsDead.Value = true;

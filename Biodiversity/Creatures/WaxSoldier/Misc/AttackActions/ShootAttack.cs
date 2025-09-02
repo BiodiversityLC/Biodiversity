@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Core;
+using System.Collections;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
@@ -12,18 +13,13 @@ public class ShootAttack : AttackAction
     private Transform aimTransform;
     private bool shouldLookAtTarget;
     
-    public override void Setup(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        base.Setup(ctx);
+        base.Start(ctx);
         
         ctx.Adapter.StopAllPathing();
+        ctx.Adapter.KillAllSpeed();
         
-        ctx.Blackboard.AgentMaxAcceleration = 0f;
-        ctx.Blackboard.AgentMaxSpeed = 0f;
-        
-        ctx.Adapter.Agent.velocity = Vector3.zero;
-        ctx.Adapter.Agent.acceleration = 0f;
-        ctx.Adapter.Agent.speed = 0f;
         ctx.Adapter.Agent.isStopped = true;
         ctx.Adapter.Agent.updateRotation = false;
     }
@@ -40,15 +36,14 @@ public class ShootAttack : AttackAction
         }
     }
     
-    public override void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        base.Finish(ctx);
-        
-        ctx.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
-        ctx.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
+        ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
 
         ctx.Adapter.Agent.isStopped = false;
         ctx.Adapter.Agent.updateRotation = true;
+        
+        yield break;
     }
     
     public void StartLookAtTarget(Transform t)

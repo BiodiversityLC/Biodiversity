@@ -28,9 +28,7 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
             return;
         }
 
-        // todo: name config values appropriately
-        EnemyAIInstance.Context.Blackboard.AgentMaxSpeed = WaxSoldierHandler.Instance.Config.PatrolMaxSpeed;
-        EnemyAIInstance.Context.Blackboard.AgentMaxAcceleration = WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration;
+        EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
         
         EnemyAIInstance.Context.Adapter.MoveToDestination(EnemyAIInstance.Context.Blackboard.GuardPost.position);
     }
@@ -40,7 +38,7 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
         base.UpdateBehaviour();
         
         EnemyAIInstance.UpdateWaxDurability();
-        EnemyAIInstance.MoveWithAcceleration();
+        EnemyAIInstance.Context.Adapter.MoveAgent();
     }
 
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
