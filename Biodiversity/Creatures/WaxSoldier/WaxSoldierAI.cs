@@ -15,14 +15,14 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 #pragma warning disable 0649
     [Header("Transforms")]
     [SerializeField] private Transform ImperiumInsightsPanelAnchor;
-    
-    [Header("Controllers")] [Space(5f)] 
+
+    [Header("Controllers")] [Space(5f)]
     [SerializeField] private BoxCollider stabAttackTriggerArea;
     [SerializeField] private AttackSelector attackSelector;
     [SerializeField] private HeatSensor heatSensor;
     [SerializeField] public WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
-    
+
     public enum States
     {
         Spawning,
@@ -49,9 +49,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
      * Sound triangulation
      * Ambush attacks (figure out ambush points by considering where scrap is, apparatus, etc), but don't do cheap annoying stuff like guarding the entrance to the dungeon
      */
-    
+
     // Make reload time slower as wax durability goes down?
-    
+
     public AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> Context { get; private set; }
     private WaxSoldierBlackboard _blackboard => Context.Blackboard;
     private WaxSoldierAdapter _adapter => Context.Adapter;
@@ -61,11 +61,11 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     private static bool _hasRegisteredImperiumInsights;
 
     #region Event Functions
-    public void Awake()
+    private void Awake()
     {
         WaxSoldierBlackboard blackboard = new();
         WaxSoldierAdapter adapter = new(this);
-        
+
         PlayerTargetableConditions.AddCondition(player => !PlayerUtil.IsPlayerDead(player));
 
         Context = new AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>(blackboard, adapter);
@@ -92,7 +92,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.Start();
         if (!IsServer) return;
-        
+
         CollectAudioClipsAndSources<WaxSoldierClient>();
         SubscribeToNetworkEvents();
         InitializeConfigValues();
@@ -114,7 +114,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
             _hasRegisteredImperiumInsights = true;
         }
-        
+
         LogVerbose("Wax Soldier spawned!");
     }
     #endregion
@@ -128,20 +128,20 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         {
             float t = Mathf.InverseLerp(_blackboard.WaxSofteningTemperature, _blackboard.WaxMeltTemperature, heatSensor.TemperatureC);
 
-            // The Pow curve gives an accelerating melt feel 
+            // The Pow curve gives an accelerating melt feel
             float bandDps = Mathf.Lerp(0f, 0.5f, Mathf.Pow(t, 2));
-            
+
             // Add a flat damage bonus when fully melting
             float extraDps = heatSensor.TemperatureC >= _blackboard.WaxMeltTemperature ? 0.75f : 0f;
-            
+
             float totalDps = bandDps + extraDps;
             newDurability = _blackboard.WaxDurability - totalDps * Time.deltaTime;
         }
-        
+
         _blackboard.WaxDurability = Mathf.Clamp01(Mathf.Min(_blackboard.WaxDurability, newDurability));
 
-        if (_blackboard.WaxDurability <= 0 && 
-            _blackboard.MoltenState != MoltenState.Molten && 
+        if (_blackboard.WaxDurability <= 0 &&
+            _blackboard.MoltenState != MoltenState.Molten &&
             CurrentState.GetStateType() != States.Stunned)
         {
             SwitchBehaviourState(States.TransformingToMolten);
@@ -151,20 +151,20 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public void DetermineGuardPostPosition()
     {
         //todo: create tool that lets people easily select good guard spots for the wax soldier (nearly identical to the vending machine placement tool idea)
-        
+
         // for now lets just use this
         Vector3 tempGuardPostPosition = GetFarthestValidNodeFromPosition(out PathStatus _, agent, transform.position, allAINodes).position;
-        
+
         Vector3 calculatedPos = tempGuardPostPosition;
         Quaternion calculatedRot = transform.rotation;
 
         _blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
     }
-    
+
     private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)
     {
         if (!IsServer) return;
-        
+
         if (!objectReference.TryGet(out NetworkObject networkObject))
         {
             LogError("Received null network object for the musket.");
@@ -228,7 +228,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         SwitchBehaviourState(GetNextBehaviourStateFromPerception());
     }
-    
+
     /// <summary>
     /// Evaluates current perception/combat context and returns the next behaviour state while it continues navigating.
     /// </summary>
@@ -271,7 +271,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         bool isPlayerVisible = UpdatePlayerLastKnownPosition();
         bool hasTarget = _adapter.TargetPlayer;
         float timeSincePlayerLastSeen = hasTarget ? _blackboard.TimeSincePlayerLastSeen : float.MaxValue;
-                
+
         if (isPlayerVisible || (hasTarget && timeSincePlayerLastSeen < _blackboard.PursuitLingerTime))
         {
             nextState = States.Pursuing;
@@ -301,11 +301,11 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
         if (!IsServer || _adapter.IsDead) return;
-        
+
         // If the current state (fully) handles the stun event, then don't run the default reaction
         if (CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer) ?? false)
             return;
-        
+
         if (setStunnedByPlayer)
         {
             // todo: create function for these 4 duplicate lines
@@ -314,7 +314,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             _blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(setStunnedByPlayer);
             _blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
         }
-        
+
         // Default reaction when stunned:
         SwitchBehaviourState(States.Stunned);
     }
@@ -331,9 +331,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         // Hit cooldown
         if (Time.time - _lastHitTime < 0.02f)
             return;
-        
+
         _lastHitTime = Time.time;
-        
+
         // If friendly fire is disabled, and we weren't hit by a player, then ignore the hit
         bool isPlayerWhoHitNull = !playerWhoHit;
         if (!_blackboard.IsFriendlyFireEnabled && isPlayerWhoHitNull)
@@ -342,9 +342,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         // If the current state (fully) handles the hit event, then don't run the default reaction
         if (CurrentState?.OnHitEnemy(force, playerWhoHit, hitID) ?? false)
             return;
-        
+
         // Default reaction when hit is to start chasing the player that hit them:
-        
+
         if (!_adapter.ApplyDamage(force))
         {
             if (!isPlayerWhoHitNull)
@@ -353,7 +353,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
                 _blackboard.LastKnownPlayerPosition = playerWhoHit.transform.position;
                 _blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(playerWhoHit);
                 _blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
-                
+
                 SwitchBehaviourState(States.Pursuing);
             }
         }
@@ -363,7 +363,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         }
     }
     #endregion
-    
+
     #region Little Misc Stuff
     protected override States DetermineInitialState()
     {
@@ -400,35 +400,35 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         if (!IsServer) return;
         LogVerbose("Initializing config values...");
-        
+
         WaxSoldierConfig cfg = WaxSoldierHandler.Instance.Config;
-        
+
         _blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
         _blackboard.AttackSelector = attackSelector;
         _blackboard.NetcodeController = netcodeController;
-        
+
         _blackboard.ViewWidth = cfg.ViewWidth;
         _blackboard.ViewRange = cfg.ViewRange;
         _blackboard.IsFriendlyFireEnabled = cfg.FriendlyFire;
-        
+
         _adapter.Health = cfg.Health;
         _adapter.AIIntervalLength = cfg.AiIntervalTime;
         _adapter.OpenDoorSpeedMultiplier = cfg.OpenDoorSpeedMultiplier;
         _adapter.Agent.angularSpeed = _blackboard.AgentAngularSpeed;
     }
-    
+
     protected override string GetLogPrefix()
     {
         return $"[WaxSoldierAI {BioId}]";
     }
-    
+
     private void SubscribeToNetworkEvents()
     {
         if (!IsServer || _blackboard.IsNetworkEventsSubscribed) return;
         LogVerbose("Subscribing to network events...");
-        
+
         netcodeController.OnSpawnMusket += HandleSpawnMusket;
-        
+
         _blackboard.IsNetworkEventsSubscribed = true;
     }
 
@@ -436,13 +436,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         if (!IsServer || !_blackboard.IsNetworkEventsSubscribed) return;
         LogVerbose("Unsubscribing from network events...");
-        
+
         netcodeController.OnSpawnMusket -= HandleSpawnMusket;
-        
+
         _blackboard.IsNetworkEventsSubscribed = false;
     }
     #endregion
-    
+
     /// <summary>
     /// Requests the server to play a specific category of audio clip on a designated <see cref="UnityEngine.AudioSource"/>.
     /// It will randomly select an audio clip from the array of clips assigned to that particular audio.
@@ -504,27 +504,27 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /// This method is invoked by the server to ensure synchronized audio playback.
     /// </summary>
     /// <param name="audioClipType">
-    /// A string identifier representing the type/category of the audio clip to be played 
+    /// A string identifier representing the type/category of the audio clip to be played
     /// (e.g., "Stun", "Chase", "Ambient").
     /// </param>
     /// <param name="audioSourceType">
-    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played 
+    /// A string identifier representing the specific <see cref="UnityEngine.AudioSource"/> on which the audio clip should be played
     /// (e.g., "CreatureVoice", "CreatureSfx", "Footsteps").
     /// </param>
     /// <param name="clipIndex">
-    /// The index of the <see cref="AudioClip"/> within the array corresponding to <paramref name="audioClipType"/> 
+    /// The index of the <see cref="AudioClip"/> within the array corresponding to <paramref name="audioClipType"/>
     /// that should be played.
     /// </param>
     /// <param name="interrupt">
-    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted 
+    /// Determines whether the current audio playback on the specified <see cref="UnityEngine.AudioSource"/> should be interrupted
     /// before playing the new audio clip.
     /// </param>
     /// <param name="audibleInWalkieTalkie">
-    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible 
+    /// Indicates whether the played audio should be transmitted through the walkie-talkie system, making it audible
     /// to players using walkie-talkies.
     /// </param>
     /// <param name="audibleByEnemies">
-    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's 
+    /// Determines whether the played audio should be detectable by enemy AI, potentially alerting them to the player's
     /// </param>
     /// <param name="slightlyVaryPitch">
     /// Whether to slightly vary the pitch between the original pitch +/- 0.1.
@@ -545,7 +545,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             LogWarning($"Client: Audio Clip Type '{audioClipType}' not found, is null, or empty.");
             return;
         }
-        
+
         if (clipIndex < 0 || clipIndex >= clipArr.Length)
         {
             LogWarning($"Client: Invalid clip index {clipIndex} received for type '{audioClipType}' (Count: {clipArr.Length}).");
@@ -558,7 +558,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             LogWarning($"Client: Audio clip at index {clipIndex} for type '{audioClipType}' is null.");
             return;
         }
-        
+
         if (!AudioSources.TryGetValue(audioSourceType, out AudioSource selectedAudioSource) || selectedAudioSource == null)
         {
             LogWarning($"Client: Audio Source Type '{audioSourceType}' not found or is null.");
@@ -569,15 +569,15 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             $"Client: Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}'.");
 
         float oldPitch = selectedAudioSource.pitch;
-        
+
         if (interrupt && selectedAudioSource.isPlaying) selectedAudioSource.Stop();
         if (slightlyVaryPitch) selectedAudioSource.pitch = Random.Range(oldPitch - 0.1f, oldPitch + 0.1f);
-        
+
         selectedAudioSource.PlayOneShot(clipToPlay);
-        
+
         if (audibleInWalkieTalkie) WalkieTalkie.TransmitOneShotAudio(selectedAudioSource, clipToPlay, selectedAudioSource.volume);
         if (audibleByEnemies) RoundManager.Instance.PlayAudibleNoise(selectedAudioSource.transform.position);
-        
+
         if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
     }
 }

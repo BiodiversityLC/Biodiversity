@@ -29,14 +29,15 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
         }
 
         EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
-        
+        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
+
         EnemyAIInstance.Context.Adapter.MoveToDestination(EnemyAIInstance.Context.Blackboard.GuardPost.position);
     }
 
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        
+
         EnemyAIInstance.UpdateWaxDurability();
         EnemyAIInstance.Context.Adapter.MoveAgent();
     }

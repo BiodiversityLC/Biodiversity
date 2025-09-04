@@ -10,7 +10,7 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     private bool hasTriggeredAnimation;
-    
+
     public TransformingToMoltenState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
@@ -19,24 +19,25 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
+
         EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Molten;
-        
+
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.BeginGracefulStop();
-        
+        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
+
         hasTriggeredAnimation = false;
     }
 
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        
+
         if (!hasTriggeredAnimation && EnemyAIInstance.Context.Adapter.Agent.velocity.sqrMagnitude <= 0.5f)
         {
             EnemyAIInstance.LogVerbose("Starting melt animation...");
             EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.Melt);
-            
+
             hasTriggeredAnimation = true;
             EnemyAIInstance.Context.Adapter.KillAllSpeed();
         }
@@ -51,6 +52,6 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);
-        return true; // Makes nothing happen 
+        return true; // Makes nothing happen
     }
 }

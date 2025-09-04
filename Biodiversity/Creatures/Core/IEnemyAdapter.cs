@@ -13,20 +13,23 @@ public interface IEnemyAdapter
     #region Unity Components
     NavMeshAgent Agent { get; }
     Animator Animator { get; }
+    public Transform Transform { get; }
     Transform EyeTransform { get; }
     #endregion
-    
+
     GameObject[] AssignedAINodes { get; set; }
-    
+
     PlayerControllerB TargetPlayer { get; set; }
-    
+
     bool IsDead { get; }
-    
+
+    float StunNormalizedTimer { get; }
     float OpenDoorSpeedMultiplier { get; set; }
     float AIIntervalLength { get; set; }
-    
+
     int Health { get; set; }
 
+    // todo: dunno if this should be in here
     void StopAllPathing();
     void MoveToDestination(Vector3 destination);
     void MoveToPlayer(PlayerControllerB player);

@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Creatures.Core;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.AI;
@@ -34,7 +35,7 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
     {
         get => instance.openDoorSpeedMultiplier;
         set => instance.openDoorSpeedMultiplier = value;
-    } //todo: turn this to "open door speed", see DoorLock.OnTriggerStay
+    }
 
     public float AIIntervalLength
     {
@@ -48,16 +49,29 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
         set => instance.enemyHP = value;
     }
 
+    /// <summary>
+    /// Applies the given damage parameter to the health variable.
+    /// </summary>
+    /// <param name="damage">The damage to apply.</param>
+    /// <returns>True if the applied damage results in death.</returns>
+    public bool ApplyDamage(int damage)
+    {
+        Health -= damage;
+        // todo: play damage/hurt sfx
+
+        return Health <= 0;
+    }
+
     #region Agent Stuff
     public float AgentSpeedChangeRate { get; set; } = 10f;
-    
+
     private float _targetSpeed;
-    
+
     internal void MoveAgent()
     {
         Agent.speed = Mathf.MoveTowards(Agent.speed, _targetSpeed, AgentSpeedChangeRate * Time.deltaTime);
     }
-    
+
     /// <summary>
     /// Sets the desired movement profile for the agent.
     /// The agent's speed will smoothly transition to the new target.
@@ -69,19 +83,19 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
         _targetSpeed = maxSpeed;
         Agent.acceleration = acceleration;
     }
-    
+
     internal void BeginGracefulStop()
     {
         SetMovementProfile(0f, 100f);
     }
-    
+
     internal void KillAllSpeed()
     {
-        Agent.speed = 0f;
+        SetMovementProfile(0f, 250f);
         Agent.velocity = Vector3.zero;
         _targetSpeed = 0f;
     }
-    
+
     public void StopAllPathing()
     {
         // Resets the destination (so imperium doesn't draw the path to some old destination vector we arent using anymore)
@@ -124,16 +138,37 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
     }
     #endregion
 
-    /// <summary>
-    /// Applies the given damage parameter to the health variable.
-    /// </summary>
-    /// <param name="damage">The damage to apply.</param>
-    /// <returns>True if the applied damage results in death.</returns>
-    public bool ApplyDamage(int damage)
-    { 
-        Health -= damage;
-        // todo: play damage/hurt sfx
-        
-        return Health <= 0;
+    #region Network Stuff
+    public float NetworkPositionInterpolationAggressiveness
+    {
+        get => instance.syncMovementSpeed;
+        set => instance.syncMovementSpeed = value;
     }
+
+    public float NetworkPositionUpdateDistanceTheshold
+    {
+        get => instance.updatePositionThreshold;
+        set => instance.updatePositionThreshold = value;
+    }
+
+    public void SetNetworkFidelityProfile(NetworkPositionalSyncFidelity profile)
+    {
+        NetworkPositionInterpolationAggressiveness = profile.InterpolationAggressiveness;
+        NetworkPositionUpdateDistanceTheshold = profile.UpdateDistanceThreshold;
+    }
+
+    [Tooltip("High-accuracy, high-bandwidth settings for when waxy is actively fighting a player.")]
+    public NetworkPositionalSyncFidelity CombatFidelityProfile = new()
+    {
+        InterpolationAggressiveness = 0.08f, // Fast and responsive for dodging/aiming.
+        UpdateDistanceThreshold = 0.15f      // Send updates for even small movements.
+    };
+
+    [Tooltip("Low-accuracy, low-bandwidth settings for when waxy is idle or patrolling.")]
+    public NetworkPositionalSyncFidelity PatrolFidelityProfile = new()
+    {
+        InterpolationAggressiveness = 0.25f, // Smooth and fluid to hide infrequent updates.
+        UpdateDistanceThreshold = 1.0f       // Only send an update after moving a full meter.
+    };
+    #endregion
 }

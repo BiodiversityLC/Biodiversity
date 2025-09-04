@@ -14,28 +14,29 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     public StunnedState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
-        Transitions = 
+        Transitions =
         [
             new TransitionFromStunnedState(EnemyAIInstance)
         ];
     }
-    
+
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
+
         EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationControllerToFrozenClientRpc(true);
         EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.ForceWalk);
-        
+
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.KillAllSpeed();
         EnemyAIInstance.Context.Adapter.Agent.isStopped = true;
+        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
     }
 
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        
+
         EnemyAIInstance.UpdateWaxDurability();
     }
 
@@ -49,10 +50,10 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
     {
         base.OnStateExit(transition);
-        
+
         EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationControllerToFrozenClientRpc(false);
         EnemyAIInstance.Context.Adapter.Agent.isStopped = false;
-        
+
         EnemyAIInstance.UpdateBehaviourStateFromPerception();
     }
 
@@ -61,18 +62,18 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
         return true; // Makes nothing happen
     }
-    
+
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);
-        
+
         if (!EnemyAIInstance.Context.Adapter.ApplyDamage(force))
         {
             if (playerWhoHit)
             {
                 // If the player who hit isn't our current target player that we have, then we will make them our new
                 // target player IF our current target player is more than 3 units away (to prevent rapid target switcing).
-                if (PlayerUtil.GetClientIdFromPlayer(playerWhoHit) != 
+                if (PlayerUtil.GetClientIdFromPlayer(playerWhoHit) !=
                     PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer) &&
                     Vector3.Distance(EnemyAIInstance.Context.Adapter.Transform.position,
                         EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position) > 3f)
@@ -90,7 +91,7 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         {
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Dead);
         }
-        
+
         return true;
     }
 }

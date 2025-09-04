@@ -22,35 +22,36 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     private float searchTime = 30f;
 
     private float searchTimeLeft;
-    
+
     public HuntingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
-        Transitions = 
+        Transitions =
         [
             new TransitionToPursuitState(EnemyAIInstance)
         ];
-        
+
         List<UtilityDrivenSearch.ScorerWeight> scorers =
         [
             new() { Scorer = new DirectionAlignmentScorer(EnemyAIInstance.Context), Weight = directionWeight },
             new() { Scorer = new DistanceScorer(EnemyAIInstance.Context, searchRadius), Weight = distanceWeight }
         ];
-        
+
         searchStrategy = new UtilityDrivenSearch(EnemyAIInstance.Context, scorers, searchRadius);
     }
 
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
+
         EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
-        
+        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.CombatFidelityProfile);
+
         if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
         {
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Pursuing);
             return;
         }
-        
+
         // Start the search strategy and go to the prescribed position
         searchTimeLeft = searchTime;
         searchStrategy.Start();
@@ -60,18 +61,18 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
             return;
         }
-        
+
         EnemyAIInstance.Context.Adapter.MoveToDestination(searchPosition);
     }
-    
+
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        
+
         EnemyAIInstance.UpdateWaxDurability();
         searchStrategy.Update();
         EnemyAIInstance.Context.Adapter.MoveAgent();
-        
+
         searchTimeLeft -= Time.deltaTime;
         if (searchTimeLeft <= 0)
         {
@@ -93,7 +94,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
                 EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
                 return;
             }
-            
+
             EnemyAIInstance.Context.Adapter.MoveToDestination(searchPosition);
         }
     }
@@ -101,7 +102,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
     {
         base.OnStateExit(transition);
-        
+
         searchStrategy.Conclude();
         EnemyAIInstance.Context.Adapter.StopAllPathing();
     }

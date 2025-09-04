@@ -17,7 +17,6 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
     
     [field: Tooltip("Whether to log more debug information to the console. 99% of people do NOT need to touch this.")]
     public bool VerboseLoggingEnabled { get; private set; } = false;
-    
     #endregion
 
     #region Other Config Options
@@ -25,7 +24,6 @@ public class BiodiversityConfig : BiodiverseConfigLoader<BiodiversityConfig>
     
     [field: Tooltip("The stab is real.")]
     public bool StabIsReal { get; private set; } = false;
-    
     #endregion
     
     private readonly HashSet<string> _enabledCreatures = [];

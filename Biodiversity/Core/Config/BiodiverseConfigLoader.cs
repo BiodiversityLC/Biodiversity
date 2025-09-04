@@ -82,8 +82,7 @@ public abstract class BiodiverseConfigLoader<T> where T : BiodiverseConfigLoader
             }
             catch (Exception ex)
             {
-                BiodiversityPlugin.Logger.LogError($"Exception while binding: {property.Name}");
-                BiodiversityPlugin.Logger.LogError(ex.ToString());
+                BiodiversityPlugin.Logger.LogError($"Exception while binding: {property.Name}. {ex.Message}");
             }
 
             if (property.PropertyType == typeof(EnemyRaritiesPerMoon))

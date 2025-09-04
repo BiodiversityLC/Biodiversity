@@ -15,13 +15,14 @@ internal static class LangParser
 
     internal static void Init()
     {
-        const string defsJsonFilename = "Biodiversity.Lang.defs.json";
+        const string defsJsonFilename = "Biodiversity.Core.Lang.defs.json";
         using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(defsJsonFilename);
         if (stream == null)
         {
             BiodiversityPlugin.Logger.LogWarning($"Could not find {defsJsonFilename}, and therefore cannot do translations.");
             return;
         }
+
         using StreamReader reader = new(stream);
         string result = reader.ReadToEnd();
 
@@ -36,7 +37,7 @@ internal static class LangParser
             BiodiversityPlugin.Logger.LogError("Cannot determine the assembly directory path, and therefore cannot do translations.");
             return null;
         }
-        
+
         using Stream stream = File.Open(Path.Combine(directoryPath, "lang", id + ".json"), FileMode.Open);
         using StreamReader reader = new(stream);
         string result = reader.ReadToEnd();
@@ -47,7 +48,7 @@ internal static class LangParser
     {
         LoadedLanguage = LoadLanguage(id);
     }
-    
+
     internal static string GetTranslation(string translationId)
     {
         if (LoadedLanguage == null)
@@ -56,7 +57,7 @@ internal static class LangParser
             BiodiversityPlugin.Logger.LogDebug($"Cannot translate the message {translationId} due to translations not being loaded.");
             return GetTranslation(LangMissing).Replace("<translation_id>", translationId);
         }
-         
+
         if (LoadedLanguage.TryGetValue(translationId, out object result)) return result.ToString();
         if (translationId == LangMissing)
         {
@@ -67,15 +68,15 @@ internal static class LangParser
         return GetTranslation($"{LangMissing}").Replace("<translation_id>", translationId);
     }
 
-    internal static JArray GetTranslationSet(string translation) 
+    internal static JArray GetTranslationSet(string translation)
     {
         if (LoadedLanguage == null)
         {
             BiodiversityPlugin.Logger.LogDebug($"Cannot translate message due to translations not being loaded: {translation}");
             return [GetTranslation(LangMissing).Replace("<translation_id>", translation)];
         }
-        
-        if (LoadedLanguage.TryGetValue(translation, out object result)) 
+
+        if (LoadedLanguage.TryGetValue(translation, out object result))
         {
             BiodiversityPlugin.Logger.LogInfo(result.GetType());
             return result as JArray;

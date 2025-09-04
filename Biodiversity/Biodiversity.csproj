@@ -52,7 +52,7 @@
         <PackageReference Include="LethalCompany.GameLibs.Steam" Version="70.0.0-ngd.0" Publicize="true" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
         <PackageReference Include="UnityEngine.Modules" Version="2022.3.9" IncludeAssets="compile" PrivateAssets="all" />
-        
+
         <!-- Mod Package References -->
         <PackageReference Include="Evaisa.LethalLib" Version="1.1.1" Publicize="true" />
         <PackageReference Include="IAmBatby.LethalLevelLoader" Version="1.4.0" Publicize="true" />
@@ -86,7 +86,7 @@
 
 	<Target Name="BuildLangFiles" AfterTargets="CleanAssetBundles">
 		<Message Importance="high" Text="Collecting lang files!" />
-		
+
 		<ItemGroup>
 			<LangFiles Include="$(ProjectDir)Core/Lang/languages/*.json" Exclude="$(ProjectDir)Core/Lang/languages/defs.json">
 				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

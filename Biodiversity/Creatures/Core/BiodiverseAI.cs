@@ -32,15 +32,6 @@ public abstract class BiodiverseAI : EnemyAI
     
     internal readonly PlayerTargetableConditions PlayerTargetableConditions = new();
 
-    // public static CachedList<GameObject> CachedInsideAINodes;
-    // public static CachedList<GameObject> CachedOutsideAINodes;
-
-    private void Awake()
-    {
-        // CachedInsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("AINode").ToList());
-        // CachedOutsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("OutsideAINode").ToList());
-    }
-
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();

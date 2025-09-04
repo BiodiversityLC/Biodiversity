@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Biodiversity.Util;
+
 internal static class PlayerUtil 
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -13,26 +13,27 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     private bool hasTriggeredAnimation;
-    
+
     public ReloadingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions = [];
     }
-    
+
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
+
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.BeginGracefulStop();
-        
+        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
+
         hasTriggeredAnimation = false;
     }
 
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        
+
         EnemyAIInstance.Context.Adapter.MoveAgent();
         EnemyAIInstance.UpdateWaxDurability();
 
@@ -55,7 +56,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     internal override void OnCustomEvent(string eventName, StateData eventData)
     {
         base.OnCustomEvent(eventName, eventData);
-        
+
         switch (eventName)
         {
             case nameof(UnmoltenAnimationHandler.OnReloadAnimationFinish):
@@ -66,20 +67,20 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             }
         }
     }
-    
+
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);
-        
+
         // todo: add config option to choose whether attacking the wax soldier interrupts the reload animation
-        
+
         if (!EnemyAIInstance.Context.Adapter.ApplyDamage(force))
         {
             if (playerWhoHit)
             {
                 // If the player who hit isn't our current target player that we have, then we will make them our new
                 // target player IF our current target player is more than 3 units away (to prevent rapid target switcing).
-                if (PlayerUtil.GetClientIdFromPlayer(playerWhoHit) != 
+                if (PlayerUtil.GetClientIdFromPlayer(playerWhoHit) !=
                     PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer) &&
                     Vector3.Distance(EnemyAIInstance.Context.Adapter.Transform.position,
                         EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position) > 3f)
@@ -95,7 +96,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         {
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Dead);
         }
-        
+
         return true;
     }
 }

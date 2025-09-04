@@ -42,7 +42,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         ("the fiend is watching... NOT VERY SIGMA!!", "Rolevote"),
         ("we love fat bitches(gender neutral) and body representation for fat bitches(still gender neutral)", "TiltedHat"),
         ("Aloehood is a spectrum", "Ccode"),
-        ("Ogopogo is just a giant man buried in the ground grabbing you w his toes", "Monty"),
+        ("Ogopogo is just a giant man buried in the ground grabbing you w his toes", "Monty")
     ];
 
     private void Awake()
@@ -71,7 +71,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         }
 
         LangParser.Init();
-        
+
         NetcodePatcher();
 
         LogVerbose("Setting up the language translations...");
@@ -103,19 +103,19 @@ public class BiodiversityPlugin : BaseUnityPlugin
     {
         Stopwatch timer = Stopwatch.StartNew();
         LogVerbose("Starting FinishLoading...");
-        
+
         VanillaEnemies.Init();
-        
+
         // why does unity not let you preload video clips like audio clips.
         LogVerbose("Loading VideoClip bundle.");
         LoadBundle("biodiversity_video_clips");
-        
+
         LogVerbose("Registering the creatures...");
         List<Type> creatureHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType is { IsGenericType: true }
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseAIHandler<>)
         ).ToList();
-        
+
         int enabledCreatureCount = 0;
         for (int i = 0; i < creatureHandlers.Count; i++)
         {
@@ -126,13 +126,13 @@ public class BiodiversityPlugin : BaseUnityPlugin
             bool enableByDefault = dis == null;
 
             bool creatureEnabled = base.Config.Bind("Creatures", handlerName, enableByDefault, $"Enable/disable the {handlerName}").Value;
-            
+
             if (!creatureEnabled)
             {
                 LogVerbose($"{handlerName} was skipped because it's disabled.");
                 continue;
             }
-            
+
             LogVerbose($"Creating {handlerName}...");
             try
             {
@@ -145,22 +145,22 @@ public class BiodiversityPlugin : BaseUnityPlugin
                 Logger.LogError($"Failed to instantiate creature handler {handlerName}: {e}.");
             }
         }
-        
+
         LogVerbose($"Sucessfully setup {enabledCreatureCount} creatures!");
-        
+
         LogVerbose("Registering the items...");
         List<Type> itemHandlers = Assembly.GetExecutingAssembly().GetLoadableTypes().Where(x =>
             x.BaseType is { IsGenericType: true }
             && x.BaseType.GetGenericTypeDefinition() == typeof(BiodiverseItemHandler<>)
         ).ToList();
-        
+
         for (int i = 0; i < itemHandlers.Count; i++)
         {
             Type type = itemHandlers[i];
             string handlerName = type.Name;
-            
+
             LogVerbose($"Creating {handlerName}...");
-            
+
             try
             {
                 type.GetConstructor([])?.Invoke([]);
@@ -170,22 +170,22 @@ public class BiodiversityPlugin : BaseUnityPlugin
                 Logger.LogError($"Failed to instantiate item handler {handlerName}: {e}.");
             }
         }
-        
+
         ApplyPatches();
-        
+
         timer.Stop();
-        
+
         (string, string) quote = SillyQuotes[UnityEngine.Random.Range(0, SillyQuotes.Length)];
         Logger.LogInfo($"\"{quote.Item1}\" - {quote.Item2}");
         LogVerbose(
             $"{MyPluginInfo.PLUGIN_GUID}:{MyPluginInfo.PLUGIN_VERSION} has loaded! ({timer.ElapsedMilliseconds}ms).");
     }
-    
+
     /// <summary>
     /// Applies Harmony patches dynamically based on attributes found in the current assembly.
     /// </summary>
     /// <remarks>
-    /// This method applies patches based on the <see cref="ModConditionalPatch"/> and <see cref="HarmonyPatch"/> attributes. 
+    /// This method applies patches based on the <see cref="ModConditionalPatch"/> and <see cref="HarmonyPatch"/> attributes.
     /// It works by:
     /// <list type="bullet">
     /// <item>Checking if a required mod (specified by <see cref="ModConditionalPatch"/>) is loaded.</item>
@@ -201,16 +201,16 @@ public class BiodiversityPlugin : BaseUnityPlugin
         {
             modAssemblies.TryAdd(assembly.GetName().Name, assembly);
         }
-        
+
         Type[] types = Assembly.GetExecutingAssembly().GetTypes();
-        
+
         for (int i = 0; i < types.Length; i++)
         {
             Type type = types[i];
 
             if (type == typeof(Patches.GameNetworkManagerPatch))
                 continue;
-            
+
             CreaturePatchAttribute creatureAttr = type.GetCustomAttribute<CreaturePatchAttribute>();
             if (creatureAttr != null)
             {
@@ -223,10 +223,10 @@ public class BiodiversityPlugin : BaseUnityPlugin
 
                 LogVerbose($"Patches in type '{type.FullName}' for creature '{creatureAttr.CreatureName}' are ENABLED.");
             }
-            
+
             List<ModConditionalPatch> modConditionalAttrs =
                 type.GetCustomAttributes<ModConditionalPatch>(true).ToList();
-            
+
             if (modConditionalAttrs.Any())
             {
                 for (int j = 0; j < modConditionalAttrs.Count; j++)
@@ -237,17 +237,17 @@ public class BiodiversityPlugin : BaseUnityPlugin
                     string targetMethodName = modConditionalAttr.TargetMethodName;
                     string localPatchMethodName = modConditionalAttr.LocalPatchMethodName;
                     HarmonyPatchType patchType = modConditionalAttr.PatchType;
-                    
+
                     // Check if the required mod is installed; skip if not found
                     if (!modAssemblies.TryGetValue(assemblyName, out Assembly otherModAssembly))
                         continue;
-                    
+
                     LogVerbose(
                         $"Mod {assemblyName} is installed! Patching {targetClassName}.{targetMethodName} with {localPatchMethodName}");
-                    
+
                     // Get the target class; skip if null
                     Type targetClass;
-                    
+
                     try
                     {
                         targetClass = otherModAssembly.GetType(targetClassName);
@@ -279,7 +279,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
                         targetMethod = m;
                         break;
                     }
-                    
+
                     if (targetMethod == null)
                     {
                         LogVerbose($"Could not patch because the target method '{targetMethodName}' is null.");
@@ -371,7 +371,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
                     if (method.ContainsGenericParameters)
                     {
                         Logger.LogDebug(
-                            $"Skipping generic method {type.FullName}.{method.Name} with [RuntimeInitializeOnLoadMethod] attribute.");
+                            $"[NetcodePatcher] Skipping generic method {type.FullName}.{method.Name} with [RuntimeInitializeOnLoadMethod] attribute.");
                         continue;
                     }
 
@@ -389,7 +389,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
         catch (ReflectionTypeLoadException reflectionException)
         {
             Logger.LogError($"[NetcodePatcher] Error loading types from assembly: {reflectionException}");
-            
+
             for (int i = 0; i < reflectionException.LoaderExceptions.Length; i++)
             {
                 Exception loaderException = reflectionException.LoaderExceptions[i];
@@ -422,7 +422,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
             Logger.LogWarning($"Could not load assetbundle: {e}");
             return null;
         }
-        
+
         LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
         return bundle;
     }
