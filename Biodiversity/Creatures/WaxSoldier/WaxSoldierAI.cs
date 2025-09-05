@@ -85,6 +85,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         DropMusket();
         DebugShapeVisualizer.Clear(this);
+
         base.OnDestroy();
     }
 
@@ -301,6 +302,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
         if (!IsServer || _adapter.IsDead) return;
+
+        // todo: create a wax soldier implementation of the EnemyAICollisionDetect so we can access the functions from the IShockable interface
 
         // If the current state (fully) handles the stun event, then don't run the default reaction
         if (CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer) ?? false)

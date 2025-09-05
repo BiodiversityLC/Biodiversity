@@ -8,25 +8,28 @@ namespace Biodiversity.Behaviours.Heat;
 [RequireComponent(typeof(Collider))]
 public class HeatSensor : NetworkBehaviour
 {
+    [Header("Heat Settings")]
     [Tooltip("How many times the heat rate is calculated per second.")]
-    public float updateHz = 20f;
-    
-    [Space(2f)]
-    [Header("Environment Settings")]
+    public float updateHz = 10f;
+
     public float ambientC = 20f;
     public float coolingTimeConstant = 6f;
 
     [Space(2f)]
     [Header("Debug Settings")]
     public bool debug = true;
-    
+
+    [Space(2f)]
+    [Header("References")]
+    [SerializeField] private Collider sensorCollider;
+
     public float TemperatureC { get; private set; }
-    
+
     private readonly HashSet<HeatEmitter> overlaps = [];
-    
+
     private Gradient _debugHeatGradient;
     private readonly List<HeatEmitter> _emittersToRemoveCache = [];
-    
+
     private float timeSinceLastUpdate;
     private float impulseBufferC;
 
@@ -35,27 +38,6 @@ public class HeatSensor : NetworkBehaviour
         if (updateHz < 0f)
         {
             Debug.LogError("Update hertz must be greater than or equal to zero.");
-        }
-    }
-
-    private void Awake()
-    {
-        if (!TryGetComponent(out Rigidbody rb)) 
-        {
-            rb = gameObject.AddComponent<Rigidbody>();
-            rb.isKinematic = true; 
-            rb.useGravity = false;
-        }
-
-        TemperatureC = ambientC;
-        
-        if (_debugHeatGradient == null)
-        {
-            _debugHeatGradient = new Gradient();
-            _debugHeatGradient.SetKeys(
-                [new GradientColorKey(Color.blue, 0.0f), new GradientColorKey(Color.yellow, 0.5f), new GradientColorKey(Color.red, 1.0f)],
-                [new GradientAlphaKey(0.8f, 0.0f), new GradientAlphaKey(0.8f, 1.0f)]
-            );
         }
     }
 
@@ -69,7 +51,7 @@ public class HeatSensor : NetworkBehaviour
     {
         HeatController.Instance.NotifySensorRemoved();
         HeatController.Instance.OnHeatEmitterDisabled -= HandleHeatEmitterDisabled;
-        
+
         DebugShapeVisualizer.Clear(this);
     }
 
@@ -84,10 +66,42 @@ public class HeatSensor : NetworkBehaviour
         }
     }
 
+    private void Start()
+    {
+        if (!sensorCollider)
+        {
+            sensorCollider = GetComponent<Collider>();
+            if (!sensorCollider)
+            {
+                BiodiversityPlugin.Logger.LogWarning($"Sensor collider not found for object {gameObject.name}. Disabiling the component...");
+                enabled = false;
+                return;
+            }
+        }
+
+        if (!TryGetComponent(out Rigidbody rb))
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+
+        TemperatureC = ambientC;
+
+        if (_debugHeatGradient == null)
+        {
+            _debugHeatGradient = new Gradient();
+            _debugHeatGradient.SetKeys(
+                [new GradientColorKey(Color.blue, 0.0f), new GradientColorKey(Color.yellow, 0.5f), new GradientColorKey(Color.red, 1.0f)],
+                [new GradientAlphaKey(0.8f, 0.0f), new GradientAlphaKey(0.8f, 1.0f)]
+            );
+        }
+    }
+
     private void Update()
     {
         DrawRuntimeDebug();
-        
+
         timeSinceLastUpdate += Time.deltaTime;
         float step = 1f / Mathf.Max(1f, updateHz);
 
@@ -102,7 +116,7 @@ public class HeatSensor : NetworkBehaviour
     {
         if (other.TryGetComponent(out HeatEmitter emitter)) overlaps.Add(emitter);
     }
-    
+
     private void OnTriggerExit(Collider other)
     {
         if (other.TryGetComponent(out HeatEmitter emitter)) overlaps.Remove(emitter);
@@ -111,12 +125,13 @@ public class HeatSensor : NetworkBehaviour
     private void Integrate(float dt)
     {
         float rateSum = 0f;
-        Vector3 position = transform.position;
         foreach (HeatEmitter emitter in overlaps)
         {
             if (emitter && emitter.isActiveAndEnabled)
             {
-                float additionalHeatRate = emitter.GetHeatRateAt(position);
+                Vector3 samplePoint = sensorCollider.ClosestPoint(emitter.transform.position);
+
+                float additionalHeatRate = emitter.GetHeatRateAt(samplePoint);
                 rateSum += additionalHeatRate;
             }
         }
@@ -129,7 +144,7 @@ public class HeatSensor : NetworkBehaviour
 
         impulseBufferC = 0f;
     }
-    
+
     public void AddHeatImpulse(float deltaC) => impulseBufferC += deltaC;
 
     public void HandleHeatEmitterDisabled(HeatEmitter emitter)
@@ -156,13 +171,14 @@ public class HeatSensor : NetworkBehaviour
                 continue;
             }
 
-            float heatRate = emitter.GetHeatRateAt(position);
-        
+            Vector3 samplePoint = sensorCollider.ClosestPoint(emitter.transform.position);
+            float heatRate = emitter.GetHeatRateAt(samplePoint);
+
             // Normalize the heat rate for the gradient color
             float colorT = Mathf.InverseLerp(0, 30, heatRate);
             Color lineColor = _debugHeatGradient.Evaluate(colorT);
-            
-            DebugShapeVisualizer.DrawLine(this, position, emitter.transform.position, lineColor);
+
+            DebugShapeVisualizer.DrawLine(this, samplePoint, emitter.transform.position, lineColor);
         }
 
         for (int i = 0; i < _emittersToRemoveCache.Count; i++)
