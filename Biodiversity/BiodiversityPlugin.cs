@@ -25,8 +25,8 @@ public class BiodiversityPlugin : BaseUnityPlugin
 {
     public static BiodiversityPlugin Instance { get; private set; }
     internal new static ManualLogSource Logger { get; private set; }
-
     internal new static BiodiversityConfig Config { get; private set; }
+    internal LangParser Localization { get; private set; }
 
     private Harmony _harmony;
 
@@ -48,13 +48,27 @@ public class BiodiversityPlugin : BaseUnityPlugin
     private void Awake()
     {
         Stopwatch timer = Stopwatch.StartNew();
+
         Logger = BepInEx.Logging.Logger.CreateLogSource($"{MyPluginInfo.PLUGIN_NAME}|{MyPluginInfo.PLUGIN_VERSION}");
         Instance = this;
-
         CachedAssemblies = new CachedList<Assembly>(() => AppDomain.CurrentDomain.GetAssemblies().ToList());
 
-        Logger.LogDebug("Creating base biodiversity config."); // Can't use LogVerbose here yet because we need the config to tell us whether verbose logging is enabled or not.
+        // Can't use LogVerbose here yet because we need the config to tell us whether verbose logging is enabled or not.
+
+        Logger.LogDebug("Setting up localization...");
+        try
+        {
+            Localization = new LangParser(Assembly.GetExecutingAssembly());
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"Failed to initialize LangParser. Error: {ex.Message}");
+        }
+
+        Logger.LogDebug("Creating base biodiversity config...");
         Config = new BiodiversityConfig(base.Config);
+
+        // We can now use LogVerbose
 
         LogVerbose("Creating Harmony instance...");
         _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -70,14 +84,10 @@ public class BiodiversityPlugin : BaseUnityPlugin
             Logger.LogError($"Failed to apply GameNetworkManagerPatch: {e}");
         }
 
-        LangParser.Init();
+        Localization.SetLanguage(Config.Language);
+        LogVerbose($"Testing lang.test: {Localization.GetTranslation("lang.test")}");
 
         NetcodePatcher();
-
-        LogVerbose("Setting up the language translations...");
-        LangParser.SetLanguage(Config.Language);
-
-        LogVerbose(LangParser.GetTranslation("lang.test"));
 
         timer.Stop();
         Logger.LogInfo(

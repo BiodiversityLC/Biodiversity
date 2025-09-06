@@ -373,28 +373,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         return States.Spawning;
     }
 
-    protected override bool ShouldRunLateUpdate()
-    {
-        // DebugShapeVisualizer.Clear(this);
-        //
-        // Vector3 origin = transform.position;
-        // float lineLength = 2.5f;
-        //
-        // if (agent.velocity.sqrMagnitude > 0.1f)
-        // {
-        //     Vector3 velocityDir = agent.velocity.normalized;
-        //     DebugShapeVisualizer.DrawLine(this, origin, origin + velocityDir * lineLength, Color.red);
-        // }
-        //
-        // Vector3 parentForward = transform.forward;
-        // DebugShapeVisualizer.DrawLine(this, origin, origin + parentForward * lineLength, Color.blue);
-        //
-        // Vector3 childForward = _adapter.Animator.gameObject.transform.forward;
-        // DebugShapeVisualizer.DrawLine(this, origin, origin + childForward * lineLength, Color.green);
-
-        return ShouldRunUpdate();
-    }
-
     /// <summary>
     /// Gets the config values and assigns them to their respective [SerializeField] variables.
     /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
@@ -422,7 +400,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     protected override string GetLogPrefix()
     {
-        return $"[WaxSoldierAI {BioId}]";
+        return $"[WaxSoldierAI {BioId}|V1]";
     }
 
     private void SubscribeToNetworkEvents()

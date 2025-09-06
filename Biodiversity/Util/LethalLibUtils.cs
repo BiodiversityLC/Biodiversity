@@ -1,5 +1,4 @@
 ﻿using BepInEx.Bootstrap;
-using Biodiversity.Core.Lang;
 using LethalLib.Modules;
 using System;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ public static class LethalLibUtils
 {
     public static void TranslateTerminalNode(TerminalNode node)
     {
-        node.displayText = LangParser.GetTranslation(node.displayText);
+        node.displayText = BiodiversityPlugin.Instance.Localization.GetTranslation(node.displayText);
     }
 
     public static void RegisterEnemyWithConfig(bool enemyEnabled, string configMoonRarity, EnemyType enemy,
@@ -21,7 +20,7 @@ public static class LethalLibUtils
         {
             (Dictionary<Levels.LevelTypes, int> spawnRateByLevelType,
                 Dictionary<string, int> spawnRateByCustomLevelType) = ConfigParsing(configMoonRarity);
-            
+
             Enemies.RegisterEnemy(enemy, spawnRateByLevelType, spawnRateByCustomLevelType, terminalNode,
                 terminalKeyword);
         }
@@ -56,22 +55,22 @@ public static class LethalLibUtils
 
         LethalLib.Modules.Items.RegisterScrap(spawnableItem, levelRarities, customLevelRarities);
     }
-    
+
     public static void RegisterShopItemWithConfig(bool enabledScrap, Item item, TerminalNode terminalNode, int itemCost,
         string configMoonRarity)
     {
         LethalLib.Modules.Items.RegisterShopItem(item, null!, null!, terminalNode, itemCost);
         if (enabledScrap) RegisterScrapWithConfig(configMoonRarity, item);
     }
-    
-    public static 
-        (Dictionary<Levels.LevelTypes, int> spawnRateByLevelType, 
-        Dictionary<string, int> spawnRateByCustomLevelType) 
+
+    public static
+        (Dictionary<Levels.LevelTypes, int> spawnRateByLevelType,
+        Dictionary<string, int> spawnRateByCustomLevelType)
         ConfigParsing(string configMoonRarity)
     {
         Dictionary<Levels.LevelTypes, int> spawnRateByLevelType = new();
         Dictionary<string, int> spawnRateByCustomLevelType = new();
-        
+
         foreach (string entry in configMoonRarity.Split(',').Select(s => s.Trim()))
         {
             string[] entryParts = entry.Split(':');

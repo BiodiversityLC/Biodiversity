@@ -53,8 +53,6 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationControllerToFrozenClientRpc(false);
         EnemyAIInstance.Context.Adapter.Agent.isStopped = false;
-
-        EnemyAIInstance.UpdateBehaviourStateFromPerception();
     }
 
     internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)

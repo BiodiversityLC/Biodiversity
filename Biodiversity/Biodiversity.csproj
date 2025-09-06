@@ -5,7 +5,7 @@
         <AssemblyName>com.github.biodiversitylc.Biodiversity</AssemblyName>
         <Product>Biodiversity</Product>
         <!-- Change to whatever version you're currently on. -->
-        <Version>0.2.6</Version>
+        <Version>0.2.7</Version>
     </PropertyGroup>
 
     <!-- Project Properties -->
@@ -42,6 +42,11 @@
         -->
         <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
     </PropertyGroup>
+
+    <!-- Language Stuff (make defs.json and en.json embedded resources) -->
+    <ItemGroup>
+        <EmbeddedResource Include="Core\Lang\languages\en.json" />
+    </ItemGroup>
 
     <!-- Primary Package References -->
     <ItemGroup>
@@ -88,7 +93,7 @@
 		<Message Importance="high" Text="Collecting lang files!" />
 
 		<ItemGroup>
-			<LangFiles Include="$(ProjectDir)Core/Lang/languages/*.json" Exclude="$(ProjectDir)Core/Lang/languages/defs.json">
+			<LangFiles Include="$(ProjectDir)Core/Lang/languages/*.json">
 				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			</LangFiles>
 		</ItemGroup>
