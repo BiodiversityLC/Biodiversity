@@ -25,13 +25,13 @@ public class AttackSelector : NetworkBehaviour
     {
         SpinAttack spinAttack = new(
             WaxSoldierClient.SpinAttack, 0f, 2f, 2f, false, 3);
-        
+
         AttackAction stabAttack = new(
-            WaxSoldierClient.StabAttack, 0f, 5.5f, 1.5f, true, 1);
-        
+            WaxSoldierClient.StabAttack, 0f, 5f, 1.5f, true, 1);
+
         ShootAttack shootAttack = new(
             WaxSoldierClient.AimMusket, 2f, 200f, 4f, true, 0);
-        
+
         availableAttacks.AddRange([spinAttack, stabAttack, shootAttack]);
         availableAttacks = availableAttacks.OrderByDescending(a => a.Priority).ToList();
     }
@@ -54,7 +54,7 @@ public class AttackSelector : NetworkBehaviour
     {
         // BiodiversityPlugin.LogVerbose($"In {nameof(SelectAttack)}");
         if (!target) return null;
-        
+
         // ReSharper disable once CompareOfFloatsByEqualityOperator
         if (distanceToTarget == -1f)
         {
@@ -78,14 +78,14 @@ public class AttackSelector : NetworkBehaviour
                 // BiodiversityPlugin.LogVerbose($"Attack failed: {distanceToTarget} >= {attack.MaxRange} || {distanceToTarget} <= {attack.MinRange}");
                 continue;
             }
-            
+
             // todo: use the strategy pattern to make it so an attack action has a list of conditions that must be met
             // Use the player targetable conditions thing
             if (attack is ShootAttack && ai.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0)
             {
                 continue;
             }
-            
+
             if (attack.RequiresLineOfSight)
             {
                 bool hasLineOfSightToTarget = ai.HasLineOfSight(
@@ -103,7 +103,7 @@ public class AttackSelector : NetworkBehaviour
 
         return null;
     }
-    
+
     public void StartCooldown(AttackAction attack)
     {
         if (attack == null) return;

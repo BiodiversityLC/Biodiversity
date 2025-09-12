@@ -19,7 +19,7 @@ public class Musket : BiodiverseItem
     [Header("Audio")]
     [SerializeField] private AudioSource shootAudioSource;
     [SerializeField] private AudioSource otherAudioSource;
-    
+
     [SerializeField] private AudioClip shootSfx;
     [SerializeField] private AudioClip shootFailSfx;
     [SerializeField] private AudioClip turnSafetyOnSfx;
@@ -27,7 +27,7 @@ public class Musket : BiodiverseItem
     [SerializeField] private AudioClip reelUpSfx;
     [SerializeField] private AudioClip swingSfx;
     [SerializeField] private AudioClip stabIntoFleshSfx;
-    
+
     [Header("Colliders")]
     [SerializeField] private BoxCollider bayonetCollider;
 
@@ -35,14 +35,14 @@ public class Musket : BiodiverseItem
     [SerializeField] public Transform bayonetTip;
     [SerializeField] public Transform muzzleTip;
     [SerializeField] public Transform bulletRayOrigin;
-    
+
     [Header("Controllers")]
     [SerializeField] public WaxSoldierBayonetAttackPhysics bayonetAttackPhysics;
 
     [Header("Debug")]
     public bool enableDebugVisuals = false;
     #endregion
-    
+
     private enum DamageType
     {
         Player,
@@ -70,7 +70,7 @@ public class Musket : BiodiverseItem
         SafetyIsOn,
         AlreadyPerformingAttackAction
     }
-    
+
     private readonly PlayerCooldownTracker _playerDamageCooldowns = new();
 
     private RaycastHit[] _bulletHitBuffer;
@@ -85,7 +85,7 @@ public class Musket : BiodiverseItem
 
     private Vector3 _itemPositionOffset;
     private Vector3 _itemRotationOffset;
-    
+
     private const int bulletHitId = 8832676;
     private const int bayonetHitId = 8832677;
     private const int bulletHitBufferCapacity = 10;
@@ -93,7 +93,7 @@ public class Musket : BiodiverseItem
 
     private float _bulletRadius;
     private float _bulletMaxDistance;
-    
+
     [Tooltip("How much the AI's vertical aim is corrected. 0 = no help, 1 = perfect Y-axis aimbot.")]
     [Range(0f, 1f)]
     public float verticalAimAssist = 0.95f;
@@ -109,21 +109,21 @@ public class Musket : BiodiverseItem
     private bool _isHoldingButton;
     private bool _isHeldByWaxSoldier;
     private bool _piercingRoundsEnabled;
-    
+
     private void Awake()
     {
         _bulletHitBuffer = new RaycastHit[bulletHitBufferCapacity];
         _bayonetHitBuffer = new Collider[bayonetHitBufferCapacity];
-        
+
         _bayonetHitMask = 1084754248; // This is the mask used by the vanilla shovel, see Util.VanillaLayersUtil for more details
         Comparer<RaycastHit>.Create((a, b) => a.distance.CompareTo(b.distance));
-        
+
         _currentAttackMode = AttackMode.Gun;
         _piercingRoundsEnabled = true;
         _bulletRadius = 0.1f;
         _bulletMaxDistance = 200f;
         _maxAmmo = 1;
-        
+
         _itemPositionOffset = new Vector3(0.02f, 0.65f, -0.05f);
         _itemRotationOffset = new Vector3(265f, 6f, 270f);
     }
@@ -139,7 +139,7 @@ public class Musket : BiodiverseItem
 
         _bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.5f);
         bayonetAttackPhysics.bayonetCollider = bayonetCollider;
-        
+
         // todo: check the vanilla shotgun's bullet mask, cuz the musket bullet can go through doors rn which is bad
         _bulletHitMask = StartOfRound.Instance.collidersRoomMaskDefaultAndPlayers | (1 << LayerMask.NameToLayer("Enemies"));
         _isSafetyOn.Value = false;
@@ -156,23 +156,23 @@ public class Musket : BiodiverseItem
                 .RegisterInsight("Attack Mode", item => item._currentAttackMode == AttackMode.Gun
                     ? "Shoot"
                     : "Stab");
-            
+
             _hasRegisteredImperiumInsights = true;
         }
     }
-    
+
     public override void LateUpdate()
     {
         itemProperties.positionOffset = _isHeldByWaxSoldier ? Vector3.zero : _itemPositionOffset;
         itemProperties.rotationOffset = _isHeldByWaxSoldier ? Vector3.zero : _itemRotationOffset;
-        
+
         base.LateUpdate();
     }
 
     private bool CanAttack(out AttackFailureReason failureReason)
     {
         failureReason = AttackFailureReason.None;
-        
+
         if (!isHeld || (!isHeldByPlayer && !isHeldByEnemy))
         {
             failureReason = AttackFailureReason.NotHeld;
@@ -189,19 +189,19 @@ public class Musket : BiodiverseItem
         {
             case AttackMode.Bayonet:
                 return true;
-            
+
             case AttackMode.Gun:
                 if (!_isHoldingButton)
                 {
                     return false;
                 }
-                
+
                 if (currentAmmo.Value <= 0)
                 {
                     failureReason = AttackFailureReason.NeedsReloading;
                     return false;
                 }
-                
+
                 if (_isSafetyOn.Value)
                 {
                     failureReason = AttackFailureReason.SafetyIsOn;
@@ -209,7 +209,7 @@ public class Musket : BiodiverseItem
                 }
 
                 return true;
-            
+
             default:
                 return false;
         }
@@ -219,7 +219,7 @@ public class Musket : BiodiverseItem
     {
         // LogVerbose($"In {nameof(Shoot)}.");
         _isPerformingAttackAction = true;
-        
+
         PlayRandomAudioClipTypeServerRpc(nameof(shootSfx), nameof(shootAudioSource), true, audibleByEnemies: true);
         yield return new WaitForSeconds(0.09f); // The actual gunshot happens 0.09 seconds into the shoot audio clip
         PerformBulletLogic();
@@ -230,7 +230,7 @@ public class Musket : BiodiverseItem
     {
         currentAmmo.Value = Mathf.Clamp(currentAmmo.Value - 1, 0, _maxAmmo);
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-        
+
         Ray bulletRay;
 
         if (false && isHeldByPlayer)
@@ -247,13 +247,13 @@ public class Musket : BiodiverseItem
             if (enemyHeldBy && enemyHeldBy.targetPlayer)
             {
                 Vector3 naturalAimDirection = bulletRayOrigin.forward;
-                
+
                 PlayerControllerB targetPlayer = enemyHeldBy.targetPlayer;
                 Vector3 targetCentre = targetPlayer.gameplayCamera.transform.position;
-                
+
                 Vector3 correctedTargetPoint = new(targetCentre.x, bulletOrigin.y, targetCentre.z);
                 Vector3 perfectAimDirection = (correctedTargetPoint - bulletOrigin).normalized;
-                
+
                 finalDirection = Vector3.Slerp(naturalAimDirection, perfectAimDirection, verticalAimAssist);
             }
             else
@@ -280,7 +280,7 @@ public class Musket : BiodiverseItem
             // Find the closest valid hit without sorting the whole array
             int closestHitIndex = FindClosestValidHit(hitCount);
             if (closestHitIndex == -1) break; // No valid targets found
-            
+
             RaycastHit hit = _bulletHitBuffer[closestHitIndex];
             Transform hitTransform = hit.transform;
 
@@ -297,7 +297,7 @@ public class Musket : BiodiverseItem
                     int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.Player);
                     DamagePlayerServerRpc(playerClientId, bulletDamage, CauseOfDeath.Gunshots);
                     _playerDamageCooldowns.Start(playerClientId, 0.2f);
-                    
+
                     LogVerbose($"Musket bullet dealt {bulletDamage} damage to {player.playerUsername}.");
                     hitResult = HitResult.Target;
                 }
@@ -314,14 +314,14 @@ public class Musket : BiodiverseItem
                 LogVerbose("Musket bullet hit scenery.");
                 hitResult = HitResult.Scenery;
             }
-            
+
             if (hitResult is HitResult.Target or HitResult.Scenery)
             {
                 successfulHitIndicies?.Add(closestHitIndex);
                 if (hitResult == HitResult.Target && _piercingRoundsEnabled)
                     continue;
             }
-            
+
             break;
         }
 
@@ -335,17 +335,17 @@ public class Musket : BiodiverseItem
     {
         LogVerbose("Reeling up bayonet...");
         PlayerControllerB playerUsingBayonet = playerHeldBy; // Needed so we can fix their animations if they drop the musket, which makes `playerHeldBy = null`
-        
+
         playerUsingBayonet.activatingItem = true;
         playerUsingBayonet.twoHanded = true;
         playerUsingBayonet.playerBodyAnimator.ResetTrigger(ShovelHitAnimatorHash);
         playerUsingBayonet.playerBodyAnimator.SetBool(ReelingUpAnimatorHash, true);
-        
+
         PlayRandomAudioClipTypeServerRpc(nameof(reelUpSfx), nameof(otherAudioSource), true, true, true, true);
 
         yield return new WaitForSeconds(0.35f);
         yield return new WaitUntil(() => !_isHoldingButton || !isHeld);
-        
+
         playerUsingBayonet.playerBodyAnimator.SetBool(ReelingUpAnimatorHash, false);
         if (!isHeld)
         {
@@ -353,25 +353,25 @@ public class Musket : BiodiverseItem
             _isPerformingAttackAction = false;
             yield break;
         }
-        
+
         LogVerbose("Swinging bayonet...");
         PlayRandomAudioClipTypeServerRpc(nameof(swingSfx), nameof(otherAudioSource), true, true, true, true);
         playerUsingBayonet.UpdateSpecialAnimationValue(true, (short)playerUsingBayonet.transform.localEulerAngles.y, 0.4f);
-        
+
         yield return new WaitForSeconds(0.13f);
         yield return new WaitForEndOfFrame();
-        
+
         if (!isHeld)
         {
             LogVerbose("Musket has been dropped, cancelling bayonet stab.");
             _isPerformingAttackAction = false;
             yield break;
         }
-        
+
         playerUsingBayonet.activatingItem = false;
         playerUsingBayonet.twoHanded = false;
         HitBayonet();
-        
+
         yield return new WaitForSeconds(0.3f);
         _isPerformingAttackAction = false;
     }
@@ -379,10 +379,10 @@ public class Musket : BiodiverseItem
     public void HitBayonet()
     {
         LogVerbose($"In {nameof(HitBayonet)}");
-        
+
         int hitCount = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, _bayonetColliderHalfExtents.Value,
             _bayonetHitBuffer, Quaternion.identity, _bayonetHitMask, QueryTriggerInteraction.Collide);
-        
+
         if (hitCount == 0) return;
         for (int i = 0; i < hitCount; i++)
         {
@@ -390,14 +390,15 @@ public class Musket : BiodiverseItem
 
             if (collider.CompareTag("Player") && collider.transform.TryGetComponent(out PlayerControllerB player))
             {
+                LogVerbose($"isHeldByPlayer && playerHeldBy == player  => {isHeldByPlayer && playerHeldBy == player}, isHeldByPlayer = {isHeldByPlayer}, playerHeldBy = {playerHeldBy}");
                 if (isHeldByPlayer && playerHeldBy == player) continue;
-                
+
                 ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
                 if (_playerDamageCooldowns.IsOnCooldown(playerClientId)) continue;
-                
+
                 DamagePlayerServerRpc(playerClientId, 100, CauseOfDeath.Stabbing);
                 _playerDamageCooldowns.Start(playerClientId, 0.2f);
-                
+
                 continue;
             }
 
@@ -407,7 +408,7 @@ public class Musket : BiodiverseItem
             }
         }
     }
-    
+
     private int FindClosestValidHit(int hitCount)
     {
         int closestIndex = -1;
@@ -427,10 +428,10 @@ public class Musket : BiodiverseItem
             minDistance = hit.distance;
             closestIndex = i;
         }
-        
+
         return closestIndex;
     }
-    
+
     public void Reload()
     {
         LogVerbose("Reloading...");
@@ -473,7 +474,7 @@ public class Musket : BiodiverseItem
     }
     #endregion
 
-    public void SetupShoot()
+    public void SetupShotAndFire()
     {
         if (_shootingCoroutine != null) StopCoroutine(_shootingCoroutine);
         _shootingCoroutine = null;
@@ -490,7 +491,7 @@ public class Musket : BiodiverseItem
         translucentYellow.a = 0.5f;
         Color translucentRed = Color.red;
         translucentRed.a = 0.5f;
-        
+
         // 2). Draw the starting sphere from where the bullet originated
         DebugShapeVisualizer.DrawSphere(this, ray.origin, _bulletRadius, translucentYellow);
 
@@ -503,19 +504,19 @@ public class Musket : BiodiverseItem
                 DebugShapeVisualizer.DrawLine(this, ray.origin, _bulletHitBuffer[i].point, Color.red);
             }
         }
-        
+
         // 4). Draw the raw trajectory line
         Vector3 endPoint = ray.origin + ray.direction * _bulletMaxDistance;
         DebugShapeVisualizer.DrawLine(this, ray.origin, endPoint, Color.blue);
     }
-    
+
     protected override void CollectAudioClipsAndSources()
     {
         base.CollectAudioClipsAndSources();
-        
+
         AudioSources.Add(nameof(shootAudioSource), shootAudioSource);
         AudioSources.Add(nameof(otherAudioSource), otherAudioSource);
-        
+
         AudioClips.Add(nameof(shootSfx), [shootSfx]);
         AudioClips.Add(nameof(shootFailSfx), [shootFailSfx]);
         AudioClips.Add(nameof(turnSafetyOnSfx), [turnSafetyOnSfx]);
@@ -524,7 +525,7 @@ public class Musket : BiodiverseItem
         AudioClips.Add(nameof(swingSfx), [swingSfx]);
         AudioClips.Add(nameof(stabIntoFleshSfx), [stabIntoFleshSfx]);
     }
-    
+
     protected override string GetLogPrefix()
     {
         return $"[Musket {BioId}]";
@@ -535,7 +536,7 @@ public class Musket : BiodiverseItem
     {
         base.ItemActivate(used, buttonDown);
         _isHoldingButton = buttonDown;
-        
+
         if (!playerHeldBy) return;
 
         bool canAttack = CanAttack(out AttackFailureReason failureReason);
@@ -545,10 +546,10 @@ public class Musket : BiodiverseItem
             {
                 if (canAttack)
                 {
-                    SetupShoot();
+                    SetupShotAndFire();
                     break;
                 }
-                
+
                 LogVerbose($"Failed to shoot due to {failureReason}.");
 
                 if (failureReason is AttackFailureReason.NeedsReloading or AttackFailureReason.SafetyIsOn)
@@ -556,7 +557,7 @@ public class Musket : BiodiverseItem
                     PlayRandomAudioClipTypeServerRpc(nameof(shootFailSfx), nameof(otherAudioSource), audibleByEnemies: isHeldByPlayer);
                     if (failureReason is AttackFailureReason.NeedsReloading) Reload();
                 }
-                
+
                 break;
             }
 
@@ -570,7 +571,7 @@ public class Musket : BiodiverseItem
                     _reelingUpCoroutine = StartCoroutine(ReelUpBayonet());
                     break;
                 }
-                
+
                 LogVerbose($"Failed to swing bayonet due to {failureReason}.");
 
                 break;
@@ -581,6 +582,7 @@ public class Musket : BiodiverseItem
     public override void ItemInteractLeftRight(bool right)
     {
         base.ItemInteractLeftRight(right);
+
         if (_isPerformingAttackAction) return;
         if (right)
         {
@@ -602,7 +604,7 @@ public class Musket : BiodiverseItem
         {
             LogWarning($"{nameof(GetItemDataToSave)} called on a client which doesn't own it.");
         }
-        
+
         return currentAmmo.Value;
     }
 
@@ -614,7 +616,7 @@ public class Musket : BiodiverseItem
             LogWarning($"{nameof(LoadItemSaveData)} called on a client which doesn't own it.");
             return;
         }
-        
+
         currentAmmo.Value = saveData;
     }
 

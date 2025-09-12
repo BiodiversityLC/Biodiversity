@@ -18,25 +18,25 @@ public class SpinAttack : AttackAction
         Vector3 initialDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
         initialDirection.y = 0;
         ctx.Adapter.Transform.rotation = Quaternion.LookRotation(initialDirection);
-        
+
         // todo: make the whole attack action thing not poopoo. We calling base here because it triggeres the animation and we wanna set the speed and rotation before doing the anim
         base.Start(ctx);
-        
+
         ctx.Adapter.MoveToPlayer(ctx.Adapter.TargetPlayer);
     }
-    
+
     public override IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
         base.Finish(ctx);
-        
+
         Vector3 finalDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
         finalDirection.y = 0;
         ctx.Adapter.Transform.rotation = Quaternion.LookRotation(finalDirection);
 
         yield return null;
         ctx.Adapter.Animator.gameObject.transform.localRotation = Quaternion.identity;
-        
+
         ctx.Adapter.Agent.updateRotation = true;
-        ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
+        ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolAcceleration);
     }
 }

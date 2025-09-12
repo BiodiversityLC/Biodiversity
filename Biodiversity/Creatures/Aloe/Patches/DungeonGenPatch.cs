@@ -1,6 +1,5 @@
 ﻿using Biodiversity.Core.Attributes;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using DunGen;
 using HarmonyLib;
 using Unity.Netcode;
@@ -14,7 +13,6 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// </summary>
 [CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(DungeonGenerator))]
-[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class DungeonGenPatch
 {
     [HarmonyPatch("ChangeStatus")]
@@ -22,7 +20,7 @@ internal static class DungeonGenPatch
     public static void OnChangeStatus(DungeonGenerator __instance)
     {
         //__instance.CurrentDungeon.AllTiles
-        
+
         if (!NetworkManager.Singleton.IsServer) return;
 
         if (!__instance.CurrentDungeon) BiodiversityPlugin.LogVerbose("CurrentDungeon is null");
@@ -41,7 +39,7 @@ internal static class DungeonGenPatch
         // foreach (Tile tile in tiles)
         // {
         //     Bounds tileBounds = tile.Bounds;
-        //     string key = 
+        //     string key =
         // }
     }
 

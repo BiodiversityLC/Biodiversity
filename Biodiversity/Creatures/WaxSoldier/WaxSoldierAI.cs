@@ -17,9 +17,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     [SerializeField] private Transform ImperiumInsightsPanelAnchor;
 
     [Header("Controllers")] [Space(5f)]
-    [SerializeField] private BoxCollider stabAttackTriggerArea;
     [SerializeField] private AttackSelector attackSelector;
-    [SerializeField] private HeatSensor heatSensor;
+    [SerializeField] public HeatSensor heatSensor;
     [SerializeField] public WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
 
@@ -303,8 +302,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         base.SetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
         if (!IsServer || _adapter.IsDead) return;
 
-        // todo: create a wax soldier implementation of the EnemyAICollisionDetect so we can access the functions from the IShockable interface
-
         // If the current state (fully) handles the stun event, then don't run the default reaction
         if (CurrentState?.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer) ?? false)
             return;
@@ -374,8 +371,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     }
 
     /// <summary>
-    /// Gets the config values and assigns them to their respective [SerializeField] variables.
-    /// The variables are [SerializeField] so they can be edited and viewed in the unity inspector, and with the unity explorer in the game
+    /// Gets the config values and assigns them to their respective blackboard/adapter variables.
     /// </summary>
     private void InitializeConfigValues()
     {
@@ -384,7 +380,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
         WaxSoldierConfig cfg = WaxSoldierHandler.Instance.Config;
 
-        _blackboard.StabAttackTriggerArea = stabAttackTriggerArea;
         _blackboard.AttackSelector = attackSelector;
         _blackboard.NetcodeController = netcodeController;
 
@@ -395,12 +390,12 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         _adapter.Health = cfg.Health;
         _adapter.AIIntervalLength = cfg.AiIntervalTime;
         _adapter.OpenDoorSpeedMultiplier = cfg.OpenDoorSpeedMultiplier;
-        _adapter.Agent.angularSpeed = _blackboard.AgentAngularSpeed;
+        _adapter.Agent.angularSpeed = cfg.AngularSpeed;
     }
 
     protected override string GetLogPrefix()
     {
-        return $"[WaxSoldierAI {BioId}|V1]";
+        return $"[WaxSoldierAI {BioId}|V2]";
     }
 
     private void SubscribeToNetworkEvents()

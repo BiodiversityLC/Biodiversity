@@ -1,7 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Aloe.Types.Networking;
 using Biodiversity.Util;
-using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 using System.Collections.Generic;
@@ -13,7 +12,6 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 
 [CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(PlayerControllerB))]
-[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class TeleportPatches
 {
     // Unbinds the player from the aloe if they are teleported during the kidnapping
@@ -28,12 +26,12 @@ internal static class TeleportPatches
         if (!AloeSharedData.Instance.IsPlayerKidnapBound(__instance)) return;
 
         ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(__instance);
-        
+
         KeyValuePair<string, ulong> first = new();
         foreach (KeyValuePair<string, ulong> x in AloeSharedData.Instance.AloeBoundKidnaps)
         {
             if (x.Value != playerClientId) continue;
-            
+
             first = x;
             break;
         }

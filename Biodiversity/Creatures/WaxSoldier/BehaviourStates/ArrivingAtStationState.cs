@@ -11,7 +11,7 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     internal Quaternion DesiredRotation { get; private set; }
-    
+
     public ArrivingAtStationState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
@@ -34,21 +34,21 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        
+
         EnemyAIInstance.UpdateWaxDurability();
         EnemyAIInstance.Context.Adapter.MoveAgent();
 
         EnemyAIInstance.Context.Adapter.Transform.rotation = Quaternion.RotateTowards(
             EnemyAIInstance.Context.Adapter.Transform.rotation,
             DesiredRotation,
-            EnemyAIInstance.Context.Blackboard.AgentAngularSpeed * Time.deltaTime
+            EnemyAIInstance.Context.Adapter.Agent.angularSpeed * Time.deltaTime
             );
     }
 
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
     {
         base.OnStateExit(transition);
-        
+
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.Agent.updateRotation = true;
         DesiredRotation = Quaternion.identity;

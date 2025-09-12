@@ -1,6 +1,5 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Util;
-using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 
@@ -8,7 +7,6 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 
 [CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(EnemyAI))]
-[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class EnemyAIPatches
 {
     [HarmonyPatch(nameof(EnemyAI.PlayerIsTargetable))]
@@ -62,7 +60,7 @@ internal static class EnemyAIPatches
     {
         PlayerControllerB targetPlayer = __instance.targetPlayer;
         if (!PlayerUtil.IsPlayerDead(targetPlayer) &&
-            (AloeSharedData.Instance.IsPlayerKidnapBound(targetPlayer) || 
+            (AloeSharedData.Instance.IsPlayerKidnapBound(targetPlayer) ||
              (__instance is FlowermanAI && AloeSharedData.Instance.IsPlayerStalkBound(targetPlayer))))
             __instance.targetPlayer = null;
     }

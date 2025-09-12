@@ -43,7 +43,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolMaxAcceleration);
+        EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.HuntingMaxSpeed, WaxSoldierHandler.Instance.Config.HuntingAcceleration);
         EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.CombatFidelityProfile);
 
         if (EnemyAIInstance.UpdatePlayerLastKnownPosition())

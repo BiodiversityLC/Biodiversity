@@ -7,7 +7,7 @@ namespace Biodiversity.Creatures.WaxSoldier.Animation;
 public class UnmoltenAnimationHandler : NetworkBehaviour
 {
     [SerializeField] private WaxSoldierAI ai;
-    
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -23,13 +23,13 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         if (!IsServer) return;
         ai.TriggerCustomEvent(nameof(OnAnimationEventStartStabAttackLunge));
     }
-    
+
     public void OnAnimationEventEndStabAttackLunge()
     {
         if (!IsServer) return;
         ai.TriggerCustomEvent(nameof(OnAnimationEventEndStabAttackLunge));
     }
-    
+
     public void OnAnimationEventStartTargetLook(string aimTransformName)
     {
         ai.LogVerbose("Starting to aim with musket.");
@@ -38,13 +38,15 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         StateData data = new();
         data.Add("aimTransform",
             aimTransformName == "musketMuzzle" ? ai.Context.Blackboard.HeldMusket.muzzleTip : ai.Context.Adapter.Transform);
-        
+
         ai.TriggerCustomEvent(nameof(OnAnimationEventStartTargetLook), data);
     }
-    
+
     public void OnAnimationEventMusketShoot()
     {
-        //ai.LogVerbose("Firing musket.");
+        // Stops the teeth clacking
+        ai.creatureVoice.Stop();
+
         if (!IsServer) return;
         ai.TriggerCustomEvent(nameof(OnAnimationEventMusketShoot));
     }
@@ -57,7 +59,7 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         if (bayonetAttackPhysics.currentBayonetMode == WaxSoldierBayonetAttackPhysics.BayonentMode.None)
         {
             ai.LogVerbose($"Toggling bayonet on.");
-            
+
             int hash = ai.Context.Blackboard.currentAttackAction.AnimationTriggerHash;
             if (hash == WaxSoldierClient.SpinAttack)
             {
@@ -94,7 +96,7 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         ai.TriggerCustomEvent(nameof(OnAnimationEventSlamIntoGround));
     }
     #endregion
-    
+
     public void OnSpawnAnimationFinish()
     {
         ai.LogVerbose("Spawn animation complete.");
@@ -108,7 +110,7 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         if (!IsServer) return;
         ai.TriggerCustomEvent(nameof(OnAttackAnimationFinish));
     }
-    
+
     public void OnReloadAnimationFinish()
     {
         ai.LogVerbose("Reload animation complete.");

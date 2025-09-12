@@ -30,9 +30,10 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             return;
         }
 
-        EnemyAIInstance.Context.Blackboard.currentAttackAction.Start(EnemyAIInstance.Context);
-
         EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.CombatFidelityProfile);
+        EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PursuitMaxSpeed, WaxSoldierHandler.Instance.Config.PursuitAcceleration);
+
+        EnemyAIInstance.Context.Blackboard.currentAttackAction.Start(EnemyAIInstance.Context);
     }
 
     internal override void UpdateBehaviour()
@@ -102,7 +103,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
                 if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)
                 {
                     shootAttackAction.StopLookAtTarget();
-                    EnemyAIInstance.Context.Blackboard.HeldMusket.SetupShoot();
+                    EnemyAIInstance.Context.Blackboard.HeldMusket.SetupShotAndFire();
                 }
 
                 break;

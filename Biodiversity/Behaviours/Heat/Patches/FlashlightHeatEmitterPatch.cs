@@ -1,8 +1,10 @@
-﻿using HarmonyLib;
+﻿using Biodiversity.Core.Attributes;
+using HarmonyLib;
 using Unity.Netcode;
 
 namespace Biodiversity.Behaviours.Heat.Patches;
 
+[CreaturePatch("WaxSoldier")] // This may be removed in the future if something else needs to use heat stuff
 [HarmonyPatch(typeof(FlashlightItem))]
 internal static class FlashlightHeatEmitterPatch
 {
@@ -26,7 +28,7 @@ internal static class FlashlightHeatEmitterPatch
     private static void PocketFlashlightToggle(FlashlightItem __instance)
     {
         if (!NetworkManager.Singleton.IsServer || !HeatController.HasInstance) return;
-        
+
         HeatEmitter emitter = HeatController.Instance.GetEmitterForComponent(__instance);
         if (emitter)
         {

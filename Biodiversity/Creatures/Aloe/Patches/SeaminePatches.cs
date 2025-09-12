@@ -3,7 +3,6 @@ using Biodiversity.Util;
 using GameNetcodeStuff;
 using HarmonyLib;
 using JetBrains.Annotations;
-using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe.Patches;
@@ -14,7 +13,6 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// It makes sure the Aloe and the player don't get blown up if the Aloe goes over a seamine while kidnapping.
 /// </summary>
 [CreaturePatch("Aloe")]
-[SuppressMessage("ReSharper", "InconsistentNaming")]
 [UsedImplicitly]
 [ModConditionalPatch("Surfaced", "Seamine", "OnTriggerEnter", "PrefixTriggerEntry", HarmonyPatchType.Prefix)]
 internal static class SeaminePatches

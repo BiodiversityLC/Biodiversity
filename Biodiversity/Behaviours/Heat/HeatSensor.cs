@@ -17,7 +17,7 @@ public class HeatSensor : NetworkBehaviour
 
     [Space(2f)]
     [Header("Debug Settings")]
-    public bool debug = true;
+    public bool debug = false;
 
     [Space(2f)]
     [Header("References")]
@@ -160,7 +160,6 @@ public class HeatSensor : NetworkBehaviour
         // Every frame, reset the visualizer so old lines disappear
         DebugShapeVisualizer.Clear(this);
 
-        Vector3 position = transform.position + Vector3.up * 0.5f;
         _emittersToRemoveCache.Clear();
 
         foreach (HeatEmitter emitter in overlaps)

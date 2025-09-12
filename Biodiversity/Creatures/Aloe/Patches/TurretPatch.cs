@@ -1,5 +1,4 @@
 ﻿using Biodiversity.Core.Attributes;
-using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 
@@ -11,7 +10,6 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// </summary>
 [CreaturePatch("Aloe")]
 [HarmonyPatch(typeof(Turret))]
-[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal static class TurretPatch
 {
     [HarmonyPatch(nameof(Turret.CheckForPlayersInLineOfSight))]

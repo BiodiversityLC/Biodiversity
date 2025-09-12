@@ -1,6 +1,5 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Util;
-using System.Diagnostics.CodeAnalysis;
 using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
@@ -12,7 +11,6 @@ namespace Biodiversity.Creatures.Aloe.Patches;
 /// It makes sure the Aloe and the player don't get blown up if the Aloe goes over a landmine while kidnapping.
 /// </summary>
 [CreaturePatch("Aloe")]
-[SuppressMessage("ReSharper", "InconsistentNaming")]
 [HarmonyPatch(typeof(Landmine))]
 [HarmonyPriority(Priority.HigherThanNormal)]
 internal static class LandminePatch
@@ -31,7 +29,7 @@ internal static class LandminePatch
         PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
         if (!PlayerUtil.IsPlayerDead(player) && AloeSharedData.Instance.IsPlayerKidnapBound(player))
             return false;
-        
+
         FakePlayerBodyRagdoll fakePlayerBodyRagdoll = other.gameObject.GetComponent<FakePlayerBodyRagdoll>();
         if (fakePlayerBodyRagdoll)
             return false;
@@ -53,11 +51,11 @@ internal static class LandminePatch
         PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
         if (!PlayerUtil.IsPlayerDead(player) && AloeSharedData.Instance.IsPlayerKidnapBound(player))
             return false;
-        
+
         FakePlayerBodyRagdoll fakePlayerBodyRagdoll = other.gameObject.GetComponent<FakePlayerBodyRagdoll>();
         if (fakePlayerBodyRagdoll)
             return false;
-        
+
         return true;
     }
 }
