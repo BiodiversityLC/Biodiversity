@@ -68,7 +68,7 @@ internal class CoilCrabHandler : BiodiverseAIHandler<CoilCrabHandler>
                 weight = 0;
             }
 
-            StormyWeights.Add(name, weight);
+            StormyWeights.Add(name.ToLower(), weight);
         }
 
 
@@ -96,7 +96,7 @@ internal class CoilCrabHandler : BiodiverseAIHandler<CoilCrabHandler>
                 weight = 0;
             }
 
-            Weights.Add(name, weight);
+            Weights.Add(name.ToLower(), weight);
         }
 
         List<int> wk = new List<int>(Weights.Values);
