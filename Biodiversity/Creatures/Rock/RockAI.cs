@@ -9,8 +9,9 @@ using Random = System.Random;
 
 namespace Biodiversity.Creatures.Rock
 {
-    internal class RockAI : BiodiverseAI
+    public class RockAI : BiodiverseAI
     {
+        bool running = false;
         public override void Start()
         {
             base.Start();
@@ -20,9 +21,12 @@ namespace Biodiversity.Creatures.Rock
         public override void DoAIInterval()
         {
             base.DoAIInterval();
-            if (IsServer)
+
+            bool reachedDestination = Vector3.Distance(agent.destination, transform.position) <= 1;
+            if (IsServer && running)
             {
-                creatureAnimator.SetBool("Braking", agent.velocity.magnitude <= agent.speed/2);
+                creatureAnimator.SetBool("Braking", reachedDestination);
+                running = !reachedDestination;
             }
         }
 
@@ -30,10 +34,17 @@ namespace Biodiversity.Creatures.Rock
         {
             if (IsServer)
             {
-                GameObject[] nodes = AloeSharedData.Instance.GetOutsideAINodes();
                 creatureAnimator.SetTrigger("Hit");
-                SetDestinationToPosition(nodes[UnityEngine.Random.Range(0, nodes.Length)].transform.position);
             }
+        }
+
+        public void StartRunning()
+        {
+            if (!IsServer) return;
+            if (running) return;
+            GameObject[] nodes = AloeSharedData.Instance.GetOutsideAINodes();
+            SetDestinationToPosition(nodes[UnityEngine.Random.Range(0, nodes.Length)].transform.position);
+            running = true;
         }
     }
 }

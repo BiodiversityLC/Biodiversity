@@ -28,7 +28,7 @@ internal static class CoilCrabRoundManagerPatch
         levelName = levelName.Remove(levelName.Length - "Level".Length);
         // I don't care if I can write a number instead of using the .Length property. I would just rather have it easy to read.
 
-        BiodiversityPlugin.LogVerbose($"The name of the level (For the Coil-Crab debug): {levelName}");
+        BiodiversityPlugin.LogVerbose($"The name of the level (For the Coil-Crab debug): {levelName} ({levelName.Length})");
 
 
         SpawnableEnemyWithRarity crab = null;
