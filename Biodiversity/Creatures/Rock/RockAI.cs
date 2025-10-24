@@ -3,15 +3,18 @@ using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Random = System.Random;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Rock
 {
     public class RockAI : BiodiverseAI
     {
         bool running = false;
+        float breathTimer = 0f;
+
         public override void Start()
         {
             base.Start();
@@ -27,6 +30,21 @@ namespace Biodiversity.Creatures.Rock
             {
                 creatureAnimator.SetBool("Braking", reachedDestination);
                 running = !reachedDestination;
+            }
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (IsServer)
+            {
+                breathTimer += Time.deltaTime;
+                if (breathTimer >= 1.5f)
+                {
+                    breathTimer = 0f;
+                    if (Random.Range(0f, 1f) < 0.35f) creatureAnimator.SetTrigger("TakeBreath");
+                }
             }
         }
 
