@@ -1,12 +1,6 @@
 ﻿using Biodiversity.Creatures.Aloe;
 using GameNetcodeStuff;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.Rock
 {
@@ -40,10 +34,10 @@ namespace Biodiversity.Creatures.Rock
             if (IsServer)
             {
                 breathTimer += Time.deltaTime;
-                if (breathTimer >= 1.5f)
+                if (breathTimer >= 15f)
                 {
                     breathTimer = 0f;
-                    if (Random.Range(0f, 1f) < 0.35f) creatureAnimator.SetTrigger("TakeBreath");
+                    creatureAnimator.SetTrigger("TakeBreath");
                 }
             }
         }
