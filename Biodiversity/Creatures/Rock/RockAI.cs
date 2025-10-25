@@ -8,6 +8,7 @@ namespace Biodiversity.Creatures.Rock
     {
         bool running = false;
         float breathTimer = 0f;
+        float timeSinceStartedRunning = 0f;
 
         public override void Start()
         {
@@ -19,11 +20,15 @@ namespace Biodiversity.Creatures.Rock
         {
             base.DoAIInterval();
 
-            bool reachedDestination = Vector3.Distance(agent.destination, transform.position) <= 1;
-            if (IsServer && running)
+            if (IsServer && running && timeSinceStartedRunning > 2f)
             {
-                creatureAnimator.SetBool("Braking", reachedDestination);
-                running = !reachedDestination;
+                BiodiversityPlugin.LogVerbose($"Rock run distance: {agent.remainingDistance}");
+                if (agent.remainingDistance < 1)
+                {
+                    creatureAnimator.SetTrigger("Brake");
+                    running = false;
+                    timeSinceStartedRunning = 0f;
+                }
             }
         }
 
@@ -33,6 +38,11 @@ namespace Biodiversity.Creatures.Rock
 
             if (IsServer)
             {
+                if (running)
+                {
+                    timeSinceStartedRunning += Time.deltaTime;
+                }
+
                 breathTimer += Time.deltaTime;
                 if (breathTimer >= 15f)
                 {
