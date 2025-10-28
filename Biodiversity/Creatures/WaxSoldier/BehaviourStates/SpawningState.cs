@@ -20,17 +20,18 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override void OnStateEnter(ref StateData initData)
     {
         base.OnStateEnter(ref initData);
-        
+
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.SetMovementProfile(0f, 50f);
-        
+        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
+
         EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Unmolten;
-        
+
         // todo: change state initialization to be done in start() instead of awake(), because we should have InitializeConfig() before any state starts doing stuff
         // EnemyAIInstance.Context.Blackboard.NetcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
-        
+
         // EnemyAIInstance.netcodeController.TargetPlayerClientId.SafeSet(BiodiverseAI.NullPlayerId);
-        
+
         EnemyAIInstance.DetermineGuardPostPosition();
     }
 
@@ -39,7 +40,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.OnCustomEvent(eventName, eventData);
 
         switch (eventName)
-        { 
+        {
             case nameof(UnmoltenAnimationHandler.OnSpawnAnimationFinish):
                 EnemyAIInstance.StartCoroutine(SpawnMusketWhenNetworkIsReady());
                 break;
@@ -55,7 +56,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         yield return null;
         EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
     }
-    
+
     internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
     {
         base.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
@@ -65,6 +66,6 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);
-        return true; // Makes nothing happen 
+        return true; // Makes nothing happen
     }
 }

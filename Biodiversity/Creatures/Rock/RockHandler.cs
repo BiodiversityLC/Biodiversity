@@ -5,15 +5,14 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Assertions;
 
-namespace Biodiversity.Creatures.Rock
+namespace Biodiversity.Creatures.Rock;
+
+internal class RockHandler : BiodiverseAIHandler<RockHandler>
 {
-    internal class RockHandler : BiodiverseAIHandler<RockHandler>
+    internal RockAssets Assets { get; private set; }
+    public RockHandler()
     {
-        internal RockAssets Assets { get; private set; }
-        public RockHandler()
-        {
-            Assets = new RockAssets("biodiversity_rock");
-            Enemies.RegisterEnemy(Assets.RockEnemyType, 0, Levels.LevelTypes.All, infoNode: null, infoKeyword: null);
-        }
+        // Assets = new RockAssets("biodiversity_rock");
+        // Enemies.RegisterEnemy(Assets.RockEnemyType, 0, Levels.LevelTypes.All, infoNode: null, infoKeyword: null);
     }
 }

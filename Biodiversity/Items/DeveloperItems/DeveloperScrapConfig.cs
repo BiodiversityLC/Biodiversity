@@ -9,8 +9,8 @@ namespace Biodiversity.Items.DeveloperItems;
 public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<DeveloperScrapConfig>(cfg)
 {
     [field: Header("Developer Items Settings")]
-    
-    public GenericScrapItem RubberDuck { get; private set; } = 
+
+    public GenericScrapItem RubberDuck { get; private set; } =
         new(
             "NethersomeDuckItemData", "Nethersomes duck",
             rarity: "All:2",
@@ -41,21 +41,21 @@ public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<Devel
             .WithCustomSetting("Small Shake Distance", 6f,
                 "The maximum distance from the Iron Dog at which you will experience a small screen shake when the Iron Dog is dropped on the floor. Set it to -1 to disable it.",
                 new AcceptableValueRange<float>(-1f, 1000f));
-    
+
     // Temp names, weights, values and rarities for these two below
-    public GenericScrapItem CDog { get; private set; } =
-        new(
-            "CDogItemData", "Ccodes dog",
-            rarity: "All:20",
-            weight: 1.05f,
-            minimumValue: 50,
-            maximumValue: 100);
-    
-    public GenericScrapItem JacuPlushie { get; private set; } =
-        new(
-            "JacuPlushieItemData", "Dog",
-            rarity: "All:20",
-            weight: 1.1f,
-            minimumValue: 50,
-            maximumValue: 100);
+    // public GenericScrapItem CDog { get; private set; } =
+    //     new(
+    //         "CDogItemData", "Ccodes dog",
+    //         rarity: "All:20",
+    //         weight: 1.05f,
+    //         minimumValue: 50,
+    //         maximumValue: 100);
+    //
+    // public GenericScrapItem JacuPlushie { get; private set; } =
+    //     new(
+    //         "JacuPlushieItemData", "Dog",
+    //         rarity: "All:20",
+    //         weight: 1.1f,
+    //         minimumValue: 50,
+    //         maximumValue: 100);
 }

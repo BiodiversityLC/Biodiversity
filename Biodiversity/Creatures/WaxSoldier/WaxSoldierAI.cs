@@ -99,7 +99,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
         if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
         {
-            bool isAgentNull = !Context.Adapter.Agent;
+            bool isAgentNull = !_adapter.Agent;
 
             Imperium.API.Visualization.InsightsFor<WaxSoldierAI>()
                 .SetPersonalNameGenerator(entity => entity.BioId)
@@ -107,7 +107,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
                 .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
                 .RegisterInsight("Acceleration",
-                    entity => !isAgentNull ? $"{entity.Context.Adapter.Agent.acceleration:0.0}" : "0")
+                    entity => !isAgentNull ? $"{entity._adapter.Agent.acceleration:0.0}" : "0")
                 .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
                 .RegisterInsight("Wax Durability",
                     entity => $"{Mathf.Max(0, entity._blackboard.WaxDurability * 100)} %");
@@ -395,7 +395,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     protected override string GetLogPrefix()
     {
-        return $"[WaxSoldierAI {BioId}|V2]";
+        return $"[WaxSoldierAI {BioId}|V3]";
     }
 
     private void SubscribeToNetworkEvents()

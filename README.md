@@ -122,7 +122,7 @@ Twitter: https://x.com/phomtoonlink
 ## s1ckboy:
 Modeller, rigger, concept designer, sound designer, recruiter, overall reliable guy, the team secretary.
 
-## Lous Silva:
+## Louis Silva:
 Lead coder, coder for the Aloe and the reworked critters. <br> <br>
 Github: https://github.com/LouisSilva
 
