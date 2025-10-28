@@ -16,7 +16,7 @@ internal static class ClockworkAngelTimeOfDayPatch
     {
         if (!TimeOfDay.Instance.IsServer)
             return;
-        
+
         Random random = new(StartOfRound.Instance.randomMapSeed + 28);
 
         if (random.Next(0, 1) == 0)

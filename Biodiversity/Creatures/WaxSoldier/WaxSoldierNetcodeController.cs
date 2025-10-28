@@ -37,29 +37,29 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
     [ServerRpc(RequireOwnership = true)]
     public void SpawnMusketServerRpc()
     {
-        GameObject musketObject = Instantiate(
-            WaxSoldierHandler.Instance.Assets.MusketItemData.spawnPrefab,
-            transform.position,
-            Quaternion.identity,
-            RoundManager.Instance.spawnedScrapContainer);
+        // GameObject musketObject = Instantiate(
+        //     WaxSoldierHandler.Instance.Assets.MusketItemData.spawnPrefab,
+        //     transform.position,
+        //     Quaternion.identity,
+        //     RoundManager.Instance.spawnedScrapContainer);
 
-        if (!musketObject)
-        {
-            BiodiversityPlugin.Logger.LogError("The musket object that was instantiated, is null.");
-            return;
-        }
-
-        if (!musketObject.TryGetComponent(out Musket musket))
-        {
-            BiodiversityPlugin.Logger.LogError("Could not get musket component from musket object.");
-            return;
-        }
-
-        int scrapValue = UnityEngine.Random.Range(WaxSoldierHandler.Instance.Config.MusketMinimumValue, WaxSoldierHandler.Instance.Config.MusketMaximumValue + 1);
-        RoundManager.Instance.totalScrapValueInLevel += scrapValue;
-
-        musket.GetComponent<NetworkObject>().Spawn();
-        SpawnMusketClientRpc(musketObject, scrapValue);
+        // if (!musketObject)
+        // {
+        //     BiodiversityPlugin.Logger.LogError("The musket object that was instantiated, is null.");
+        //     return;
+        // }
+        //
+        // if (!musketObject.TryGetComponent(out Musket musket))
+        // {
+        //     BiodiversityPlugin.Logger.LogError("Could not get musket component from musket object.");
+        //     return;
+        // }
+        //
+        // int scrapValue = UnityEngine.Random.Range(WaxSoldierHandler.Instance.Config.MusketMinimumValue, WaxSoldierHandler.Instance.Config.MusketMaximumValue + 1);
+        // RoundManager.Instance.totalScrapValueInLevel += scrapValue;
+        //
+        // musket.GetComponent<NetworkObject>().Spawn();
+        // SpawnMusketClientRpc(musketObject, scrapValue);
     }
 
     [ClientRpc]
