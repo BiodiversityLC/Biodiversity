@@ -166,7 +166,8 @@ Check out his movement! <br>
 Youtube:  https://www.youtube.com/@nethersome826
 
 ## Shepd:
-Item modeller and texture painter (Iron dog and many more dev scraps).
+Item modeller and texture painter (Iron dog and many more dev scraps). <br> <br> Make sure to take a look a their twitter! <br>
+Twitter: https://x.com/malicemanshep?s=21
 
 ## Bobilka:
 Item modeller and texture painter. <br> <br> Check out his work! <br>
