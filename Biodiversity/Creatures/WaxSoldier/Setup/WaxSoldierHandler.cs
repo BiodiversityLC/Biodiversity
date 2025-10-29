@@ -1,9 +1,11 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Util;
 using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.WaxSoldier;
 
 [UsedImplicitly]
+[HideHandler]
 internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
 {
     internal WaxSoldierAssets Assets { get; set; }

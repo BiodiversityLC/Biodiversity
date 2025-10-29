@@ -1,15 +1,16 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity.Core.Attributes;
 using LethalLib.Modules;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using UnityEngine.Assertions;
 
 namespace Biodiversity.Creatures.Rock;
 
+[HideHandler]
 internal class RockHandler : BiodiverseAIHandler<RockHandler>
 {
     internal RockAssets Assets { get; private set; }
+
     public RockHandler()
     {
         // Assets = new RockAssets("biodiversity_rock");

@@ -132,14 +132,23 @@ public class BiodiversityPlugin : BaseUnityPlugin
             Type type = creatureHandlers[i];
             string handlerName = type.Name;
 
-            DisableEnemyByDefaultAttribute dis = type.GetCustomAttribute<DisableEnemyByDefaultAttribute>();
-            bool enableByDefault = dis == null;
-
-            bool creatureEnabled = base.Config.Bind("Creatures", handlerName, enableByDefault, $"Enable/disable the {handlerName}").Value;
-
-            if (!creatureEnabled)
+            // Check for the `HideHandlerAttribute` attribute
+            HideHandlerAttribute hideHandlerAttr = type.GetCustomAttribute<HideHandlerAttribute>();
+            if (hideHandlerAttr != null)
             {
-                LogVerbose($"{handlerName} was skipped because it's disabled.");
+                LogVerbose($"Hiding {handlerName} because it's marked as hidden.");
+                continue;
+            }
+
+            // Check for the `DisableEnemyByDefaultAttribute` attribute
+            DisableEnemyByDefaultAttribute disableEnemyByDefaultAttr = type.GetCustomAttribute<DisableEnemyByDefaultAttribute>();
+            bool isEnabledByDefault = disableEnemyByDefaultAttr == null;
+
+            bool isCreatureEnabled = base.Config.Bind("Creatures", handlerName, isEnabledByDefault, $"Enable/disable the {handlerName}").Value;
+
+            if (!isCreatureEnabled)
+            {
+                LogVerbose($"Skipping {handlerName} because it's disabled.");
                 continue;
             }
 

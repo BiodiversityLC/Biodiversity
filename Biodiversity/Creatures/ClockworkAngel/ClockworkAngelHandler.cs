@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Biodiversity.Core.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Biodiversity.Creatures.ClockworkAngel;
 
+[HideHandler]
 internal class ClockworkAngelHandler : BiodiverseAIHandler<ClockworkAngelHandler>
 {
     internal ClockworkAngelAssets Assets { get; private set; }
