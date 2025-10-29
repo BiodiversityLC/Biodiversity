@@ -79,7 +79,7 @@ There's 7 different designs! <br> <br>
 Min value: 0 <br>
 Max value: 100 <br>
 Weight: 0lb <br>
-Rarity: 5 <br> <br>
+Rarity: 2 <br> <br>
 
 ![](https://trello.com/1/cards/66ccf39ae06fd565d61db7de/attachments/66ccf3a0aa7383de04ca95b5/download/netherduck1.png)<br>
 
@@ -123,7 +123,7 @@ Twitter: https://x.com/phomtoonlink
 Modeller, rigger, concept designer, sound designer, recruiter, overall reliable guy, the team secretary.
 
 ## Louis Silva:
-Lead coder, coder for the Aloe and the reworked critters. <br> <br>
+Lead coder, coder for the Aloe, Wax soldier, and the reworked critters. <br> <br>
 Github: https://github.com/LouisSilva
 
 ## Ccode:
@@ -164,6 +164,9 @@ Lead critter animator, Wax Soldier animator and modeler. <br>
 Thanks to Gamexing for duck textures! <br> <br> 
 Check out his movement! <br>
 Youtube:  https://www.youtube.com/@nethersome826
+
+## Shepd:
+Item modeller and texture painter (Iron dog and many more dev scraps).
 
 ## Bobilka:
 Item modeller and texture painter. <br> <br> Check out his work! <br>
@@ -208,7 +211,7 @@ D4N9's Git-hub: https://github.com/D4N9-Twitch <br>
 
 ### Zigzag Awaka
 
-#### French Translation (OUT NOW!) <br>
+#### French Translation <br>
 Ziggy's Mods: https://thunderstore.io/c/lethal-company/p/Zigzag/ <br>
 
 ## Mooners - People who have made their moons compatible with our Ogopogo entity!
@@ -266,11 +269,13 @@ Jacob5G - fuck you jacon
 FlameBurnt - For inspiring the concept of enemy families/variants, check out their socials!
 Twitter: https://x.com/FlameBurnt <br> <br>
 Xu Xialolan - For creating Giant Specimens and inspiring the concept of Biodiversity. <br> <br>
-Mushie and Sebu - For helping me come up with the first enemy variants (the three hoarding bugs). <br> <br>
+Mushie and Sebu - For helping me come up with the first enemy variant concepts (the three hoarding bugs). <br> <br>
 Siphonife - For helping me and a ton of our team members figure out our tools, thank you so much! <br>
+loaforc - For kickstarting development, you're awesome dude <3. <br>
 
 # Known Issues - Whoops :3 <br>
 
 There are some problems with our entities that we'll look into fixing in the future, like:
-- Ogopogo is NOT supported on moons other than the ones in the default spawn rarity config. If you make him spawn anywhere it's not supposed to it'll be in places it's not supposed to be.
-- Upon snatching a player (Aloe's mechanic), a duplicate of their head (which is actually the visor HUD element)and an extra ragdoll appear in front of the player's camera.
+- Ogopogo is NOT supported on moons other than the ones in the default spawn rarity config. If you add spawn weights for moons not in the defaults or anywhere it's not made to be in, the enemy will not work as intended.
+- The Prototax's spore spew has a number of issues regarding its visuals. The fog itself renders as a cube, and it stops expanding once it collides with things like ReverbTriggers.
+- Leaf boys are non-killable, which can lead to Eyeless dogs getting stuck trying to kill them. This is something we'll attempt to adress on our next content update.
