@@ -8,9 +8,9 @@ namespace Biodiversity.Creatures.Critters;
 [Serializable]
 public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<CritterConfig>(configFile) 
 {
-	[field: Header("Fungi")]
+	[field: Header("Prototax")]
 	
-	[field: Tooltip("Whether the Fungi will spawn in games.")]
+	[field: Tooltip("Whether the Prototax will spawn in games.")]
 	public bool FungiEnabled { get; private set; } = true;
 	
 	[field: Tooltip("Spawn weight of the Fungi on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
@@ -26,15 +26,15 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
 	
 	[field: Tooltip("Length of boosted speed after being hit.")]
 	[field: Range(3f, 20f)]
-	public float FungiBoostTime { get; private set; } = 6f;
+	public float FungiBoostTime { get; private set; } = 8f;
 	
 	[field: Tooltip("Length of stunned time after being hit.")]
 	[field: Range(3f, 20f)]
 	public float FungiStunTime { get; private set; } = 3f;
 	
-	[field: Header("Leaf Boy")]
+	[field: Header("Leaf boy")]
 	
-	[field: Tooltip("Whether the Leaf Boy will spawn in games.")]
+	[field: Tooltip("Whether the Leaf boy will spawn in games.")]
 	public bool LeafBoyEnabled { get; private set; } = true;
 	
 	[field: Tooltip("Spawn weight of the Leaf boys on all moons. You can to add to it any moon, just follow the format (also needs LLL installed for LE moons to work with this config).")]
