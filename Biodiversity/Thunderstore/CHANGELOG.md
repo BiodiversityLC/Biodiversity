@@ -1,39 +1,55 @@
-# Version 0.2.7. - v73 Compatability and a rocky road ahead.
+## Version 0.2.8. - Post v73 Patch.
 
-## Ogopogo:
+#### Aloe:
+- Gave grandma her medicine so she wouldn't tweak out if Imperium wasn't installed (sorry about that).
+
+#### Ogopogo:
+- Added Ogopogo to 29-Dreg and 1010-Court.
+  
+#### Coil-crabs:
+- Nerfed the Coil-shell's min and max values from 42-75 to 37-70.
+- Increased Coil-crab spawn chance on Offense from 70 to 75 and from 120 to 150 during Stormy Offense.
+- Added weights for 29-Dreg.
+
+#### Prototax and Leaf boy:
+- Tweaked their configs to have the correct name and spelling (Fungi > Prototax, LeafBoy > Leaf boy).
+- Removed any reference of LE (LethalExpansion) moons from the spawn configs.
+- Increased the Prototax's speed boost length from 6s to 8s.
+
+#### Misc:
+- Fixed CHANGELOG.md formatting and removed the Aloe visor bug entry off the Known Issues section of the README.
+- 60%
+- 10%
+
+## Version 0.2.7. - v73 Compatability and a rocky road ahead.
+
+#### Ogopogo:
 
 - Added Ogo to a bunch of new moons!
 - Added static spawn position config.
 - Made Vermin super rare in preparation for its rework (they will be changed once that's out).
 - Fixed Ogopogo cheese.
 
-## Aloe:
+#### Aloe:
 
 - Fixed Visor issue.
 - Fixed Double body bug.
 - Added a few configs, check em out!
 
-## Coil-crabs:
+#### Coil-crabs:
 
 - Fixed weights on modded moons.
 
-## Items:
+#### Items:
 
 - Fixed Nethersome duck.
 - Added Iron dog.
-- Added a dev item for Ccode.
-- Added a dev item for JacuC.
-- Added a dev item for Zipka.
 
-## Misc:
+#### Misc:
 
 - Added French translation, thanks to Ziggy (Zigzag Awaka)!
-- Made Coil-crabs and Boom birds less common on snow moons.
-- 60%
-- 10%
 
-
-# Version 0.2.6. - THE HAPPY BIRTHDAY ZIGGY UPDATE!
+## Version 0.2.6. - THE HAPPY BIRTHDAY ZIGGY UPDATE!
 
 - Happy birthday ziggy haha hoohoo
 
