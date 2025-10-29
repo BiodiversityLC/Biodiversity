@@ -49,5 +49,5 @@ public class MicBirdConfig(ConfigFile configFile) : BiodiverseConfigLoader<MicBi
     public int AudioVolume { get; private set; } = 100;
 
     [field: Tooltip("Compatablility mode GUIDs. Put GUIDs of mods that cause the Boom Bird not to path to the top of the ship in here.")]
-    public string CompatabilityModeGuids { get; private set; } = "MelanieMelicious.2StoryShip,windblownleaves.problematicpilotry";
+    public string CompatabilityModeGuids { get; private set; } = "windblownleaves.problematicpilotry";
 }
