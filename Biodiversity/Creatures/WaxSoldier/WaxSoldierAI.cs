@@ -96,30 +96,35 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         CollectAudioClipsAndSources<WaxSoldierClient>();
         SubscribeToNetworkEvents();
         InitializeConfigValues();
-
-        if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
-        {
-            bool isAgentNull = !_adapter.Agent;
-
-            Imperium.API.Visualization.InsightsFor<WaxSoldierAI>()
-                .SetPersonalNameGenerator(entity => entity.BioId)
-                .SetPositionOverride(entity => entity.ImperiumInsightsPanelAnchor.position)
-
-                .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
-                .RegisterInsight("Acceleration",
-                    entity => !isAgentNull ? $"{entity._adapter.Agent.acceleration:0.0}" : "0")
-                .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
-                .RegisterInsight("Wax Durability",
-                    entity => $"{Mathf.Max(0, entity._blackboard.WaxDurability * 100)} %");
-
-            _hasRegisteredImperiumInsights = true;
-        }
+        TryRegisterImperiumInsights();
 
         LogVerbose("Wax Soldier spawned!");
     }
     #endregion
 
     #region Wax Soldier Specific AI Logic
+
+    private void TryRegisterImperiumInsights()
+    {
+        // if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
+        // {
+        //     bool isAgentNull = !_adapter.Agent;
+        //
+        //     Imperium.API.Visualization.InsightsFor<WaxSoldierAI>()
+        //         .SetPersonalNameGenerator(entity => entity.BioId)
+        //         .SetPositionOverride(entity => entity.ImperiumInsightsPanelAnchor.position)
+        //
+        //         .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
+        //         .RegisterInsight("Acceleration",
+        //             entity => !isAgentNull ? $"{entity._adapter.Agent.acceleration:0.0}" : "0")
+        //         .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
+        //         .RegisterInsight("Wax Durability",
+        //             entity => $"{Mathf.Max(0, entity._blackboard.WaxDurability * 100)} %");
+        //
+        //     _hasRegisteredImperiumInsights = true;
+        // }
+    }
+
     public void UpdateWaxDurability()
     {
         float newDurability = _blackboard.WaxDurability;

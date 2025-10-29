@@ -144,21 +144,26 @@ public class Musket : BiodiverseItem
         _bulletHitMask = StartOfRound.Instance.collidersRoomMaskDefaultAndPlayers | (1 << LayerMask.NameToLayer("Enemies"));
         _isSafetyOn.Value = false;
 
-        if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
-        {
-            Imperium.API.Visualization.InsightsFor<Musket>()
-                .UnregisterInsight("Used Up")
-                .UnregisterInsight("Cooldown")
-                .UnregisterInsight("Location")
+        TryRegisterImperiumInsights();
+    }
 
-                .RegisterInsight("Ammo", item => item.currentAmmo.Value.ToString())
-                .RegisterInsight("Trigger Safety", _ => _isSafetyOn.Value ? "On" : "Off")
-                .RegisterInsight("Attack Mode", item => item._currentAttackMode == AttackMode.Gun
-                    ? "Shoot"
-                    : "Stab");
-
-            _hasRegisteredImperiumInsights = true;
-        }
+    private void TryRegisterImperiumInsights()
+    {
+        // if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
+        // {
+        //     Imperium.API.Visualization.InsightsFor<Musket>()
+        //         .UnregisterInsight("Used Up")
+        //         .UnregisterInsight("Cooldown")
+        //         .UnregisterInsight("Location")
+        //
+        //         .RegisterInsight("Ammo", item => item.currentAmmo.Value.ToString())
+        //         .RegisterInsight("Trigger Safety", _ => _isSafetyOn.Value ? "On" : "Off")
+        //         .RegisterInsight("Attack Mode", item => item._currentAttackMode == AttackMode.Gun
+        //             ? "Shoot"
+        //             : "Stab");
+        //
+        //     _hasRegisteredImperiumInsights = true;
+        // }
     }
 
     public override void LateUpdate()

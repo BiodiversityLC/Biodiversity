@@ -21,6 +21,7 @@ namespace Biodiversity;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 [BepInDependency(LethalLib.Plugin.ModGUID)]
+[BepInDependency("giosuel.Imperium", BepInDependency.DependencyFlags.SoftDependency)]
 public class BiodiversityPlugin : BaseUnityPlugin
 {
     public static BiodiversityPlugin Instance { get; private set; }
