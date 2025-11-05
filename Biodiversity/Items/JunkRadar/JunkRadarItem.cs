@@ -5,6 +5,7 @@ namespace Biodiversity.Items.JunkRadar
     public class JunkRadarItem : BiodiverseItem
     {
         public Light screenLight;
+        private readonly Color screenActiveColor = new(0.01f, 0.3f, 0f, 1f);
 
         public AudioSource mainObjectAudio;
         public AudioClip powerOnSound;
@@ -12,9 +13,14 @@ namespace Biodiversity.Items.JunkRadar
         public AudioClip outOfPowerSound;
         public AudioClip beepingSound;
 
+        public bool isBeingCharged = false;
+        public float rechargeTimer = 0;
+        private readonly float maxRechargeTime = 2f;
+
         private readonly Vector3 inspectingPosition = new(0.11f, -0.17f, 0.37f);
         private readonly Vector3 inspectingRotation = new(0, 109, 17);
-        private readonly Color screenActiveColor = new(0.019f, 0.39f, 0f, 1f);
+        private readonly Vector3 rechargingPosition = new(0, 0, 0.1f);
+        private readonly Vector3 rechargingRotation = new(0, 0, -45);
 
 
         private void InitializeBuriedScraps()
@@ -31,7 +37,7 @@ namespace Biodiversity.Items.JunkRadar
             SetControlTipsForItem();
         }
 
-        public override void ItemActivate(bool used, bool buttonDown = true)
+        public override void ItemActivate(bool used, bool buttonDown = true)  // synced
         {
             base.ItemActivate(used, buttonDown);
             if (playerHeldBy == null || insertedBattery == null || insertedBattery.empty)
@@ -75,19 +81,36 @@ namespace Biodiversity.Items.JunkRadar
 
         public override void LateUpdate()
         {
-            if (!IsOwner || playerHeldBy == null || !playerHeldBy.IsInspectingItem)
+            if (playerHeldBy != null)
             {
-                base.LateUpdate();
-                return;
+                if (isBeingCharged)
+                {
+                    UpdatePositionSpecific(rechargingPosition, rechargingRotation);
+                    rechargeTimer += Time.deltaTime;
+                    if (rechargeTimer >= maxRechargeTime)
+                    {
+                        isBeingCharged = false;
+                        rechargeTimer = 0;
+                    }
+                    return;
+                }
+                else if (IsOwner && playerHeldBy.IsInspectingItem)
+                {
+                    UpdatePositionSpecific(inspectingPosition, inspectingRotation);
+                    return;
+                }
             }
+            base.LateUpdate();
+        }
+
+        private void UpdatePositionSpecific(Vector3 specificPosition, Vector3 specificRotation)
+        {
             if (parentObject != null)
             {
                 transform.rotation = parentObject.rotation;
-                transform.Rotate(inspectingRotation);
+                transform.Rotate(specificRotation);
                 transform.position = parentObject.position;
-                Vector3 positionOffset = inspectingPosition;
-                positionOffset = parentObject.rotation * positionOffset;
-                transform.position += positionOffset;
+                transform.position += (parentObject.rotation * specificPosition);
             }
             if (radarIcon != null)
             {
