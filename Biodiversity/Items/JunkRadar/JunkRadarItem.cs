@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace Biodiversity.Items.JunkRadar
 {
@@ -13,6 +14,8 @@ namespace Biodiversity.Items.JunkRadar
         public AudioClip outOfPowerSound;
         public AudioClip beepingSound;
 
+        private bool buriedScrapsInitialized = false;
+
         public bool isBeingCharged = false;
         public float rechargeTimer = 0;
         private readonly float maxRechargeTime = 2f;
@@ -22,10 +25,19 @@ namespace Biodiversity.Items.JunkRadar
         private readonly Vector3 rechargingPosition = new(0, 0, 0.1f);
         private readonly Vector3 rechargingRotation = new(0, 0, -45);
 
+        public static JunkRadarItem Instance { get; private set; }
+        private bool isOriginalInstance = false;
 
-        private void InitializeBuriedScraps()
+
+        internal void InitializeBuriedScraps()
         {
+            LogInfo("Initializing Buried Scraps");
+            buriedScrapsInitialized = true;
+        }
 
+        internal void EnabledBuriedScraps()
+        {
+            LogInfo("Enabling Buried Scraps");
         }
 
         private void ActivateRadar(bool activate)
@@ -47,8 +59,8 @@ namespace Biodiversity.Items.JunkRadar
 
         public override void EquipItem()
         {
-            if (!hasBeenHeld)
-                InitializeBuriedScraps();
+            if (!hasBeenHeld && isOriginalInstance && buriedScrapsInitialized)
+                EnabledBuriedScraps();  // this will only run once for this instance
             base.EquipItem();
             if (isBeingUsed)
                 screenLight.enabled = true;
@@ -116,6 +128,43 @@ namespace Biodiversity.Items.JunkRadar
             {
                 radarIcon.position = transform.position;
             }
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (Instance == null && !isHeld && !StartOfRound.Instance.inShipPhase)
+            {
+                Instance = this;
+                isOriginalInstance = true;
+                InitializeBuriedScraps();
+            }
+        }
+
+        public override void Start()
+        {
+            base.Start();
+            if (isOriginalInstance && !isHeld && !StartOfRound.Instance.inShipPhase)
+            {
+                insertedBattery.charge = 0.5f;
+                StartCoroutine(FixPos());
+            }
+        }
+
+        private IEnumerator FixPos()
+        {
+            yield return new WaitForSeconds(5f);
+            targetFloorPosition.y -= 0.0855f;
+            transform.rotation = Quaternion.Euler(0, transform.rotation.y, 15);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (isOriginalInstance)
+            {
+                Instance = null;
+            }
+            base.OnNetworkDespawn();
         }
 
         protected override string GetLogPrefix()
