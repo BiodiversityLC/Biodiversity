@@ -1,14 +1,13 @@
-﻿using Biodiversity.Items.JunkRadar;
-using HarmonyLib;
+﻿using HarmonyLib;
 
-namespace Biodiversity.Patches
+namespace Biodiversity.Items.JunkRadar.Patches
 {
     [HarmonyPatch]
-    internal class JunkRadarPatch
+    internal class ChargingPatch
     {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(ItemCharger), "chargeItemDelayed")]
-        public static void ChargingAnimationOnOwnerPatch(ItemCharger __instance, GrabbableObject itemToCharge)
+        public static void ChargingOnOwnerPatch(ItemCharger __instance, GrabbableObject itemToCharge)
         {
             if (itemToCharge != null && itemToCharge is JunkRadarItem junkRadar)
             {
@@ -19,7 +18,7 @@ namespace Biodiversity.Patches
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(ItemCharger), "PlayChargeItemEffectClientRpc")]
-        public static void ChargingAnimationOnNonOwnerPatch(ItemCharger __instance, int playerChargingItem)
+        public static void ChargingOnNonOwnerPatch(ItemCharger __instance, int playerChargingItem)
         {
             if (GameNetworkManager.Instance.localPlayerController != null && (int)GameNetworkManager.Instance.localPlayerController.playerClientId != playerChargingItem)
             {
