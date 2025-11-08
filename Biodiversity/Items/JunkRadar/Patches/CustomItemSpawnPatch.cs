@@ -15,14 +15,13 @@ namespace Biodiversity.Items.JunkRadar.Patches
             {
                 return;
             }
-            if (JunkRadarItem.Instance == null)
-            {
-                if (__instance.IsServer)
-                    Spawn();
-            }
-            else
+            if (JunkRadarItem.Instance != null)
             {
                 Reload();
+            }
+            if (__instance.IsServer)
+            {
+                Spawn();
             }
         }
 

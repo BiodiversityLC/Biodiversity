@@ -31,8 +31,8 @@ namespace Biodiversity.Items.JunkRadar
         private readonly Vector3 rechargingPosition = new(0, 0, 0.1f);
         private readonly Vector3 rechargingRotation = new(0, 0, -45);
 
-        public static JunkRadarItem Instance { get; private set; }
-        private bool isOriginalInstance = false;
+        public static JunkRadarItem Instance { get; private set; }  // this is not a singleton, it's the Instance of the "master" item
+        private bool isOriginalInstance = false;  // true if the actual item is the "master"
 
 
         public override void OnNetworkSpawn()
