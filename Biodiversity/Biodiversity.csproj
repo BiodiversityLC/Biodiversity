@@ -5,7 +5,7 @@
         <AssemblyName>com.github.biodiversitylc.Biodiversity</AssemblyName>
         <Product>Biodiversity</Product>
         <!-- Change to whatever version you're currently on. -->
-        <Version>0.2.8</Version>
+        <Version>0.2.9</Version>
     </PropertyGroup>
 
     <!-- Project Properties -->

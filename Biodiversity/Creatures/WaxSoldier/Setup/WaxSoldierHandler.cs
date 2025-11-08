@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 namespace Biodiversity.Creatures.WaxSoldier;
 
 [UsedImplicitly]
-[HideHandler]
+// [HideHandler]
 internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
 {
     internal WaxSoldierAssets Assets { get; set; }
@@ -13,21 +13,21 @@ internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
 
     public WaxSoldierHandler()
     {
-        // Assets = new WaxSoldierAssets("biodiversity_waxsoldier");
-        // Config = new WaxSoldierConfig(BiodiversityPlugin.Instance.CreateConfig("waxsoldier"));
-        //
-        // Assets.EnemyType.PowerLevel = Config.PowerLevel;
-        // Assets.EnemyType.MaxCount = Config.MaxAmount;
-        //
-        // LethalLibUtils.TranslateTerminalNode(Assets.TerminalNode);
-        //
-        // LethalLibUtils.RegisterEnemyWithConfig(
-        //     Config.WaxSoldierEnabled,
-        //     Config.Rarity,
-        //     Assets.EnemyType,
-        //     Assets.TerminalNode,
-        //     Assets.TerminalKeyword);
-        //
-        // LethalLibUtils.RegisterScrapWithConfig("All:0", Assets.MusketItemData);
+        Assets = new WaxSoldierAssets("biodiversity_waxsoldier");
+        Config = new WaxSoldierConfig(BiodiversityPlugin.Instance.CreateConfig("waxsoldier"));
+
+        Assets.EnemyType.PowerLevel = Config.PowerLevel;
+        Assets.EnemyType.MaxCount = Config.MaxAmount;
+
+        LethalLibUtils.TranslateTerminalNode(Assets.TerminalNode);
+
+        LethalLibUtils.RegisterEnemyWithConfig(
+            Config.WaxSoldierEnabled,
+            Config.Rarity,
+            Assets.EnemyType,
+            Assets.TerminalNode,
+            Assets.TerminalKeyword);
+
+        LethalLibUtils.RegisterScrapWithConfig("All:0", Assets.MusketItemData);
     }
 }

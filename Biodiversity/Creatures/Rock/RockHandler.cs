@@ -1,19 +1,21 @@
 ﻿using Biodiversity.Core.Attributes;
-using LethalLib.Modules;
+using Biodiversity.Util;
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Biodiversity.Creatures.Rock;
 
-[HideHandler]
+[UsedImplicitly]
+// [HideHandler]
 internal class RockHandler : BiodiverseAIHandler<RockHandler>
 {
     internal RockAssets Assets { get; private set; }
 
     public RockHandler()
     {
-        // Assets = new RockAssets("biodiversity_rock");
-        // Enemies.RegisterEnemy(Assets.RockEnemyType, 0, Levels.LevelTypes.All, infoNode: null, infoKeyword: null);
+        Assets = new RockAssets("biodiversity_rock");
+        LethalLibUtils.RegisterEnemyWithConfig(true, "All:0", Assets.RockEnemyType);
     }
 }

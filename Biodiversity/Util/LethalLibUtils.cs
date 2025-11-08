@@ -14,19 +14,22 @@ public static class LethalLibUtils
     }
 
     public static void RegisterEnemyWithConfig(bool enemyEnabled, string configMoonRarity, EnemyType enemy,
-        TerminalNode terminalNode, TerminalKeyword terminalKeyword)
+        TerminalNode terminalNode = null, TerminalKeyword terminalKeyword = null)
     {
         if (enemyEnabled)
         {
             (Dictionary<Levels.LevelTypes, int> spawnRateByLevelType,
                 Dictionary<string, int> spawnRateByCustomLevelType) = ConfigParsing(configMoonRarity);
 
-            Enemies.RegisterEnemy(enemy, spawnRateByLevelType, spawnRateByCustomLevelType, terminalNode,
-                terminalKeyword);
+            // The ! supresses the "Possible 'null' assignment to non-nullable entity" warning.
+            // Idk why it's giving me the warning, because the LethalLib.Modules.Enemies.RegisterEnemy function
+            // literally has the default value of the terminal node and keyword as null, so...
+            Enemies.RegisterEnemy(enemy, spawnRateByLevelType, spawnRateByCustomLevelType, terminalNode!,
+                terminalKeyword!);
         }
         else
         {
-            Enemies.RegisterEnemy(enemy, 0, Levels.LevelTypes.All, terminalNode, terminalKeyword);
+            Enemies.RegisterEnemy(enemy, 0, Levels.LevelTypes.All, terminalNode!, terminalKeyword!);
         }
     }
 

@@ -43,19 +43,19 @@ public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<Devel
                 new AcceptableValueRange<float>(-1f, 1000f));
 
     // Temp names, weights, values and rarities for these two below
-    // public GenericScrapItem CDog { get; private set; } =
-    //     new(
-    //         "CDogItemData", "Ccodes dog",
-    //         rarity: "All:20",
-    //         weight: 1.05f,
-    //         minimumValue: 50,
-    //         maximumValue: 100);
-    //
-    // public GenericScrapItem JacuPlushie { get; private set; } =
-    //     new(
-    //         "JacuPlushieItemData", "Dog",
-    //         rarity: "All:20",
-    //         weight: 1.1f,
-    //         minimumValue: 50,
-    //         maximumValue: 100);
+    public GenericScrapItem CDog { get; private set; } =
+        new(
+            "CDogItemData", "Ccodes dog",
+            rarity: "All:20",
+            weight: 1.05f,
+            minimumValue: 50,
+            maximumValue: 100);
+
+    public GenericScrapItem JacuPlushie { get; private set; } =
+        new(
+            "JacuPlushieItemData", "Dog",
+            rarity: "All:20",
+            weight: 1.1f,
+            minimumValue: 50,
+            maximumValue: 100);
 }

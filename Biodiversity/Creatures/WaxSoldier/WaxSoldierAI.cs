@@ -115,11 +115,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         //         .SetPositionOverride(entity => entity.ImperiumInsightsPanelAnchor.position)
         //
         //         .RegisterInsight("Behaviour State", entity => entity.CurrentState.GetStateType().ToString())
-        //         .RegisterInsight("Acceleration",
-        //             entity => !isAgentNull ? $"{entity._adapter.Agent.acceleration:0.0}" : "0")
+        //         .RegisterInsight("Acceleration", entity => !isAgentNull ? $"{entity._adapter.Agent.acceleration:0.0}" : "0")
         //         .RegisterInsight("Wax Temperature", entity => $"{entity.heatSensor.TemperatureC:0.00} °C")
-        //         .RegisterInsight("Wax Durability",
-        //             entity => $"{Mathf.Max(0, entity._blackboard.WaxDurability * 100)} %");
+        //         .RegisterInsight("Wax Durability", entity => $"{Mathf.Max(0, entity._blackboard.WaxDurability * 100)} %");
         //
         //     _hasRegisteredImperiumInsights = true;
         // }
