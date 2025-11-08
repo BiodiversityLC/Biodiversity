@@ -1,10 +1,15 @@
-﻿using System.Collections;
+﻿using GameNetcodeStuff;
+using System.Collections;
 using UnityEngine;
 
 namespace Biodiversity.Items.JunkRadar
 {
     public class JunkRadarItem : BiodiverseItem
     {
+        [Space(5f)]
+        public bool isBuried = false;
+        private bool buriedScrapsInitialized = false;
+
         public Light screenLight;
         private readonly Color screenActiveColor = new(0.01f, 0.3f, 0f, 1f);
 
@@ -14,10 +19,11 @@ namespace Biodiversity.Items.JunkRadar
         public AudioClip outOfPowerSound;
         public AudioClip beepingSound;
 
-        private bool buriedScrapsInitialized = false;
+        public ParticleSystem diggingParticles;
+        public AudioSource diggingAudio;
 
         public bool isBeingCharged = false;
-        public float rechargeTimer = 0;
+        private float rechargeTimer = 0;
         private readonly float maxRechargeTime = 2f;
 
         private readonly Vector3 inspectingPosition = new(0.11f, -0.17f, 0.37f);
@@ -28,6 +34,51 @@ namespace Biodiversity.Items.JunkRadar
         public static JunkRadarItem Instance { get; private set; }
         private bool isOriginalInstance = false;
 
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (Instance == null && !StartOfRound.Instance.inShipPhase)
+            {
+                Instance = this;
+                isOriginalInstance = true;
+                if (!buriedScrapsInitialized)
+                {
+                    InitializeBuriedScraps();
+                    StartCoroutine(SetBuriedState());
+                }
+            }
+        }
+
+        private IEnumerator SetBuriedState()
+        {
+            yield return new WaitForSeconds(1f);
+            if (!isHeld && !isHeldByEnemy)
+            {
+                LogInfo("Setting Junk Radar to buried state");
+                isBuried = true;
+                grabbable = false;
+                grabbableToEnemies = false;
+                insertedBattery.charge = 0.5f;
+                targetFloorPosition.y -= 0.0855f;
+                transform.rotation = Quaternion.Euler(0, new System.Random(StartOfRound.Instance.randomMapSeed).Next(0, 360), 15);
+            }
+        }
+
+        public void StartDigging(PlayerControllerB player)
+        {
+            LogWarning("StartDigging called - but not implemented yet");
+        }
+
+        public void FinishDigging(PlayerControllerB player)
+        {
+            LogWarning("FinishDigging called - but not implemented yet");
+        }
+
+        public void CancelDigging(PlayerControllerB player)
+        {
+            LogWarning("CancelDigging called - but not implemented yet");
+        }
 
         internal void InitializeBuriedScraps()
         {
@@ -130,32 +181,20 @@ namespace Biodiversity.Items.JunkRadar
             }
         }
 
-        public override void OnNetworkSpawn()
+        public override int GetItemDataToSave()
         {
-            base.OnNetworkSpawn();
-            if (Instance == null && !isHeld && !StartOfRound.Instance.inShipPhase)
+            return buriedScrapsInitialized ? 1 : 0;
+        }
+
+        public override void LoadItemSaveData(int saveData)
+        {
+            buriedScrapsInitialized = saveData == 1;
+            if (buriedScrapsInitialized)
             {
+                hasBeenHeld = true;
                 Instance = this;
                 isOriginalInstance = true;
-                InitializeBuriedScraps();
             }
-        }
-
-        public override void Start()
-        {
-            base.Start();
-            if (isOriginalInstance && !isHeld && !StartOfRound.Instance.inShipPhase)
-            {
-                insertedBattery.charge = 0.5f;
-                StartCoroutine(FixPos());
-            }
-        }
-
-        private IEnumerator FixPos()
-        {
-            yield return new WaitForSeconds(5f);
-            targetFloorPosition.y -= 0.0855f;
-            transform.rotation = Quaternion.Euler(0, transform.rotation.y, 15);
         }
 
         public override void OnNetworkDespawn()
