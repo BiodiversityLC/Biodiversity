@@ -1,5 +1,7 @@
-﻿using GameNetcodeStuff;
+﻿using Biodiversity.Util.DataStructures;
+using GameNetcodeStuff;
 using System.Collections;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Biodiversity.Items.JunkRadar
@@ -7,7 +9,11 @@ namespace Biodiversity.Items.JunkRadar
     public class JunkRadarItem : BiodiverseItem
     {
         [Space(5f)]
-        public bool isBuried = false;
+        public DiggingState diggingState = DiggingState.NotBuried;
+        private Coroutine diggingCoroutine = null;
+        private Vector3 buriedPosition;
+        private Vector3 duggedPosition;
+        private int numberOfDiggingInteractions = 0;
         private bool buriedScrapsInitialized = false;
 
         public Light screenLight;
@@ -19,6 +25,7 @@ namespace Biodiversity.Items.JunkRadar
         public AudioClip outOfPowerSound;
         public AudioClip beepingSound;
 
+        public InteractTrigger diggingTrigger;
         public ParticleSystem diggingParticles;
         public AudioSource diggingAudio;
 
@@ -56,28 +63,105 @@ namespace Biodiversity.Items.JunkRadar
             if (!isHeld && !isHeldByEnemy)
             {
                 LogInfo("Setting Junk Radar to buried state");
-                isBuried = true;
+                diggingState = DiggingState.IsBuried;
+                diggingTrigger.enabled = true;
                 grabbable = false;
                 grabbableToEnemies = false;
                 insertedBattery.charge = 0.5f;
                 targetFloorPosition.y -= 0.0855f;
+                buriedPosition = targetFloorPosition;
+                duggedPosition = buriedPosition + new Vector3(0f, 0.1f, 0f);
                 transform.rotation = Quaternion.Euler(0, new System.Random(StartOfRound.Instance.randomMapSeed).Next(0, 360), 15);
             }
         }
 
         public void StartDigging(PlayerControllerB player)
         {
-            LogWarning("StartDigging called - but not implemented yet");
+            if (player != null && !player.isPlayerDead)
+                DiggingServerRpc(DiggingState.Digging);
         }
 
         public void FinishDigging(PlayerControllerB player)
         {
-            LogWarning("FinishDigging called - but not implemented yet");
+            if (player != null && !player.isPlayerDead)
+                DiggingServerRpc(DiggingState.FinishDigging);
         }
 
         public void CancelDigging(PlayerControllerB player)
         {
-            LogWarning("CancelDigging called - but not implemented yet");
+            if (player != null && !player.isPlayerDead)
+                DiggingServerRpc(DiggingState.CancelDigging);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void DiggingServerRpc(DiggingState newDiggingState)
+        {
+            if (newDiggingState == DiggingState.FinishDigging)
+            {
+                if (diggingState == DiggingState.FinishDigging)
+                    return;
+                diggingState = newDiggingState;
+            }
+            DiggingClientRpc(newDiggingState);
+        }
+
+        [ClientRpc]
+        private void DiggingClientRpc(DiggingState newDiggingState)
+        {
+            switch (newDiggingState)
+            {
+                case DiggingState.Digging:
+                    if (diggingState != DiggingState.Digging)
+                    {
+                        if (diggingCoroutine != null)
+                            StopCoroutine(diggingCoroutine);
+                        diggingCoroutine = StartCoroutine(DiggingAction());
+                    }
+                    else
+                    {
+                        // to be implemented: increase digging speed with each interaction
+                    }
+                    break;
+                case DiggingState.FinishDigging:
+                case DiggingState.CancelDigging:
+                    diggingParticles.Stop(withChildren: true, stopBehavior: ParticleSystemStopBehavior.StopEmitting);
+                    diggingAudio.Stop();
+                    if (diggingCoroutine != null)
+                        StopCoroutine(diggingCoroutine);
+                    if (newDiggingState == DiggingState.FinishDigging)
+                    {
+                        diggingTrigger.enabled = false;
+                        grabbable = true;
+                        grabbableToEnemies = true;
+                        targetFloorPosition = duggedPosition;
+                    }
+                    else
+                    {
+                        targetFloorPosition = buriedPosition;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            diggingState = newDiggingState;
+        }
+
+        private IEnumerator DiggingAction()
+        {
+            diggingParticles.Play();
+            diggingAudio.pitch = Random.Range(0.9f, 1.1f);
+            diggingAudio.Play();
+            var time = 0f;
+            var startPosition = targetFloorPosition;
+            var endPosition = startPosition + new Vector3(0f, 0.1f, 0f);
+            while (time < (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier))
+            {
+                float lerpFactor = Mathf.SmoothStep(0f, 1f, time / (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier));
+                time += Time.deltaTime;
+                targetFloorPosition = Vector3.Lerp(startPosition, endPosition, lerpFactor);
+                yield return null;
+            }
+            targetFloorPosition = endPosition;
         }
 
         internal void InitializeBuriedScraps()
@@ -89,6 +173,16 @@ namespace Biodiversity.Items.JunkRadar
         internal void EnabledBuriedScraps()
         {
             LogInfo("Enabling Buried Scraps");
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (diggingState != DiggingState.NotBuried && diggingTrigger.enabled)
+            {
+                var player = GameNetworkManager.Instance.localPlayerController;
+                diggingTrigger.interactable = player != null && !player.isPlayerDead && player.currentlyHeldObjectServer == null;
+            }
         }
 
         private void ActivateRadar(bool activate)
@@ -208,7 +302,7 @@ namespace Biodiversity.Items.JunkRadar
 
         protected override string GetLogPrefix()
         {
-            return $"[JunkRadarItem {BioId}]";
+            return $"[JunkRadarItem {BioId} - Master({isOriginalInstance})]";
         }
     }
 }
