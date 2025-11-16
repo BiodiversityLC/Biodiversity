@@ -12,6 +12,8 @@
 
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.JunkRadarItem.spawnPrefab);
             LethalLib.Modules.Items.RegisterItem(Assets.JunkRadarItem);
+
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.BuriedScrapPrefab);
         }
     }
 }

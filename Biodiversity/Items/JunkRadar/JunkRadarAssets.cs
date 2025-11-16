@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Core.AssetLoading;
 using Biodiversity.Core.Attributes;
+using UnityEngine;
 
 namespace Biodiversity.Items.JunkRadar
 {
@@ -7,5 +8,8 @@ namespace Biodiversity.Items.JunkRadar
     {
         [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/JunkRadarItem.asset")]
         public Item JunkRadarItem;
+
+        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/BuriedScrap.prefab")]
+        public GameObject BuriedScrapPrefab;
     }
 }

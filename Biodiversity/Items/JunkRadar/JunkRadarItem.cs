@@ -18,6 +18,7 @@ namespace Biodiversity.Items.JunkRadar
         private bool buriedScrapsInitialized = false;
 
         public Light screenLight;
+        public BoxCollider grabCollider;
         private readonly Color screenActiveColor = new(0.01f, 0.3f, 0f, 1f);
 
         public AudioSource mainObjectAudio;
@@ -70,6 +71,7 @@ namespace Biodiversity.Items.JunkRadar
                 diggingCollider.enabled = true;
                 grabbable = false;
                 grabbableToEnemies = false;
+                grabCollider.enabled = false;
                 insertedBattery.charge = 0.5f;
                 targetFloorPosition.y -= 0.0855f;
                 buriedPosition = targetFloorPosition;
@@ -147,6 +149,7 @@ namespace Biodiversity.Items.JunkRadar
                         diggingCollider.enabled = false;
                         grabbable = true;
                         grabbableToEnemies = true;
+                        grabCollider.enabled = true;
                         targetFloorPosition = duggedPosition;
                     }
                     else
