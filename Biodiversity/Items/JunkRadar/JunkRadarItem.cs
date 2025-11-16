@@ -14,6 +14,7 @@ namespace Biodiversity.Items.JunkRadar
         private Vector3 buriedPosition;
         private Vector3 duggedPosition;
         private int numberOfDiggingInteractions = 0;
+        private readonly float diggingSpeedIncreasePerInteraction = 0.4f;
         private bool buriedScrapsInitialized = false;
 
         public Light screenLight;
@@ -119,17 +120,29 @@ namespace Biodiversity.Items.JunkRadar
                     }
                     else
                     {
-                        // to be implemented: increase digging speed with each interaction
+                        numberOfDiggingInteractions++;
+                        diggingTrigger.timeToHoldSpeedMultiplier += numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
                     }
                     break;
                 case DiggingState.FinishDigging:
                 case DiggingState.CancelDigging:
+                    if (newDiggingState == DiggingState.CancelDigging)
+                    {
+                        numberOfDiggingInteractions--;
+                        if (numberOfDiggingInteractions != 0)
+                        {
+                            diggingTrigger.timeToHoldSpeedMultiplier -= numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
+                            return;
+                        }
+                    }
                     diggingParticles.Stop(withChildren: true, stopBehavior: ParticleSystemStopBehavior.StopEmitting);
                     diggingAudio.Stop();
                     if (diggingCoroutine != null)
                         StopCoroutine(diggingCoroutine);
                     if (newDiggingState == DiggingState.FinishDigging)
                     {
+                        numberOfDiggingInteractions = 0;
+                        diggingTrigger.timeToHoldSpeedMultiplier = 1f;
                         diggingTrigger.enabled = false;
                         diggingCollider.enabled = false;
                         grabbable = true;
@@ -149,6 +162,8 @@ namespace Biodiversity.Items.JunkRadar
 
         private IEnumerator DiggingAction()
         {
+            numberOfDiggingInteractions = 1;
+            diggingTrigger.timeToHoldSpeedMultiplier = 1f;
             diggingParticles.Play();
             diggingAudio.pitch = Random.Range(0.9f, 1.1f);
             diggingAudio.Play();
