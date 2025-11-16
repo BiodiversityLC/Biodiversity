@@ -26,6 +26,7 @@ namespace Biodiversity.Items.JunkRadar
         public AudioClip beepingSound;
 
         public InteractTrigger diggingTrigger;
+        public BoxCollider diggingCollider;
         public ParticleSystem diggingParticles;
         public AudioSource diggingAudio;
 
@@ -65,6 +66,7 @@ namespace Biodiversity.Items.JunkRadar
                 LogInfo("Setting Junk Radar to buried state");
                 diggingState = DiggingState.IsBuried;
                 diggingTrigger.enabled = true;
+                diggingCollider.enabled = true;
                 grabbable = false;
                 grabbableToEnemies = false;
                 insertedBattery.charge = 0.5f;
@@ -77,8 +79,7 @@ namespace Biodiversity.Items.JunkRadar
 
         public void StartDigging(PlayerControllerB player)
         {
-            if (player != null && !player.isPlayerDead)
-                DiggingServerRpc(DiggingState.Digging);
+            DiggingServerRpc(DiggingState.Digging);
         }
 
         public void FinishDigging(PlayerControllerB player)
@@ -89,8 +90,7 @@ namespace Biodiversity.Items.JunkRadar
 
         public void CancelDigging(PlayerControllerB player)
         {
-            if (player != null && !player.isPlayerDead)
-                DiggingServerRpc(DiggingState.CancelDigging);
+            DiggingServerRpc(DiggingState.CancelDigging);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -131,6 +131,7 @@ namespace Biodiversity.Items.JunkRadar
                     if (newDiggingState == DiggingState.FinishDigging)
                     {
                         diggingTrigger.enabled = false;
+                        diggingCollider.enabled = false;
                         grabbable = true;
                         grabbableToEnemies = true;
                         targetFloorPosition = duggedPosition;
@@ -153,7 +154,7 @@ namespace Biodiversity.Items.JunkRadar
             diggingAudio.Play();
             var time = 0f;
             var startPosition = targetFloorPosition;
-            var endPosition = startPosition + new Vector3(0f, 0.1f, 0f);
+            var endPosition = duggedPosition;
             while (time < (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier))
             {
                 float lerpFactor = Mathf.SmoothStep(0f, 1f, time / (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier));
