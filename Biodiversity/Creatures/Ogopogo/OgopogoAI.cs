@@ -14,7 +14,7 @@ namespace Biodiversity.Creatures.Ogopogo;
 
 internal class OgopogoAI : BiodiverseAI
 {
-    private enum State
+    internal enum State
     {
         Wandering,
         Chasing,
@@ -28,7 +28,7 @@ internal class OgopogoAI : BiodiverseAI
     private const int roomLayerMask = 1 << 8; /**Bitmasks are weird. This references layer 8 which is "Room"**/
 
     // Variables related to water
-    private QuicksandTrigger water;
+    public QuicksandTrigger water;
     private readonly QuicksandTrigger[] sandAndWater = FindObjectsOfType<QuicksandTrigger>();
     private readonly List<QuicksandTrigger> waters = [];
 
@@ -53,9 +53,9 @@ internal class OgopogoAI : BiodiverseAI
     // Spline control
     [SerializeField] private Transform SplineEnd;
     [SerializeField] private SplineObject splineObject;
-    [NonSerialized] private bool splineDone;
+    [NonSerialized] public bool splineDone;
     private const float SplineSpeed = 0.7f;
-    private bool playerHasBeenGrabbed;
+    public bool playerHasBeenGrabbed;
     [SerializeField] private Transform GrabPos;
 
     // Player references
@@ -526,23 +526,11 @@ internal class OgopogoAI : BiodiverseAI
     }
 
     [ClientRpc]
-    public void TakeOutOfTruckClientRpc()
+    public void TakeOutOfVehicleClientRpc()
     {
-        VehicleController vehicle = FindObjectOfType<VehicleController>();
-
-        if (vehicle == null)
+        if (GameNetworkManager.Instance.localPlayerController.inVehicleAnimation)
         {
-            return;
-        }
-
-        if (vehicle.localPlayerInControl)
-        {
-            vehicle.ExitDriverSideSeat();
-        }
-
-        if (vehicle.localPlayerInPassengerSeat)
-        {
-            vehicle.ExitPassengerSideSeat();
+            GameNetworkManager.Instance.localPlayerController.CancelSpecialTriggerAnimations();
         }
     }
 
@@ -563,12 +551,19 @@ internal class OgopogoAI : BiodiverseAI
 
             inSpecialAnimationWithPlayer = player;
 
-            TakeOutOfTruckClientRpc();
+            TakeOutOfVehicleClientRpc();
             SetPlayerGrabbedClientRpc((int)player.playerClientId, false, false);
             creatureAnimator.SetInteger(AnimID, 3);
         }
     }
-        
+    
+    public void TerrainDetect()
+    {
+        SwitchToBehaviourClientRpc((int)State.Goingdown);
+        PlayVoiceClientRpc(2);
+        splineDone = false;
+    }
+
     public void DisableIK()
     {
         IK.enabled = false;
