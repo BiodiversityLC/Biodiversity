@@ -458,6 +458,7 @@ internal class OgopogoAI : BiodiverseAI
         {
             // ignored
         }
+        if (setNull) inSpecialAnimationWithPlayer = null;
     }
 
     // Play sounds
@@ -559,6 +560,8 @@ internal class OgopogoAI : BiodiverseAI
     
     public void TerrainDetect()
     {
+        if (currentBehaviourStateIndex != (int)State.Rising) return;
+        if (transform.position.y - water.gameObject.transform.position.y < 90) return;
         SwitchToBehaviourClientRpc((int)State.Goingdown);
         PlayVoiceClientRpc(2);
         splineDone = false;
