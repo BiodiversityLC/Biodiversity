@@ -20,7 +20,7 @@ namespace Biodiversity.Creatures.Rock
         {
             base.DoAIInterval();
 
-            if (IsServer && running && timeSinceStartedRunning > 2f)
+            if (IsServer && running && timeSinceStartedRunning > 2f && !agent.pathPending)
             {
                 BiodiversityPlugin.LogVerbose($"Rock run distance: {agent.remainingDistance}");
                 if (agent.remainingDistance < 1)
@@ -54,8 +54,15 @@ namespace Biodiversity.Creatures.Rock
 
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
         {
+            BiodiversityPlugin.LogVerbose($"Rock hit with hitID: {hitID}");
+            if (hitID == 331 || force == 12)
+            {
+                KillEnemyOnOwnerClient();
+                return;
+            }
             if (IsServer && !running)
             {
+                running = true;
                 creatureAnimator.SetTrigger("Hit");
             }
         }
@@ -63,10 +70,8 @@ namespace Biodiversity.Creatures.Rock
         public void StartRunning()
         {
             if (!IsServer) return;
-            if (running) return;
             GameObject[] nodes = AloeSharedData.Instance.GetOutsideAINodes();
             SetDestinationToPosition(nodes[UnityEngine.Random.Range(0, nodes.Length)].transform.position);
-            running = true;
         }
     }
 }
