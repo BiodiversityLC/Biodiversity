@@ -1,8 +1,10 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -19,18 +21,27 @@ public abstract class BiodiverseAI : EnemyAI
     /// This ID is generated as a GUID on the server and synchronized to all clients.
     /// </summary>
     private readonly NetworkVariable<FixedString32Bytes> _networkBioId = new();
-    
+
     /// <summary>
     /// Gets the unique identifier (BioId) for this object as a string.
     /// </summary>
     public string BioId => _networkBioId.Value.ToString();
-    
+
     /// <summary>
     /// A constant representing a null or unassigned player ID.
     /// </summary>
     internal const ulong NullPlayerId = 69420;
-    
+
     internal readonly PlayerTargetableConditions PlayerTargetableConditions = new();
+
+    public CachedList<GameObject> CachedInsideAINodes;
+    public CachedList<GameObject> CachedOutsideAINodes;
+
+    private void Awake()
+    {
+        CachedInsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("AINode").ToList());
+        CachedOutsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("OutsideAINode").ToList());
+    }
 
     public override void OnNetworkSpawn()
     {
@@ -87,7 +98,7 @@ public abstract class BiodiverseAI : EnemyAI
         float nearEnoughDistance = 0f)
     {
         if (!agent.isOnNavMesh) return PathStatus.Invalid;
-        
+
         // Check if the desired location is within the buffer distance
         if (Vector3.Distance(agent.transform.position, targetPosition) <= nearEnoughDistance)
             return PathStatus.Valid;
@@ -118,7 +129,7 @@ public abstract class BiodiverseAI : EnemyAI
             {
                 PlayerControllerB player = allPlayers[i];
                 if (PlayerUtil.IsPlayerDead(player)) continue;
-                if (player.HasLineOfSightToPosition(targetPosition, 70f, 80, 1)) 
+                if (player.HasLineOfSightToPosition(targetPosition, 70f, 80, 1))
                     return PathStatus.ValidButInLos;
             }
         }
@@ -223,7 +234,7 @@ public abstract class BiodiverseAI : EnemyAI
             pathStatus = PathStatus.Invalid;
             return null;
         }
-        
+
         HashSet<GameObject> ignoredNodesSet = CollectionPool<HashSet<GameObject>, GameObject>.Get();
         if (ignoredAINodes != null)
         {
@@ -232,7 +243,7 @@ public abstract class BiodiverseAI : EnemyAI
                 ignoredNodesSet.Add(ignoredAINodes[i]);
             }
         }
-        
+
         List<GameObject> candidateNodes = ListPool<GameObject>.Get();
         foreach (GameObject node in givenAiNodes)
         {
@@ -240,7 +251,7 @@ public abstract class BiodiverseAI : EnemyAI
             if (Vector3.Distance(position, node.transform.position) <= bufferDistance) continue;
             candidateNodes.Add(node);
         }
-        
+
         CollectionPool<HashSet<GameObject>, GameObject>.Release(ignoredNodesSet);
 
         if (candidateNodes.Count == 0)
@@ -315,14 +326,14 @@ public abstract class BiodiverseAI : EnemyAI
         {
             eyeTransform = eye;
         }
-        
+
         bool isFoggy = isOutside && !enemyType.canSeeThroughFog &&
                        TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Foggy;
 
         return LineOfSightUtil.HasLineOfSight(targetPosition, eyeTransform, viewWidth, viewRange, proximityAwareness,
             isFoggy);
     }
-    
+
     internal bool IsAPlayerInLineOfSightToEye(
         Transform eyeTransform,
         float width = 45f,
@@ -332,7 +343,7 @@ public abstract class BiodiverseAI : EnemyAI
         for (int i = 0; i < allPlayers.Length; i++)
         {
             PlayerControllerB player = allPlayers[i];
-            
+
             if (!PlayerTargetableConditions.IsPlayerTargetable(player)) continue;
             if (HasLineOfSight(player.gameplayCamera.transform.position, eyeTransform, width, range))
                 return true;
@@ -363,9 +374,9 @@ public abstract class BiodiverseAI : EnemyAI
         // LogVerbose($"In {nameof(GetClosestVisiblePlayer)}");
         PlayerControllerB bestTarget = null;
         float bestTargetDistanceSqr = float.MaxValue;
-        
+
         PlayerControllerB[] allPlayers = StartOfRound.Instance.allPlayerScripts;
-        
+
         // First, re-validate the current target
         float currentTargetDistanceSqr = float.MaxValue;
         if (currentTargetPlayer && PlayerTargetableConditions.IsPlayerTargetable(currentTargetPlayer))
@@ -384,7 +395,7 @@ public abstract class BiodiverseAI : EnemyAI
         {
             PlayerControllerB potentialTarget = allPlayers[i];
             // LogVerbose($"Evaluating player {potentialTarget.playerUsername}");
-            
+
             // Skip the check if this player is the current target player; they have already been validated
             if (potentialTarget == currentTargetPlayer) continue;
             if (!PlayerTargetableConditions.IsPlayerTargetable(potentialTarget))
@@ -392,14 +403,14 @@ public abstract class BiodiverseAI : EnemyAI
                 // LogVerbose($"Player {potentialTarget.playerUsername} is not targetable.");
                 continue;
             }
-            
+
             Vector3 targetPosition = potentialTarget.gameplayCamera.transform.position;
             if (!HasLineOfSight(targetPosition, eyeTransform, viewWidth, viewRange, proximityAwareness))
             {
                 // LogVerbose($"Player {potentialTarget.playerUsername} is not in LOS.");
                 continue;
             }
-            
+
             float potentialTargetDistanceSqr = (potentialTarget.transform.position - eyeTransform.position).sqrMagnitude;
             if (potentialTargetDistanceSqr < bestTargetDistanceSqr)
             {
@@ -407,7 +418,7 @@ public abstract class BiodiverseAI : EnemyAI
                 bestTargetDistanceSqr = potentialTargetDistanceSqr;
             }
         }
-        
+
         // If we switched targets, ensure that the new target is significantly closer
         if (bestTarget && currentTargetPlayer && bestTarget != currentTargetPlayer)
         {
@@ -420,7 +431,7 @@ public abstract class BiodiverseAI : EnemyAI
 
         return bestTarget;
     }
-    
+
     /// <summary>
     /// Determines the closest player, if any, is looking at the specified position.
     /// </summary>
@@ -428,7 +439,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="ignorePlayer">An optional player to exclude from the check.</param>
     /// <returns>Returns the player object that is looking at the specified position, or null if no player is found.</returns>
     internal static PlayerControllerB GetClosestPlayerLookingAtPosition(
-        Vector3 position, 
+        Vector3 position,
         PlayerControllerB ignorePlayer = null)
     {
         PlayerControllerB closestPlayer = null;
@@ -447,11 +458,11 @@ public abstract class BiodiverseAI : EnemyAI
                 closestPlayer = player;
             }
         }
-        
+
         ListPool<PlayerControllerB>.Release(visiblePlayers);
         return closestPlayer;
     }
-    
+
     /// <summary>
     /// Returns a list of all the players who are currently looking at the specified position.
     /// </summary>
@@ -461,7 +472,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="playerViewRange">The view range of the players in units.</param>
     /// <returns>A list of players who are looking at the specified position.</returns>
     internal static List<PlayerControllerB> GetAllPlayersLookingAtPosition(
-        Vector3 position, 
+        Vector3 position,
         PlayerControllerB ignorePlayer = null,
         float playerViewWidth = 45f,
         int playerViewRange = 60)
@@ -473,7 +484,7 @@ public abstract class BiodiverseAI : EnemyAI
             playerViewWidth: playerViewWidth,
             playerViewRange: playerViewRange);
     }
-    
+
     /// <summary>
     /// Returns a pooled list of all the players who are currently looking at the specified position.
     /// The caller must release the list using <see cref="ListPool{PlayerControllerB}"/> once finished.
@@ -484,7 +495,7 @@ public abstract class BiodiverseAI : EnemyAI
     /// <param name="playerViewRange">The view range of the players in units.</param>
     /// <returns>A <see cref="ListPool{PlayerControllerB}"/> of players who are looking at the specified position.</returns>
     internal static List<PlayerControllerB> GetAllPlayersLookingAtPositionPooled(
-        Vector3 position, 
+        Vector3 position,
         PlayerControllerB ignorePlayer = null,
         float playerViewWidth = 45f,
         int playerViewRange = 60)
@@ -496,7 +507,7 @@ public abstract class BiodiverseAI : EnemyAI
             playerViewWidth: playerViewWidth,
             playerViewRange: playerViewRange);
     }
-    
+
     private static List<PlayerControllerB> GetPlayersLookingAtPositionInternal(
         Vector3 position,
         List<PlayerControllerB> players,
@@ -507,11 +518,11 @@ public abstract class BiodiverseAI : EnemyAI
         PlayerControllerB[] allPlayers = StartOfRound.Instance.allPlayerScripts;
         players.Clear();
         bool shouldIgnore = ignorePlayer;
-        
+
         for (int i = 0; i < allPlayers.Length; i++)
         {
             PlayerControllerB player = allPlayers[i];
-            
+
             if (PlayerUtil.IsPlayerDead(player) || (shouldIgnore && ignorePlayer == player)) continue;
             if (player.HasLineOfSightToPosition(position, playerViewWidth, playerViewRange))
                 players.Add(player);
@@ -533,7 +544,7 @@ public abstract class BiodiverseAI : EnemyAI
         {
             return false;
         }
-        
+
         // 2). Check if we can draw a valid path to the player
         if (IsPathValid(agent, player.transform.position) == PathStatus.Invalid)
         {
@@ -543,7 +554,7 @@ public abstract class BiodiverseAI : EnemyAI
         // A valid path exists
         return true;
     }
-    
+
     public static float Distance2d(GameObject obj1, GameObject obj2)
     {
         return Distance2d(obj1.transform.position, obj2.transform.position);
@@ -554,11 +565,11 @@ public abstract class BiodiverseAI : EnemyAI
         float deltaX = pos1.x - pos2.x;
         float deltaZ = pos1.z - pos2.z;
         return Mathf.Sqrt(deltaX * deltaX + deltaZ * deltaZ);
-        
+
         // Its a slightly faster way of doing this:
         // return Mathf.Sqrt(Mathf.Pow(pos1.x - pos2.x, 2f) + Mathf.Pow(pos1.z - pos2.z, 2f));
     }
-    
+
     // 2d squared distance formula (cheaper for comparisons)
     public static float Distance2dSq(GameObject obj1, GameObject obj2)
     {

@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Biodiversity.Util;
 
-public static class LethalLibUtils
+public static class LethalLibUtils // This should technically be called an adapter, not a util
 {
     public static void TranslateTerminalNode(TerminalNode node)
     {

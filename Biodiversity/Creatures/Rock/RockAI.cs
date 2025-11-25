@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Aloe;
 using GameNetcodeStuff;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.Rock
@@ -22,7 +23,7 @@ namespace Biodiversity.Creatures.Rock
 
             if (IsServer && running && timeSinceStartedRunning > 2f && !agent.pathPending)
             {
-                BiodiversityPlugin.LogVerbose($"Rock run distance: {agent.remainingDistance}");
+                LogVerbose($"Rock run distance: {agent.remainingDistance}");
                 if (agent.remainingDistance < 1)
                 {
                     creatureAnimator.SetTrigger("Brake");
@@ -54,7 +55,7 @@ namespace Biodiversity.Creatures.Rock
 
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
         {
-            BiodiversityPlugin.LogVerbose($"Rock hit with hitID: {hitID}");
+            LogVerbose($"Rock hit with hitID: {hitID}");
             if (hitID == 331 || force == 12)
             {
                 KillEnemyOnOwnerClient();
@@ -70,8 +71,16 @@ namespace Biodiversity.Creatures.Rock
         public void StartRunning()
         {
             if (!IsServer) return;
-            GameObject[] nodes = AloeSharedData.Instance.GetOutsideAINodes();
-            SetDestinationToPosition(nodes[UnityEngine.Random.Range(0, nodes.Length)].transform.position);
+            List<GameObject> nodes = CachedOutsideAINodes.Value;
+
+            if (nodes == null || nodes.Count == 0)
+            {
+                // Maybe do a LogVerbose("Couldn't get outside nodes") or some other message
+            }
+            else
+            {
+                SetDestinationToPosition(nodes[UnityEngine.Random.Range(0, nodes.Count)].transform.position);
+            }
         }
     }
 }
