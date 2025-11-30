@@ -43,7 +43,6 @@ namespace Biodiversity.Items.JunkRadar.Patches
             if (JunkRadarItem.Instance.hasBeenHeld)
             {
                 JunkRadarItem.Instance.InitializeBuriedScraps();
-                JunkRadarItem.Instance.EnabledBuriedScraps();
             }
         }
     }

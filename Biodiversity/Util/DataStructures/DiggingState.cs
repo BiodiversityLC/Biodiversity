@@ -5,6 +5,7 @@
     {
         NotBuried,
         IsBuried,
+        HalfBuried,
         Digging,
         FinishDigging = NotBuried,
         CancelDigging = IsBuried

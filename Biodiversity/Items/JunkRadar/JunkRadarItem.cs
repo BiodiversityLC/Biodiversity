@@ -1,4 +1,6 @@
-﻿using Biodiversity.Util.DataStructures;
+﻿using Biodiversity.Items.JunkRadar.BuriedScrap;
+using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System.Collections;
 using Unity.Netcode;
@@ -48,15 +50,9 @@ namespace Biodiversity.Items.JunkRadar
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            if (Instance == null && !StartOfRound.Instance.inShipPhase)
+            if (!StartOfRound.Instance.inShipPhase)
             {
-                Instance = this;
-                isOriginalInstance = true;
-                if (!buriedScrapsInitialized)
-                {
-                    InitializeBuriedScraps();
-                    StartCoroutine(SetBuriedState());
-                }
+                StartCoroutine(SetBuriedState());
             }
         }
 
@@ -66,9 +62,20 @@ namespace Biodiversity.Items.JunkRadar
             if (!isHeld && !isHeldByEnemy)
             {
                 LogInfo("Setting Junk Radar to buried state");
+                if (Instance == null)
+                {
+                    Instance = this;
+                    isOriginalInstance = true;
+                    if (!buriedScrapsInitialized)
+                    {
+                        InitializeBuriedScraps();
+                    }
+                }
                 diggingState = DiggingState.IsBuried;
                 diggingTrigger.enabled = true;
                 diggingCollider.enabled = true;
+                var diggingEmission = diggingParticles.emission;
+                diggingEmission.rateOverTime = 40;
                 grabbable = false;
                 grabbableToEnemies = false;
                 grabCollider.enabled = false;
@@ -77,6 +84,23 @@ namespace Biodiversity.Items.JunkRadar
                 buriedPosition = targetFloorPosition;
                 duggedPosition = buriedPosition + new Vector3(0f, 0.1f, 0f);
                 transform.rotation = Quaternion.Euler(0, new System.Random(StartOfRound.Instance.randomMapSeed).Next(0, 360), 15);
+            }
+        }
+
+        internal void InitializeBuriedScraps()
+        {
+            LogInfo("Initializing Buried Scraps");
+            buriedScrapsInitialized = true;
+            if (IsServer)
+            {
+                for (int i = 0; i < 6; i++)
+                {
+                    var spawnPosition = !hasBeenHeld && i == 0 ? PositionUtils.GetRandomPositionNearPosition(transform.position, randomizePositionRadius: 10) : PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 30);
+                    var gameObject = Instantiate(JunkRadarHandler.Instance.Assets.BuriedScrapPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
+                    var buriedScrapObject = gameObject.GetComponent<BuriedScrapObject>();
+                    buriedScrapObject.NetworkObject.Spawn();
+                    buriedScrapObject.SyncMasterServerRpc(buriedScrapObject.NetworkObject, base.NetworkObject);
+                }
             }
         }
 
@@ -183,17 +207,6 @@ namespace Biodiversity.Items.JunkRadar
             targetFloorPosition = endPosition;
         }
 
-        internal void InitializeBuriedScraps()
-        {
-            LogInfo("Initializing Buried Scraps");
-            buriedScrapsInitialized = true;
-        }
-
-        internal void EnabledBuriedScraps()
-        {
-            LogInfo("Enabling Buried Scraps");
-        }
-
         public override void Update()
         {
             base.Update();
@@ -223,8 +236,6 @@ namespace Biodiversity.Items.JunkRadar
 
         public override void EquipItem()
         {
-            if (!hasBeenHeld && isOriginalInstance && buriedScrapsInitialized)
-                EnabledBuriedScraps();  // this will only run once for this instance
             base.EquipItem();
             if (isBeingUsed)
                 screenLight.enabled = true;

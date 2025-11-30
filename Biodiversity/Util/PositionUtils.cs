@@ -31,5 +31,15 @@ namespace Biodiversity.Util
             }
             return result;
         }
+
+        public static Vector3 GetRandomPositionNearPosition(Vector3 position, int randomizePositionRadius = 20)
+        {
+            var result = position;
+            if (randomizePositionRadius > 0)
+            {
+                result = RoundManager.Instance.GetRandomNavMeshPositionInRadius(result, randomizePositionRadius);
+            }
+            return result;
+        }
     }
 }
