@@ -11,9 +11,23 @@ namespace Biodiversity.Creatures.Rock
         float breathTimer = 0f;
         float timeSinceStartedRunning = 0f;
 
+        public Material[] RockMats;
+        public GameObject[] Skins;
+
         public override void Start()
         {
             base.Start();
+            GameObject rockSkin = Skins[Random.Range(0, Skins.Length)];
+            rockSkin.SetActive(true);
+
+            if (RockHandler.Instance.chosenMats.ContainsKey(StartOfRound.Instance.currentLevel.name))
+            {
+                MeshRenderer renderer = rockSkin.GetComponent<MeshRenderer>();
+                Material[] materials = renderer.materials;
+                materials[0] = RockMats[RockHandler.Instance.chosenMats[StartOfRound.Instance.currentLevel.name]];
+                renderer.materials = materials;
+            }
+
             SetDestinationToPosition(transform.position);
         }
 
