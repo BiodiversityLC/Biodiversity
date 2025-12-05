@@ -45,7 +45,6 @@ internal class RockHandler : BiodiverseAIHandler<RockHandler>
             }
         }
 
-
-        LethalLibUtils.RegisterEnemyWithConfig(Config.RockEnabled, Config.RockRarity, Assets.RockEnemyType);
+        LethalLibUtils.RegisterEnemyWithConfig(Config.RockEnabled, Config.RockRarity, Assets.RockEnemyType, Assets.RockTerminalNode, Assets.RockKeyword);
     }
 }

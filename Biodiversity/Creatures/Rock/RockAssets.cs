@@ -9,4 +9,10 @@ internal class RockAssets(string filePath) : BiodiverseAssetBundle<RockAssets>(f
 {
     [LoadFromBundle("Rock.asset")]
     public EnemyType RockEnemyType;
+
+    [LoadFromBundle("RockKW")]
+    public TerminalKeyword RockKeyword;
+
+    [LoadFromBundle("RockTN")]
+    public TerminalNode RockTerminalNode;
 }
