@@ -10,11 +10,10 @@
             Assets = new JunkRadarAssets("biodiversity_junkradar");
             Config = new JunkRadarConfig(BiodiversityPlugin.Instance.CreateConfig("junk_radar"));
 
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.BuriedScrapPrefab);
+
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.JunkRadarItem.spawnPrefab);
             LethalLib.Modules.Items.RegisterItem(Assets.JunkRadarItem);
-
-            Assets.BuriedScrapPrefab.SetActive(false);
-            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.BuriedScrapPrefab);
         }
     }
 }

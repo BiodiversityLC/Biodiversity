@@ -97,8 +97,8 @@ namespace Biodiversity.Items.JunkRadar
                 {
                     var spawnPosition = !hasBeenHeld && i == 0 ? PositionUtils.GetRandomPositionNearPosition(transform.position, randomizePositionRadius: 10) : PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 30);
                     var gameObject = Instantiate(JunkRadarHandler.Instance.Assets.BuriedScrapPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
+                    gameObject.GetComponent<NetworkObject>().Spawn();
                     var buriedScrapObject = gameObject.GetComponent<BuriedScrapObject>();
-                    buriedScrapObject.NetworkObject.Spawn();
                     buriedScrapObject.SyncMasterServerRpc(buriedScrapObject.NetworkObject, base.NetworkObject);
                 }
             }

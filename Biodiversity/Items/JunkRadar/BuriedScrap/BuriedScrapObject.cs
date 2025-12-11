@@ -36,7 +36,8 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         private void EnableBuriedScrap()
         {
             isEnabled = true;
-            gameObject.SetActive(true);
+            diggingTrigger.enabled = true;
+            diggingCollider.enabled = true;
         }
 
         [ServerRpc]
@@ -66,6 +67,8 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             }
             yield return new WaitForEndOfFrame();
             masterJunkRadar = masterNetObject.GetComponent<JunkRadarItem>();
+            diggingTrigger.enabled = false;
+            diggingCollider.enabled = false;
         }
     }
 }
