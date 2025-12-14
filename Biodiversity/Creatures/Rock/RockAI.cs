@@ -1,5 +1,5 @@
-﻿using Biodiversity.Creatures.Aloe;
-using GameNetcodeStuff;
+﻿using GameNetcodeStuff;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,6 +13,9 @@ namespace Biodiversity.Creatures.Rock
 
         public Material[] RockMats;
         public GameObject[] Skins;
+
+        public AudioClip[] Trucksounds;
+        public ParticleSystem TruckParticles;
 
         public override void Start()
         {
@@ -67,12 +70,21 @@ namespace Biodiversity.Creatures.Rock
             }
         }
 
+        IEnumerator DeathSequence()
+        {
+            creatureVoice.PlayOneShot(Trucksounds[Random.Range(0, Trucksounds.Length)]);
+            TruckParticles.Play();
+            yield return new WaitForSeconds(1f);
+            KillEnemyOnOwnerClient();
+            yield return null;
+        }
+
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
         {
             LogVerbose($"Rock hit with hitID: {hitID}");
             if (hitID == 331 || force == 12)
             {
-                KillEnemyOnOwnerClient();
+                StartCoroutine(DeathSequence());
                 return;
             }
             if (IsServer && !running)
