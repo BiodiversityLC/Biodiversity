@@ -17,6 +17,14 @@ namespace Biodiversity.Creatures.Rock
         public AudioClip[] Trucksounds;
         public ParticleSystem TruckParticles;
 
+        public static Dictionary<int, GameObject> selectednodes = new();
+        public static int nextrockid = 0;
+
+        int rockid;
+        bool dead = false;
+
+        MeshRenderer renderer;
+
         public override void Start()
         {
             base.Start();
@@ -25,11 +33,13 @@ namespace Biodiversity.Creatures.Rock
 
             if (RockHandler.Instance.chosenMats.ContainsKey(StartOfRound.Instance.currentLevel.name))
             {
-                MeshRenderer renderer = rockSkin.GetComponent<MeshRenderer>();
+                renderer = rockSkin.GetComponent<MeshRenderer>();
                 Material[] materials = renderer.materials;
                 materials[0] = RockMats[RockHandler.Instance.chosenMats[StartOfRound.Instance.currentLevel.name]];
                 renderer.materials = materials;
             }
+            rockid = nextrockid;
+            nextrockid++;
 
             SetDestinationToPosition(transform.position);
         }
@@ -72,9 +82,14 @@ namespace Biodiversity.Creatures.Rock
 
         IEnumerator DeathSequence()
         {
-            creatureVoice.PlayOneShot(Trucksounds[Random.Range(0, Trucksounds.Length)]);
+            AudioClip clip = Trucksounds[Random.Range(0, Trucksounds.Length)];
+            creatureVoice.PlayOneShot(clip, RockHandler.Instance.Config.RockActiveVolume);
             TruckParticles.Play();
-            yield return new WaitForSeconds(1f);
+            dead = true;
+            System.Array.ForEach(meshRenderers, x => x.enabled = false);
+            renderer.enabled = false;
+            GetComponent<Collider>().enabled = false;
+            yield return new WaitForSeconds(clip.length);
             KillEnemyOnOwnerClient();
             yield return null;
         }
@@ -105,8 +120,27 @@ namespace Biodiversity.Creatures.Rock
             }
             else
             {
-                SetDestinationToPosition(nodes[UnityEngine.Random.Range(0, nodes.Count)].transform.position);
+                bool foundnode = false;
+
+                while (!foundnode)
+                {
+                    GameObject node = nodes[UnityEngine.Random.Range(0, nodes.Count)];
+
+                    if (!selectednodes.ContainsValue(node))
+                    {
+                        foundnode = true;
+                        selectednodes[rockid] = node;
+                        SetDestinationToPosition(node.transform.position);
+                    }
+                }
             }
+        }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            if (!dead)
+                selectednodes.Clear();
         }
     }
 }

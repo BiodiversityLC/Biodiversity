@@ -45,6 +45,9 @@ internal class RockHandler : BiodiverseAIHandler<RockHandler>
             }
         }
 
+        Assets.RockEnemyType.PowerLevel = Config.RockPowerLevel;
+        Assets.RockEnemyType.MaxCount = Config.RockMaxCount;
+
         LethalLibUtils.RegisterEnemyWithConfig(Config.RockEnabled, Config.RockRarity, Assets.RockEnemyType, Assets.RockTerminalNode, Assets.RockKeyword);
     }
 }
