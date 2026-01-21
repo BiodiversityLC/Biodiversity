@@ -10,6 +10,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
     public class BuriedScrapObject : NetworkBehaviour
     {
         public DiggingState diggingState = DiggingState.IsBuried;
+        public DiggingState nonActiveDiggingState = DiggingState.IsBuried;
         private Coroutine diggingCoroutine = null;
         private int numberOfDiggingInteractions = 0;
         private readonly float diggingSpeedIncreasePerInteraction = 0.4f;
@@ -17,6 +18,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         private GrabbableObject buriedItem;
         private BoxCollider buriedItemBoxCollider;
         private Vector3 itemBuriedPosition;
+        private Vector3 itemHalfBuriedPosition;
         private Vector3 itemDuggedPosition;
         private JunkRadarItem masterJunkRadar;
         private bool isEnabled = false;
@@ -47,8 +49,6 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             isEnabled = true;
             diggingTrigger.enabled = true;
             diggingCollider.enabled = true;
-            /*var diggingEmission = diggingParticles.emission;
-            diggingEmission.rateOverTime = 40;*/
         }
 
         public void StartDigging(PlayerControllerB player)
@@ -116,23 +116,46 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     {
                         numberOfDiggingInteractions = 0;
                         diggingTrigger.timeToHoldSpeedMultiplier = 1f;
-                        diggingTrigger.enabled = false;
-                        diggingCollider.enabled = false;
-                        buriedItem.grabbable = true;
-                        buriedItem.grabbableToEnemies = true;
-                        if (buriedItemBoxCollider != null)
+                    }
+                    if (nonActiveDiggingState == DiggingState.HalfBuried)
+                    {
+                        if (newDiggingState == DiggingState.FinishDigging)
                         {
-                            buriedItemBoxCollider.enabled = true;
+                            diggingTrigger.enabled = false;
+                            diggingCollider.enabled = false;
+                            buriedItem.grabbable = true;
+                            buriedItem.grabbableToEnemies = true;
+                            if (buriedItemBoxCollider != null)
+                            {
+                                buriedItemBoxCollider.enabled = true;
+                            }
+                            buriedItem.targetFloorPosition = itemDuggedPosition;
                         }
-                        buriedItem.targetFloorPosition = itemDuggedPosition;
+                        else
+                        {
+                            buriedItem.targetFloorPosition = itemHalfBuriedPosition;
+                        }
                     }
                     else
                     {
-                        buriedItem.targetFloorPosition = itemBuriedPosition;
+                        if (newDiggingState == DiggingState.FinishDigging)
+                        {
+                            var diggingEmission = diggingParticles.emission;
+                            diggingEmission.rateOverTime = 40;
+                            buriedItem.targetFloorPosition = itemHalfBuriedPosition;
+                        }
+                        else
+                        {
+                            buriedItem.targetFloorPosition = itemBuriedPosition;
+                        }
                     }
                     break;
                 default:
                     break;
+            }
+            if (newDiggingState == DiggingState.FinishDigging)
+            {
+                nonActiveDiggingState = nonActiveDiggingState == DiggingState.IsBuried ? DiggingState.HalfBuried : DiggingState.FinishDigging;
             }
             diggingState = newDiggingState;
         }
@@ -193,7 +216,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         {
             if (IsServer)
             {
-                var itemsKeys = BuriedScrapsList.AllItems.Keys.ToList();
+                var itemsKeys = BuriedScrapsList.AllItemsNames;
                 var item = StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.Equals(itemsKeys[Random.Range(0, itemsKeys.Count)]));
                 var itemObject = Instantiate(item.spawnPrefab, transform.position, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
                 var itemComponent = itemObject.GetComponent<GrabbableObject>();
@@ -239,8 +262,13 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             {
                 buriedItemBoxCollider.enabled = false;
             }
+            if (buriedItem.insertedBattery != null && buriedItem.itemProperties.requiresBattery)
+            {
+                buriedItem.insertedBattery.charge = 0.5f;
+            }
             buriedItem.targetFloorPosition.y -= BuriedScrapsList.AllItems[buriedItem.itemProperties.itemName];
             itemBuriedPosition = buriedItem.targetFloorPosition;
+            itemHalfBuriedPosition = itemBuriedPosition + new Vector3(0f, 0.0f, 0f);
             itemDuggedPosition = itemBuriedPosition + new Vector3(0f, 0.1f, 0f);
         }
     }
