@@ -10,7 +10,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         /// </summary>
         public static Dictionary<string, float> AllItems = new()
         {
-            { "V-Type Engine", -0.0855f }
+            { "V-Type Engine", -0.0855f },
         };
 
 

@@ -85,13 +85,13 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             switch (newDiggingState)
             {
                 case DiggingState.Digging:
-                    if (diggingState != DiggingState.Digging)
+                    if (diggingState != DiggingState.Digging)  // Start digging (singleplayer)
                     {
                         if (diggingCoroutine != null)
                             StopCoroutine(diggingCoroutine);
                         diggingCoroutine = StartCoroutine(DiggingAction());
                     }
-                    else
+                    else  // Speed up digging (digging multiplayer)
                     {
                         numberOfDiggingInteractions++;
                         diggingTrigger.timeToHoldSpeedMultiplier += numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
@@ -99,7 +99,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     break;
                 case DiggingState.FinishDigging:
                 case DiggingState.CancelDigging:
-                    if (newDiggingState == DiggingState.CancelDigging)
+                    if (newDiggingState == DiggingState.CancelDigging)  // Still digging but with 1 less player
                     {
                         numberOfDiggingInteractions--;
                         if (numberOfDiggingInteractions != 0)
@@ -108,6 +108,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                             return;
                         }
                     }
+                    // Stop digging completely
                     diggingParticles.Stop(withChildren: true, stopBehavior: ParticleSystemStopBehavior.StopEmitting);
                     diggingAudio.Stop();
                     if (diggingCoroutine != null)
@@ -117,9 +118,9 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                         numberOfDiggingInteractions = 0;
                         diggingTrigger.timeToHoldSpeedMultiplier = 1f;
                     }
-                    if (nonActiveDiggingState == DiggingState.HalfBuried)
+                    if (nonActiveDiggingState == DiggingState.HalfBuried)  // If half buried
                     {
-                        if (newDiggingState == DiggingState.FinishDigging)
+                        if (newDiggingState == DiggingState.FinishDigging)  // If finish digging
                         {
                             diggingTrigger.enabled = false;
                             diggingCollider.enabled = false;
@@ -129,24 +130,24 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                             {
                                 buriedItemBoxCollider.enabled = true;
                             }
-                            buriedItem.targetFloorPosition = itemDuggedPosition;
+                            buriedItem.targetFloorPosition = itemDuggedPosition;  // Then is now dugged
                         }
                         else
                         {
-                            buriedItem.targetFloorPosition = itemHalfBuriedPosition;
+                            buriedItem.targetFloorPosition = itemHalfBuriedPosition;  // Else is back to half buried
                         }
                     }
-                    else
+                    else  // If fully buried
                     {
-                        if (newDiggingState == DiggingState.FinishDigging)
+                        if (newDiggingState == DiggingState.FinishDigging)  // If finish digging
                         {
                             var diggingEmission = diggingParticles.emission;
                             diggingEmission.rateOverTime = 40;
-                            buriedItem.targetFloorPosition = itemHalfBuriedPosition;
+                            buriedItem.targetFloorPosition = itemHalfBuriedPosition;  // Then is now half buried
                         }
                         else
                         {
-                            buriedItem.targetFloorPosition = itemBuriedPosition;
+                            buriedItem.targetFloorPosition = itemBuriedPosition;  // Else is back to fully buried
                         }
                     }
                     break;
@@ -169,7 +170,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             diggingAudio.Play();
             var time = 0f;
             var startPosition = buriedItem.targetFloorPosition;
-            var endPosition = itemDuggedPosition;
+            var endPosition = nonActiveDiggingState == DiggingState.HalfBuried ? itemDuggedPosition : itemHalfBuriedPosition;
             while (time < (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier))
             {
                 float lerpFactor = Mathf.SmoothStep(0f, 1f, time / (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier));
