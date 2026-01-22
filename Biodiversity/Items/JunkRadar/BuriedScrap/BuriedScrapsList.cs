@@ -1,16 +1,70 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Biodiversity.Items.JunkRadar.BuriedScrap
 {
     internal class BuriedScrapsList
     {
         /// <summary>
-        /// Dictionary of possible buried scraps (real scraps when spawned) and their underground position
+        /// Describe the properties of a buried scrap
         /// </summary>
-        public static Dictionary<string, float> AllItems = new()
+        internal class BuriedScrapProperties
         {
-            { "V-Type Engine", -0.0855f },
+            /// <summary>
+            /// The buried scrap origin can be used to determine the method of spawning the item
+            /// </summary>
+            public BuriedScrapOrigin Origin;
+
+            /// <summary>
+            /// The specific underground Y position of the item in all possible stages
+            /// </summary>
+            public (float buried, float halfBuried, float dugged) UndergroundPosition;
+
+            /// <summary>
+            /// The specific underground Z rotation of the item
+            /// </summary>
+            public float UndergroundRotation;
+        }
+
+
+        /// <summary>
+        /// Describe the origin of a buried scrap
+        /// </summary>
+        internal enum BuriedScrapOrigin
+        {
+            /// <summary>
+            /// Vanilla items are spawned by looking into the vanilla items list with the wanted item name
+            /// </summary>
+            VanillaItem,
+
+            /// <summary>
+            /// Biodiversity items are spawned by getting their defined item prefab with code
+            /// </summary>
+            BioItem,
+
+            /// <summary>
+            /// Biodiversity enemies are spawned with a vanilla "V-Type Engine" item, the enemy is spawned as soon as the item is completely dugged
+            /// </summary>
+            BioEnemy,
+        }
+
+
+
+        /// <summary>
+        /// Dictionary of possible buried scraps (real scraps when spawned) and their properties
+        /// </summary>
+        public static Dictionary<string, BuriedScrapProperties> AllItems = new()
+        {
+            { "V-Type Engine",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.VanillaItem,
+                    UndergroundPosition = (-0.1f, -0.06f, 0.01f),
+                    UndergroundRotation = 5,
+                }
+            },
         };
 
 
@@ -18,5 +72,17 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         /// List all possible buried scraps (real scraps when spawned) names
         /// </summary>
         public static List<string> AllItemsNames = [.. AllItems.Keys];
+
+
+        /// <summary>
+        /// Select a random item from the AllItems dictionary and returns its prefab
+        /// </summary>
+        /// <returns>A randmly selected item prefab</returns>
+        public static GameObject GetRandomItem()
+        {
+            //var itemsKeys = BuriedScrapsList.AllItemsNames;
+            //StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.Equals(itemsKeys[Random.Range(0, itemsKeys.Count)]));
+            return null;
+        }
     }
 }

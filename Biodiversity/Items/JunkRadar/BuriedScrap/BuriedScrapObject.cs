@@ -217,9 +217,8 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         {
             if (IsServer)
             {
-                var itemsKeys = BuriedScrapsList.AllItemsNames;
-                var item = StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.Equals(itemsKeys[Random.Range(0, itemsKeys.Count)]));
-                var itemObject = Instantiate(item.spawnPrefab, transform.position, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
+                var item = BuriedScrapsList.GetRandomItem();
+                var itemObject = Instantiate(item, transform.position, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
                 var itemComponent = itemObject.GetComponent<GrabbableObject>();
                 itemComponent.fallTime = 1f;
                 itemComponent.hasHitGround = true;
@@ -267,10 +266,11 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             {
                 buriedItem.insertedBattery.charge = 0.5f;
             }
-            buriedItem.targetFloorPosition.y -= BuriedScrapsList.AllItems[buriedItem.itemProperties.itemName];
-            itemBuriedPosition = buriedItem.targetFloorPosition;
-            itemHalfBuriedPosition = itemBuriedPosition + new Vector3(0f, 0.0f, 0f);
-            itemDuggedPosition = itemBuriedPosition + new Vector3(0f, 0.1f, 0f);
+            var buriedScrapProperties = BuriedScrapsList.AllItems[buriedItem.itemProperties.itemName];
+            itemBuriedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.buried, 0f);
+            itemHalfBuriedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.halfBuried, 0f);
+            itemDuggedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.dugged, 0f);
+            buriedItem.targetFloorPosition = itemBuriedPosition;
         }
     }
 }
