@@ -218,14 +218,17 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             if (IsServer)
             {
                 var item = BuriedScrapsList.GetRandomItem();
-                var itemObject = Instantiate(item, transform.position, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
-                var itemComponent = itemObject.GetComponent<GrabbableObject>();
-                itemComponent.fallTime = 1f;
-                itemComponent.hasHitGround = true;
-                itemComponent.reachedFloorTarget = true;
-                itemComponent.isInFactory = false;
-                itemComponent.NetworkObject.Spawn();
-                SyncItemServerRpc(itemComponent.NetworkObject);
+                if (item != null)
+                {
+                    var itemObject = Instantiate(item, transform.position, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
+                    var itemComponent = itemObject.GetComponent<GrabbableObject>();
+                    itemComponent.fallTime = 1f;
+                    itemComponent.hasHitGround = true;
+                    itemComponent.reachedFloorTarget = true;
+                    itemComponent.isInFactory = false;
+                    itemComponent.NetworkObject.Spawn();
+                    SyncItemServerRpc(itemComponent.NetworkObject);
+                }
             }
         }
 
@@ -271,6 +274,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             itemHalfBuriedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.halfBuried, 0f);
             itemDuggedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.dugged, 0f);
             buriedItem.targetFloorPosition = itemBuriedPosition;
+            buriedItem.transform.rotation = Quaternion.Euler(0, JunkRadarItem.globalMapSeedRand.Next(0, 360), buriedScrapProperties.UndergroundRotation);
         }
     }
 }

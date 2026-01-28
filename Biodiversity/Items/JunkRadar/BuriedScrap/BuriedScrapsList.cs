@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 
@@ -45,9 +45,9 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             BioItem,
 
             /// <summary>
-            /// Biodiversity enemies are spawned with a vanilla "V-Type Engine" item, the enemy is spawned as soon as the item is completely dugged
+            /// Biodiversity enemies are spawned with a random vanilla item, the enemy is spawned as soon as the item is completely dugged
             /// </summary>
-            BioEnemy,
+            //BioEnemy,
         }
 
 
@@ -80,9 +80,14 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         /// <returns>A randmly selected item prefab</returns>
         public static GameObject GetRandomItem()
         {
-            //var itemsKeys = BuriedScrapsList.AllItemsNames;
-            //StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.Equals(itemsKeys[Random.Range(0, itemsKeys.Count)]));
-            return null;
+            var selectedItem = AllItemsNames[Random.Range(0, AllItemsNames.Count)];
+            var properties = AllItems[selectedItem];
+            return properties.Origin switch
+            {
+                BuriedScrapOrigin.VanillaItem => StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.Equals(selectedItem)).spawnPrefab,
+                BuriedScrapOrigin.BioItem => null,
+                _ => null,
+            };
         }
     }
 }

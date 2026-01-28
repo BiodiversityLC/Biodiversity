@@ -43,6 +43,9 @@ namespace Biodiversity.Items.JunkRadar
         private readonly Vector3 rechargingPosition = new(0, 0, 0.1f);
         private readonly Vector3 rechargingRotation = new(0, 0, -45);
 
+        public static System.Random globalMapSeedRand = new System.Random();
+
+
         public static JunkRadarItem Instance { get; private set; }  // this is not a singleton, it's the Instance of the "master" item
         private bool isOriginalInstance = false;  // true if the actual item is the "master"
 
@@ -83,7 +86,7 @@ namespace Biodiversity.Items.JunkRadar
                 targetFloorPosition.y -= 0.0855f;
                 buriedPosition = targetFloorPosition;
                 duggedPosition = buriedPosition + new Vector3(0f, 0.1f, 0f);
-                transform.rotation = Quaternion.Euler(0, new System.Random(StartOfRound.Instance.randomMapSeed).Next(0, 360), 15);
+                transform.rotation = Quaternion.Euler(0, globalMapSeedRand.Next(0, 360), 15);
             }
         }
 
@@ -102,6 +105,7 @@ namespace Biodiversity.Items.JunkRadar
                     buriedScrapObject.SyncMasterServerRpc(buriedScrapObject.NetworkObject, base.NetworkObject);
                 }
             }
+            globalMapSeedRand = new System.Random(StartOfRound.Instance.randomMapSeed);
         }
 
         public void StartDigging(PlayerControllerB player)
