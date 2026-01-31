@@ -12,6 +12,12 @@
 
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.BuriedScrapPrefab);
 
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.OldVaseItem.spawnPrefab);
+            LethalLib.Modules.Items.RegisterItem(Assets.OldVaseItem);
+
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.MotherboardItem.spawnPrefab);
+            LethalLib.Modules.Items.RegisterItem(Assets.MotherboardItem);
+
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.JunkRadarItem.spawnPrefab);
             LethalLib.Modules.Items.RegisterItem(Assets.JunkRadarItem);
         }

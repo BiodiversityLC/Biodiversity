@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 
@@ -45,9 +44,9 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             BioItem,
 
             /// <summary>
-            /// Biodiversity enemies are spawned with a random vanilla item, the enemy is spawned as soon as the item is completely dugged
+            /// Biodiversity enemies are spawned with a static item prefab, the enemy is spawned as soon as the item is completely dugged
             /// </summary>
-            //BioEnemy,
+            BioEnemy,
         }
 
 
@@ -57,10 +56,26 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         /// </summary>
         public static Dictionary<string, BuriedScrapProperties> AllItems = new()
         {
-            { "V-Type Engine",
+            { "V-type engine",
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.VanillaItem,
+                    UndergroundPosition = (-0.1f, -0.06f, 0.01f),
+                    UndergroundRotation = 5,
+                }
+            },
+            { "Old vase",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.BioItem,
+                    UndergroundPosition = (-0.1f, -0.06f, 0.01f),
+                    UndergroundRotation = 5,
+                }
+            },
+            { "Motherboard",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.BioItem,
                     UndergroundPosition = (-0.1f, -0.06f, 0.01f),
                     UndergroundRotation = 5,
                 }
@@ -84,10 +99,29 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             var properties = AllItems[selectedItem];
             return properties.Origin switch
             {
-                BuriedScrapOrigin.VanillaItem => StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.Equals(selectedItem)).spawnPrefab,
-                BuriedScrapOrigin.BioItem => null,
+                BuriedScrapOrigin.VanillaItem => StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.ToLower().Equals(selectedItem.ToLower())).spawnPrefab,
+                BuriedScrapOrigin.BioItem => GetBioItem(selectedItem),
+                BuriedScrapOrigin.BioEnemy => GetBioEnemy(selectedItem),
                 _ => null,
             };
+        }
+
+        private static GameObject GetBioItem(string itemName)
+        {
+            if (itemName == "Motherboard")
+            {
+                return JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab;
+            }
+            else if (itemName == "Old Vase")
+            {
+                return JunkRadarHandler.Instance.Assets.OldVaseItem.spawnPrefab;
+            }
+            return null;
+        }
+
+        private static GameObject GetBioEnemy(string enemyName)
+        {
+            return null;
         }
     }
 }

@@ -11,5 +11,11 @@ namespace Biodiversity.Items.JunkRadar
 
         [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/BuriedScrap.prefab")]
         public GameObject BuriedScrapPrefab;
+
+        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedVaseItem.asset")]
+        public Item OldVaseItem;
+
+        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedBoardItem.asset")]
+        public Item MotherboardItem;
     }
 }
