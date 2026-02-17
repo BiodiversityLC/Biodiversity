@@ -25,6 +25,11 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             /// The specific underground Z rotation of the item
             /// </summary>
             public float UndergroundRotation;
+
+            /// <summary>
+            /// The prefab of the buried scrap, used for spawning the item in case Origin is not VanillaItem
+            /// </summary>
+            public GameObject scrapPrefab;
         }
 
 
@@ -56,28 +61,30 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         /// </summary>
         public static Dictionary<string, BuriedScrapProperties> AllItems = new()
         {
-            { "V-type engine",
+            /*{ "V-type engine",
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.VanillaItem,
-                    UndergroundPosition = (-0.1f, -0.06f, 0.01f),
-                    UndergroundRotation = 5,
+                    UndergroundPosition = (-1f, -0.7f, -0.3f),
+                    UndergroundRotation = 30,
                 }
             },
             { "Old vase",
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
-                    UndergroundPosition = (-0.1f, -0.06f, 0.01f),
-                    UndergroundRotation = 5,
+                    UndergroundPosition = (-1f, -0.6f, -0.15f),
+                    UndergroundRotation = -10,
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.OldVaseItem.spawnPrefab,
                 }
-            },
+            },*/
             { "Motherboard",
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
-                    UndergroundPosition = (-0.1f, -0.06f, 0.01f),
-                    UndergroundRotation = 5,
+                    UndergroundPosition = (-1f, -0.5f, 0.15f),
+                    UndergroundRotation = 70,
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab,
                 }
             },
         };
@@ -100,28 +107,10 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             return properties.Origin switch
             {
                 BuriedScrapOrigin.VanillaItem => StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.ToLower().Equals(selectedItem.ToLower())).spawnPrefab,
-                BuriedScrapOrigin.BioItem => GetBioItem(selectedItem),
-                BuriedScrapOrigin.BioEnemy => GetBioEnemy(selectedItem),
+                BuriedScrapOrigin.BioItem => properties.scrapPrefab,
+                BuriedScrapOrigin.BioEnemy => null,
                 _ => null,
             };
-        }
-
-        private static GameObject GetBioItem(string itemName)
-        {
-            if (itemName == "Motherboard")
-            {
-                return JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab;
-            }
-            else if (itemName == "Old Vase")
-            {
-                return JunkRadarHandler.Instance.Assets.OldVaseItem.spawnPrefab;
-            }
-            return null;
-        }
-
-        private static GameObject GetBioEnemy(string enemyName)
-        {
-            return null;
         }
     }
 }

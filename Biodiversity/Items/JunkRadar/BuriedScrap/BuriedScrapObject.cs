@@ -1,7 +1,6 @@
 ﻿using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System.Collections;
-using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -182,18 +181,18 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         }
 
         [ServerRpc]
-        public void SyncMasterServerRpc(NetworkObjectReference buriedScrapRef, NetworkObjectReference masterJunkRadarRef)
+        public void SyncMasterServerRpc(NetworkObjectReference buriedScrapRef, NetworkObjectReference masterJunkRadarRef, float calculatedBuriedScrapRotY)
         {
-            SyncMasterClientRpc(buriedScrapRef, masterJunkRadarRef);
+            SyncMasterClientRpc(buriedScrapRef, masterJunkRadarRef, calculatedBuriedScrapRotY);
         }
 
         [ClientRpc]
-        private void SyncMasterClientRpc(NetworkObjectReference buriedScrapRef, NetworkObjectReference masterJunkRadarRef)
+        private void SyncMasterClientRpc(NetworkObjectReference buriedScrapRef, NetworkObjectReference masterJunkRadarRef, float calculatedBuriedScrapRotY)
         {
-            StartCoroutine(SyncMaster(buriedScrapRef, masterJunkRadarRef));
+            StartCoroutine(SyncMaster(buriedScrapRef, masterJunkRadarRef, calculatedBuriedScrapRotY));
         }
 
-        private IEnumerator SyncMaster(NetworkObjectReference buriedScrapRef, NetworkObjectReference masterJunkRadarRef)
+        private IEnumerator SyncMaster(NetworkObjectReference buriedScrapRef, NetworkObjectReference masterJunkRadarRef, float calculatedBuriedScrapRotY)
         {
             NetworkObject itemNetObject = null;
             masterJunkRadarRef.TryGet(out var masterNetObject);
@@ -210,10 +209,10 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             masterJunkRadar = masterNetObject.GetComponent<JunkRadarItem>();
             diggingTrigger.enabled = false;
             diggingCollider.enabled = false;
-            SpawnItem();
+            SpawnItem(calculatedBuriedScrapRotY);
         }
 
-        private void SpawnItem()
+        private void SpawnItem(float calculatedBuriedScrapRotY)
         {
             if (IsServer)
             {
@@ -222,29 +221,32 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 {
                     var itemObject = Instantiate(item, transform.position, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
                     var itemComponent = itemObject.GetComponent<GrabbableObject>();
+                    itemComponent.transform.rotation = Quaternion.Euler(itemComponent.itemProperties.restingRotation);
                     itemComponent.fallTime = 1f;
                     itemComponent.hasHitGround = true;
                     itemComponent.reachedFloorTarget = true;
                     itemComponent.isInFactory = false;
+                    if (itemComponent.itemProperties.isScrap)
+                        itemComponent.SetScrapValue((int)(Random.Range(itemComponent.itemProperties.minValue, itemComponent.itemProperties.maxValue) * RoundManager.Instance.scrapValueMultiplier));
                     itemComponent.NetworkObject.Spawn();
-                    SyncItemServerRpc(itemComponent.NetworkObject);
+                    SyncItemServerRpc(itemComponent.NetworkObject, calculatedBuriedScrapRotY);
                 }
             }
         }
 
         [ServerRpc]
-        private void SyncItemServerRpc(NetworkObjectReference itemRef)
+        private void SyncItemServerRpc(NetworkObjectReference itemRef, float calculatedBuriedScrapRotY)
         {
-            SyncItemClientRpc(itemRef);
+            SyncItemClientRpc(itemRef, calculatedBuriedScrapRotY);
         }
 
         [ClientRpc]
-        private void SyncItemClientRpc(NetworkObjectReference itemRef)
+        private void SyncItemClientRpc(NetworkObjectReference itemRef, float calculatedBuriedScrapRotY)
         {
-            StartCoroutine(SyncItem(itemRef));
+            StartCoroutine(SyncItem(itemRef, calculatedBuriedScrapRotY));
         }
 
-        private IEnumerator SyncItem(NetworkObjectReference itemRef)
+        private IEnumerator SyncItem(NetworkObjectReference itemRef, float calculatedBuriedScrapRotY)
         {
             NetworkObject itemNetObject = null;
             float startTime = Time.realtimeSinceStartup;
@@ -256,7 +258,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             {
                 yield break;
             }
-            yield return new WaitForEndOfFrame();
+            yield return new WaitForSeconds(1f);
             buriedItem = itemNetObject.GetComponent<GrabbableObject>();
             buriedItem.grabbable = false;
             buriedItem.grabbableToEnemies = false;
@@ -264,6 +266,10 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             if (buriedItemBoxCollider != null)
             {
                 buriedItemBoxCollider.enabled = false;
+            }
+            if (buriedItem.radarIcon != null)
+            {
+                Destroy(buriedItem.radarIcon.gameObject);
             }
             if (buriedItem.insertedBattery != null && buriedItem.itemProperties.requiresBattery)
             {
@@ -274,7 +280,9 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             itemHalfBuriedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.halfBuried, 0f);
             itemDuggedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.dugged, 0f);
             buriedItem.targetFloorPosition = itemBuriedPosition;
-            buriedItem.transform.rotation = Quaternion.Euler(0, JunkRadarItem.globalMapSeedRand.Next(0, 360), buriedScrapProperties.UndergroundRotation);
+            buriedItem.transform.rotation = Mathf.Abs(buriedItem.transform.rotation.eulerAngles.x) < 90f ?
+                Quaternion.Euler(buriedItem.transform.rotation.eulerAngles.x, calculatedBuriedScrapRotY, buriedItem.transform.rotation.eulerAngles.z + buriedScrapProperties.UndergroundRotation)
+              : Quaternion.Euler(buriedItem.transform.rotation.eulerAngles.x + buriedScrapProperties.UndergroundRotation, calculatedBuriedScrapRotY, buriedItem.transform.rotation.eulerAngles.z);
         }
     }
 }
