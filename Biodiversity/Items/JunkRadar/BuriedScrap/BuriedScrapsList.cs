@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Biodiversity.Creatures.CoilCrab;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -30,6 +31,11 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             /// The prefab of the buried scrap, used for spawning the item in case Origin is not VanillaItem
             /// </summary>
             public GameObject scrapPrefab;
+
+            /// <summary>
+            /// The prefab of the buried scrap, used for spawning the enemy in case Origin is BioEnemy (the enemy is spawned as soon as the item is completely dugged)
+            /// </summary>
+            public GameObject enemyPrefab;
         }
 
 
@@ -61,7 +67,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         /// </summary>
         public static Dictionary<string, BuriedScrapProperties> AllItems = new()
         {
-            /*{ "V-type engine",
+            { "V-type engine",
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.VanillaItem,
@@ -77,7 +83,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     UndergroundRotation = -10,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.OldVaseItem.spawnPrefab,
                 }
-            },*/
+            },
             { "Motherboard",
                 new BuriedScrapProperties()
                 {
@@ -85,6 +91,16 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     UndergroundPosition = (-1f, -0.5f, 0.15f),
                     UndergroundRotation = 70,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab,
+                }
+            },//Bottles, Dust pan and the Metal sheet
+            { "Coil-crab",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.BioEnemy,
+                    UndergroundPosition = (-1f, -0.5f, 0.15f),
+                    UndergroundRotation = 5,
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.CoilCrabItem.spawnPrefab,
+                    enemyPrefab = CoilCrabHandler.Instance.Assets.CoilCrabEnemy.enemyPrefab,
                 }
             },
         };
@@ -107,8 +123,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             return properties.Origin switch
             {
                 BuriedScrapOrigin.VanillaItem => StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.ToLower().Equals(selectedItem.ToLower())).spawnPrefab,
-                BuriedScrapOrigin.BioItem => properties.scrapPrefab,
-                BuriedScrapOrigin.BioEnemy => null,
+                BuriedScrapOrigin.BioItem | BuriedScrapOrigin.BioEnemy => properties.scrapPrefab,
                 _ => null,
             };
         }

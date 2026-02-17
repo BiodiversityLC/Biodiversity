@@ -18,6 +18,9 @@
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.MotherboardItem.spawnPrefab);
             LethalLib.Modules.Items.RegisterItem(Assets.MotherboardItem);
 
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.CoilCrabItem.spawnPrefab);
+            LethalLib.Modules.Items.RegisterItem(Assets.CoilCrabItem);
+
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.JunkRadarItem.spawnPrefab);
             LethalLib.Modules.Items.RegisterItem(Assets.JunkRadarItem);
         }

@@ -17,5 +17,8 @@ namespace Biodiversity.Items.JunkRadar
 
         [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedBoardItem.asset")]
         public Item MotherboardItem;
+
+        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedCrabItem.asset")]
+        public Item CoilCrabItem;
     }
 }
