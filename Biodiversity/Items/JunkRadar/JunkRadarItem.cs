@@ -3,8 +3,10 @@ using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Biodiversity.Items.JunkRadar
 {
@@ -36,6 +38,13 @@ namespace Biodiversity.Items.JunkRadar
         public ParticleSystem diggingParticles;
         public AudioSource diggingAudio;
 
+        public GameObject screenSignalValid;
+        public GameObject screenSignalInvalid;
+        public Image screenItemImage;
+        public Image screenArrowLImage;
+        public Image screenArrowRImage;
+        public List<BuriedScrapObject> detectedBuriedScraps = [];
+
         public bool isBeingCharged = false;
         private float rechargeTimer = 0;
         private readonly float maxRechargeTime = 2f;
@@ -53,6 +62,7 @@ namespace Biodiversity.Items.JunkRadar
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            screenSignalValid.SetActive(false);
             if (!StartOfRound.Instance.inShipPhase)
             {
                 calculatedRandomRotationY = new System.Random(StartOfRound.Instance.randomMapSeed).Next(0, 360);
@@ -95,6 +105,7 @@ namespace Biodiversity.Items.JunkRadar
         {
             LogInfo("Initializing Buried Scraps");
             buriedScrapsInitialized = true;
+            detectedBuriedScraps.Clear();
             if (IsServer)
             {
                 for (int i = 0; i < 6; i++)
@@ -220,6 +231,14 @@ namespace Biodiversity.Items.JunkRadar
                 var player = GameNetworkManager.Instance.localPlayerController;
                 diggingTrigger.interactable = player != null && !player.isPlayerDead && player.currentlyHeldObjectServer == null;
             }
+            if (isBeingUsed)
+            {
+                if ((screenSignalValid.activeSelf && (StartOfRound.Instance.inShipPhase || isInFactory))
+                    || (screenSignalInvalid.activeSelf && !StartOfRound.Instance.inShipPhase && !isInFactory))
+                {
+                    ActivateScreenUI(true);
+                }
+            }
         }
 
         private void ActivateRadar(bool activate)
@@ -229,6 +248,22 @@ namespace Biodiversity.Items.JunkRadar
             mainObjectRenderer.material.SetColor("_EmissiveColor", activate ? screenActiveColor : Color.black);
             mainObjectAudio.PlayOneShot(activate ? powerOnSound : powerOffSound);
             SetControlTipsForItem();
+            ActivateScreenUI(activate);
+        }
+
+        private void ActivateScreenUI(bool activate)
+        {
+            if (activate)
+            {
+                bool validSignal = !StartOfRound.Instance.inShipPhase && !isInFactory;
+                screenSignalValid.SetActive(validSignal);
+                screenSignalInvalid.SetActive(!validSignal);
+            }
+            else
+            {
+                screenSignalValid.SetActive(false);
+                screenSignalInvalid.SetActive(false);
+            }
         }
 
         public override void ItemActivate(bool used, bool buttonDown = true)  // synced

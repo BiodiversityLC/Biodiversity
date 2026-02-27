@@ -50,6 +50,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             isEnabled = true;
             diggingTrigger.enabled = true;
             diggingCollider.enabled = true;
+            masterJunkRadar.detectedBuriedScraps.Add(this);
         }
 
         public void StartDigging(PlayerControllerB player)
@@ -125,6 +126,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                         {
                             diggingTrigger.enabled = false;
                             diggingCollider.enabled = false;
+                            masterJunkRadar.detectedBuriedScraps.Remove(this);
                             if (TryManageBuriedEnemy())
                             {
                                 break;
@@ -206,6 +208,19 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 buriedItem.NetworkObject.Despawn();
             }
             return true;
+        }
+
+        public override bool Equals(object other)
+        {
+            if (other == null || other is not BuriedScrapObject)
+                return false;
+            else
+                return this.transform.position == ((BuriedScrapObject)other).transform.position;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
         }
 
         [ServerRpc]

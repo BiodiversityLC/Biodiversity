@@ -18,6 +18,11 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             public BuriedScrapOrigin Origin;
 
             /// <summary>
+            /// The buried scrap status can be used to determine the color of the item on the Junk Radar screen
+            /// </summary>
+            public BuriedScrapStatus Status;
+
+            /// <summary>
             /// The specific underground Y position of the item in all possible stages
             /// </summary>
             public (float buried, float halfBuried, float dugged) UndergroundPosition;
@@ -61,6 +66,17 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         }
 
 
+        /// <summary>
+        /// Describe the status of the buried scrap
+        /// </summary>
+        public enum BuriedScrapStatus
+        {
+            Sturdy,
+            Fragile,
+            UltraFragile,
+        }
+
+
 
         /// <summary>
         /// Dictionary of possible buried scraps (real scraps when spawned) and their properties
@@ -71,6 +87,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.VanillaItem,
+                    Status = BuriedScrapStatus.Sturdy,
                     UndergroundPosition = (-1f, -0.7f, -0.3f),
                     UndergroundRotation = 30,
                 }
@@ -79,6 +96,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.VanillaItem,
+                    Status = BuriedScrapStatus.Sturdy,
                     UndergroundPosition = (-1f, -0.7f, -0.2f),
                     UndergroundRotation = 50,
                 }
@@ -87,6 +105,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.VanillaItem,
+                    Status = BuriedScrapStatus.Sturdy,
                     UndergroundPosition = (-0.5f, -0.15f, 0.05f),
                     UndergroundRotation = 80,
                 }
@@ -95,6 +114,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.VanillaItem,
+                    Status = BuriedScrapStatus.Sturdy,
                     UndergroundPosition = (-0.4f, -0.1f, 0.03f),
                     UndergroundRotation = -20,
                 }
@@ -103,6 +123,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
+                    Status = BuriedScrapStatus.Fragile,
                     UndergroundPosition = (-1f, -0.6f, -0.15f),
                     UndergroundRotation = -10,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.OldVaseItem.spawnPrefab,
@@ -112,6 +133,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
+                    Status = BuriedScrapStatus.UltraFragile,
                     UndergroundPosition = (-1f, -0.5f, 0.15f),
                     UndergroundRotation = 70,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab,
@@ -121,6 +143,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioEnemy,
+                    Status = BuriedScrapStatus.Sturdy,
                     UndergroundPosition = (-0.7f, -0.3f, -0.05f),
                     UndergroundRotation = 5,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.CoilCrabItem.spawnPrefab,
