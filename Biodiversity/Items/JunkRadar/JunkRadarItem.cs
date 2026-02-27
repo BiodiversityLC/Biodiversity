@@ -22,6 +22,7 @@ namespace Biodiversity.Items.JunkRadar
 
         public Light screenLight;
         public BoxCollider grabCollider;
+        public ScanNodeProperties scanNodeProperties;
         private readonly Color screenActiveColor = new(0.01f, 0.3f, 0f, 1f);
 
         public AudioSource mainObjectAudio;
@@ -85,7 +86,7 @@ namespace Biodiversity.Items.JunkRadar
                 insertedBattery.charge = 0.5f;
                 targetFloorPosition.y -= 0.0855f;
                 buriedPosition = targetFloorPosition;
-                duggedPosition = buriedPosition + new Vector3(0f, 0.1f, 0f);
+                duggedPosition = buriedPosition + new Vector3(0f, 0.12f, 0f);
                 transform.rotation = Quaternion.Euler(0, calculatedRandomRotationY, 15);
             }
         }
@@ -177,6 +178,7 @@ namespace Biodiversity.Items.JunkRadar
                         grabbable = true;
                         grabbableToEnemies = true;
                         grabCollider.enabled = true;
+                        scanNodeProperties.maxRange /= 2;
                         targetFloorPosition = duggedPosition;
                     }
                     else

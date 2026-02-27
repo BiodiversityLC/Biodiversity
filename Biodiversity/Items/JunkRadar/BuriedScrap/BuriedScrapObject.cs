@@ -27,6 +27,8 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         public ParticleSystem diggingParticles;
         public AudioSource diggingAudio;
 
+        public ParticleSystem buriedEnemyParticles;
+
         public void Update()
         {
             if (!isEnabled && masterJunkRadar != null)
@@ -123,6 +125,10 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                         {
                             diggingTrigger.enabled = false;
                             diggingCollider.enabled = false;
+                            if (TryManageBuriedEnemy())
+                            {
+                                break;
+                            }
                             buriedItem.grabbable = true;
                             buriedItem.grabbableToEnemies = true;
                             if (buriedItemBoxCollider != null)
@@ -178,6 +184,28 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 yield return null;
             }
             buriedItem.targetFloorPosition = endPosition;
+        }
+
+        /// <summary>
+        /// Despawn the buried item prefab and spawn the associated enemy prefab at the same position
+        /// </summary>
+        /// <returns>True if the enemy was spawned successfully and false if the buried item is not an enemy</returns>
+        private bool TryManageBuriedEnemy()
+        {
+            var buriedScrapProperties = BuriedScrapsList.AllItems[buriedItem.itemProperties.itemName];
+            if (buriedScrapProperties.Origin != BuriedScrapsList.BuriedScrapOrigin.BioEnemy)
+            {
+                return false;
+            }
+            buriedEnemyParticles.Play();
+            if (IsServer)
+            {
+                GameObject enemyObject = Instantiate(buriedScrapProperties.enemyPrefab, buriedItem.transform.position, Quaternion.Euler(new Vector3(0f, buriedItem.transform.eulerAngles.y, 0f)));
+                enemyObject.GetComponentInChildren<NetworkObject>().Spawn(destroyWithScene: true);
+                RoundManager.Instance.SpawnedEnemies.Add(enemyObject.GetComponent<EnemyAI>());
+                buriedItem.NetworkObject.Despawn();
+            }
+            return true;
         }
 
         [ServerRpc]

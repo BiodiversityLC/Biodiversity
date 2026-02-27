@@ -75,6 +75,30 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     UndergroundRotation = 30,
                 }
             },
+            { "Bottles",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.VanillaItem,
+                    UndergroundPosition = (-1f, -0.7f, -0.2f),
+                    UndergroundRotation = 50,
+                }
+            },
+            { "Dust pan",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.VanillaItem,
+                    UndergroundPosition = (-0.5f, -0.15f, 0.05f),
+                    UndergroundRotation = 80,
+                }
+            },
+            { "Metal sheet",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.VanillaItem,
+                    UndergroundPosition = (-0.4f, -0.1f, 0.03f),
+                    UndergroundRotation = -20,
+                }
+            },
             { "Old vase",
                 new BuriedScrapProperties()
                 {
@@ -92,12 +116,12 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     UndergroundRotation = 70,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab,
                 }
-            },//Bottles, Dust pan and the Metal sheet
+            },
             { "Coil-crab",
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioEnemy,
-                    UndergroundPosition = (-1f, -0.5f, 0.15f),
+                    UndergroundPosition = (-0.7f, -0.3f, -0.05f),
                     UndergroundRotation = 5,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.CoilCrabItem.spawnPrefab,
                     enemyPrefab = CoilCrabHandler.Instance.Assets.CoilCrabEnemy.enemyPrefab,
@@ -123,7 +147,8 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             return properties.Origin switch
             {
                 BuriedScrapOrigin.VanillaItem => StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.ToLower().Equals(selectedItem.ToLower())).spawnPrefab,
-                BuriedScrapOrigin.BioItem | BuriedScrapOrigin.BioEnemy => properties.scrapPrefab,
+                BuriedScrapOrigin.BioItem => properties.scrapPrefab,
+                BuriedScrapOrigin.BioEnemy => properties.scrapPrefab,
                 _ => null,
             };
         }
