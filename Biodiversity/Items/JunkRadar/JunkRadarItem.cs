@@ -4,9 +4,11 @@ using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+using static Biodiversity.Util.ExtensionMethods;
 
 namespace Biodiversity.Items.JunkRadar
 {
@@ -43,7 +45,16 @@ namespace Biodiversity.Items.JunkRadar
         public Image screenItemImage;
         public Image screenArrowLImage;
         public Image screenArrowRImage;
+        public Color baseImageColor;
+        public Color sturdyItemImageColor;
+        public Color fragileItemImageColor;
+        public Color ultraFragileItemImageColor;
+
         public List<BuriedScrapObject> detectedBuriedScraps = [];
+        private readonly int maxDetectedDistance = 45;
+        private readonly float maxDetectedDistanceOffset = 0.15f;
+        private float refreshTimer = 0f;
+        private readonly float refreshInterval = 0.5f;
 
         public bool isBeingCharged = false;
         private float rechargeTimer = 0;
@@ -62,6 +73,7 @@ namespace Biodiversity.Items.JunkRadar
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            ResetAllImagesOnScreen();
             screenSignalValid.SetActive(false);
             if (!StartOfRound.Instance.inShipPhase)
             {
@@ -238,7 +250,82 @@ namespace Biodiversity.Items.JunkRadar
                 {
                     ActivateScreenUI(true);
                 }
+                if (screenSignalValid.activeSelf && !isPocketed && Instance != null)
+                {
+                    refreshTimer += Time.deltaTime;
+                    if (refreshTimer >= refreshInterval)
+                    {
+                        refreshTimer = 0f;
+                        RefreshDetectedBuriedScraps();
+                    }
+                }
             }
+        }
+
+
+        /// <summary>
+        /// Refresh the screen display with the closest detected buried scrap
+        /// </summary>
+        private void RefreshDetectedBuriedScraps()
+        {
+            var sortedScraps = Instance.detectedBuriedScraps.Where(s => s != null && s.IsSpawned && s.diggingTrigger.enabled).OrderBy(s => Vector3.Distance(transform.position, s.transform.position));
+
+            if (sortedScraps.Count() == 0)
+            {
+                ResetAllImagesOnScreen();
+            }
+            else
+            {
+                BuriedScrapObject closestScrap = sortedScraps.First();
+                Vector3 directionToBuriedScrap = closestScrap.transform.position - transform.position;
+                float distanceToBuriedScrap = directionToBuriedScrap.magnitude;
+                float normalizedDistance = Mathf.Clamp01(distanceToBuriedScrap / maxDetectedDistance);  // scraps above max distance will not be detected
+                float opacity = 1 - normalizedDistance;
+                float opacityOffseted = opacity - maxDetectedDistanceOffset;
+
+                if (opacity >= 0)
+                {
+                    Color scrapColor = BuriedScrapsList.AllItems[closestScrap.buriedItem.itemProperties.itemName].Status switch
+                    {
+                        BuriedScrapsList.BuriedScrapStatus.Fragile => fragileItemImageColor,
+                        BuriedScrapsList.BuriedScrapStatus.UltraFragile => ultraFragileItemImageColor,
+                        _ => sturdyItemImageColor,
+                    };
+                    screenItemImage.color = ColorWithAlpha(scrapColor, opacityOffseted >= 0f ? opacityOffseted : 0f);
+                }
+                else
+                {
+                    ResetAllImagesOnScreen();
+                    return;
+                }
+
+                if (isHeld && playerHeldBy != null && opacityOffseted > 0f)
+                {
+                    if (Vector3.SignedAngle(playerHeldBy.transform.forward, directionToBuriedScrap, Vector3.up) < 0)
+                    {
+                        screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, opacityOffseted);
+                        screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, 0f);
+                    }
+                    else
+                    {
+                        screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, 0f);
+                        screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, opacityOffseted);
+                    }
+                }
+                else
+                {
+                    screenArrowLImage.color = ColorWithAlpha(baseImageColor, 0f);
+                    screenArrowRImage.color = screenArrowLImage.color;
+                }
+            }
+        }
+
+
+        private void ResetAllImagesOnScreen()
+        {
+            screenItemImage.color = ColorWithAlpha(baseImageColor, 0f);
+            screenArrowLImage.color = screenItemImage.color;
+            screenArrowRImage.color = screenItemImage.color;
         }
 
         private void ActivateRadar(bool activate)
@@ -264,6 +351,10 @@ namespace Biodiversity.Items.JunkRadar
                 screenSignalValid.SetActive(false);
                 screenSignalInvalid.SetActive(false);
             }
+            if (!activate || screenSignalInvalid.activeSelf)
+            {
+                refreshTimer = 0f;
+            }
         }
 
         public override void ItemActivate(bool used, bool buttonDown = true)  // synced
@@ -278,14 +369,20 @@ namespace Biodiversity.Items.JunkRadar
         {
             base.EquipItem();
             if (isBeingUsed)
+            {
                 screenLight.enabled = true;
+                ActivateScreenUI(true);
+            }
         }
 
         public override void PocketItem()
         {
             base.PocketItem();
             if (isBeingUsed)
+            {
                 screenLight.enabled = false;
+                ActivateScreenUI(false);
+            }
         }
 
         public override void DiscardItem()

@@ -11,7 +11,7 @@ namespace Biodiversity.Util;
 /// <summary>
 /// Provides extension methods for various types to enhance functionality.
 /// </summary>
-internal static class ExtensionMethods 
+internal static class ExtensionMethods
 {
     /// <summary>
     /// Calculates the normalized direction vector from a source point to a target point.
@@ -20,7 +20,7 @@ internal static class ExtensionMethods
     /// <param name="to">The target position vector.</param>
     /// <returns>Normalized direction vector pointing from source to target.</returns>
     /// <remarks>This function was made for the Honey Feeder, and I don't think it's needed anymore.</remarks>
-    internal static Vector3 Direction(this Vector3 from, Vector3 to) 
+    internal static Vector3 Direction(this Vector3 from, Vector3 to)
     {
         return (to - from).normalized;
     }
@@ -35,14 +35,14 @@ internal static class ExtensionMethods
     /// This function was made for the Honey Feeder, and I don't think it's needed anymore.
     /// </remarks>
     [SuppressMessage("ReSharper", "PossibleLossOfFraction", Justification = "Disabled message because Rider was complaining about totalMinutes / 60")]
-    internal static (int hours, int minutes) GetCurrentTime(this TimeOfDay timeOfDay) 
+    internal static (int hours, int minutes) GetCurrentTime(this TimeOfDay timeOfDay)
     {
         int totalMinutes = Mathf.FloorToInt(timeOfDay.normalizedTimeOfDay * 60f * timeOfDay.numberOfHours + 360);
         int hour = Mathf.FloorToInt(totalMinutes / 60);
 
         return (hour, totalMinutes % 60);
     }
-    
+
     /// <summary>
     /// Parses a time string in "HH:mm" format into numeric values.
     /// </summary>
@@ -52,7 +52,7 @@ internal static class ExtensionMethods
     /// <exception cref="FormatException">Thrown if input string is not in correct format.</exception>
     /// <exception cref="OverflowException">Thrown if values exceed integer limits.</exception>
     /// <remarks>This function was made for the Honey Feeder, and I don't think it's needed anymore.</remarks>
-    internal static (int, int) ParseTimeString(this TimeOfDay timeOfDay, string timeString) 
+    internal static (int, int) ParseTimeString(this TimeOfDay timeOfDay, string timeString)
     {
         return (int.Parse(timeString.Split(":")[0]), int.Parse(timeString.Split(":")[1]));
     }
@@ -64,11 +64,11 @@ internal static class ExtensionMethods
     /// <param name="target">Target time as (hours, minutes) tuple.</param>
     /// <returns>True if current time matches or exceeds target time.</returns>
     /// <remarks>This function was made for the Honey Feeder, and I don't think it's needed anymore.</remarks>
-    internal static bool HasPassedTime(this TimeOfDay timeOfDay, (int, int) target) 
+    internal static bool HasPassedTime(this TimeOfDay timeOfDay, (int, int) target)
     {
         return timeOfDay.HasPassedTime(timeOfDay.GetCurrentTime(), target);
     }
-    
+
     /// <summary>
     /// Compares two time tuples to determine if target time has been passed.
     /// </summary>
@@ -80,11 +80,11 @@ internal static class ExtensionMethods
     /// target minute is less than or equal to current minute.
     /// </returns>
     /// <remarks>This function was made for the Honey Feeder, and I don't think it's needed anymore.</remarks>
-    internal static bool HasPassedTime(this TimeOfDay timeOfDay, (int, int) current, (int, int) target) 
+    internal static bool HasPassedTime(this TimeOfDay timeOfDay, (int, int) current, (int, int) target)
     {
         return target.Item1 <= current.Item1 && target.Item2 <= current.Item2;
     }
-    
+
     /// <summary>
     /// Safely updates a NetworkVariable value if different from the current value.
     /// </summary>
@@ -92,7 +92,7 @@ internal static class ExtensionMethods
     /// <param name="networkVariable">The NetworkVariable to update.</param>
     /// <param name="newValue">The new value to potentially set.</param>
     /// <remarks> Prevents unnecessary network updates by checking equality before setting.</remarks>
-    public static void SafeSet<T>(this NetworkVariable<T> networkVariable, T newValue) 
+    public static void SafeSet<T>(this NetworkVariable<T> networkVariable, T newValue)
         where T : IEquatable<T>
     {
         if (!EqualityComparer<T>.Default.Equals(networkVariable.Value, newValue))
@@ -108,20 +108,20 @@ internal static class ExtensionMethods
     /// <remarks>
     /// Handles ReflectionTypeLoadException by returning only valid types.
     /// </remarks>
-    internal static IEnumerable<Type> GetLoadableTypes(this Assembly assembly) 
+    internal static IEnumerable<Type> GetLoadableTypes(this Assembly assembly)
     {
         if (assembly == null) throw new ArgumentNullException(nameof(assembly));
-        
-        try 
+
+        try
         {
             return assembly.GetTypes();
-        } 
-        catch (ReflectionTypeLoadException ex) 
+        }
+        catch (ReflectionTypeLoadException ex)
         {
             return ex.Types.Where(t => t != null);
         }
     }
-    
+
     /// <summary>
     /// Reflection-based check for IsHost property.
     /// It is used in patches using <see cref="Biodiversity.Core.Attributes.ModConditionalPatch"/> to get the value of <c>__instance.IsHost</c>.
@@ -145,7 +145,7 @@ internal static class ExtensionMethods
     {
         return (bool)instance.GetType().GetProperty("IsServer")?.GetValue(instance)!;
     }
-    
+
     /// <summary>
     /// Converts an RGB color to HSV and returns the original RGB color.
     /// </summary>
@@ -170,6 +170,17 @@ internal static class ExtensionMethods
     public static Color HSVToRGB(float h, float s, float v)
     {
         return Color.HSVToRGB(h, s, v);
+    }
+
+    /// <summary>
+    /// Creates a new color with the specified alpha value, preserving the original color's RGB components.
+    /// </summary>
+    /// <param name="color">The original color</param>
+    /// <param name="alpha">The alpha (transparency) value to apply to the new color ; between 0.0 and 1.0</param>
+    /// <returns>A new Color instance with the same RGB values and the specified alpha value</returns>
+    public static Color ColorWithAlpha(Color color, float alpha)
+    {
+        return new Color(color.r, color.g, color.b, alpha);
     }
 
     /// <summary>

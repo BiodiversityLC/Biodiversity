@@ -14,7 +14,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         private int numberOfDiggingInteractions = 0;
         private readonly float diggingSpeedIncreasePerInteraction = 0.4f;
 
-        private GrabbableObject buriedItem;
+        public GrabbableObject buriedItem;
         private BoxCollider buriedItemBoxCollider;
         private Vector3 itemBuriedPosition;
         private Vector3 itemHalfBuriedPosition;
