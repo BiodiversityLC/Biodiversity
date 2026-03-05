@@ -45,6 +45,8 @@ namespace Biodiversity.Items.JunkRadar
         public Image screenItemImage;
         public Image screenArrowLImage;
         public Image screenArrowRImage;
+        public MeshRenderer[] screenTextValidRenderers;
+        public MeshRenderer[] screenTextInvalidRenderers;
         public Color baseImageColor;
         public Color sturdyItemImageColor;
         public Color fragileItemImageColor;
@@ -354,6 +356,20 @@ namespace Biodiversity.Items.JunkRadar
             if (!activate || screenSignalInvalid.activeSelf)
             {
                 refreshTimer = 0f;
+            }
+            if (screenSignalValid.activeSelf)
+            {
+                foreach (var renderer in screenTextValidRenderers)
+                {
+                    renderer.enabled = true;
+                }
+            }
+            if (screenSignalInvalid.activeSelf)
+            {
+                foreach (var renderer in screenTextInvalidRenderers)
+                {
+                    renderer.enabled = true;
+                }
             }
         }
 
