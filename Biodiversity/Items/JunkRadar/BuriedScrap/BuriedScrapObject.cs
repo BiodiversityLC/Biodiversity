@@ -22,12 +22,30 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         private JunkRadarItem masterJunkRadar;
         private bool isEnabled = false;
 
+        private float valueLossTimer = 0f;
+        private readonly float valueLossInterval = 1f;
+
         public InteractTrigger diggingTrigger;
         public BoxCollider diggingCollider;
         public ParticleSystem diggingParticles;
         public AudioSource diggingAudio;
+        public AudioSource loseValueAudio;
 
         public ParticleSystem buriedEnemyParticles;
+
+
+        public override bool Equals(object other)
+        {
+            if (other == null || other is not BuriedScrapObject)
+                return false;
+            else
+                return this.transform.position == ((BuriedScrapObject)other).transform.position;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
 
         public void Update()
         {
@@ -42,6 +60,15 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             {
                 var player = GameNetworkManager.Instance.localPlayerController;
                 diggingTrigger.interactable = player != null && !player.isPlayerDead && player.currentlyHeldObjectServer == null;
+            }
+            if (diggingState == DiggingState.Digging && diggingTrigger.enabled && IsServer && numberOfDiggingInteractions > 1)
+            {
+                valueLossTimer += Time.deltaTime;
+                if (valueLossTimer >= valueLossInterval)
+                {
+                    valueLossTimer = 0f;
+                    TryLoseValueServerRpc();
+                }
             }
         }
 
@@ -104,6 +131,10 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     if (newDiggingState == DiggingState.CancelDigging)  // Still digging but with 1 less player
                     {
                         numberOfDiggingInteractions--;
+                        if (numberOfDiggingInteractions == 1)
+                        {
+                            valueLossTimer = 0f;
+                        }
                         if (numberOfDiggingInteractions != 0)
                         {
                             diggingTrigger.timeToHoldSpeedMultiplier -= numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
@@ -117,6 +148,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                         StopCoroutine(diggingCoroutine);
                     if (newDiggingState == DiggingState.FinishDigging)
                     {
+                        valueLossTimer = 0f;
                         numberOfDiggingInteractions = 0;
                         diggingTrigger.timeToHoldSpeedMultiplier = 1f;
                     }
@@ -172,6 +204,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         {
             numberOfDiggingInteractions = 1;
             diggingTrigger.timeToHoldSpeedMultiplier = 1f;
+            valueLossTimer = 0f;
             diggingParticles.Play();
             diggingAudio.pitch = Random.Range(0.9f, 1.1f);
             diggingAudio.Play();
@@ -210,17 +243,25 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             return true;
         }
 
-        public override bool Equals(object other)
+        [ServerRpc]
+        private void TryLoseValueServerRpc()
         {
-            if (other == null || other is not BuriedScrapObject)
-                return false;
-            else
-                return this.transform.position == ((BuriedScrapObject)other).transform.position;
+            int chanceToLoseValue = BuriedScrapsList.AllItems[buriedItem.itemProperties.itemName].Status switch
+            {
+                BuriedScrapsList.BuriedScrapStatus.Fragile => 15,
+                BuriedScrapsList.BuriedScrapStatus.UltraFragile => 80,
+                _ => 0
+            };
+            if (chanceToLoseValue > 0 && Random.Range(0, 100) < chanceToLoseValue)
+                LoseValueClientRpc();
         }
 
-        public override int GetHashCode()
+        [ClientRpc]
+        private void LoseValueClientRpc()
         {
-            return base.GetHashCode();
+            loseValueAudio.pitch = Random.Range(0.7f, 1.3f);
+            loseValueAudio.Play();
+            buriedItem.SetScrapValue(buriedItem.scrapValue / 2);
         }
 
         [ServerRpc]

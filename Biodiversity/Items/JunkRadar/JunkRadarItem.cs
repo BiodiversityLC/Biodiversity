@@ -34,6 +34,8 @@ namespace Biodiversity.Items.JunkRadar
         public AudioClip powerOffSound;
         public AudioClip outOfPowerSound;
         public AudioClip beepingSound;
+        public AudioClip newDetectSound;
+        public AudioClip detectBelowSound;
 
         public InteractTrigger diggingTrigger;
         public BoxCollider diggingCollider;
@@ -53,10 +55,15 @@ namespace Biodiversity.Items.JunkRadar
         public Color ultraFragileItemImageColor;
 
         public List<BuriedScrapObject> detectedBuriedScraps = [];
+        private Vector3? previousClosestDetectedPosition = null;
+        private bool isAboveDetectedScrap = false;
         private readonly int maxDetectedDistance = 45;
         private readonly float maxDetectedDistanceOffset = 0.15f;
         private float refreshTimer = 0f;
         private readonly float refreshInterval = 0.5f;
+        private float beepingTimer = 0f;
+        private float? beepingInterval = null;
+        private readonly Vector2 beepingIntervalMaxMin = new Vector2(2f, 0.1f);
 
         public bool isBeingCharged = false;
         private float rechargeTimer = 0;
@@ -260,6 +267,15 @@ namespace Biodiversity.Items.JunkRadar
                         refreshTimer = 0f;
                         RefreshDetectedBuriedScraps();
                     }
+                    if (beepingInterval != null)
+                    {
+                        beepingTimer += Time.deltaTime;
+                        if (beepingTimer >= beepingInterval)
+                        {
+                            beepingTimer = 0f;
+                            mainObjectAudio.PlayOneShot(beepingSound);
+                        }
+                    }
                 }
             }
         }
@@ -294,6 +310,13 @@ namespace Biodiversity.Items.JunkRadar
                         _ => sturdyItemImageColor,
                     };
                     screenItemImage.color = ColorWithAlpha(scrapColor, opacityOffseted >= 0f ? opacityOffseted : 0f);
+
+                    if (previousClosestDetectedPosition == null || previousClosestDetectedPosition != closestScrap.transform.position)
+                    {
+                        mainObjectAudio.PlayOneShot(newDetectSound);
+                        previousClosestDetectedPosition = closestScrap.transform.position;
+                        isAboveDetectedScrap = false;
+                    }
                 }
                 else
                 {
@@ -313,11 +336,19 @@ namespace Biodiversity.Items.JunkRadar
                         screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, 0f);
                         screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, opacityOffseted);
                     }
+                    if (!isAboveDetectedScrap && opacityOffseted >= (1 - maxDetectedDistanceOffset - 0.05f))
+                    {
+                        mainObjectAudio.PlayOneShot(detectBelowSound);
+                        isAboveDetectedScrap = true;
+                    }
+                    // linear interpolation of beeping interval based on image opacity
+                    beepingInterval = beepingIntervalMaxMin.x + (opacityOffseted * ((beepingIntervalMaxMin.y - beepingIntervalMaxMin.x) / (1 - maxDetectedDistanceOffset)));
                 }
                 else
                 {
                     screenArrowLImage.color = ColorWithAlpha(baseImageColor, 0f);
                     screenArrowRImage.color = screenArrowLImage.color;
+                    beepingInterval = null;
                 }
             }
         }
@@ -328,6 +359,9 @@ namespace Biodiversity.Items.JunkRadar
             screenItemImage.color = ColorWithAlpha(baseImageColor, 0f);
             screenArrowLImage.color = screenItemImage.color;
             screenArrowRImage.color = screenItemImage.color;
+            previousClosestDetectedPosition = null;
+            isAboveDetectedScrap = false;
+            beepingInterval = null;
         }
 
         private void ActivateRadar(bool activate)
@@ -356,6 +390,8 @@ namespace Biodiversity.Items.JunkRadar
             if (!activate || screenSignalInvalid.activeSelf)
             {
                 refreshTimer = 0f;
+                beepingTimer = 0f;
+                beepingInterval = null;
             }
             if (screenSignalValid.activeSelf)
             {
