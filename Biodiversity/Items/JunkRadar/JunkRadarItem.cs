@@ -21,6 +21,7 @@ namespace Biodiversity.Items.JunkRadar
         private Vector3 duggedPosition;
         private int numberOfDiggingInteractions = 0;
         private readonly float diggingSpeedIncreasePerInteraction = 0.4f;
+        private float currentHudFillAmount = 0f;
         private bool buriedScrapsInitialized = false;
 
         public Light screenLight;
@@ -208,6 +209,11 @@ namespace Biodiversity.Items.JunkRadar
                     {
                         numberOfDiggingInteractions++;
                         diggingTrigger.timeToHoldSpeedMultiplier += numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
+                        PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                        if (localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
+                        {
+                            HUDManager.Instance.holdFillAmount += currentHudFillAmount;
+                        }
                     }
                     break;
                 case DiggingState.FinishDigging:
@@ -221,6 +227,7 @@ namespace Biodiversity.Items.JunkRadar
                             return;
                         }
                     }
+                    currentHudFillAmount = 0f;
                     diggingParticles.Stop(withChildren: true, stopBehavior: ParticleSystemStopBehavior.StopEmitting);
                     diggingAudio.Stop();
                     if (diggingCoroutine != null)
@@ -263,6 +270,7 @@ namespace Biodiversity.Items.JunkRadar
                 float lerpFactor = Mathf.SmoothStep(0f, 1f, time / (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier));
                 time += Time.deltaTime;
                 targetFloorPosition = Vector3.Lerp(startPosition, endPosition, lerpFactor);
+                currentHudFillAmount += Time.deltaTime * diggingTrigger.timeToHoldSpeedMultiplier;
                 yield return null;
             }
             targetFloorPosition = endPosition;
