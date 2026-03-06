@@ -19,7 +19,6 @@ namespace Biodiversity.Items.JunkRadar
         private Coroutine diggingCoroutine = null;
         private Vector3 buriedPosition;
         private Vector3 duggedPosition;
-        private float calculatedRandomRotationY;
         private int numberOfDiggingInteractions = 0;
         private readonly float diggingSpeedIncreasePerInteraction = 0.4f;
         private bool buriedScrapsInitialized = false;
@@ -79,20 +78,42 @@ namespace Biodiversity.Items.JunkRadar
         private bool isOriginalInstance = false;  // true if the actual item is the "master"
 
 
+        protected override string GetLogPrefix()
+        {
+            return $"[JunkRadarItem {BioId} - Master({isOriginalInstance})]";
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             ResetAllImagesOnScreen();
             screenSignalValid.SetActive(false);
-            if (!StartOfRound.Instance.inShipPhase)
-            {
-                calculatedRandomRotationY = new System.Random(StartOfRound.Instance.randomMapSeed).Next(0, 360);
-                StartCoroutine(SetBuriedState());
-            }
         }
 
-        private IEnumerator SetBuriedState()
+        [ServerRpc]
+        public void SetBuriedStateServerRpc(NetworkObjectReference itemRef, int randomRotationY)
         {
+            SetBuriedStateClientRpc(itemRef, randomRotationY);
+        }
+
+        [ClientRpc]
+        private void SetBuriedStateClientRpc(NetworkObjectReference itemRef, int randomRotationY)
+        {
+            StartCoroutine(SetBuriedState(itemRef, randomRotationY));
+        }
+
+        private IEnumerator SetBuriedState(NetworkObjectReference itemRef, int randomRotationY)
+        {
+            NetworkObject itemNetObject = null;
+            float startTime = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - startTime < 8f && !itemRef.TryGet(out itemNetObject))
+            {
+                yield return new WaitForSeconds(0.03f);
+            }
+            if (itemNetObject == null)
+            {
+                yield break;
+            }
             yield return new WaitForSeconds(1f);
             if (!isHeld && !isHeldByEnemy)
             {
@@ -111,6 +132,9 @@ namespace Biodiversity.Items.JunkRadar
                 diggingCollider.enabled = true;
                 var diggingEmission = diggingParticles.emission;
                 diggingEmission.rateOverTime = 40;
+                hasHitGround = true;
+                reachedFloorTarget = true;
+                isInFactory = false;
                 grabbable = false;
                 grabbableToEnemies = false;
                 grabCollider.enabled = false;
@@ -118,7 +142,7 @@ namespace Biodiversity.Items.JunkRadar
                 targetFloorPosition.y -= 0.0855f;
                 buriedPosition = targetFloorPosition;
                 duggedPosition = buriedPosition + new Vector3(0f, 0.12f, 0f);
-                transform.rotation = Quaternion.Euler(0, calculatedRandomRotationY, 15);
+                transform.rotation = Quaternion.Euler(0, randomRotationY, 15);
             }
         }
 
@@ -131,7 +155,7 @@ namespace Biodiversity.Items.JunkRadar
             {
                 for (int i = 0; i < 6; i++)
                 {
-                    var spawnPosition = !hasBeenHeld && i == 0 ? PositionUtils.GetRandomPositionNearPosition(transform.position, randomizePositionRadius: 10) : PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 30);
+                    var spawnPosition = !hasBeenHeld && i == 0 ? PositionUtils.GetRandomPositionNearPosition(transform.position, randomizePositionRadius: 10) : PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 15);
                     var gameObject = Instantiate(JunkRadarHandler.Instance.Assets.BuriedScrapPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
                     gameObject.GetComponent<NetworkObject>().Spawn();
                     var buriedScrapObject = gameObject.GetComponent<BuriedScrapObject>();
@@ -517,11 +541,6 @@ namespace Biodiversity.Items.JunkRadar
                 Instance = null;
             }
             base.OnNetworkDespawn();
-        }
-
-        protected override string GetLogPrefix()
-        {
-            return $"[JunkRadarItem {BioId} - Master({isOriginalInstance})]";
         }
     }
 }

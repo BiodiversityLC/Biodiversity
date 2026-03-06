@@ -28,7 +28,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
 
         private static void Spawn()
         {
-            var spawnPosition = PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 30);
+            var spawnPosition = PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 20);
             var junkRadar = Object.Instantiate(JunkRadarHandler.Instance.Assets.JunkRadarItem.spawnPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
             var radarComponent = junkRadar.GetComponent<JunkRadarItem>();
             radarComponent.fallTime = 1f;
@@ -36,6 +36,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
             radarComponent.reachedFloorTarget = true;
             radarComponent.isInFactory = false;
             radarComponent.NetworkObject.Spawn();
+            radarComponent.SetBuriedStateServerRpc(radarComponent.NetworkObject, Random.Range(0, 360));
         }
 
         private static void Reload()

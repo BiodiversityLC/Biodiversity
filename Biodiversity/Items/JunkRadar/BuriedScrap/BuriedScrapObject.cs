@@ -313,24 +313,24 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     if (itemComponent.itemProperties.isScrap)
                         itemComponent.SetScrapValue((int)(Random.Range(itemComponent.itemProperties.minValue, itemComponent.itemProperties.maxValue) * RoundManager.Instance.scrapValueMultiplier));
                     itemComponent.NetworkObject.Spawn();
-                    SyncItemServerRpc(itemComponent.NetworkObject, calculatedBuriedScrapRotY);
+                    SyncItemServerRpc(itemComponent.NetworkObject, itemComponent.scrapValue, calculatedBuriedScrapRotY);
                 }
             }
         }
 
         [ServerRpc]
-        private void SyncItemServerRpc(NetworkObjectReference itemRef, float calculatedBuriedScrapRotY)
+        private void SyncItemServerRpc(NetworkObjectReference itemRef, int scrapValue, float calculatedBuriedScrapRotY)
         {
-            SyncItemClientRpc(itemRef, calculatedBuriedScrapRotY);
+            SyncItemClientRpc(itemRef, scrapValue, calculatedBuriedScrapRotY);
         }
 
         [ClientRpc]
-        private void SyncItemClientRpc(NetworkObjectReference itemRef, float calculatedBuriedScrapRotY)
+        private void SyncItemClientRpc(NetworkObjectReference itemRef, int scrapValue, float calculatedBuriedScrapRotY)
         {
-            StartCoroutine(SyncItem(itemRef, calculatedBuriedScrapRotY));
+            StartCoroutine(SyncItem(itemRef, scrapValue, calculatedBuriedScrapRotY));
         }
 
-        private IEnumerator SyncItem(NetworkObjectReference itemRef, float calculatedBuriedScrapRotY)
+        private IEnumerator SyncItem(NetworkObjectReference itemRef, int scrapValue, float calculatedBuriedScrapRotY)
         {
             NetworkObject itemNetObject = null;
             float startTime = Time.realtimeSinceStartup;
@@ -344,6 +344,11 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             }
             yield return new WaitForSeconds(1f);
             buriedItem = itemNetObject.GetComponent<GrabbableObject>();
+            buriedItem.hasHitGround = true;
+            buriedItem.reachedFloorTarget = true;
+            buriedItem.isInFactory = false;
+            if (buriedItem.itemProperties.isScrap)
+                buriedItem.SetScrapValue(scrapValue);
             buriedItem.grabbable = false;
             buriedItem.grabbableToEnemies = false;
             buriedItemBoxCollider = buriedItem.GetComponent<BoxCollider>();
