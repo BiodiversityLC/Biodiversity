@@ -30,11 +30,12 @@ namespace Biodiversity.Items.JunkRadar
         private readonly Color screenActiveColor = new(0.01f, 0.3f, 0f, 1f);
 
         public AudioSource mainObjectAudio;
+        public AudioSource detectAudio;
         public AudioClip powerOnSound;
         public AudioClip powerOffSound;
         public AudioClip outOfPowerSound;
-        public AudioClip beepingSound;
         public AudioClip newDetectSound;
+        public AudioClip beepingSound;
         public AudioClip detectBelowSound;
 
         public InteractTrigger diggingTrigger;
@@ -57,13 +58,16 @@ namespace Biodiversity.Items.JunkRadar
         public List<BuriedScrapObject> detectedBuriedScraps = [];
         private Vector3? previousClosestDetectedPosition = null;
         private bool isAboveDetectedScrap = false;
-        private readonly int maxDetectedDistance = 45;
+        private bool hasApproachedDetectedScrap = false;
+        private readonly int maxDetectedDistance = 50;
         private readonly float maxDetectedDistanceOffset = 0.15f;
         private float refreshTimer = 0f;
-        private readonly float refreshInterval = 0.5f;
+        private readonly float refreshInterval = 0.3f;
         private float beepingTimer = 0f;
         private float? beepingInterval = null;
-        private readonly Vector2 beepingIntervalMaxMin = new Vector2(2f, 0.1f);
+        private readonly Vector2 beepingIntervalMaxMin = new(1.7f, 0.1f);
+        private float? beepingPitch = null;
+        private readonly Vector2 beepingPitchMinMax = new(0.9f, 1.3f);
 
         public bool isBeingCharged = false;
         private float rechargeTimer = 0;
@@ -156,7 +160,7 @@ namespace Biodiversity.Items.JunkRadar
             {
                 for (int i = 0; i < 6; i++)
                 {
-                    var spawnPosition = !hasBeenHeld && i == 0 ? PositionUtils.GetRandomPositionNearPosition(transform.position, randomizePositionRadius: 10) : PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 10);
+                    var spawnPosition = !hasBeenHeld && i == 0 ? PositionUtils.GetRandomPositionNearPosition(transform.position, randomizePositionRadius: 15) : PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 10);
                     var gameObject = Instantiate(JunkRadarHandler.Instance.Assets.BuriedScrapPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
                     gameObject.GetComponent<NetworkObject>().Spawn();
                     var buriedScrapObject = gameObject.GetComponent<BuriedScrapObject>();
@@ -299,13 +303,14 @@ namespace Biodiversity.Items.JunkRadar
                         refreshTimer = 0f;
                         RefreshDetectedBuriedScraps();
                     }
-                    if (beepingInterval != null)
+                    if (beepingInterval.HasValue && beepingPitch.HasValue)
                     {
                         beepingTimer += Time.deltaTime;
-                        if (beepingTimer >= beepingInterval)
+                        if (beepingTimer >= beepingInterval.Value)
                         {
                             beepingTimer = 0f;
-                            mainObjectAudio.PlayOneShot(beepingSound);
+                            detectAudio.pitch = beepingPitch.Value;
+                            detectAudio.PlayOneShot(isAboveDetectedScrap ? detectBelowSound : beepingSound);
                         }
                     }
                 }
@@ -326,6 +331,7 @@ namespace Biodiversity.Items.JunkRadar
             }
             else
             {
+                // Calculate opacity based on distance to closest scrap
                 BuriedScrapObject closestScrap = sortedScraps.First();
                 Vector3 directionToBuriedScrap = closestScrap.transform.position - transform.position;
                 float distanceToBuriedScrap = directionToBuriedScrap.magnitude;
@@ -343,11 +349,10 @@ namespace Biodiversity.Items.JunkRadar
                     };
                     screenItemImage.color = ColorWithAlpha(scrapColor, opacityOffseted >= 0f ? opacityOffseted : 0f);
 
-                    if (previousClosestDetectedPosition == null || previousClosestDetectedPosition != closestScrap.transform.position)
+                    if ((previousClosestDetectedPosition == null || previousClosestDetectedPosition != closestScrap.transform.position) && opacityOffseted >= 0)
                     {
                         mainObjectAudio.PlayOneShot(newDetectSound);
                         previousClosestDetectedPosition = closestScrap.transform.position;
-                        isAboveDetectedScrap = false;
                     }
                 }
                 else
@@ -356,31 +361,46 @@ namespace Biodiversity.Items.JunkRadar
                     return;
                 }
 
-                if (isHeld && playerHeldBy != null && opacityOffseted > 0f)
+                if (opacityOffseted > 0f)
                 {
-                    if (Vector3.SignedAngle(playerHeldBy.transform.forward, directionToBuriedScrap, Vector3.up) < 0)
+                    if (isHeld && playerHeldBy != null)
                     {
-                        screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, opacityOffseted);
-                        screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, 0f);
+                        if (Vector3.SignedAngle(playerHeldBy.transform.forward, directionToBuriedScrap, Vector3.up) < 0)
+                        {
+                            screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, opacityOffseted);
+                            screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, 0f);
+                        }
+                        else
+                        {
+                            screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, 0f);
+                            screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, opacityOffseted);
+                        }
+                    }
+                    if (isAboveDetectedScrap = opacityOffseted >= (1 - maxDetectedDistanceOffset - 0.04f))
+                    {
+                        if (!hasApproachedDetectedScrap)
+                        {
+                            beepingTimer = 1f;
+                            hasApproachedDetectedScrap = true;
+                        }
+                        beepingInterval = 1f;
+                        beepingPitch = 1f;
                     }
                     else
                     {
-                        screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, 0f);
-                        screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, opacityOffseted);
+                        // linear interpolation of beeping interval based on image opacity
+                        beepingInterval = beepingIntervalMaxMin.x + (opacityOffseted * ((beepingIntervalMaxMin.y - beepingIntervalMaxMin.x) / (1 - maxDetectedDistanceOffset)));
+                        // linear interpolation of beeping pitch based on beeping interval
+                        beepingPitch = beepingPitchMinMax.x + ((beepingPitchMinMax.y - beepingPitchMinMax.x) * ((beepingInterval - beepingIntervalMaxMin.x) / (beepingIntervalMaxMin.y - beepingIntervalMaxMin.x)));
+                        hasApproachedDetectedScrap = false;
                     }
-                    if (!isAboveDetectedScrap && opacityOffseted >= (1 - maxDetectedDistanceOffset - 0.05f))
-                    {
-                        mainObjectAudio.PlayOneShot(detectBelowSound);
-                        isAboveDetectedScrap = true;
-                    }
-                    // linear interpolation of beeping interval based on image opacity
-                    beepingInterval = beepingIntervalMaxMin.x + (opacityOffseted * ((beepingIntervalMaxMin.y - beepingIntervalMaxMin.x) / (1 - maxDetectedDistanceOffset)));
                 }
                 else
                 {
                     screenArrowLImage.color = ColorWithAlpha(baseImageColor, 0f);
                     screenArrowRImage.color = screenArrowLImage.color;
                     beepingInterval = null;
+                    beepingPitch = null;
                 }
             }
         }
@@ -392,8 +412,8 @@ namespace Biodiversity.Items.JunkRadar
             screenArrowLImage.color = screenItemImage.color;
             screenArrowRImage.color = screenItemImage.color;
             previousClosestDetectedPosition = null;
-            isAboveDetectedScrap = false;
             beepingInterval = null;
+            beepingPitch = null;
         }
 
         private void ActivateRadar(bool activate)
@@ -401,7 +421,7 @@ namespace Biodiversity.Items.JunkRadar
             isBeingUsed = activate;
             screenLight.enabled = activate;
             mainObjectRenderer.material.SetColor("_EmissiveColor", activate ? screenActiveColor : Color.black);
-            mainObjectAudio.PlayOneShot(activate ? powerOnSound : powerOffSound);
+            mainObjectAudio.PlayOneShot(activate ? powerOnSound : powerOffSound, 0.9f);
             SetControlTipsForItem();
             ActivateScreenUI(activate);
         }
@@ -418,12 +438,14 @@ namespace Biodiversity.Items.JunkRadar
             {
                 screenSignalValid.SetActive(false);
                 screenSignalInvalid.SetActive(false);
+                detectAudio.Stop(stopOneShots: true);
             }
             if (!activate || screenSignalInvalid.activeSelf)
             {
                 refreshTimer = 0f;
                 beepingTimer = 0f;
                 beepingInterval = null;
+                beepingPitch = null;
             }
             if (screenSignalValid.activeSelf)
             {
@@ -478,7 +500,7 @@ namespace Biodiversity.Items.JunkRadar
         {
             base.UseUpBatteries();
             ActivateRadar(false);
-            mainObjectAudio.PlayOneShot(outOfPowerSound);
+            mainObjectAudio.PlayOneShot(outOfPowerSound, 0.8f);
         }
 
         public override void SetControlTipsForItem()
