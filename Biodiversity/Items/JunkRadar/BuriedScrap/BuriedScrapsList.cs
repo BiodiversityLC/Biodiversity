@@ -124,7 +124,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.Fragile,
-                    UndergroundPosition = (-1f, -0.6f, -0.15f),
+                    UndergroundPosition = (-1.5f, -0.9f, -0.2f),
                     UndergroundRotation = -10,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.OldVaseItem.spawnPrefab,
                 }
@@ -134,7 +134,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.UltraFragile,
-                    UndergroundPosition = (-1f, -0.5f, 0.15f),
+                    UndergroundPosition = (-0.8f, -0.25f, 0.03f),
                     UndergroundRotation = 70,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab,
                 }
@@ -148,6 +148,16 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     UndergroundRotation = 5,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.CoilCrabItem.spawnPrefab,
                     enemyPrefab = CoilCrabHandler.Instance.Assets.CoilCrabEnemy.enemyPrefab,
+                }
+            },
+            { "Baboon Skull",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.BioItem,
+                    Status = BuriedScrapStatus.UltraFragile,
+                    UndergroundPosition = (-0.85f, -0.25f, 0.09f),
+                    UndergroundRotation = -85,
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.BaboonSkullItem.spawnPrefab,
                 }
             },
         };
