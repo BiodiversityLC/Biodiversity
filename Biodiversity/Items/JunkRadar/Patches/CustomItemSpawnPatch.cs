@@ -11,7 +11,8 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(RoundManager), "SpawnScrapInLevel")]
         public static void TrySpawnJunkRadar(RoundManager __instance)
         {
-            if (__instance == null)
+            if (__instance == null || StartOfRound.Instance == null || StartOfRound.Instance.currentLevel == null
+                || (!StartOfRound.Instance.currentLevel.planetHasTime && !StartOfRound.Instance.currentLevel.spawnEnemiesAndScrap))
             {
                 return;
             }
