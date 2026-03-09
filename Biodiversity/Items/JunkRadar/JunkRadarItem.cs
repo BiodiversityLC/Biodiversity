@@ -333,7 +333,7 @@ namespace Biodiversity.Items.JunkRadar
             {
                 // Calculate opacity based on distance to closest scrap
                 BuriedScrapObject closestScrap = sortedScraps.First();
-                Vector3 directionToBuriedScrap = closestScrap.transform.position - transform.position;
+                Vector3 directionToBuriedScrap = closestScrap.transform.position - (isHeld && playerHeldBy != null ? playerHeldBy.transform.position : transform.position);
                 float distanceToBuriedScrap = directionToBuriedScrap.magnitude;
                 float normalizedDistance = Mathf.Clamp01(distanceToBuriedScrap / maxDetectedDistance);  // scraps above max distance will not be detected
                 float opacity = 1 - normalizedDistance;
@@ -376,7 +376,7 @@ namespace Biodiversity.Items.JunkRadar
                             screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, opacityOffseted);
                         }
                     }
-                    if (isAboveDetectedScrap = opacityOffseted >= (1 - maxDetectedDistanceOffset - 0.04f))
+                    if (isAboveDetectedScrap = opacityOffseted >= (1 - maxDetectedDistanceOffset - 0.02f))
                     {
                         if (!hasApproachedDetectedScrap)
                         {
