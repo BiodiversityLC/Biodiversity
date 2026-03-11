@@ -11,8 +11,8 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         public DiggingState diggingState = DiggingState.IsBuried;
         public DiggingState nonActiveDiggingState = DiggingState.IsBuried;
         private Coroutine diggingCoroutine = null;
-        private int numberOfDiggingInteractions = 0;
-        private readonly float diggingSpeedIncreasePerInteraction = 0.4f;
+        private int numberOfDiggingWithShovels = 0;
+        private readonly float diggingSpeedIncreaseValue = 0.4f;
         private float currentHudFillAmount = 0f;
 
         public GrabbableObject buriedItem;
@@ -24,7 +24,10 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         private bool isEnabled = false;
 
         private float valueLossTimer = 0f;
-        private readonly float valueLossInterval = 1f;
+        private readonly float valueLossInterval = 2f;
+        private readonly int loseValueSturdyChance = 0;
+        private readonly int loseValueFragileChance = 20;
+        private readonly int loseValueUltraFragileChance = 80;
 
         public InteractTrigger diggingTrigger;
         public BoxCollider diggingCollider;
@@ -60,12 +63,12 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             if (diggingState != DiggingState.NotBuried && diggingTrigger.enabled)
             {
                 var player = GameNetworkManager.Instance.localPlayerController;
-                diggingTrigger.interactable = player != null && !player.isPlayerDead && player.currentlyHeldObjectServer == null;
+                diggingTrigger.interactable = player != null && !player.isPlayerDead && (player.currentlyHeldObjectServer == null || player.currentlyHeldObjectServer is Shovel);
             }
-            if (diggingState == DiggingState.Digging && diggingTrigger.enabled && IsServer && numberOfDiggingInteractions > 1)
+            if (diggingState == DiggingState.Digging && diggingTrigger.enabled && IsServer && numberOfDiggingWithShovels >= 1)
             {
                 valueLossTimer += Time.deltaTime;
-                if (valueLossTimer >= valueLossInterval)
+                if (valueLossTimer >= (valueLossInterval / numberOfDiggingWithShovels))
                 {
                     valueLossTimer = 0f;
                     TryLoseValueServerRpc();
@@ -123,8 +126,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     }
                     else  // Speed up digging (digging multiplayer)
                     {
-                        numberOfDiggingInteractions++;
-                        diggingTrigger.timeToHoldSpeedMultiplier += numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
+                        diggingTrigger.timeToHoldSpeedMultiplier += diggingSpeedIncreaseValue;
                         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
                         if (localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
                         {
@@ -136,18 +138,18 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 case DiggingState.CancelDigging:
                     if (newDiggingState == DiggingState.CancelDigging)  // Still digging but with 1 less player
                     {
-                        numberOfDiggingInteractions--;
-                        if (numberOfDiggingInteractions == 1)
+                        if (diggingTrigger.timeToHoldSpeedMultiplier != 1)
                         {
-                            valueLossTimer = 0f;
-                        }
-                        if (numberOfDiggingInteractions != 0)
-                        {
-                            diggingTrigger.timeToHoldSpeedMultiplier -= numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
+                            diggingTrigger.timeToHoldSpeedMultiplier -= diggingSpeedIncreaseValue;
+                            if (diggingTrigger.timeToHoldSpeedMultiplier == 1)
+                            {
+                                valueLossTimer = 0f;
+                            }
                             return;
                         }
                     }
                     // Stop digging completely
+                    valueLossTimer = 0f;
                     currentHudFillAmount = 0f;
                     diggingParticles.Stop(withChildren: true, stopBehavior: ParticleSystemStopBehavior.StopEmitting);
                     diggingAudio.Stop();
@@ -155,8 +157,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                         StopCoroutine(diggingCoroutine);
                     if (newDiggingState == DiggingState.FinishDigging)
                     {
-                        valueLossTimer = 0f;
-                        numberOfDiggingInteractions = 0;
+                        numberOfDiggingWithShovels = 0;
                         diggingTrigger.timeToHoldSpeedMultiplier = 1f;
                     }
                     if (nonActiveDiggingState == DiggingState.HalfBuried)  // If half buried
@@ -209,7 +210,6 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
 
         private IEnumerator DiggingAction()
         {
-            numberOfDiggingInteractions = 1;
             diggingTrigger.timeToHoldSpeedMultiplier = 1f;
             valueLossTimer = 0f;
             diggingParticles.Play();
@@ -256,9 +256,9 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         {
             int chanceToLoseValue = BuriedScrapsList.AllItems[buriedItem.itemProperties.itemName].Status switch
             {
-                BuriedScrapsList.BuriedScrapStatus.Fragile => 15,
-                BuriedScrapsList.BuriedScrapStatus.UltraFragile => 80,
-                _ => 0
+                BuriedScrapsList.BuriedScrapStatus.Fragile => loseValueFragileChance,
+                BuriedScrapsList.BuriedScrapStatus.UltraFragile => loseValueUltraFragileChance,
+                _ => loseValueSturdyChance
             };
             if (chanceToLoseValue > 0 && Random.Range(0, 100) < chanceToLoseValue)
                 LoseValueClientRpc();

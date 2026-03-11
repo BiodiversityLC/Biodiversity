@@ -19,8 +19,7 @@ namespace Biodiversity.Items.JunkRadar
         private Coroutine diggingCoroutine = null;
         private Vector3 buriedPosition;
         private Vector3 duggedPosition;
-        private int numberOfDiggingInteractions = 0;
-        private readonly float diggingSpeedIncreasePerInteraction = 0.4f;
+        private readonly float diggingSpeedIncreaseValue = 0.4f;
         private float currentHudFillAmount = 0f;
         private bool buriedScrapsInitialized = false;
 
@@ -211,8 +210,7 @@ namespace Biodiversity.Items.JunkRadar
                     }
                     else
                     {
-                        numberOfDiggingInteractions++;
-                        diggingTrigger.timeToHoldSpeedMultiplier += numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
+                        diggingTrigger.timeToHoldSpeedMultiplier += diggingSpeedIncreaseValue;
                         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
                         if (localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
                         {
@@ -224,10 +222,9 @@ namespace Biodiversity.Items.JunkRadar
                 case DiggingState.CancelDigging:
                     if (newDiggingState == DiggingState.CancelDigging)
                     {
-                        numberOfDiggingInteractions--;
-                        if (numberOfDiggingInteractions != 0)
+                        if (diggingTrigger.timeToHoldSpeedMultiplier != 1)
                         {
-                            diggingTrigger.timeToHoldSpeedMultiplier -= numberOfDiggingInteractions * diggingSpeedIncreasePerInteraction;
+                            diggingTrigger.timeToHoldSpeedMultiplier -= diggingSpeedIncreaseValue;
                             return;
                         }
                     }
@@ -238,7 +235,6 @@ namespace Biodiversity.Items.JunkRadar
                         StopCoroutine(diggingCoroutine);
                     if (newDiggingState == DiggingState.FinishDigging)
                     {
-                        numberOfDiggingInteractions = 0;
                         diggingTrigger.timeToHoldSpeedMultiplier = 1f;
                         diggingTrigger.enabled = false;
                         diggingCollider.enabled = false;
@@ -261,7 +257,6 @@ namespace Biodiversity.Items.JunkRadar
 
         private IEnumerator DiggingAction()
         {
-            numberOfDiggingInteractions = 1;
             diggingTrigger.timeToHoldSpeedMultiplier = 1f;
             diggingParticles.Play();
             diggingAudio.pitch = Random.Range(0.9f, 1.1f);
@@ -286,7 +281,7 @@ namespace Biodiversity.Items.JunkRadar
             if (diggingState != DiggingState.NotBuried && diggingTrigger.enabled)
             {
                 var player = GameNetworkManager.Instance.localPlayerController;
-                diggingTrigger.interactable = player != null && !player.isPlayerDead && player.currentlyHeldObjectServer == null;
+                diggingTrigger.interactable = player != null && !player.isPlayerDead && (player.currentlyHeldObjectServer == null || player.currentlyHeldObjectServer is Shovel);
             }
             if (isBeingUsed)
             {
