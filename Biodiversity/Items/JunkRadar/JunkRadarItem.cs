@@ -19,7 +19,9 @@ namespace Biodiversity.Items.JunkRadar
         private Coroutine diggingCoroutine = null;
         private Vector3 buriedPosition;
         private Vector3 duggedPosition;
-        private readonly float diggingSpeedIncreaseValue = 0.4f;
+        private int numberOfDiggingInteractions = 0;
+        private bool isLocalPlayerDiggingWithShovel = false;
+        private readonly float diggingSpeedIncreaseFactor = 1f;  // multiply digging speed by (1 + this factor)
         private float currentHudFillAmount = 0f;
         private bool buriedScrapsInitialized = false;
 
@@ -210,32 +212,30 @@ namespace Biodiversity.Items.JunkRadar
                     }
                     else
                     {
-                        diggingTrigger.timeToHoldSpeedMultiplier += diggingSpeedIncreaseValue;
-                        PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-                        if (localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
-                        {
-                            HUDManager.Instance.holdFillAmount += currentHudFillAmount;
-                        }
+                        numberOfDiggingInteractions++;
+                        ModifyDiggingSpeed(increaseSpeed: true);
                     }
                     break;
                 case DiggingState.FinishDigging:
                 case DiggingState.CancelDigging:
                     if (newDiggingState == DiggingState.CancelDigging)
                     {
-                        if (diggingTrigger.timeToHoldSpeedMultiplier != 1)
+                        numberOfDiggingInteractions--;
+                        if (numberOfDiggingInteractions != 0)
                         {
-                            diggingTrigger.timeToHoldSpeedMultiplier -= diggingSpeedIncreaseValue;
+                            ModifyDiggingSpeed(increaseSpeed: false);
                             return;
                         }
                     }
                     currentHudFillAmount = 0f;
+                    numberOfDiggingInteractions = 0;
+                    diggingTrigger.timeToHoldSpeedMultiplier = 1f;
                     diggingParticles.Stop(withChildren: true, stopBehavior: ParticleSystemStopBehavior.StopEmitting);
                     diggingAudio.Stop();
                     if (diggingCoroutine != null)
                         StopCoroutine(diggingCoroutine);
                     if (newDiggingState == DiggingState.FinishDigging)
                     {
-                        diggingTrigger.timeToHoldSpeedMultiplier = 1f;
                         diggingTrigger.enabled = false;
                         diggingCollider.enabled = false;
                         grabbable = true;
@@ -257,6 +257,7 @@ namespace Biodiversity.Items.JunkRadar
 
         private IEnumerator DiggingAction()
         {
+            numberOfDiggingInteractions = 1;
             diggingTrigger.timeToHoldSpeedMultiplier = 1f;
             diggingParticles.Play();
             diggingAudio.pitch = Random.Range(0.9f, 1.1f);
@@ -264,24 +265,73 @@ namespace Biodiversity.Items.JunkRadar
             var time = 0f;
             var startPosition = targetFloorPosition;
             var endPosition = duggedPosition;
-            while (time < (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier))
+            while (time < diggingTrigger.timeToHold)
             {
-                float lerpFactor = Mathf.SmoothStep(0f, 1f, time / (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier));
-                time += Time.deltaTime;
+                float lerpFactor = Mathf.SmoothStep(0f, 1f, time / diggingTrigger.timeToHold);
+                time += Time.deltaTime * diggingTrigger.timeToHoldSpeedMultiplier;
                 targetFloorPosition = Vector3.Lerp(startPosition, endPosition, lerpFactor);
                 currentHudFillAmount += Time.deltaTime * diggingTrigger.timeToHoldSpeedMultiplier;
+                //HUDManager.Instance.holdFillAmount += Time.deltaTime;
                 yield return null;
             }
             targetFloorPosition = endPosition;
         }
 
+        [ServerRpc(RequireOwnership = false)]
+        private void ModifyDiggingSpeedServerRpc(bool increaseSpeed)
+        {
+            ModifyDiggingSpeedClientRpc(increaseSpeed);
+        }
+
+        [ClientRpc]
+        private void ModifyDiggingSpeedClientRpc(bool increaseSpeed)
+        {
+            ModifyDiggingSpeed(increaseSpeed);
+        }
+
+        private void ModifyDiggingSpeed(bool increaseSpeed)
+        {
+            if (increaseSpeed)
+            {
+                diggingTrigger.timeToHoldSpeedMultiplier += diggingSpeedIncreaseFactor;
+                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                if (localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
+                {
+                    HUDManager.Instance.holdFillAmount = currentHudFillAmount;
+                }
+            }
+            else
+            {
+                if (diggingTrigger.timeToHoldSpeedMultiplier != 1)
+                    diggingTrigger.timeToHoldSpeedMultiplier -= diggingSpeedIncreaseFactor;
+            }
+        }
+
         public override void Update()
         {
             base.Update();
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
             if (diggingState != DiggingState.NotBuried && diggingTrigger.enabled)
             {
-                var player = GameNetworkManager.Instance.localPlayerController;
-                diggingTrigger.interactable = player != null && !player.isPlayerDead && (player.currentlyHeldObjectServer == null || player.currentlyHeldObjectServer is Shovel);
+                diggingTrigger.interactable = localPlayer != null && !localPlayer.isPlayerDead && (localPlayer.currentlyHeldObjectServer == null || localPlayer.currentlyHeldObjectServer is Shovel);
+            }
+            if (diggingState == DiggingState.Digging && localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null
+                && localPlayer.hoveringOverTrigger == diggingTrigger && localPlayer.currentlyHeldObjectServer != null && localPlayer.currentlyHeldObjectServer is Shovel)
+            {
+                if (!isLocalPlayerDiggingWithShovel)
+                {
+                    ModifyDiggingSpeedServerRpc(increaseSpeed: true);
+                    isLocalPlayerDiggingWithShovel = true;
+                }
+            }
+            else
+            {
+                if (isLocalPlayerDiggingWithShovel)
+                {
+                    if (diggingTrigger.timeToHoldSpeedMultiplier != 1)
+                        ModifyDiggingSpeedServerRpc(increaseSpeed: false);
+                    isLocalPlayerDiggingWithShovel = false;
+                }
             }
             if (isBeingUsed)
             {

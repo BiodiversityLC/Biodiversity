@@ -3,6 +3,7 @@ using GameNetcodeStuff;
 using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.ProBuilder;
 
 namespace Biodiversity.Items.JunkRadar.BuriedScrap
 {
@@ -11,9 +12,14 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         public DiggingState diggingState = DiggingState.IsBuried;
         public DiggingState nonActiveDiggingState = DiggingState.IsBuried;
         private Coroutine diggingCoroutine = null;
+        private int numberOfDiggingInteractions = 0;
         private int numberOfDiggingWithShovels = 0;
-        private readonly float diggingSpeedIncreaseValue = 0.4f;
+        private bool isLocalPlayerDiggingWithShovel = false;
+        private readonly float diggingSpeedIncreaseFactor = 0.6f;  // multiply digging speed by (1 + this factor)
         private float currentHudFillAmount = 0f;
+
+        private bool isDisplayingDiggingTips = false;
+        private readonly string diggingTip = "Hold with shovel in hands for faster digging";
 
         public GrabbableObject buriedItem;
         private BoxCollider buriedItemBoxCollider;
@@ -24,7 +30,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         private bool isEnabled = false;
 
         private float valueLossTimer = 0f;
-        private readonly float valueLossInterval = 2f;
+        private readonly float valueLossInterval = 1.5f;
         private readonly int loseValueSturdyChance = 0;
         private readonly int loseValueFragileChance = 20;
         private readonly int loseValueUltraFragileChance = 80;
@@ -60,10 +66,44 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     EnableBuriedScrap();
                 }
             }
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
             if (diggingState != DiggingState.NotBuried && diggingTrigger.enabled)
             {
-                var player = GameNetworkManager.Instance.localPlayerController;
-                diggingTrigger.interactable = player != null && !player.isPlayerDead && (player.currentlyHeldObjectServer == null || player.currentlyHeldObjectServer is Shovel);
+                diggingTrigger.interactable = localPlayer != null && !localPlayer.isPlayerDead && (localPlayer.currentlyHeldObjectServer == null || localPlayer.currentlyHeldObjectServer is Shovel);
+            }
+            if (diggingTrigger.enabled && diggingTrigger.interactable && localPlayer != null && !localPlayer.isPlayerDead && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
+            {
+                if (!isDisplayingDiggingTips)
+                {
+                    ManageDiggingControlTips(localPlayer, shouldDisplayTips: true);
+                    isDisplayingDiggingTips = true;
+                }
+            }
+            else
+            {
+                if (isDisplayingDiggingTips)
+                {
+                    ManageDiggingControlTips(localPlayer, shouldDisplayTips: false);
+                    isDisplayingDiggingTips = false;
+                }
+            }
+            if (diggingState == DiggingState.Digging && localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null
+                && localPlayer.hoveringOverTrigger == diggingTrigger && localPlayer.currentlyHeldObjectServer != null && localPlayer.currentlyHeldObjectServer is Shovel)
+            {
+                if (!isLocalPlayerDiggingWithShovel)
+                {
+                    ModifyDiggingSpeedServerRpc(increaseSpeed: true, usingShovel: true);
+                    isLocalPlayerDiggingWithShovel = true;
+                }
+            }
+            else
+            {
+                if (isLocalPlayerDiggingWithShovel)
+                {
+                    if (diggingTrigger.timeToHoldSpeedMultiplier != 1)
+                        ModifyDiggingSpeedServerRpc(increaseSpeed: false, usingShovel: true);
+                    isLocalPlayerDiggingWithShovel = false;
+                }
             }
             if (diggingState == DiggingState.Digging && diggingTrigger.enabled && IsServer && numberOfDiggingWithShovels >= 1)
             {
@@ -126,40 +166,31 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     }
                     else  // Speed up digging (digging multiplayer)
                     {
-                        diggingTrigger.timeToHoldSpeedMultiplier += diggingSpeedIncreaseValue;
-                        PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-                        if (localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
-                        {
-                            HUDManager.Instance.holdFillAmount += currentHudFillAmount;  // update hud fill amount to match new digging speed
-                        }
+                        numberOfDiggingInteractions++;
+                        ModifyDiggingSpeed(increaseSpeed: true);
                     }
                     break;
                 case DiggingState.FinishDigging:
                 case DiggingState.CancelDigging:
                     if (newDiggingState == DiggingState.CancelDigging)  // Still digging but with 1 less player
                     {
-                        if (diggingTrigger.timeToHoldSpeedMultiplier != 1)
+                        numberOfDiggingInteractions--;
+                        if (numberOfDiggingInteractions != 0)
                         {
-                            diggingTrigger.timeToHoldSpeedMultiplier -= diggingSpeedIncreaseValue;
-                            if (diggingTrigger.timeToHoldSpeedMultiplier == 1)
-                            {
-                                valueLossTimer = 0f;
-                            }
+                            ModifyDiggingSpeed(increaseSpeed: false);
                             return;
                         }
                     }
                     // Stop digging completely
                     valueLossTimer = 0f;
                     currentHudFillAmount = 0f;
+                    numberOfDiggingWithShovels = 0;
+                    numberOfDiggingInteractions = 0;
+                    diggingTrigger.timeToHoldSpeedMultiplier = 1f;
                     diggingParticles.Stop(withChildren: true, stopBehavior: ParticleSystemStopBehavior.StopEmitting);
                     diggingAudio.Stop();
                     if (diggingCoroutine != null)
                         StopCoroutine(diggingCoroutine);
-                    if (newDiggingState == DiggingState.FinishDigging)
-                    {
-                        numberOfDiggingWithShovels = 0;
-                        diggingTrigger.timeToHoldSpeedMultiplier = 1f;
-                    }
                     if (nonActiveDiggingState == DiggingState.HalfBuried)  // If half buried
                     {
                         if (newDiggingState == DiggingState.FinishDigging)  // If finish digging
@@ -210,23 +241,80 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
 
         private IEnumerator DiggingAction()
         {
-            diggingTrigger.timeToHoldSpeedMultiplier = 1f;
             valueLossTimer = 0f;
+            numberOfDiggingInteractions = 1;
+            diggingTrigger.timeToHoldSpeedMultiplier = 1f;
             diggingParticles.Play();
             diggingAudio.pitch = Random.Range(0.9f, 1.1f);
             diggingAudio.Play();
             var time = 0f;
             var startPosition = buriedItem.targetFloorPosition;
             var endPosition = nonActiveDiggingState == DiggingState.HalfBuried ? itemDuggedPosition : itemHalfBuriedPosition;
-            while (time < (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier))
+            while (time < diggingTrigger.timeToHold)
             {
-                float lerpFactor = Mathf.SmoothStep(0f, 1f, time / (diggingTrigger.timeToHold / diggingTrigger.timeToHoldSpeedMultiplier));
-                time += Time.deltaTime;
+                float lerpFactor = Mathf.SmoothStep(0f, 1f, time / diggingTrigger.timeToHold);
+                time += Time.deltaTime * diggingTrigger.timeToHoldSpeedMultiplier;
                 buriedItem.targetFloorPosition = Vector3.Lerp(startPosition, endPosition, lerpFactor);
                 currentHudFillAmount += Time.deltaTime * diggingTrigger.timeToHoldSpeedMultiplier;
                 yield return null;
             }
             buriedItem.targetFloorPosition = endPosition;
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void ModifyDiggingSpeedServerRpc(bool increaseSpeed, bool usingShovel = false)
+        {
+            ModifyDiggingSpeedClientRpc(increaseSpeed, usingShovel);
+        }
+
+        [ClientRpc]
+        private void ModifyDiggingSpeedClientRpc(bool increaseSpeed, bool usingShovel)
+        {
+            ModifyDiggingSpeed(increaseSpeed, usingShovel);
+        }
+
+        private void ModifyDiggingSpeed(bool increaseSpeed, bool usingShovel = false)
+        {
+            if (increaseSpeed)
+            {
+                diggingTrigger.timeToHoldSpeedMultiplier += diggingSpeedIncreaseFactor;
+                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                if (localPlayer != null && !localPlayer.isPlayerDead && localPlayer.isHoldingInteract && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
+                {
+                    HUDManager.Instance.holdFillAmount = currentHudFillAmount;
+                }
+            }
+            else
+            {
+                if (diggingTrigger.timeToHoldSpeedMultiplier != 1)
+                {
+                    diggingTrigger.timeToHoldSpeedMultiplier -= diggingSpeedIncreaseFactor;
+                    if (diggingTrigger.timeToHoldSpeedMultiplier == 1)
+                    {
+                        valueLossTimer = 0f;
+                    }
+                }
+            }
+            numberOfDiggingWithShovels += usingShovel ? (increaseSpeed ? 1 : -1) : 0;
+        }
+
+        private void ManageDiggingControlTips(PlayerControllerB localPlayer, bool shouldDisplayTips)
+        {
+            HUDManager.Instance.ClearControlTips();
+            if (shouldDisplayTips)
+            {
+                bool usingShovel = localPlayer.currentlyHeldObjectServer != null && localPlayer.currentlyHeldObjectServer is Shovel;
+                Item itemProperties = usingShovel ? localPlayer.currentlyHeldObjectServer.itemProperties : null;
+                HUDManager.Instance.ChangeControlTipMultiple(usingShovel ? itemProperties.toolTips.Add(diggingTip) : [diggingTip], holdingItem: usingShovel, itemProperties);
+            }
+            else
+            {
+                if (localPlayer.currentlyHeldObjectServer != null)
+                {
+                    Item itemProperties = localPlayer.currentlyHeldObjectServer.itemProperties;
+                    HUDManager.Instance.ChangeControlTipMultiple(itemProperties.toolTips, holdingItem: true, itemProperties);
+                }
+            }
         }
 
         /// <summary>
@@ -269,7 +357,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         {
             loseValueAudio.pitch = Random.Range(0.7f, 1.3f);
             loseValueAudio.Play();
-            buriedItem.SetScrapValue(buriedItem.scrapValue / 2);
+            buriedItem.SetScrapValue((int)(buriedItem.scrapValue / 2.0f));
         }
 
         [ServerRpc]
