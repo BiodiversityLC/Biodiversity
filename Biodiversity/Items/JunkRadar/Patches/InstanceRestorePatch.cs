@@ -10,7 +10,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(StartOfRound), "SetShipReadyToLand")]
         public static void SetShipReadyToLandPatch(StartOfRound __instance)
         {
-            if (JunkRadarItem.Instance == null)
+            if (JunkRadarHandler.Instance.Config.Enabled && JunkRadarItem.Instance == null)
             {
                 var items = UnityEngine.Object.FindObjectsOfType<JunkRadarItem>().ToList().FindAll(
                     item => item != null && item.NetworkObject != null && item.NetworkObject.IsSpawned && item.hasBeenHeld);

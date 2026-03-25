@@ -24,6 +24,8 @@ namespace Biodiversity.Items.JunkRadar
         private readonly float diggingSpeedIncreaseFactor = 1f;  // multiply digging speed by (1 + this factor)
         private float currentHudFillAmount = 0f;
         private bool buriedScrapsInitialized = false;
+        private int minBuriedScrapsAmount = 5;
+        private int maxBuriedScrapsAmount = 7;
 
         public Light screenLight;
         public BoxCollider grabCollider;
@@ -60,7 +62,7 @@ namespace Biodiversity.Items.JunkRadar
         private Vector3? previousClosestDetectedPosition = null;
         private bool isAboveDetectedScrap = false;
         private bool hasApproachedDetectedScrap = false;
-        private readonly int maxDetectedDistance = 50;
+        private int maxDetectedDistance = 50;
         private readonly float maxDetectedDistanceOffset = 0.15f;
         private float refreshTimer = 0f;
         private readonly float refreshInterval = 0.3f;
@@ -94,6 +96,20 @@ namespace Biodiversity.Items.JunkRadar
             base.OnNetworkSpawn();
             ResetAllImagesOnScreen();
             screenSignalValid.SetActive(false);
+            maxDetectedDistance = JunkRadarHandler.Instance.Config.MaxDetectionDistance;
+            string minMaxAmountConfig = JunkRadarHandler.Instance.Config.BuriedScrapsAmountMinMax;
+            if (!string.IsNullOrEmpty(minMaxAmountConfig))
+            {
+                var valuesArray = minMaxAmountConfig.Split(',').Select(s => s.Trim()).ToArray();
+                if (valuesArray.Length != 2)
+                    return;
+                if (!int.TryParse(valuesArray[0], out var minV) || !int.TryParse(valuesArray[1], out var maxV))
+                    return;
+                if (minV > maxV)
+                    return;
+                minBuriedScrapsAmount = minV;
+                maxBuriedScrapsAmount = maxV;
+            }
         }
 
         [ServerRpc]
@@ -159,7 +175,7 @@ namespace Biodiversity.Items.JunkRadar
             detectedBuriedScraps.Clear();
             if (IsServer)
             {
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < Random.Range(minBuriedScrapsAmount, maxBuriedScrapsAmount + 1); i++)
                 {
                     var spawnPosition = !hasBeenHeld && i == 0 ? PositionUtils.GetRandomPositionNearPosition(transform.position, randomizePositionRadius: 15) : PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 10);
                     var gameObject = Instantiate(JunkRadarHandler.Instance.Assets.BuriedScrapPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
