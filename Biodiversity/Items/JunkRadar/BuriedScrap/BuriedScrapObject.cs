@@ -1,6 +1,7 @@
 ﻿using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.ProBuilder;
@@ -42,6 +43,11 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         public AudioSource loseValueAudio;
 
         public ParticleSystem buriedEnemyParticles;
+        public Material textureOverlayMaterial;
+        public Texture textureOverlayTexture;
+        private readonly float textureOverlayOpacity = 0.7f;
+        private readonly float textureOverlayColorOffset = 0.27f;
+        private static readonly Dictionary<string, List<(Texture texture, bool withColor)>> textureOverlayCache = [];
 
 
         public override bool Equals(object other)
@@ -71,7 +77,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             {
                 diggingTrigger.interactable = localPlayer != null && !localPlayer.isPlayerDead && (localPlayer.currentlyHeldObjectServer == null || localPlayer.currentlyHeldObjectServer is Shovel);
             }
-            if (diggingTrigger.enabled && diggingTrigger.interactable && localPlayer != null && !localPlayer.isPlayerDead && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger)
+            if (diggingTrigger.enabled && diggingTrigger.interactable && localPlayer != null && !localPlayer.isPlayerDead && localPlayer.hoveringOverTrigger != null && localPlayer.hoveringOverTrigger == diggingTrigger && localPlayer.timeSinceSwitchingSlots >= 0.3f)
             {
                 if (!isDisplayingDiggingTips)
                 {
@@ -444,7 +450,9 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             buriedItem.reachedFloorTarget = true;
             buriedItem.isInFactory = false;
             if (buriedItem.itemProperties.isScrap)
+            {
                 buriedItem.SetScrapValue(scrapValue);
+            }
             buriedItem.grabbable = false;
             buriedItem.grabbableToEnemies = false;
             buriedItemBoxCollider = buriedItem.GetComponent<BoxCollider>();
@@ -460,7 +468,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             {
                 buriedItem.insertedBattery.charge = 0.5f;
             }
-            var buriedScrapProperties = BuriedScrapsList.AllItems[buriedItem.itemProperties.itemName];
+            BuriedScrapsList.BuriedScrapProperties buriedScrapProperties = BuriedScrapsList.AllItems[buriedItem.itemProperties.itemName];
             itemBuriedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.buried, 0f);
             itemHalfBuriedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.halfBuried, 0f);
             itemDuggedPosition = buriedItem.targetFloorPosition + new Vector3(0f, buriedScrapProperties.UndergroundPosition.dugged, 0f);
@@ -468,6 +476,107 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             buriedItem.transform.rotation = Mathf.Abs(buriedItem.transform.rotation.eulerAngles.x) < 90f ?
                 Quaternion.Euler(buriedItem.transform.rotation.eulerAngles.x, calculatedBuriedScrapRotY, buriedItem.transform.rotation.eulerAngles.z + buriedScrapProperties.UndergroundRotation)
               : Quaternion.Euler(buriedItem.transform.rotation.eulerAngles.x + buriedScrapProperties.UndergroundRotation, calculatedBuriedScrapRotY, buriedItem.transform.rotation.eulerAngles.z);
+            if (buriedScrapProperties.Origin == BuriedScrapsList.BuriedScrapOrigin.VanillaItem)
+            {
+                ApplyTextureOverlay();
+            }
+        }
+
+        /// <summary>
+        /// Create the custom texture overlay for buriedItem and apply it, or apply it directly if it was
+        /// previously created and is present in the cache
+        /// </summary>
+        private void ApplyTextureOverlay()
+        {
+            try
+            {
+                MeshRenderer itemRenderer = buriedItem.GetComponentInChildren<MeshRenderer>();
+                if (itemRenderer == null)
+                {
+                    return;
+                }
+
+                // Check if the cache already contains a valid overlay
+                bool isPresentInCache = textureOverlayCache.ContainsKey(buriedItem.itemProperties.itemName);
+
+                // Apply the overlay for all available materials
+                for (int i = 0; i < itemRenderer.materials.Length; i++)
+                {
+                    if (itemRenderer.materials[i] == null)  // Skip non valid materials
+                    {
+                        if (!isPresentInCache)
+                        {
+                            // Adds a null value to the cache to avoid having a desynced cache size between the cache and the materials
+                            if (!textureOverlayCache.ContainsKey(buriedItem.itemProperties.itemName))
+                            {
+                                textureOverlayCache.Add(buriedItem.itemProperties.itemName, []);
+                            }
+                            textureOverlayCache[buriedItem.itemProperties.itemName].Add((null, false));
+                        }
+                        continue;
+                    }
+
+                    if (isPresentInCache)  // If already in the cache, apply directly
+                    {
+                        if (textureOverlayCache[buriedItem.itemProperties.itemName][i].withColor)
+                        {
+                            itemRenderer.materials[i].color = new Color(itemRenderer.materials[i].color.r + textureOverlayColorOffset,
+                                                                        itemRenderer.materials[i].color.g + textureOverlayColorOffset,
+                                                                        itemRenderer.materials[i].color.b + textureOverlayColorOffset,
+                                                                        itemRenderer.materials[i].color.a);
+                        }
+                        itemRenderer.materials[i].mainTexture = textureOverlayCache[buriedItem.itemProperties.itemName][i].texture;
+                        continue;
+                    }
+
+                    // Create the overlay if not already in the cache
+                    Texture itemTexture = itemRenderer.materials[i].mainTexture;
+                    Texture result;
+
+                    if (itemTexture == null)  // If there is no original texture, use the overlay directly
+                    {
+                        result = textureOverlayTexture;
+                        itemRenderer.materials[i].color = new Color(itemRenderer.materials[i].color.r + textureOverlayColorOffset,
+                                                                    itemRenderer.materials[i].color.g + textureOverlayColorOffset,
+                                                                    itemRenderer.materials[i].color.b + textureOverlayColorOffset,
+                                                                    itemRenderer.materials[i].color.a);
+                    }
+                    else  // Else, generate the overlay
+                    {
+                        RenderTexture renderText = RenderTexture.GetTemporary(itemTexture.width, itemTexture.height, 0);
+
+                        textureOverlayMaterial.SetTexture("_OverlayTex", textureOverlayTexture);
+                        textureOverlayMaterial.SetFloat("_Opacity", textureOverlayOpacity);
+
+                        Graphics.Blit(itemTexture, renderText, textureOverlayMaterial);
+
+                        RenderTexture previous = RenderTexture.active;
+                        RenderTexture.active = renderText;
+
+                        result = new Texture2D(itemTexture.width, itemTexture.height);
+                        ((Texture2D)result).ReadPixels(new Rect(0, 0, renderText.width, renderText.height), 0, 0);
+                        ((Texture2D)result).Apply();
+                        result.name = "RustyOverlay";
+
+                        RenderTexture.active = previous;
+                        RenderTexture.ReleaseTemporary(renderText);
+                        textureOverlayMaterial.SetTexture("_OverlayTex", null);
+                    }
+
+                    // Apply the overlay and save it in the cache
+                    itemRenderer.materials[i].mainTexture = result;
+
+                    if (!textureOverlayCache.ContainsKey(buriedItem.itemProperties.itemName))
+                    {
+                        textureOverlayCache.Add(buriedItem.itemProperties.itemName, []);
+                    }
+                    textureOverlayCache[buriedItem.itemProperties.itemName].Add((result, itemTexture == null));
+                }
+            }
+            catch (System.Exception e)
+            {
+                BiodiversityPlugin.Logger.LogError($"Failed to apply texture overlay for {buriedItem.itemProperties.itemName} buried scrap: {e.StackTrace}");
+            }
         }
     }
 }
