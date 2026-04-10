@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
+using GameNetcodeStuff;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using Biodiversity.Util;
-using Biodiversity.Util.DataStructures;
-using Unity.Netcode;
-using GameNetcodeStuff;
 using System.Diagnostics.CodeAnalysis;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
@@ -102,26 +102,29 @@ public class AloeClient : MonoBehaviour
     ];
 
 #pragma warning disable 0649
-    [Header("Audio")] [Space(5f)]
-    [Preserve] [SerializeField] private AudioSource aloeVoiceSource;
-    [Preserve] [SerializeField] private AudioSource aloeFootstepsSource;
-    [Preserve] [SerializeField] public AudioClip[] stunSfx;
-    [Preserve] [SerializeField] public AudioClip[] chaseSfx;
-    [Preserve] [SerializeField] public AudioClip[] crackNeckSfx;
-    [Preserve] [SerializeField] public AudioClip[] healingSfx;
-    [Preserve] [SerializeField] public AudioClip[] interruptedHealingSfx;
-    [Preserve] [SerializeField] public AudioClip[] snatchAndDragSfx;
-    [Preserve] [SerializeField] public AudioClip[] stepsSfx;
-    [Preserve] [SerializeField] public AudioClip[] hitSfx;
+    [Header("Audio")]
+    [Space(5f)]
+    [Preserve][SerializeField] private AudioSource aloeVoiceSource;
+    [Preserve][SerializeField] private AudioSource aloeFootstepsSource;
+    [Preserve][SerializeField] public AudioClip[] stunSfx;
+    [Preserve][SerializeField] public AudioClip[] chaseSfx;
+    [Preserve][SerializeField] public AudioClip[] crackNeckSfx;
+    [Preserve][SerializeField] public AudioClip[] healingSfx;
+    [Preserve][SerializeField] public AudioClip[] interruptedHealingSfx;
+    [Preserve][SerializeField] public AudioClip[] snatchAndDragSfx;
+    [Preserve][SerializeField] public AudioClip[] stepsSfx;
+    [Preserve][SerializeField] public AudioClip[] hitSfx;
 
-    [Header("Renderers and Materials")] [Space(5f)]
+    [Header("Renderers and Materials")]
+    [Space(5f)]
     [SerializeField] private Renderer bodyRenderer;
     [SerializeField] private Renderer petalsRenderer;
     [SerializeField] private MaterialPropertyBlock _propertyBlock;
     [SerializeField] private float skinMetallicTransitionTime = 7.5f;
     [SerializeField] private float skinMetallicValueDark = 0.735f;
 
-    [Header("Visual Effects")] [Space(5f)]
+    [Header("Visual Effects")]
+    [Space(5f)]
     [SerializeField] private Light healingLightEffect;
     [SerializeField] private ParticleSystem poofParticleSystem;
 
@@ -129,20 +132,24 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private VisualEffect healingOrbEffect;
 #pragma warning restore CS0169
 
-    [Header("Animation")] [Space(5f)]
+    [Header("Animation")]
+    [Space(5f)]
     [SerializeField] private Animator animator;
     [SerializeField] private Rig lookAimRig;
     [SerializeField] private Transform ragdollGrabTarget;
 
-    [Header("Controllers")] [Space(5f)]
+    [Header("Controllers")]
+    [Space(5f)]
     [SerializeField] private AloeNetcodeController netcodeController;
     public SlapCollisionDetection slapCollisionDetection;
 
-    [Header("Other")] [Space(5f)]
+    [Header("Other")]
+    [Space(5f)]
     [SerializeField] private GameObject scanNode;
 #pragma warning restore 0649
 
-    [Header("Settings")] [Space(5f)]
+    [Header("Settings")]
+    [Space(5f)]
     [SerializeField] private float escapeChargePerPress = 15f;
     [SerializeField] private float escapeChargeDecayRate = 15f;
     [SerializeField] private float escapeChargeThreshold = 100f;
@@ -310,31 +317,31 @@ public class AloeClient : MonoBehaviour
             switch (_aloeServer.Value.NetworkCurrentBehaviourStateIndex.Value)
             {
                 case (int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer:
-                {
-                    if (!_targetPlayer.HasValue) break;
-                    if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
-
-                    if (Keyboard.current.spaceKey.wasPressedThisFrame)
                     {
-                        BiodiversityPlugin.LogVerbose($"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
-                        _currentEscapeChargeValue += escapeChargePerPress;
+                        if (!_targetPlayer.HasValue) break;
+                        if (GameNetworkManager.Instance.localPlayerController != _targetPlayer.Value) break;
+
+                        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+                        {
+                            BiodiversityPlugin.LogVerbose($"Space key was pressed, the new escape charge value is: {_currentEscapeChargeValue}");
+                            _currentEscapeChargeValue += escapeChargePerPress;
+                        }
+
+                        if (_currentEscapeChargeValue > 0) _currentEscapeChargeValue -= escapeChargeDecayRate * Time.deltaTime;
+                        else _currentEscapeChargeValue = 0;
+
+                        if (_currentEscapeChargeValue >= escapeChargeThreshold)
+                        {
+                            BiodiversityPlugin.LogVerbose("Triggering aloe escape");
+                            _currentEscapeChargeValue = 0;
+                            _targetPlayerCanEscape = false;
+                            netcodeController.TargetPlayerEscapedServerRpc();
+
+                            healingLightEffect.enabled = false;
+                        }
+
+                        break;
                     }
-
-                    if (_currentEscapeChargeValue > 0) _currentEscapeChargeValue -= escapeChargeDecayRate * Time.deltaTime;
-                    else _currentEscapeChargeValue = 0;
-
-                    if (_currentEscapeChargeValue >= escapeChargeThreshold)
-                    {
-                        BiodiversityPlugin.LogVerbose("Triggering aloe escape");
-                        _currentEscapeChargeValue = 0;
-                        _targetPlayerCanEscape = false;
-                        netcodeController.TargetPlayerEscapedServerRpc();
-
-                        healingLightEffect.enabled = false;
-                    }
-
-                    break;
-                }
             }
         }
         else
@@ -389,7 +396,12 @@ public class AloeClient : MonoBehaviour
         player.isInElevator = false;
         player.isInHangarShipRoom = false;
         player.ResetZAndXRotation();
-        player.DropAllHeldItemsAndSync();
+
+        if (GameNetworkManager.Instance.localPlayerController == player)
+        {
+            player.DropAllHeldItemsAndSync(player.transform.position, player.localItemHolder.position, player.localItemHolder.eulerAngles, player.playerEye.position, player.playerEye.eulerAngles);
+        }
+
         player.inSpecialInteractAnimation = true;
         player.transform.LookAt(transform.position);
         animator.SetTrigger(Crush);
@@ -574,7 +586,11 @@ public class AloeClient : MonoBehaviour
         targetPlayer.isInHangarShipRoom = false;
 
         targetPlayer.ResetZAndXRotation();
-        targetPlayer.DropAllHeldItemsAndSync();
+
+        if (GameNetworkManager.Instance.localPlayerController == targetPlayer)
+        {
+            targetPlayer.DropAllHeldItemsAndSync(targetPlayer.transform.position, targetPlayer.localItemHolder.position, targetPlayer.localItemHolder.eulerAngles, targetPlayer.playerEye.position, targetPlayer.playerEye.eulerAngles);
+        }
 
         CorrectlySetTargetPlayerLocalRenderers(false, targetPlayer);
     }
@@ -789,24 +805,24 @@ public class AloeClient : MonoBehaviour
         switch (newValue)
         {
             case (int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer when oldValue is not ((int)AloeServerAI.States.HealingPlayer or (int)AloeServerAI.States.CuddlingPlayer):
-            {
-                BiodiversityPlugin.LogVerbose("Switching target player offset to cuddled.");
-                if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
-                _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Cuddled, 0.25f));
-                break;
-            }
+                {
+                    BiodiversityPlugin.LogVerbose("Switching target player offset to cuddled.");
+                    if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
+                    _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Cuddled, 0.25f));
+                    break;
+                }
 
             case (int)AloeServerAI.States.KidnappingPlayer when
                 oldValue is not (int)AloeServerAI.States.KidnappingPlayer:
-            {
-                _offsetPosition = Vector3.zero;
-                _offsetRotation = Quaternion.identity;
+                {
+                    _offsetPosition = Vector3.zero;
+                    _offsetRotation = Quaternion.identity;
 
-                BiodiversityPlugin.LogVerbose("Switching target player offset to dragged.");
-                if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
-                _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Dragged, 0.25f));
-                break;
-            }
+                    BiodiversityPlugin.LogVerbose("Switching target player offset to dragged.");
+                    if (_changeTargetPlayerOffsets != null) StopCoroutine(_changeTargetPlayerOffsets);
+                    _changeTargetPlayerOffsets = StartCoroutine(ChangeTargetPlayerOffsets(TargetPlayerOffsetType.Dragged, 0.25f));
+                    break;
+                }
         }
     }
 

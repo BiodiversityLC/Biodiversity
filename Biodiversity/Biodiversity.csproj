@@ -54,12 +54,12 @@
         <PackageReference Include="BepInEx.Core" Version="5.*" PrivateAssets="all" />
         <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
         <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" PrivateAssets="all" />
-        <PackageReference Include="LethalCompany.GameLibs.Steam" Version="73.0.0-ngd.0" Publicize="true" PrivateAssets="all" />
+        <PackageReference Include="LethalCompany.GameLibs.Steam" Version="81.0.0-ngd.0" Publicize="true" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-        <PackageReference Include="UnityEngine.Modules" Version="2022.3.9" IncludeAssets="compile" PrivateAssets="all" />
+        <PackageReference Include="UnityEngine.Modules" Version="2022.3.62" IncludeAssets="compile" PrivateAssets="all" />
 
         <!-- Mod Package References -->
-        <PackageReference Include="Evaisa.LethalLib" Version="1.1.1" Publicize="true" />
+        <PackageReference Include="Evaisa.LethalLib" Version="1.2.0" Publicize="true" />
         <PackageReference Include="IAmBatby.LethalLevelLoader" Version="1.4.0" Publicize="true" />
 
 <!--        <Reference Include="giosuel.Imperium">-->
@@ -77,9 +77,16 @@
       <Folder Include="Util\Scripts\" />
     </ItemGroup>
 
+    <!-- Netcode Patcher properties -->
+    <PropertyGroup>
+        <NetcodePatcherPublicizedDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\obj\$(Configuration)\$(TargetFramework)\publicized'))</NetcodePatcherPublicizedDir>
+        <NetcodePatcherNuGetRoot>$([System.String]::Copy('$(NuGetPackageRoot)').TrimEnd('\\'))</NetcodePatcherNuGetRoot>
+        <NetcodePatcherNetStandardRefDir>$([System.IO.Path]::Combine('$(NetCoreRoot)', 'packs', 'NETStandard.Library.Ref', '2.1.0', 'ref', '$(TargetFramework)'))</NetcodePatcherNetStandardRefDir>
+    </PropertyGroup>
+
     <!-- Netcode Patcher Post-Build Event -->
     <Target Name="NetcodePatch" AfterTargets="PostBuildEvent">
-        <Exec Command="netcode-patch -uv 2022.3.62 -nv 1.12.0 -tv 1.0.0 &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
+        <Exec Command="netcode-patch -uv 2022.3.62 -nv 1.12.0 -tv 1.0.0 &quot;$(TargetPath)&quot; &quot;$(NetcodePatcherPublicizedDir)&quot; &quot;$(NetcodePatcherNuGetRoot)&quot; &quot;$(NetcodePatcherNetStandardRefDir)&quot;" />
     </Target>
 
 	<Target Name="CleanAssetBundles" AfterTargets="NetcodePatch">

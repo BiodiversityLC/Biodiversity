@@ -8,17 +8,17 @@ namespace Biodiversity.Patches;
 
 // todo FIXME: This patch is currently broken and like yeah... dont
 //[HarmonyPatch(typeof(RoundManager))]
-internal static class RoundManagerPatch 
+internal static class RoundManagerPatch
 {
     internal static readonly Dictionary<EnemyType, Func<bool>> SpawnRequirements = [];
 
     private static bool CanEnemySpawn(EnemyType type)
     {
-        if (SpawnRequirements.TryGetValue(type, out Func<bool> callback)) 
+        if (SpawnRequirements.TryGetValue(type, out Func<bool> callback))
         {
             BiodiversityPlugin.LogVerbose($"doing callback for {type.enemyName}");
             bool result = callback();
-            if(!result)
+            if (!result)
                 BiodiversityPlugin.LogVerbose($"Callback for {type.enemyName} blocked the spawning!");
 
             return result;
@@ -28,10 +28,10 @@ internal static class RoundManagerPatch
     }
 
     [HarmonyPatch(nameof(RoundManager.SpawnRandomOutsideEnemy)), HarmonyPatch(nameof(RoundManager.SpawnRandomDaytimeEnemy)), HarmonyTranspiler]
-    private static IEnumerable<CodeInstruction> ComplexSpawningRequirementsOutside(IEnumerable<CodeInstruction> instructions, ILGenerator generator) 
+    private static IEnumerable<CodeInstruction> ComplexSpawningRequirementsOutside(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
     {
         return new CodeMatcher(instructions, generator)
-            .MatchForward(true, 
+            .MatchForward(true,
                 new CodeMatch(OpCodes.Ldarg_0),
                 new CodeMatch(OpCodes.Ldfld, AccessTools.Field(typeof(RoundManager), nameof(RoundManager.SpawnProbabilities))),
                 new CodeMatch(OpCodes.Ldc_I4_0),
@@ -57,8 +57,8 @@ internal static class RoundManagerPatch
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    [HarmonyPatch(nameof(RoundManager.EnemyCannotBeSpawned)), HarmonyPostfix]
-    private static void ComplexSpawningRequirementsInside(RoundManager __instance, int enemyIndex, ref bool __result) 
+    [HarmonyPatch(nameof(RoundManager.InsideEnemyCannotBeSpawned)), HarmonyPostfix]
+    private static void ComplexSpawningRequirementsInside(RoundManager __instance, int enemyIndex, ref bool __result)
     {
         __result = __result && CanEnemySpawn(__instance.currentLevel.Enemies[enemyIndex].enemyType);
     }
