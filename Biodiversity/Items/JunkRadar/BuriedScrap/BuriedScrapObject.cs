@@ -31,10 +31,10 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         private bool isEnabled = false;
 
         private float valueLossTimer = 0f;
-        private readonly float valueLossInterval = 1.5f;
+        private readonly float valueLossInterval = 2f;
         private readonly int loseValueSturdyChance = 0;
         private readonly int loseValueFragileChance = 20;
-        private readonly int loseValueUltraFragileChance = 80;
+        private readonly int loseValueUltraFragileChance = 70;
 
         public InteractTrigger diggingTrigger;
         public BoxCollider diggingCollider;

@@ -134,7 +134,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.UltraFragile,
-                    UndergroundPosition = (-0.8f, -0.25f, 0.03f),
+                    UndergroundPosition = (-0.8f, -0.25f, 0.05f),
                     UndergroundRotation = 70,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab,
                 }

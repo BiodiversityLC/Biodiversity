@@ -31,6 +31,6 @@ namespace Biodiversity.Items.JunkRadar
 
         [field: Tooltip("The max distance at which the Junk Radar can detect underground buried scraps.")]
         [field: Range(1, 200)]
-        public int MaxDetectionDistance { get; private set; } = 50;
+        public int MaxDetectionDistance { get; private set; } = 70;
     }
 }
