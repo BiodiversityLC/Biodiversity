@@ -49,8 +49,8 @@ namespace Biodiversity.Items.JunkRadar
         public GameObject screenSignalValid;
         public GameObject screenSignalInvalid;
         public Image screenItemImage;
-        public Image screenArrowLImage;
-        public Image screenArrowRImage;
+        public Image[] screenArrowsImagesL;
+        public Image[] screenArrowsImagesR;
         public MeshRenderer[] screenTextValidRenderers;
         public MeshRenderer[] screenTextInvalidRenderers;
         public Color baseImageColor;
@@ -400,6 +400,7 @@ namespace Biodiversity.Items.JunkRadar
                 float opacity = 1 - normalizedDistance;
                 float opacityOffseted = opacity - maxDetectedDistanceOffset;
 
+                // Apply matching color based on opacity and detected scrap properties
                 if (opacity >= 0)
                 {
                     Color scrapColor = BuriedScrapsList.AllItems[closestScrap.buriedItem.itemProperties.itemName].Status switch
@@ -410,6 +411,7 @@ namespace Biodiversity.Items.JunkRadar
                     };
                     screenItemImage.color = ColorWithAlpha(scrapColor, opacityOffseted >= 0f ? opacityOffseted : 0f);
 
+                    // Play a specific sfx if a new scrap has been detected
                     if ((previousClosestDetectedPosition == null || previousClosestDetectedPosition != closestScrap.transform.position) && opacityOffseted >= 0)
                     {
                         mainObjectAudio.PlayOneShot(newDetectSound);
@@ -424,19 +426,42 @@ namespace Biodiversity.Items.JunkRadar
 
                 if (opacityOffseted > 0f)
                 {
+                    // Manages arrows opacity based on direction angle
                     if (isHeld && playerHeldBy != null)
                     {
-                        if (Vector3.SignedAngle(playerHeldBy.transform.forward, directionToBuriedScrap, Vector3.up) < 0)
+                        float angle = Vector3.SignedAngle(playerHeldBy.transform.forward, directionToBuriedScrap, Vector3.up);
+                        if (angle > -1 && angle < 1)
                         {
-                            screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, opacityOffseted);
-                            screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, 0f);
+                            screenArrowsImagesL[0].color = ColorWithAlpha(screenArrowsImagesL[0].color, opacityOffseted);
+                            screenArrowsImagesR[0].color = ColorWithAlpha(screenArrowsImagesR[0].color, opacityOffseted);
+                            for (int i = 1; i < screenArrowsImagesL.Length; i++)
+                            {
+                                screenArrowsImagesL[i].color = ColorWithAlpha(screenArrowsImagesL[i].color, 0f);
+                                screenArrowsImagesR[i].color = ColorWithAlpha(screenArrowsImagesR[i].color, 0f);
+                            }
+                        }
+                        else if (angle < 0)
+                        {
+                            screenArrowsImagesL[0].color = ColorWithAlpha(screenArrowsImagesL[0].color, opacityOffseted);
+                            screenArrowsImagesL[1].color = ColorWithAlpha(screenArrowsImagesL[0].color, angle < -40 ? opacityOffseted : 0f);
+                            screenArrowsImagesL[2].color = ColorWithAlpha(screenArrowsImagesL[0].color, angle < -90 ? opacityOffseted : 0f);
+                            for (int i = 0; i < screenArrowsImagesR.Length; i++)
+                            {
+                                screenArrowsImagesR[i].color = ColorWithAlpha(screenArrowsImagesR[i].color, 0f);
+                            }
                         }
                         else
                         {
-                            screenArrowLImage.color = ColorWithAlpha(screenArrowLImage.color, 0f);
-                            screenArrowRImage.color = ColorWithAlpha(screenArrowRImage.color, opacityOffseted);
+                            for (int i = 0; i < screenArrowsImagesL.Length; i++)
+                            {
+                                screenArrowsImagesL[i].color = ColorWithAlpha(screenArrowsImagesL[i].color, 0f);
+                            }
+                            screenArrowsImagesR[0].color = ColorWithAlpha(screenArrowsImagesR[0].color, opacityOffseted);
+                            screenArrowsImagesR[1].color = ColorWithAlpha(screenArrowsImagesR[0].color, angle > 40 ? opacityOffseted : 0);
+                            screenArrowsImagesR[2].color = ColorWithAlpha(screenArrowsImagesR[0].color, angle > 90 ? opacityOffseted : 0);
                         }
                     }
+                    // Manages screen beeping interval and pitch based on distance
                     if (isAboveDetectedScrap = opacityOffseted >= (1 - maxDetectedDistanceOffset - 0.02f))
                     {
                         if (!hasApproachedDetectedScrap)
@@ -458,8 +483,16 @@ namespace Biodiversity.Items.JunkRadar
                 }
                 else
                 {
-                    screenArrowLImage.color = ColorWithAlpha(baseImageColor, 0f);
-                    screenArrowRImage.color = screenArrowLImage.color;
+                    // Reset arrows because the detected scrap is too far away
+                    Color resetColor = ColorWithAlpha(baseImageColor, 0f);
+                    for (int i = 0; i < screenArrowsImagesL.Length; i++)
+                    {
+                        screenArrowsImagesL[i].color = resetColor;
+                    }
+                    for (int i = 0; i < screenArrowsImagesR.Length; i++)
+                    {
+                        screenArrowsImagesR[i].color = resetColor;
+                    }
                     beepingInterval = null;
                     beepingPitch = null;
                 }
@@ -470,8 +503,14 @@ namespace Biodiversity.Items.JunkRadar
         private void ResetAllImagesOnScreen()
         {
             screenItemImage.color = ColorWithAlpha(baseImageColor, 0f);
-            screenArrowLImage.color = screenItemImage.color;
-            screenArrowRImage.color = screenItemImage.color;
+            for (int i = 0; i < screenArrowsImagesL.Length; i++)
+            {
+                screenArrowsImagesL[i].color = screenItemImage.color;
+            }
+            for (int i = 0; i < screenArrowsImagesR.Length; i++)
+            {
+                screenArrowsImagesR[i].color = screenItemImage.color;
+            }
             previousClosestDetectedPosition = null;
             beepingInterval = null;
             beepingPitch = null;

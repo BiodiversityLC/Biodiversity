@@ -123,7 +123,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
-                    Status = BuriedScrapStatus.Fragile,
+                    Status = BuriedScrapStatus.UltraFragile,
                     UndergroundPosition = (-1.5f, -0.9f, -0.2f),
                     UndergroundRotation = -10,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.OldVaseItem.spawnPrefab,
@@ -133,7 +133,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
-                    Status = BuriedScrapStatus.UltraFragile,
+                    Status = BuriedScrapStatus.Fragile,
                     UndergroundPosition = (-0.8f, -0.25f, 0.05f),
                     UndergroundRotation = 70,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab,
