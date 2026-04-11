@@ -5,6 +5,7 @@ using GameNetcodeStuff;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
@@ -49,8 +50,11 @@ namespace Biodiversity.Items.JunkRadar
         public GameObject screenSignalValid;
         public GameObject screenSignalInvalid;
         public Image screenItemImage;
+        public Sprite[] allScreenItemImageSprites;
         public Image[] screenArrowsImagesL;
         public Image[] screenArrowsImagesR;
+        public GameObject[] screenStateTextObjects;
+        public TMP_Text[] screenStateTexts;
         public MeshRenderer[] screenTextValidRenderers;
         public MeshRenderer[] screenTextInvalidRenderers;
         public Color baseImageColor;
@@ -403,13 +407,42 @@ namespace Biodiversity.Items.JunkRadar
                 // Apply matching color based on opacity and detected scrap properties
                 if (opacity >= 0)
                 {
-                    Color scrapColor = BuriedScrapsList.AllItems[closestScrap.buriedItem.itemProperties.itemName].Status switch
+                    float colorAlpha = opacityOffseted >= 0f ? opacityOffseted : 0f;
+                    BuriedScrapsList.BuriedScrapStatus scrapStatus = BuriedScrapsList.AllItems[closestScrap.buriedItem.itemProperties.itemName].Status;
+                    Color scrapColor = scrapStatus switch
                     {
                         BuriedScrapsList.BuriedScrapStatus.Fragile => fragileItemImageColor,
                         BuriedScrapsList.BuriedScrapStatus.UltraFragile => ultraFragileItemImageColor,
                         _ => sturdyItemImageColor,
                     };
-                    screenItemImage.color = ColorWithAlpha(scrapColor, opacityOffseted >= 0f ? opacityOffseted : 0f);
+                    screenItemImage.sprite = scrapStatus switch
+                    {
+                        BuriedScrapsList.BuriedScrapStatus.Fragile => allScreenItemImageSprites[1],
+                        BuriedScrapsList.BuriedScrapStatus.UltraFragile => allScreenItemImageSprites[2],
+                        _ => allScreenItemImageSprites[0],
+                    };
+                    switch (scrapStatus)
+                    {
+                        case BuriedScrapsList.BuriedScrapStatus.Fragile:
+                            screenStateTextObjects[0].SetActive(false);
+                            screenStateTextObjects[1].SetActive(true);
+                            screenStateTextObjects[2].SetActive(false);
+                            screenStateTexts[1].color = ColorWithAlpha(screenStateTexts[1].color, colorAlpha);
+                            break;
+                        case BuriedScrapsList.BuriedScrapStatus.UltraFragile:
+                            screenStateTextObjects[0].SetActive(false);
+                            screenStateTextObjects[1].SetActive(false);
+                            screenStateTextObjects[2].SetActive(true);
+                            screenStateTexts[2].color = ColorWithAlpha(screenStateTexts[2].color, colorAlpha);
+                            break;
+                        default:
+                            screenStateTextObjects[0].SetActive(true);
+                            screenStateTextObjects[1].SetActive(false);
+                            screenStateTextObjects[2].SetActive(false);
+                            screenStateTexts[0].color = ColorWithAlpha(screenStateTexts[0].color, colorAlpha);
+                            break;
+                    }
+                    screenItemImage.color = ColorWithAlpha(scrapColor, colorAlpha);
 
                     // Play a specific sfx if a new scrap has been detected
                     if ((previousClosestDetectedPosition == null || previousClosestDetectedPosition != closestScrap.transform.position) && opacityOffseted >= 0)

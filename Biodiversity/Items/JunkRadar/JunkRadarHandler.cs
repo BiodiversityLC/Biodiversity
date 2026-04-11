@@ -24,6 +24,9 @@
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.BaboonSkullItem.spawnPrefab);
             LethalLib.Modules.Items.RegisterItem(Assets.BaboonSkullItem);
 
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.SkullItem.spawnPrefab);
+            LethalLib.Modules.Items.RegisterItem(Assets.SkullItem);
+
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.JunkRadarItem.spawnPrefab);
             LethalLib.Modules.Items.RegisterItem(Assets.JunkRadarItem);
         }

@@ -23,5 +23,8 @@ namespace Biodiversity.Items.JunkRadar
 
         [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedBaboonSkullItem.asset")]
         public Item BaboonSkullItem;
+
+        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedSkullItem.asset")]
+        public Item SkullItem;
     }
 }
