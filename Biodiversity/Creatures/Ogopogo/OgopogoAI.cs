@@ -9,6 +9,7 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using Biodiversity.Util.SharedVariables;
 
 namespace Biodiversity.Creatures.Ogopogo;
 
@@ -75,6 +76,7 @@ internal class OgopogoAI : BiodiverseAI
     [SerializeField] private AudioClip insideWarning;
     [SerializeField] private AudioClip insideEmerge;
     [SerializeField] private AudioClip insideMineshaftSounds;
+    [SerializeField] private AudioClip TerrainHitSound;
 
     private float mineshaftAudioTimer = 30;
 
@@ -83,8 +85,6 @@ internal class OgopogoAI : BiodiverseAI
 
     // Default position of this.eye (needed for water stun to work)
     [SerializeField] private Transform defaultEye;
-
-    private bool stunnedLastFrame = false;
 
     // Mapping
     public Transform MapDot;
@@ -440,6 +440,7 @@ internal class OgopogoAI : BiodiverseAI
         {
             playerGrabbed.Set(PlayerUtil.GetPlayerFromClientId(playerID));
             playerHasBeenGrabbed = true;
+            PlayerFallDamage.FallDamageRemoved[playerID] = true;
         }
         else
         {
@@ -471,6 +472,7 @@ internal class OgopogoAI : BiodiverseAI
             1 => emerge,
             2 => returnToWater,
             3 => insideMineshaftSounds,
+            4 => TerrainHitSound,
             _ => warning
         };
 
@@ -564,6 +566,7 @@ internal class OgopogoAI : BiodiverseAI
         if (transform.position.y - water.gameObject.transform.position.y < 90) return;
         SwitchToBehaviourClientRpc((int)State.Goingdown);
         PlayVoiceClientRpc(2);
+        PlayVoiceClientRpc(4);
         splineDone = false;
     }
 
@@ -741,9 +744,6 @@ internal class OgopogoAI : BiodiverseAI
                     
                 if (playerGrabbed.HasValue && dropRaycast && splineDone)
                 {
-                    // LogInfo("dropping player");
-                    playerGrabbed.Value.fallValue = 0f;
-                    playerGrabbed.Value.fallValueUncapped = 0f;
                     SetPlayerGrabbedClientRpc(0, true);
                     inSpecialAnimationWithPlayer = null;
                 }

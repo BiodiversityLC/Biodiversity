@@ -63,5 +63,16 @@ namespace Biodiversity.Patches
 
             return !cancel;
         }
+
+        [HarmonyPatch(nameof(PlayerControllerB.PlayerHitGroundEffects)), HarmonyPrefix]
+        private static bool RemoveFallDamage(PlayerControllerB __instance)
+        {
+            if (PlayerFallDamage.FallDamageRemoved.TryGetValue((int)__instance.playerClientId, out bool removed) && removed)
+            {
+                PlayerFallDamage.FallDamageRemoved[(int)__instance.playerClientId] = false;
+                return false;
+            }
+            return true;
+        }
     }
 }
