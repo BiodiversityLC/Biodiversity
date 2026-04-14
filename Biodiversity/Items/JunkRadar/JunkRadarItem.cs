@@ -388,7 +388,8 @@ namespace Biodiversity.Items.JunkRadar
         /// </summary>
         private void RefreshDetectedBuriedScraps()
         {
-            var sortedScraps = Instance.detectedBuriedScraps.Where(s => s != null && s.IsSpawned && s.diggingTrigger.enabled).OrderBy(s => Vector3.Distance(transform.position, s.transform.position));
+            var sortedScraps = Instance.detectedBuriedScraps.Where(s => s != null && s.IsSpawned && s.diggingTrigger.enabled && s.diggingCollider.enabled && s.buriedItem != null)
+                                                            .OrderBy(s => Vector3.Distance(transform.position, s.transform.position));
 
             if (sortedScraps.Count() == 0)
             {
@@ -701,7 +702,19 @@ namespace Biodiversity.Items.JunkRadar
         {
             if (isOriginalInstance)
             {
+                // Try to restore the master Instance to another Junk Radar and then share the buried scraps list to this new instance
+                List<BuriedScrapObject> scrapsList = [.. detectedBuriedScraps];
                 Instance = null;
+                Patches.InstanceManagerPatch.RestoreJunkRadarOriginalInstance(idToIgnore: BioId);
+                if (Instance != null)
+                {
+                    Instance.detectedBuriedScraps = [.. scrapsList];
+                }
+                else
+                {
+                    if (IsServer)
+                        Patches.InstanceManagerPatch.DespawnBuriedScraps(scrapsList);
+                }
             }
             base.OnNetworkDespawn();
         }

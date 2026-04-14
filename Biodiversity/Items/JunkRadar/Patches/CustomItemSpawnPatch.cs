@@ -39,12 +39,12 @@ namespace Biodiversity.Items.JunkRadar.Patches
             {
                 return;
             }
-            // Spawn Radar item
+            // Reload buried scraps
             if (JunkRadarItem.Instance != null)
             {
                 Reload();
             }
-            // Reload buried scraps
+            // Spawn Radar item
             if (__instance.IsServer)
             {
                 Spawn();
@@ -59,9 +59,10 @@ namespace Biodiversity.Items.JunkRadar.Patches
         {
             if (Random.Range(0, 100) < JunkRadarHandler.Instance.Config.SpawnChance)
             {
-                var spawnPosition = PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 10);
-                var junkRadar = Object.Instantiate(JunkRadarHandler.Instance.Assets.JunkRadarItem.spawnPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
-                var radarComponent = junkRadar.GetComponent<JunkRadarItem>();
+                RoundManager.Instance.GetOutsideAINodes();
+                Vector3 spawnPosition = PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 10);
+                GameObject junkRadar = Object.Instantiate(JunkRadarHandler.Instance.Assets.JunkRadarItem.spawnPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
+                JunkRadarItem radarComponent = junkRadar.GetComponent<JunkRadarItem>();
                 radarComponent.fallTime = 1f;
                 radarComponent.hasHitGround = true;
                 radarComponent.reachedFloorTarget = true;
@@ -87,7 +88,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
 
         static public string GetNormalizedMoonName(string planetName)
         {
-            var moonName = Regex.Replace(planetName, "^[0-9]+", string.Empty);
+            string moonName = Regex.Replace(planetName, "^[0-9]+", string.Empty);
             if (moonName[0] == ' ' || moonName[0] == '-')
                 moonName = moonName[1..];
             return moonName;

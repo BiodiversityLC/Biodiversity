@@ -10,6 +10,9 @@
             Assets = new JunkRadarAssets("biodiversity_junkradar");
             Config = new JunkRadarConfig(BiodiversityPlugin.Instance.CreateConfig("junk_radar"));
 
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.JunkRadarItem.spawnPrefab);
+            LethalLib.Modules.Items.RegisterItem(Assets.JunkRadarItem);
+
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.BuriedScrapPrefab);
 
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.OldVaseItem.spawnPrefab);
@@ -27,8 +30,11 @@
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.SkullItem.spawnPrefab);
             LethalLib.Modules.Items.RegisterItem(Assets.SkullItem);
 
-            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.JunkRadarItem.spawnPrefab);
-            LethalLib.Modules.Items.RegisterItem(Assets.JunkRadarItem);
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.MaskedMugItem.spawnPrefab);
+            LethalLib.Modules.Items.RegisterItem(Assets.MaskedMugItem);
+
+            LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.OgopogoTrophy.spawnPrefab);
+            LethalLib.Modules.Items.RegisterItem(Assets.OgopogoTrophy);
         }
     }
 }

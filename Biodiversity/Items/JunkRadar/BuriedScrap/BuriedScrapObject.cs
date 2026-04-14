@@ -127,7 +127,6 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             isEnabled = true;
             diggingTrigger.enabled = true;
             diggingCollider.enabled = true;
-            masterJunkRadar.detectedBuriedScraps.Add(this);
         }
 
         public void StartDigging(PlayerControllerB player)
@@ -203,7 +202,6 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                         {
                             diggingTrigger.enabled = false;
                             diggingCollider.enabled = false;
-                            masterJunkRadar.detectedBuriedScraps.Remove(this);
                             if (TryManageBuriedEnemy())
                             {
                                 break;
@@ -393,6 +391,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             }
             yield return new WaitForEndOfFrame();
             masterJunkRadar = masterNetObject.GetComponent<JunkRadarItem>();
+            masterJunkRadar.detectedBuriedScraps.Add(this);
             diggingTrigger.enabled = false;
             diggingCollider.enabled = false;
             SpawnItem(calculatedBuriedScrapRotY);
@@ -481,6 +480,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                 ApplyTextureOverlay();
             }
         }
+
 
         /// <summary>
         /// Create the custom texture overlay for buriedItem and apply it, or apply it directly if it was

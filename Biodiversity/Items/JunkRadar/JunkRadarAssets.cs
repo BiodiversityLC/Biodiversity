@@ -26,5 +26,11 @@ namespace Biodiversity.Items.JunkRadar
 
         [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedSkullItem.asset")]
         public Item SkullItem;
+
+        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedMugItem.asset")]
+        public Item MaskedMugItem;
+
+        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/JunkRadar/Items/BuriedTrophyItem.asset")]
+        public Item OgopogoTrophy;
     }
 }
