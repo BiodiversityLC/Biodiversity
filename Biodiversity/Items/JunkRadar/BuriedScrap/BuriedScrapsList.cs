@@ -170,6 +170,16 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     scrapPrefab = JunkRadarHandler.Instance.Assets.SkullItem.spawnPrefab,
                 }
             },
+            { "Masked Mug",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.BioItem,
+                    Status = BuriedScrapStatus.UltraFragile,
+                    UndergroundPosition = (-0.7f, -0.37f, -0.06f),
+                    UndergroundRotation = 30,
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.MaskedMugItem.spawnPrefab,
+                }
+            },
         };
 
 

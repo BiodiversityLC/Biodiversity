@@ -100,6 +100,7 @@ namespace Biodiversity.Items.JunkRadar
             base.OnNetworkSpawn();
             ResetAllImagesOnScreen();
             screenSignalValid.SetActive(false);
+            screenStateTextObjects[0].SetActive(false);
             maxDetectedDistance = JunkRadarHandler.Instance.Config.MaxDetectionDistance;
             string minMaxAmountConfig = JunkRadarHandler.Instance.Config.BuriedScrapsAmountMinMax;
             if (!string.IsNullOrEmpty(minMaxAmountConfig))
