@@ -640,7 +640,7 @@ namespace Biodiversity.Items.JunkRadar
 
         public override void SetControlTipsForItem()
         {
-            if (IsOwner)
+            if (IsOwner && playerHeldBy != null)
                 HUDManager.Instance.ChangeControlTipMultiple([(isBeingUsed ? "Turn off" : "Activate") + " : [RMB]", "Inspect: [Z]"], holdingItem: true, itemProperties);
         }
 

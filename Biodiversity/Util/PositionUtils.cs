@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using UnityEngine;
 using UnityEngine.AI;
 
 namespace Biodiversity.Util
@@ -42,6 +43,11 @@ namespace Biodiversity.Util
                 }
             }
             return position;
+        }
+
+        public static Vector3 GetClosestAINodePosition(GameObject[] nodes, Vector3 position)
+        {
+            return nodes.OrderBy((GameObject x) => Vector3.Distance(position, x.transform.position)).ToArray()[0].transform.position;
         }
     }
 }
