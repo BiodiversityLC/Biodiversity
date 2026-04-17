@@ -65,6 +65,7 @@ namespace Biodiversity.Items
             if (ActualVariantID != -1)
                 return;
             ActualVariantID = variantID;
+            OnNewVariantSelected();
             if (variantID == 0)
                 return;
             bool hasRandomizedMesh = false;
@@ -78,5 +79,7 @@ namespace Biodiversity.Items
                 meshRenderer.sharedMaterial = itemProperties.materialVariants[variantID];
             }
         }
+
+        public virtual void OnNewVariantSelected() { }
     }
 }

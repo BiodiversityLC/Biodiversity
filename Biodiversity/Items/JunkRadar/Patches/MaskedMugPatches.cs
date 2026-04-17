@@ -11,7 +11,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(Terminal), "Start")]
         public static void GetMaskedReferenceForBuriedMugPatch(Terminal __instance)
         {
-            if (JunkRadarHandler.Instance.Config.Enabled && MaskedMugItem.enemyToSpawn != null)
+            if (!JunkRadarHandler.Instance.Config.Enabled || MaskedMugItem.enemyToSpawn != null)
             {
                 return;
             }
@@ -35,7 +35,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(PlayerControllerB), "KillPlayer")]
         public static void TrySpawnMaskedEnemyPrefix(PlayerControllerB __instance, ref bool spawnBody)
         {
-            if (__instance == null || __instance.isPlayerDead)
+            if (!JunkRadarHandler.Instance.Config.Enabled || __instance == null || __instance.isPlayerDead)
             {
                 return;
             }
@@ -70,7 +70,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(PlayerControllerB), "KillPlayer")]
         public static void TrySpawnMaskedEnemyPostfix(PlayerControllerB __instance)
         {
-            if (__instance == null || !__instance.isPlayerDead || maskedItemToSpawnEnemy == null)
+            if (!JunkRadarHandler.Instance.Config.Enabled || __instance == null || !__instance.isPlayerDead || maskedItemToSpawnEnemy == null)
             {
                 maskedItemToSpawnEnemy = null;
                 return;

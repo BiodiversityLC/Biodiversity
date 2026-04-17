@@ -1,5 +1,4 @@
-﻿using Biodiversity.Creatures.CoilCrab;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -147,7 +146,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     UndergroundPosition = (-0.7f, -0.3f, -0.05f),
                     UndergroundRotation = 5,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.CoilCrabItem.spawnPrefab,
-                    enemyPrefab = CoilCrabHandler.Instance.Assets.CoilCrabEnemy.enemyPrefab,
+                    enemyPrefab = Creatures.CoilCrab.CoilCrabHandler.Instance.Assets.CoilCrabEnemy.enemyPrefab,
                 }
             },
             { "Baboon Skull",
@@ -178,6 +177,16 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
                     UndergroundPosition = (-0.7f, -0.37f, -0.06f),
                     UndergroundRotation = 30,
                     scrapPrefab = JunkRadarHandler.Instance.Assets.MaskedMugItem.spawnPrefab,
+                }
+            },
+            { "Ogopogo Trophy",
+                new BuriedScrapProperties()
+                {
+                    Origin = BuriedScrapOrigin.BioItem,
+                    Status = BuriedScrapStatus.Fragile,
+                    UndergroundPosition = (-0.6f, -0.26f, 0.08f),
+                    UndergroundRotation = 35,
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.OgopogoTrophy.spawnPrefab,
                 }
             },
         };
