@@ -12,12 +12,11 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
 
         public static SpawnableEnemyWithRarity enemyToSpawn;  // filled by MaskedMugPatches
 
+        public bool lastPlayerIsInFactoryOnDeath;
+        public float lastPlayerRotationYOnDeath;
+
         private bool isAudioEnabled = false;
         private readonly Vector3 inspectingPosition = new(-0.15f, 0.2f, 0f);
-
-        public bool isEnemySpawning = false;
-        private float enemySpawningTimer = 0f;
-        private readonly float enemySpawningInterval = 3f;
 
         public override void Update()
         {
@@ -26,15 +25,6 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             {
                 isAudioEnabled = true;
                 randomAudioPlayer.enabled = true;
-            }
-            if (isAudioEnabled && isEnemySpawning)
-            {
-                enemySpawningTimer += Time.deltaTime;
-                if (enemySpawningTimer >= enemySpawningInterval)
-                {
-                    enemySpawningTimer = 0f;
-                    isEnemySpawning = false;//SpawnMaskedEnemy(playerHeldBy.playerClientId, playerHeldBy.transform.position);
-                }
             }
         }
 
@@ -59,32 +49,51 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         }
 
         // used by MaskedMugPatches
-        [ServerRpc(RequireOwnership = false)]
+        [ServerRpc]
         public void SpawnMaskedEnemyServerRpc(ulong playerId, Vector3 position)
         {
-            StartCoroutine(SpawnMaskedEnemy(playerId, position));
-        }
-
-        private IEnumerator SpawnMaskedEnemy(ulong playerId, Vector3 position)
-        {
-            if (!IsServer || enemyToSpawn == null)
+            if (enemyToSpawn == null)
             {
-                yield break;
+                return;
             }
-            yield return new WaitForSeconds(0.1f);
-            PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-            bool isInFactory = position.y < -80f;
+            bool isInFactory = lastPlayerIsInFactoryOnDeath;
             Vector3 spawnPosition = RoundManager.Instance.GetNavMeshPosition(position, default, sampleRadius: 10f);
             if (!RoundManager.Instance.GotNavMeshPositionResult)
                 spawnPosition = PositionUtils.GetClosestAINodePosition(isInFactory ? RoundManager.Instance.insideAINodes : RoundManager.Instance.outsideAINodes, position);
-            NetworkObjectReference netObjectRef = RoundManager.Instance.SpawnEnemyGameObject(spawnPosition, Random.Range(-90f, 90f), -1, enemyToSpawn.enemyType);
-            if (netObjectRef.TryGet(out NetworkObject networkObject))
+            NetworkObjectReference netObjectRef = RoundManager.Instance.SpawnEnemyGameObject(spawnPosition, lastPlayerRotationYOnDeath, -1, enemyToSpawn.enemyType);
+            SyncMaskedEnemyClientRpc(netObjectRef, playerId, isInFactory);
+        }
+
+        [ClientRpc]
+        private void SyncMaskedEnemyClientRpc(NetworkObjectReference netObjectRef, ulong playerId, bool isInFactory)
+        {
+            StartCoroutine(SyncMaskedEnemy(netObjectRef, playerId, isInFactory));
+        }
+
+        private IEnumerator SyncMaskedEnemy(NetworkObjectReference netObjectRef, ulong playerId, bool isInFactory)
+        {
+            var playerToMimic = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
+            NetworkObject netObject = null;
+            float startTime = Time.realtimeSinceStartup;
+            yield return new WaitUntil(() => Time.realtimeSinceStartup - startTime > 20f || netObjectRef.TryGet(out netObject));
+            if (playerToMimic.deadBody == null)
             {
-                MaskedPlayerEnemy maskedEnemy = networkObject.GetComponent<MaskedPlayerEnemy>();
-                maskedEnemy.SetSuit(player.currentSuitID);
-                maskedEnemy.mimickingPlayer = player;
+                startTime = Time.realtimeSinceStartup;
+                yield return new WaitUntil(() => Time.realtimeSinceStartup - startTime > 20f || playerToMimic.deadBody != null);
+            }
+            if (playerToMimic.deadBody != null)
+            {
+                playerToMimic.deadBody.DeactivateBody(setActive: false);
+            }
+            if (netObject != null)
+            {
+                MaskedPlayerEnemy maskedEnemy = netObject.GetComponent<MaskedPlayerEnemy>();
+                maskedEnemy.mimickingPlayer = playerToMimic;
+                maskedEnemy.SetSuit(playerToMimic.currentSuitID);
                 maskedEnemy.SetEnemyOutside(!isInFactory);
-                maskedEnemy.CreateMimicClientRpc(netObjectRef, isInFactory, (int)playerId);
+                maskedEnemy.SetVisibilityOfMaskedEnemy();
+                playerToMimic.redirectToEnemy = maskedEnemy;
+                maskedEnemy.enemyHP *= 2;  // :)
             }
         }
     }
