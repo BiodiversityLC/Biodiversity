@@ -7,7 +7,7 @@ namespace Biodiversity.Items.JunkRadar
 {
     public class JunkRadarConfig(ConfigFile cfg) : BiodiverseConfigLoader<JunkRadarConfig>(cfg)
     {
-        [field: Header("General")]
+        [field: Header("_General")]
 
         [field: Tooltip("Whether the Junk Radar and buried scraps are able to spawn.")]
         public bool Enabled { get; private set; } = true;
@@ -32,5 +32,11 @@ namespace Biodiversity.Items.JunkRadar
         [field: Tooltip("The max distance at which the Junk Radar can detect underground buried scraps.")]
         [field: Range(1, 200)]
         public int MaxDetectionDistance { get; private set; } = 70;
+
+
+        [field: Header("Buried Scraps")]
+
+        [field: Tooltip("If enabled, the songs of the Ogopogo Trophy item are copyright free.")]
+        public bool OgopogoTrophyIsCopyrightFree { get; private set; } = true;
     }
 }

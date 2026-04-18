@@ -7,6 +7,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
     {
         public AudioSource danceAudio;
         public AudioClip[] danceClips;
+        public AudioClip[] danceClipsCopyrightFree;
         public Animator[] trophyAnimators;
         public ScanNodeProperties scanNode;
         public string[] scanNames;
@@ -57,9 +58,10 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
             }
             float volume = 0.5f;
             int audioId = ActualVariantID == 0 ? ++lastClipPlayedId : 0;
-            danceAudio.PlayOneShot(danceClips[audioId], volume);
+            AudioClip clip = JunkRadarHandler.Instance.Config.OgopogoTrophyIsCopyrightFree ? danceClipsCopyrightFree[audioId] : danceClips[audioId];
+            danceAudio.PlayOneShot(clip, volume);
             trophyAnimators[ActualVariantID].SetTrigger(ActualVariantID == 0 ? "PlayOgopogo" : "PlaySkeleton");
-            WalkieTalkie.TransmitOneShotAudio(danceAudio, danceClips[audioId], volume);
+            WalkieTalkie.TransmitOneShotAudio(danceAudio, clip, volume);
             RoundManager.Instance.PlayAudibleNoise(transform.position, danceAudio.maxDistance, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             playerHeldBy?.timeSinceMakingLoudNoise = 0f;
         }
