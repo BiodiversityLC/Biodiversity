@@ -29,7 +29,7 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            if (playerHeldBy == null || danceAudio.isPlaying)
+            if (playerHeldBy == null || danceAudio.isPlaying /*|| insertedBattery == null || insertedBattery.empty*/)
                 return;
             PlayNextDanceAudioServerRpc();
         }
@@ -37,8 +37,9 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         public override void EquipItem()
         {
             base.EquipItem();
-            if (IsServer && !danceAudio.isPlaying && Random.Range(0, 100) < chanceToPlayOnEquip)
+            if (IsOwner && !danceAudio.isPlaying /*&& insertedBattery != null && !insertedBattery.empty*/ && Random.Range(0, 100) < chanceToPlayOnEquip /*&& !RequireCooldown()*/)
             {
+                //UseItemBatteries(!itemProperties.holdButtonUse);
                 PlayNextDanceAudioServerRpc();
             }
         }
