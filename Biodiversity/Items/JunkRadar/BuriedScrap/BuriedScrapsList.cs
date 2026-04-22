@@ -76,126 +76,137 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         }
 
 
+        /// <summary>
+        /// Lazy-initialized dictionary of all buried scraps
+        /// </summary>
+        private static System.Lazy<Dictionary<string, BuriedScrapProperties>> _allItems = new(() => InitializeAllItems());
 
         /// <summary>
         /// Dictionary of possible buried scraps (real scraps when spawned) and their properties
         /// </summary>
-        public static Dictionary<string, BuriedScrapProperties> AllItems = new()
+        public static Dictionary<string, BuriedScrapProperties> AllItems => _allItems.Value;
+
+        /// <summary>
+        /// List all possible buried scraps (real scraps when spawned) names
+        /// </summary>
+        public static List<string> AllItemsNames => [.. AllItems.Keys];
+
+
+        /// <summary>
+        /// Initialize all buried scraps
+        /// </summary>
+        private static Dictionary<string, BuriedScrapProperties> InitializeAllItems()
         {
-            { "V-type engine",
-                new BuriedScrapProperties()
-                {
-                    Origin = BuriedScrapOrigin.VanillaItem,
-                    Status = BuriedScrapStatus.Sturdy,
-                    UndergroundPosition = (-1f, -0.7f, -0.3f),
-                    UndergroundRotation = 30,
-                }
-            },
-            { "Bottles",
-                new BuriedScrapProperties()
-                {
-                    Origin = BuriedScrapOrigin.VanillaItem,
-                    Status = BuriedScrapStatus.Sturdy,
-                    UndergroundPosition = (-1f, -0.7f, -0.2f),
-                    UndergroundRotation = 50,
-                }
-            },
-            { "Dust pan",
-                new BuriedScrapProperties()
-                {
-                    Origin = BuriedScrapOrigin.VanillaItem,
-                    Status = BuriedScrapStatus.Sturdy,
-                    UndergroundPosition = (-0.5f, -0.15f, 0.05f),
-                    UndergroundRotation = 80,
-                }
-            },
-            { "Metal sheet",
-                new BuriedScrapProperties()
-                {
-                    Origin = BuriedScrapOrigin.VanillaItem,
-                    Status = BuriedScrapStatus.Sturdy,
-                    UndergroundPosition = (-0.4f, -0.1f, 0.03f),
-                    UndergroundRotation = -20,
-                }
-            },
-            { "Old vase",
-                new BuriedScrapProperties()
+            Dictionary<string, BuriedScrapProperties> dict = new()
+            {
+                { "V-type engine",
+                    new BuriedScrapProperties()
+                    {
+                        Origin = BuriedScrapOrigin.VanillaItem,
+                        Status = BuriedScrapStatus.Sturdy,
+                        UndergroundPosition = (-1f, -0.7f, -0.3f),
+                        UndergroundRotation = 30,
+                    }
+                },
+                { "Bottles",
+                    new BuriedScrapProperties()
+                    {
+                        Origin = BuriedScrapOrigin.VanillaItem,
+                        Status = BuriedScrapStatus.Sturdy,
+                        UndergroundPosition = (-1f, -0.7f, -0.2f),
+                        UndergroundRotation = 50,
+                    }
+                },
+                { "Dust pan",
+                    new BuriedScrapProperties()
+                    {
+                        Origin = BuriedScrapOrigin.VanillaItem,
+                        Status = BuriedScrapStatus.Sturdy,
+                        UndergroundPosition = (-0.5f, -0.15f, 0.05f),
+                        UndergroundRotation = 80,
+                    }
+                },
+                { "Metal sheet",
+                    new BuriedScrapProperties()
+                    {
+                        Origin = BuriedScrapOrigin.VanillaItem,
+                        Status = BuriedScrapStatus.Sturdy,
+                        UndergroundPosition = (-0.4f, -0.1f, 0.03f),
+                        UndergroundRotation = -20,
+                    }
+                },
+            };
+
+            // Custom items
+            if (JunkRadarHandler.Instance?.Assets != null)
+            {
+                dict["Old vase"] = new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.UltraFragile,
                     UndergroundPosition = (-1.5f, -0.9f, -0.2f),
                     UndergroundRotation = -10,
-                    scrapPrefab = JunkRadarHandler.Instance.Assets.OldVaseItem.spawnPrefab,
-                }
-            },
-            { "Motherboard",
-                new BuriedScrapProperties()
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.OldVaseItem?.spawnPrefab,
+                };
+
+                dict["Motherboard"] = new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.Fragile,
                     UndergroundPosition = (-0.8f, -0.25f, 0.05f),
                     UndergroundRotation = 70,
-                    scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem.spawnPrefab,
-                }
-            },
-            { "Coil-crab",
-                new BuriedScrapProperties()
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.MotherboardItem?.spawnPrefab,
+                };
+
+                dict["Coil-crab"] = new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioEnemy,
                     Status = BuriedScrapStatus.Sturdy,
                     UndergroundPosition = (-0.7f, -0.3f, -0.05f),
                     UndergroundRotation = 5,
-                    scrapPrefab = JunkRadarHandler.Instance.Assets.CoilCrabItem.spawnPrefab,
-                    enemyPrefab = Creatures.CoilCrab.CoilCrabHandler.Instance.Assets.CoilCrabEnemy.enemyPrefab,
-                }
-            },
-            { "Baboon Skull",
-                new BuriedScrapProperties()
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.CoilCrabItem?.spawnPrefab,
+                    enemyPrefab = Creatures.CoilCrab.CoilCrabHandler.Instance?.Assets?.CoilCrabEnemy?.enemyPrefab,
+                };
+
+                dict["Baboon Skull"] = new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.UltraFragile,
                     UndergroundPosition = (-0.85f, -0.25f, 0.09f),
                     UndergroundRotation = -85,
-                    scrapPrefab = JunkRadarHandler.Instance.Assets.BaboonSkullItem.spawnPrefab,
-                }
-            },
-            { "Skull",
-                new BuriedScrapProperties()
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.BaboonSkullItem?.spawnPrefab,
+                };
+
+                dict["Skull"] = new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.Fragile,
                     UndergroundPosition = (-0.7f, -0.33f, -0.02f),
                     UndergroundRotation = -30,
-                    scrapPrefab = JunkRadarHandler.Instance.Assets.SkullItem.spawnPrefab,
-                }
-            },
-            { "Masked Mug",
-                new BuriedScrapProperties()
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.SkullItem?.spawnPrefab,
+                };
+
+                dict["Masked Mug"] = new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.UltraFragile,
                     UndergroundPosition = (-0.7f, -0.37f, -0.06f),
                     UndergroundRotation = 30,
-                    scrapPrefab = JunkRadarHandler.Instance.Assets.MaskedMugItem.spawnPrefab,
-                }
-            },
-            { "Ogopogo Trophy",
-                new BuriedScrapProperties()
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.MaskedMugItem?.spawnPrefab,
+                };
+
+                dict["Ogopogo Trophy"] = new BuriedScrapProperties()
                 {
                     Origin = BuriedScrapOrigin.BioItem,
                     Status = BuriedScrapStatus.Fragile,
                     UndergroundPosition = (-0.6f, -0.26f, 0.08f),
                     UndergroundRotation = 35,
-                    scrapPrefab = JunkRadarHandler.Instance.Assets.OgopogoTrophy.spawnPrefab,
-                }
-            },
-        };
+                    scrapPrefab = JunkRadarHandler.Instance.Assets.OgopogoTrophy?.spawnPrefab,
+                };
+            }
 
-
-        /// <summary>
-        /// List all possible buried scraps (real scraps when spawned) names
-        /// </summary>
-        public static List<string> AllItemsNames = [.. AllItems.Keys];
+            return dict;
+        }
 
 
         /// <summary>
