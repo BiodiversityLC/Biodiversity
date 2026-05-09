@@ -20,6 +20,13 @@ namespace Biodiversity.Creatures.Rock
         public static Dictionary<int, GameObject> selectednodes = new();
         public static int nextrockid = 0;
 
+        public static float FatigueInterval = 8f;
+        private static float fatigueTimer = 0f;
+
+        public AudioClip[] FatigueSounds;
+        public AudioClip[] BreathSounds;
+        public AudioClip[] WalkSounds;
+
         int rockid;
         bool dead = false;
 
@@ -71,9 +78,18 @@ namespace Biodiversity.Creatures.Rock
                     timeSinceStartedRunning += Time.deltaTime;
                 }
 
+                fatigueTimer -= Time.deltaTime;
                 breathTimer += Time.deltaTime;
-                if (breathTimer >= 15f)
+                if (fatigueTimer <= 0 && running)
                 {
+                    AudioClip clip = FatigueSounds[Random.Range(0, FatigueSounds.Length)];
+                    creatureVoice.PlayOneShot(clip);
+                    fatigueTimer = FatigueInterval;
+                }
+                if (breathTimer >= 20f)
+                {
+                    AudioClip clip = BreathSounds[Random.Range(0, BreathSounds.Length)];
+                    creatureVoice.PlayOneShot(clip);
                     breathTimer = 0f;
                     creatureAnimator.SetTrigger("TakeBreath");
                 }
