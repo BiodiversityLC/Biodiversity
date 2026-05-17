@@ -31,7 +31,10 @@ namespace Biodiversity.Items.JunkRadar.Patches
             {
                 foreach (string moonName in JunkRadarHandler.Instance.Config.SpawnMoons.Split(',').Select(s => s.Trim()))
                 {
-                    JunkRadarHandler.Instance.Config.SpawnMoonsList.Add(GetNormalizedMoonName(moonName));
+                    if (!string.IsNullOrEmpty(moonName))
+                    {
+                        JunkRadarHandler.Instance.Config.SpawnMoonsList.Add(GetNormalizedMoonName(moonName));
+                    }
                 }
             }
             // Ignore moons not in the spawn list
