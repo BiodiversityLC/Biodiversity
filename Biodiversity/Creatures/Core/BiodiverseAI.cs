@@ -433,6 +433,43 @@ public abstract class BiodiverseAI : EnemyAI
     }
 
     /// <summary>
+    /// Finds the closest visible item.
+    /// </summary>
+    /// <param name="possibleTargets">The list of all possible items that could be the closest.</param>
+    /// <param name="eyeTransform">The transform representing the eye's position and forward direction.</param>
+    /// <param name="viewWidth">The total angle of the view cone in degrees.</param>
+    /// <param name="viewRange">The maximum distance for the check.</param>
+    /// <param name="onlyInside">True for only searching items inside the facility.</param>
+    /// <param name="onlyOutside">True for only searching items outside the facility.</param>
+    /// <param name="ignoreInShip">True to ignore items located inside the ship.</param>
+    /// <param name="ignoreHeld">True to ignore items that are held by players or by other enemies.</param>
+    /// <returns>The closest valid item or null if no items is found.</returns>
+    internal GrabbableObject GetClosestVisibleItem(
+        List<GrabbableObject> possibleTargets,
+        Transform eyeTransform,
+        float viewWidth = 45f,
+        float viewRange = 60f,
+        bool onlyInside = false,
+        bool onlyOutside = false,
+        bool ignoreInShip = false,
+        bool ignoreHeld = false)
+    {
+        for (int i = 0; i < possibleTargets.Count; i++)
+        {
+            GrabbableObject target = possibleTargets[i];
+            if (target == null || (onlyInside && !target.isInFactory) || (onlyOutside && target.isInFactory) || (ignoreInShip && target.isInShipRoom) || (ignoreHeld && (target.isHeld || target.isHeldByEnemy)))
+            {
+                continue;
+            }
+            if (HasLineOfSight(target.transform.position, eyeTransform, viewWidth, viewRange))
+            {
+                return target;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
     /// Determines the closest player, if any, is looking at the specified position.
     /// </summary>
     /// <param name="position">The position to check if a player is looking at.</param>
