@@ -188,6 +188,7 @@ namespace Biodiversity.Creatures.CoilCrab
             PlayerControllerB nearPlayer = null;
             foreach(PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
             {
+                if (player.inVehicleAnimation) continue;
                 float distanceTemp = Vector3.Distance(player.transform.position, transform.position);
                 if (distanceTemp < distance)
                 {
@@ -219,6 +220,7 @@ namespace Biodiversity.Creatures.CoilCrab
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
         {
             if (playerWhoHit == null) return;
+            if (hitID == 331 || force == 12) return; // Ignore hits from vehicles
 
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
 

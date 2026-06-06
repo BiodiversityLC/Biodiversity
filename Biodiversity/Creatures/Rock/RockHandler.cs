@@ -1,11 +1,11 @@
 ﻿using Biodiversity.Core.Attributes;
+using Biodiversity.Util;
 using JetBrains.Annotations;
 using System.Collections.Generic;
 
 namespace Biodiversity.Creatures.Rock;
 
 [UsedImplicitly]
-[HideHandler]
 internal class RockHandler : BiodiverseAIHandler<RockHandler>
 {
     internal RockAssets Assets { get; private set; }
@@ -15,7 +15,6 @@ internal class RockHandler : BiodiverseAIHandler<RockHandler>
 
     public RockHandler()
     {
-        /*
         Assets = new RockAssets("biodiversity_rock");
         Config = new RockConfig(BiodiversityPlugin.Instance.CreateConfig("rock"));
 
@@ -47,6 +46,5 @@ internal class RockHandler : BiodiverseAIHandler<RockHandler>
         Assets.RockEnemyType.MaxCount = Config.RockMaxCount;
 
         LethalLibUtils.RegisterEnemyWithConfig(Config.RockEnabled, Config.RockRarity, Assets.RockEnemyType, Assets.RockTerminalNode, Assets.RockKeyword);
-        */
     }
 }

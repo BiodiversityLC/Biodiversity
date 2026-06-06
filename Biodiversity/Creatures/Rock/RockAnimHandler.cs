@@ -13,5 +13,10 @@ namespace Biodiversity.Creatures.Rock
         {
             RockAI.StartRunning();
         }
+
+        public void StepSound(float filler)
+        {
+            RockAI.creatureVoice.PlayOneShot(RockAI.WalkSounds[UnityEngine.Random.Range(0, RockAI.WalkSounds.Length)]);
+        }
     }
 }

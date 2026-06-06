@@ -554,7 +554,7 @@ internal class OgopogoAI : BiodiverseAI
 
             inSpecialAnimationWithPlayer = player;
 
-            TakeOutOfVehicleClientRpc();
+            TakeOutOfVehicleClientRpc(); // TODO: this is not written right and causes desync.
             SetPlayerGrabbedClientRpc((int)player.playerClientId, false, false);
             creatureAnimator.SetInteger(AnimID, 3);
         }
