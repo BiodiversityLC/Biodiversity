@@ -5,13 +5,13 @@ namespace Biodiversity.Creatures.SwarmingLocusts
 {
     internal class SwarmingLocustsAssets(string bundle) : BiodiverseAssetBundle<SwarmingLocustsAssets>(bundle)
     {
-        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/SwarmingLocusts/SwarmingLocustsEnemy.asset")]
+        [LoadFromBundle("Assets/Biodiversity/SwarmingLocusts/SwarmingLocustsEnemy.asset")]
         public EnemyType SwarmingLocustsEnemy;
 
-        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/SwarmingLocusts/SwarmingLocustsTK.asset")]
+        [LoadFromBundle("Assets/Biodiversity/SwarmingLocusts/SwarmingLocustsTK.asset")]
         public TerminalKeyword SwarmingLocustsTK;
 
-        [LoadFromBundle("Assets/Data/_Misc/Biodiversity/SwarmingLocusts/SwarmingLocustsTN.asset")]
+        [LoadFromBundle("Assets/Biodiversity/SwarmingLocusts/SwarmingLocustsTN.asset")]
         public TerminalNode SwarmingLocustsTN;
     }
 }

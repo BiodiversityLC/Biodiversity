@@ -1,7 +1,10 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity.Core.Attributes;
+using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.SwarmingLocusts
 {
+    [UsedImplicitly]
+    [HideHandler]
     internal class SwarmingLocustsHandler : BiodiverseAIHandler<SwarmingLocustsHandler>
     {
         internal SwarmingLocustsAssets Assets { get; set; }
@@ -9,11 +12,13 @@ namespace Biodiversity.Creatures.SwarmingLocusts
 
         public SwarmingLocustsHandler()
         {
+            /*
             Assets = new SwarmingLocustsAssets("biodiversity_swarminglocusts");
             Config = new SwarmingLocustsConfig(BiodiversityPlugin.Instance.CreateConfig("swarming_locusts"));
 
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.SwarmingLocustsEnemy.enemyPrefab);
             LethalLibUtils.RegisterEnemyWithConfig(true, "All:100", Assets.SwarmingLocustsEnemy, Assets.SwarmingLocustsTN, Assets.SwarmingLocustsTK);
+            */
         }
     }
 }
