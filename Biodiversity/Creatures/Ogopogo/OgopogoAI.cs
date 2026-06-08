@@ -1,6 +1,7 @@
 ﻿using Biodiversity.Util;
-using Biodiversity.Util.Scripts;
 using Biodiversity.Util.DataStructures;
+using Biodiversity.Util.Scripts;
+using Biodiversity.Util.SharedVariables;
 using GameNetcodeStuff;
 using LethalLib.Modules;
 using System;
@@ -9,7 +10,6 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
-using Biodiversity.Util.SharedVariables;
 
 namespace Biodiversity.Creatures.Ogopogo;
 
@@ -23,14 +23,13 @@ internal class OgopogoAI : BiodiverseAI
         Goingdown,
         Reset
     }
-        
+
     private static readonly int AnimID = Animator.StringToHash("AnimID");
     private static readonly int Stun = Animator.StringToHash("Stun");
     private const int roomLayerMask = 1 << 8; /**Bitmasks are weird. This references layer 8 which is "Room"**/
 
     // Variables related to water
     public QuicksandTrigger water;
-    private readonly QuicksandTrigger[] sandAndWater = FindObjectsOfType<QuicksandTrigger>();
     private readonly List<QuicksandTrigger> waters = [];
 
     // Movement
@@ -107,27 +106,30 @@ internal class OgopogoAI : BiodiverseAI
         if (Levels.Compatibility.GetLLLNameOfLevel(RoundManager.Instance.currentLevel.name) == "gorgonzolalevel")
         {
             skinnedMeshRenderers[0].sharedMaterial = OgopogoHandler.Instance.Assets.CheeseOgoMaterial;
-        } else
+        }
+        else
         {
             skinnedMeshRenderers[0].sharedMaterial = OgopogoHandler.Instance.Assets.OgoMaterial;
         }
 
-            /*
-            foreach (SelectableLevel level in StartOfRound.Instance.levels)
+        /*
+        foreach (SelectableLevel level in StartOfRound.Instance.levels)
+        {
+            LogInfo(level.PlanetName);
+            foreach (SpawnableEnemyWithRarity enemy in level.DaytimeEnemies)
             {
-                LogInfo(level.PlanetName);
-                foreach (SpawnableEnemyWithRarity enemy in level.DaytimeEnemies)
-                {
-                    LogInfo(enemy.enemyType.enemyName);
-                }
+                LogInfo(enemy.enemyType.enemyName);
             }
-            */
+        }
+        */
 
-            _playerDistances = new float[StartOfRound.Instance.allPlayerScripts.Length];
+        _playerDistances = new float[StartOfRound.Instance.allPlayerScripts.Length];
 
         // Loop through all triggers and get all the water
         try
         {
+            QuicksandTrigger[] sandAndWater = FindObjectsOfType<QuicksandTrigger>();
+
             foreach (QuicksandTrigger maybeWater in sandAndWater)
             {
                 // LogInfo(maybeWater);
@@ -226,7 +228,8 @@ internal class OgopogoAI : BiodiverseAI
         {
             creatureVoice.mute = true;
             insideAudio.mute = false;
-        } else
+        }
+        else
         {
             creatureVoice.mute = false;
             insideAudio.mute = true;
@@ -238,11 +241,11 @@ internal class OgopogoAI : BiodiverseAI
             case (int)State.Wandering:
                 wanderTimer += Time.deltaTime;
                 break;
-                
+
             case (int)State.Reset:
                 resetTimer += Time.deltaTime;
                 break;
-                
+
             case (int)State.Chasing:
                 attackTimer -= Time.deltaTime;
                 break;
@@ -253,7 +256,7 @@ internal class OgopogoAI : BiodiverseAI
         {
             eye.position = defaultEye.transform.position;
             eye.rotation = defaultEye.transform.rotation;
-        } 
+        }
         else if (chasedPlayer.HasValue)
         {
             eye.position = chasedPlayer.Value.transform.position + chasedPlayer.Value.transform.forward * 1;
@@ -277,7 +280,7 @@ internal class OgopogoAI : BiodiverseAI
         {
             playerGrabbed.Value.transform.position = Vector3.SmoothDamp(playerGrabbed.Value.transform.position, SavedGrabPos, ref PlayerVelocity, 0.1f);
             playerGrabbed.Value.transform.rotation = Quaternion.Slerp(playerGrabbed.Value.transform.rotation, GrabPos.rotation, Time.deltaTime / 0.1f);
-            
+
             ulong playerGrabbedId = PlayerUtil.GetClientIdFromPlayer(playerGrabbed.Value);
             if (playerGrabbedId == GameNetworkManager.Instance.localPlayerController.playerClientId)
             {
@@ -286,7 +289,7 @@ internal class OgopogoAI : BiodiverseAI
                     playerGrabbed.Value.thisPlayerModelArms.enabled = false;
                     playerVisorRenderers[playerGrabbedId].enabled = false;
                 }
-                catch 
+                catch
                 {
                     // Somehow players joined after the match
                 }
@@ -299,14 +302,15 @@ internal class OgopogoAI : BiodiverseAI
                 playerVisorRenderers[playerGrabbedId].enabled = true;
             }
             */
-        } 
+        }
         else
         {
             try
             {
                 GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = true;
                 playerVisorRenderers[PlayerUtil.GetClientIdFromPlayer(GameNetworkManager.Instance.localPlayerController)].enabled = true;
-            } catch 
+            }
+            catch
             {
                 // players joined after the match started
             }
@@ -364,7 +368,7 @@ internal class OgopogoAI : BiodiverseAI
     private bool PlayerCheck(float range)
     {
         float rangeSq = range * range;
-            
+
         PlayerControllerB[] players = StartOfRound.Instance.allPlayerScripts;
         for (int i = 0; i < players.Length; i++)
         {
@@ -479,7 +483,7 @@ internal class OgopogoAI : BiodiverseAI
         if (id == 0)
         {
             insideAudio.PlayOneShot(insideWarning);
-        } 
+        }
         else if (id == 1)
         {
             insideAudio.PlayOneShot(insideEmerge);
@@ -542,7 +546,7 @@ internal class OgopogoAI : BiodiverseAI
     {
         if (isEnemyDead || !IsServer) return;
         if (inSpecialAnimationWithPlayer != null) return;
-            
+
         PlayerControllerB player = other.gameObject.GetComponent<PlayerControllerB>();
         if (player.isInsideFactory || _playerDistances[player.playerClientId] < 15) return;
 
@@ -559,7 +563,7 @@ internal class OgopogoAI : BiodiverseAI
             creatureAnimator.SetInteger(AnimID, 3);
         }
     }
-    
+
     public void TerrainDetect()
     {
         if (currentBehaviourStateIndex != (int)State.Rising) return;
@@ -626,7 +630,7 @@ internal class OgopogoAI : BiodiverseAI
         }
 
         creatureAnimator.SetBool(Stun, false);
-            
+
         switch (currentBehaviourStateIndex)
         {
             case (int)State.Wandering:
@@ -657,7 +661,7 @@ internal class OgopogoAI : BiodiverseAI
                     PlayVoiceClientRpc(0);
                 }
                 break;
-                
+
             case (int)State.Chasing:
                 float step2 = ChaseSpeed * Time.deltaTime;
                 PlayerControllerB player = GetClosestPlayer();
@@ -682,7 +686,7 @@ internal class OgopogoAI : BiodiverseAI
                     if (!wanderOff)
                         transform.position = newLocation;
                 }
-                    
+
                 if (Distance2d(gameObject, player.gameObject) <= attackDistance && attackTimer < 0)
                 {
                     SwitchToBehaviourClientRpc((int)State.Rising);
@@ -690,14 +694,14 @@ internal class OgopogoAI : BiodiverseAI
                     creatureAnimator.SetInteger(AnimID, 2);
                     SpawnVermin();
                 }
-                    
+
                 if (!PlayerCheck(loseRange))
                 {
                     SwitchToBehaviourClientRpc((int)State.Wandering);
                 }
-                    
+
                 break;
-                
+
             case (int)State.Rising:
                 if (transform.position.y - water.gameObject.transform.position.y < RiseHeight)
                 {
@@ -715,7 +719,7 @@ internal class OgopogoAI : BiodiverseAI
                     UpdateForwardClientRpc(Time.deltaTime);
                 }
 
-                if(!PlayerCheck(loseRange))
+                if (!PlayerCheck(loseRange))
                 {
                     SwitchToBehaviourClientRpc((int)State.Goingdown);
                     PlayVoiceClientRpc(2);
@@ -730,7 +734,7 @@ internal class OgopogoAI : BiodiverseAI
                     splineDone = false;
                 }
                 break;
-                
+
             case (int)State.Goingdown:
                 if (!splineDone)
                 {
@@ -741,7 +745,7 @@ internal class OgopogoAI : BiodiverseAI
                 {
                     GoDown(RiseSpeed);
                 }
-                    
+
                 if (playerGrabbed.HasValue && dropRaycast && splineDone)
                 {
                     SetPlayerGrabbedClientRpc(0, true);
@@ -755,7 +759,7 @@ internal class OgopogoAI : BiodiverseAI
                     SetPlayerGrabbedClientRpc(0, true);
                 }
                 break;
-                
+
             case (int)State.Reset:
                 if (resetTimer >= 12)
                 {
