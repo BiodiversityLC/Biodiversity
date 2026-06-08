@@ -15,6 +15,7 @@ internal class CritterHandler : BiodiverseAIHandler<CritterHandler>
         Config = new CritterConfig(BiodiversityPlugin.Instance.CreateConfig("critters"));
 
         Assets.PrototaxEnemyType.PowerLevel = Config.FungiPowerLevel;
+        Assets.PrototaxEnemyType.MaxCount = Config.FungiMaxAmount;
 
         LethalLibUtils.TranslateTerminalNode(Assets.PrototaxTerminalNode);
         LethalLibUtils.RegisterEnemyWithConfig(
@@ -25,6 +26,7 @@ internal class CritterHandler : BiodiverseAIHandler<CritterHandler>
             Assets.PrototaxTerminalKeyword);
 
         Assets.LeafyBoiEnemyType.PowerLevel = Config.LeafBoyPowerLevel;
+        Assets.LeafyBoiEnemyType.MaxCount = Config.LeafBoyMaxAmount % 6 == 0 ? Config.LeafBoyMaxAmount : 12;
 
         LethalLibUtils.TranslateTerminalNode(Assets.LeafyBoiTerminalNode);
         LethalLibUtils.RegisterEnemyWithConfig(

@@ -21,6 +21,10 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
     [field: Range(0f, 3f)]
     public float FungiPowerLevel { get; private set; } = 0.5f;
 
+    [field: Tooltip("Max amount of Prototax enemies that can spawn in the map.")]
+    [field: Range(0, 100)]
+    public int FungiMaxAmount { get; private set; } = 2;
+
     [field: Tooltip("Normal speed of the Prototax.")]
     [field: Range(3f, 20f)]
     public float FungiNormalSpeed { get; private set; } = 3.5f;
@@ -51,6 +55,10 @@ public class CritterConfig(ConfigFile configFile) : BiodiverseConfigLoader<Critt
     [field: Tooltip("Power level of the Leaf boy.")]
     [field: Range(0f, 3f)]
     public float LeafBoyPowerLevel { get; private set; } = 0.1f;
+
+    [field: Tooltip("Max amount of Leaf boys that can spawn in the map (must be a multiple of 6).")]
+    [field: Range(0, 96)]
+    public int LeafBoyMaxAmount { get; private set; } = 12;
 
     [field: Tooltip("The distance a player has to be from a Leaf boy for him to get scared.")]
     [field: Range(1f, 20f)]
