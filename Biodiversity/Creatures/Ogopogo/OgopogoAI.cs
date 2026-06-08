@@ -533,11 +533,13 @@ internal class OgopogoAI : BiodiverseAI
     }
 
     [ClientRpc]
-    public void TakeOutOfVehicleClientRpc()
+    public void TakeOutOfVehicleClientRpc(ulong playerID)
     {
-        if (GameNetworkManager.Instance.localPlayerController.inVehicleAnimation)
+        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerID];
+
+        if (player.inVehicleAnimation)
         {
-            GameNetworkManager.Instance.localPlayerController.CancelSpecialTriggerAnimations();
+            player.CancelSpecialTriggerAnimations();
         }
     }
 
@@ -558,7 +560,7 @@ internal class OgopogoAI : BiodiverseAI
 
             inSpecialAnimationWithPlayer = player;
 
-            TakeOutOfVehicleClientRpc(); // TODO: this is not written right and causes desync.
+            TakeOutOfVehicleClientRpc(player.playerClientId);
             SetPlayerGrabbedClientRpc((int)player.playerClientId, false, false);
             creatureAnimator.SetInteger(AnimID, 3);
         }
