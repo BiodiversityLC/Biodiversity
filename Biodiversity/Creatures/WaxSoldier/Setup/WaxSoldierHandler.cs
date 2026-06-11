@@ -1,10 +1,10 @@
 ﻿using Biodiversity.Core.Attributes;
-using Biodiversity.Util;
 using JetBrains.Annotations;
 
 namespace Biodiversity.Creatures.WaxSoldier;
 
 [UsedImplicitly]
+[HideHandler]
 internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
 {
     internal WaxSoldierAssets Assets { get; set; }
@@ -12,6 +12,7 @@ internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
 
     public WaxSoldierHandler()
     {
+        /*
         Assets = new WaxSoldierAssets("biodiversity_waxsoldier");
         Config = new WaxSoldierConfig(BiodiversityPlugin.Instance.CreateConfig("waxsoldier"));
 
@@ -28,5 +29,6 @@ internal class WaxSoldierHandler : BiodiverseAIHandler<WaxSoldierHandler>
             Assets.TerminalKeyword);
 
         LethalLibUtils.RegisterScrapWithConfig("All:0", Assets.MusketItemData);
+        */
     }
 }
