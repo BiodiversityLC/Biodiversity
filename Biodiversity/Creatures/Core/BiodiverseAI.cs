@@ -37,8 +37,9 @@ public abstract class BiodiverseAI : EnemyAI
     public CachedList<GameObject> CachedInsideAINodes;
     public CachedList<GameObject> CachedOutsideAINodes;
 
-    private void Awake()
+    public override void Awake()
     {
+        base.Awake();
         CachedInsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("AINode").ToList());
         CachedOutsideAINodes = new CachedList<GameObject>(() => GameObject.FindGameObjectsWithTag("OutsideAINode").ToList());
     }

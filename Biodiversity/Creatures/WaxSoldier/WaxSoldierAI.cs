@@ -60,8 +60,10 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     private static bool _hasRegisteredImperiumInsights;
 
     #region Event Functions
-    private void Awake()
+    public override void Awake()
     {
+        base.Awake();
+
         WaxSoldierBlackboard blackboard = new();
         WaxSoldierAdapter adapter = new(this);
 

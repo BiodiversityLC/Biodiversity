@@ -12,7 +12,7 @@ internal class AloeHandler : BiodiverseAIHandler<AloeHandler>
 
     public AloeHandler()
     {
-        Assets = new AloeAssets("aloebracken"); //todo: Load the bundle synchronously
+        Assets = new AloeAssets("biodiversity_aloe"); //todo: Load the bundle synchronously
         Config = new AloeConfig(BiodiversityPlugin.Instance.CreateConfig("aloe"));
 
         Assets.EnemyType.PowerLevel = Config.PowerLevel;

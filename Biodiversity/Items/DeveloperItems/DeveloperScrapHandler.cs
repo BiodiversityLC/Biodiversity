@@ -15,7 +15,7 @@ internal class DeveloperScrapHandler : BiodiverseItemHandler<DeveloperScrapHandl
 
     public DeveloperScrapHandler()
     {
-        Assets = new DeveloperScrapAssets("developer_items");
+        Assets = new DeveloperScrapAssets("biodiversity_developer_scrap");
         Config = new DeveloperScrapConfig(BiodiversityPlugin.Instance.CreateConfig("developer_scrap_items"));
 
         for (int i = 0; i < typeof(DeveloperScrapAssets).GetFields().Length; i++)
@@ -35,7 +35,7 @@ internal class DeveloperScrapHandler : BiodiverseItemHandler<DeveloperScrapHandl
 
                     Item item = (Item)field.GetValue(Assets);
                     if (!item) continue;
-                    
+
                     item.isScrap = true;
                     item.weight = scrapItem.Weight;
                     item.minValue = scrapItem.MinimumValue;
