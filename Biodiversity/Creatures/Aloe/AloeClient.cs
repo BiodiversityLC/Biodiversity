@@ -601,21 +601,39 @@ public class AloeClient : MonoBehaviour
         // healingOrbEffect.Stop();
         healingLightEffect.enabled = false;
 
-        if (!_targetPlayer.Value.isPlayerDead)
+        if (_targetPlayer.Value.isPlayerDead) return;
+
+        CorrectlySetTargetPlayerLocalRenderers(true, targetPlayer);
+        HandleUnMuffleTargetPlayerVoice();
+
+        _targetPlayer.Value.inSpecialInteractAnimation = false;
+        _targetPlayer.Value.inAnimationWithEnemy = null;
+        _targetPlayer.Value.ResetZAndXRotation();
+
+        if (!_targetPlayer.Value.IsServer) return;
+
+        // Make sure the player is on a navmesh
+        Vector3 anchor =
+            RoundManager.FindMainEntrancePosition(getTeleportPosition: true, getOutsideEntrance: false);
+
+        Vector3 dropPosition;
+        if (BiodiverseAI.TryGetReachableDropPosition(out Vector3 possibleDropPosition, transform.position, anchor))
         {
-            CorrectlySetTargetPlayerLocalRenderers(true, targetPlayer);
-
-            _targetPlayer.Value.inSpecialInteractAnimation = false;
-            _targetPlayer.Value.inAnimationWithEnemy = null;
-            _targetPlayer.Value.ResetZAndXRotation();
-
-            // Make sure the player is on a navmesh
-            Vector3 validPosition =
-                RoundManager.Instance.GetNavMeshPosition(_targetPlayer.Value.transform.position, new NavMeshHit(), 10f);
-            _targetPlayer.Value.transform.position = new Vector3(validPosition.x, _targetPlayer.Value.transform.position.y, validPosition.z);
-
-            HandleUnMuffleTargetPlayerVoice();
+            // Small lift so the player doesn't spawn intersecting the floor
+            dropPosition = possibleDropPosition;
         }
+        else
+        {
+            // Fallback
+            Transform node = BiodiverseAI.GetClosestValidNodeToPosition(
+                out _, transform.position, transform.position,
+                RoundManager.Instance.insideAINodes);
+
+            dropPosition = node ? node.position : transform.position;
+        }
+
+        netcodeController.DropPlayerAtPositionClientRpc(
+            PlayerUtil.GetClientIdFromPlayer(_targetPlayer.Value), dropPosition + Vector3.up * 0.3f);
     }
 
     private void CorrectlySetTargetPlayerLocalRenderers(bool enable, PlayerControllerB targetPlayer)

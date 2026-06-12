@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Biodiversity.Util;
+using GameNetcodeStuff;
+using System;
 using Unity.Netcode;
+using UnityEngine;
 
 namespace Biodiversity.Creatures.Aloe;
 
@@ -13,7 +16,7 @@ public class AloeNetcodeController : NetworkBehaviour
     internal readonly NetworkVariable<bool> AnimationParamHealing = new();
     internal readonly NetworkVariable<bool> AnimationParamStunned = new();
     internal readonly NetworkVariable<bool> AnimationParamDead = new();
-    
+
     internal event Action OnInitializeConfigValues;
     internal event Action<int> OnSetAnimationTrigger;
     internal event Action<float, ulong> OnIncreasePlayerFearLevel;
@@ -28,7 +31,7 @@ public class AloeNetcodeController : NetworkBehaviour
     internal event Action<float> OnTransitionToRunningForwardsAndCarryingPlayer;
     internal event Action<NetworkObjectReference> OnSpawnFakePlayerBodyRagdoll;
     internal event Action<ulong, int> OnDamagePlayer;
-    
+
     [ClientRpc]
     internal void DamagePlayerClientRpc(ulong playerId, int damage)
     {
@@ -69,6 +72,15 @@ public class AloeNetcodeController : NetworkBehaviour
     internal void SetTargetPlayerInCaptivityClientRpc(bool setToInCaptivity)
     {
         OnSetTargetPlayerInCaptivity?.Invoke(setToInCaptivity);
+    }
+
+    [ClientRpc]
+    internal void DropPlayerAtPositionClientRpc(ulong playerClientId, Vector3 dropPosition)
+    {
+        PlayerControllerB playerToDrop = PlayerUtil.GetPlayerFromClientId(playerClientId);
+        if (!playerToDrop) return;
+
+        playerToDrop.transform.position = dropPosition;
     }
 
     [ServerRpc(RequireOwnership = false)]

@@ -86,13 +86,14 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
                 {
                     Transform closestNodeToPlayer = BiodiverseAI.GetClosestValidNodeToPosition(
                         pathStatus: out BiodiverseAI.PathStatus pathStatus,
-                        agent: EnemyAIInstance.agent,
-                        position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
+                        startPosition: EnemyAIInstance.agent.transform.position,
+                        referencePosition: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
                         givenAiNodes: EnemyAIInstance.allAINodes,
                         ignoredAINodes: null,
                         checkLineOfSight: true,
                         allowFallbackIfBlocked: false,
-                        bufferDistance: 0.2f);
+                        bufferDistance: 0.2f,
+                        areaMask: EnemyAIInstance.agentMask);
 
                     if (pathStatus == BiodiverseAI.PathStatus.Invalid)
                     {
@@ -122,7 +123,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
             // If the CanBeSpookedInGrabAnimation config is disabled and the Aloe is currently in her kidnap/grab animation, then we just don't transition to the avoiding player state.
             if (aggressiveStalkingState._inGrabAnimation && !AloeHandler.Instance.Config.CanBeSpookedInGrabAnimation)
                 return false;
-            
+
             // Check if a player sees the Aloe
             _playerLookingAtAloe = BiodiverseAI.GetClosestPlayerLookingAtPosition(EnemyAIInstance.eye.transform.position);
             return _playerLookingAtAloe;

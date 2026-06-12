@@ -173,34 +173,31 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         // todo: fix the aloe shared data thing
         // todo: add a lazer pointer type thing with the required features so ppl can easily go around a map and get the coordinates of a good spot for an aloe node &/or wax soldier guard post
         _mainEntrancePosition = RoundManager.FindMainEntrancePosition(true);
-        Vector3 brackenRoomAloeNode = AloeSharedData.Instance.OccupyBrackenRoomAloeNode();
+        // Vector3 brackenRoomAloeNode = AloeSharedData.Instance.OccupyBrackenRoomAloeNode();
 
         // Make sure the Aloe has the correct AI nodes assigned
         Vector3 enemyPos = transform.position;
         Vector3 closestOutsideNode = Vector3.positiveInfinity;
         Vector3 closestInsideNode = Vector3.positiveInfinity;
 
-        // todo: handle cases where these return a list of doodoo nodes (either just an empty list or a list of destroyed nodes).
-        GameObject[] outsideAINodes = AloeSharedData.Instance.GetOutsideAINodes();
-        GameObject[] insideAINodes = AloeSharedData.Instance.GetInsideAINodes();
+        List<GameObject> outsideAINodes = CachedOutsideAINodes.Value;
+        List<GameObject> insideAINodes = CachedInsideAINodes.Value;
 
-        for (int i = 0; i < outsideAINodes.Length; i++)
+        foreach (GameObject node in outsideAINodes)
         {
-            GameObject node = outsideAINodes[i];
             Vector3 nodePos = node.transform.position;
             if ((nodePos - enemyPos).sqrMagnitude < (closestOutsideNode - enemyPos).sqrMagnitude)
                 closestOutsideNode = nodePos;
         }
 
-        for (int i = 0; i < insideAINodes.Length; i++)
+        foreach (GameObject node in insideAINodes)
         {
-            GameObject node = insideAINodes[i];
             Vector3 nodePos = node.transform.position;
             if ((nodePos - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude)
                 closestInsideNode = nodePos;
         }
 
-        allAINodes = (closestOutsideNode - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude ? outsideAINodes : insideAINodes;
+        allAINodes = ((closestOutsideNode - enemyPos).sqrMagnitude < (closestInsideNode - enemyPos).sqrMagnitude ? outsideAINodes : insideAINodes).ToArray();
 
         //_favouriteSpot = brackenRoomAloeNode;
         FavouriteSpot = Vector3.zero;
@@ -208,11 +205,12 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
         {
             FavouriteSpot =
                 GetFarthestValidNodeFromPosition(
-                        out PathStatus _,
-                        agent,
-                        _mainEntrancePosition != Vector3.zero ? _mainEntrancePosition : transform.position,
-                        allAINodes,
-                        bufferDistance: 0f)
+                        pathStatus: out PathStatus _,
+                        startPosition: agent.transform.position,
+                        referencePosition: _mainEntrancePosition != Vector3.zero ? _mainEntrancePosition : transform.position,
+                        givenAiNodes: allAINodes,
+                        bufferDistance: 0f,
+                        areaMask: agentMask)
                     .position;
         }
 

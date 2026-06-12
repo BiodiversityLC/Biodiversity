@@ -158,7 +158,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         //todo: create tool that lets people easily select good guard spots for the wax soldier (nearly identical to the vending machine placement tool idea)
 
         // for now lets just use this
-        Vector3 tempGuardPostPosition = GetFarthestValidNodeFromPosition(out PathStatus _, agent, transform.position, allAINodes).position;
+        Vector3 tempGuardPostPosition = GetFarthestValidNodeFromPosition(out PathStatus _, agent.transform.position, transform.position, allAINodes, areaMask: agentMask).position;
 
         Vector3 calculatedPos = tempGuardPostPosition;
         Quaternion calculatedRot = transform.rotation;
