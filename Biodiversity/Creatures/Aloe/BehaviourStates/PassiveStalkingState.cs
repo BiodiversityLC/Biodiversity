@@ -50,7 +50,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
     internal override void AIIntervalBehaviour()
     {
         base.AIIntervalBehaviour();
-        
+
         _isPlayerReachable = true;
         if (!EnemyAIInstance.ActualTargetPlayer.HasValue) return;
 
@@ -67,7 +67,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
             EnemyAIInstance.movingTowardsTargetPlayer = false;
             EnemyAIInstance.IsStaringAtTargetPlayer = true;
         }
-        
+
         // If she cant stare, then go and find the player
         else
         {
@@ -78,13 +78,14 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
             {
                 Transform closestNodeToPlayer = BiodiverseAI.GetClosestValidNodeToPosition(
                     pathStatus: out BiodiverseAI.PathStatus pathStatus,
-                    agent: EnemyAIInstance.agent,
-                    position: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
+                    startPosition: EnemyAIInstance.agent.transform.position,
+                    referencePosition: EnemyAIInstance.ActualTargetPlayer.Value.transform.position,
                     givenAiNodes: EnemyAIInstance.allAINodes,
                     ignoredAINodes: null,
                     checkLineOfSight: true,
                     allowFallbackIfBlocked: false,
-                    bufferDistance: 0f);
+                    bufferDistance: 0f,
+                    areaMask: EnemyAIInstance.agentMask);
 
                 if (pathStatus == BiodiverseAI.PathStatus.Invalid) EnemyAIInstance.moveTowardsDestination = false;
                 else EnemyAIInstance.SetDestinationToPosition(closestNodeToPlayer.position);
@@ -125,7 +126,7 @@ internal class PassiveStalkingState : BehaviourState<AloeServerAI.States, AloeSe
                 EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(0.8f,
                     PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.AvoidingPlayer.Value));
             }
-            
+
             EnemyAIInstance.IsStaringAtTargetPlayer = false;
         }
     }

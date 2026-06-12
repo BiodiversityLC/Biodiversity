@@ -1,14 +1,12 @@
-﻿using System;
-using UnityEngine;
-using Unity.Netcode;
-using Random = UnityEngine.Random;
-using Object = UnityEngine.Object;
-using GameNetcodeStuff;
-using UnityEngine.AI;
+﻿using BepInEx.Bootstrap;
 using Biodiversity.Util.SharedVariables;
-using BepInEx.Bootstrap;
+using GameNetcodeStuff;
+using System;
 using System.Linq;
-using Biodiversity.Creatures.Aloe;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.AI;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.MicBird
 {
@@ -113,7 +111,7 @@ namespace Biodiversity.Creatures.MicBird
 
         // Hit sounds
         [SerializeField] private AudioClip hitSound;
-        
+
         // Idle sounds
         [SerializeField] private AudioClip[] idleSounds;
 
@@ -232,7 +230,8 @@ namespace Biodiversity.Creatures.MicBird
                 {
                     BiodiversityPlugin.LogVerbose("Micbird compat mode enabled.");
                     compatMode = true;
-                    if (!sideSet) {
+                    if (!sideSet)
+                    {
                         compatSide = Random.Range(0, 2) == 0;
                         sideSet = true;
                     }
@@ -322,7 +321,7 @@ namespace Biodiversity.Creatures.MicBird
 
             if (currentBehaviourStateIndex == (int)State.PERCH)
             {
-                callTimer -= Time.deltaTime;  
+                callTimer -= Time.deltaTime;
                 idleTimer -= Time.deltaTime;
             }
 
@@ -452,7 +451,8 @@ namespace Biodiversity.Creatures.MicBird
         }
 
         [ClientRpc]
-        public void SyncRadarBoosterClientRpc(NetworkObjectReference radarBooster) {
+        public void SyncRadarBoosterClientRpc(NetworkObjectReference radarBooster)
+        {
             NetworkObject obj = null;
             radarBooster.TryGet(out obj);
             distractedRadarBoosterItem = obj.gameObject.GetComponent<RadarBoosterItem>();
@@ -531,6 +531,11 @@ namespace Biodiversity.Creatures.MicBird
                 agent.speed = 5.4f;
                 StartRunOnServerServerRpc(20);
             }
+            if (noiseID == 14155 && noiseLoudness >= 0.5 && timesPlayedInOneSpot >= 1)  // scared by loud horn
+            {
+                agent.speed = 7f;
+                StartRunOnServerServerRpc(60 + (5 * timesPlayedInOneSpot));
+            }
         }
 
         public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
@@ -596,7 +601,8 @@ namespace Biodiversity.Creatures.MicBird
                     }
                 }
                 numberofupdatesstuck++;
-            } else
+            }
+            else
             {
                 numberofupdatesstuck = 0;
             }

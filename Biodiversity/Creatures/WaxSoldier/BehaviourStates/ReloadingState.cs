@@ -78,7 +78,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         {
             if (playerWhoHit)
             {
-                // If the player who hit isn't our current target player that we have, then we will make them our new
+                // If the playerWhoHit isn't our current target player that we have, then we will make them our new
                 // target player IF our current target player is more than 3 units away (to prevent rapid target switcing).
                 if (PlayerUtil.GetClientIdFromPlayer(playerWhoHit) !=
                     PlayerUtil.GetClientIdFromPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer) &&

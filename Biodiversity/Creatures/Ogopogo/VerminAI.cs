@@ -18,11 +18,10 @@ internal class VerminAI : BiodiverseAI
     // Variables related to water
     private QuicksandTrigger water;
     private BoxCollider waterCollider;
-    private readonly QuicksandTrigger[] sandAndWater = FindObjectsOfType<QuicksandTrigger>();
     private readonly List<QuicksandTrigger> waters = [];
 
     private float damageTimer;
-    private readonly NetworkVariable<bool> damageTimerBelowZero = new(); 
+    private readonly NetworkVariable<bool> damageTimerBelowZero = new();
 
     // Wander vars
     private float wanderTimer;
@@ -43,17 +42,19 @@ internal class VerminAI : BiodiverseAI
 
     // Mapping
     public Transform MapDot;
-    
+
     private static readonly int Stun = Animator.StringToHash("Stun");
 
     public override void Start()
     {
         base.Start();
         if (!IsServer) return;
-        
+
         // Loop through all triggers and get all the water
         try
         {
+            QuicksandTrigger[] sandAndWater = FindObjectsOfType<QuicksandTrigger>();
+
             foreach (QuicksandTrigger maybeWater in sandAndWater)
             {
                 // BiodiversityPlugin.Logger.LogInfo(maybeWater);
@@ -210,7 +211,7 @@ internal class VerminAI : BiodiverseAI
         base.Update();
 
         if (StartOfRound.Instance.mapScreen.targetedPlayer != null)
-            MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position : 
+            MapDot.position = StartOfRound.Instance.mapScreen.targetedPlayer.isInsideFactory ? transform.position :
             new Vector3(transform.position.x, StartOfRound.Instance.mapScreen.targetedPlayer.transform.position.y, transform.position.z);
 
         if (!IsServer) return;
@@ -222,7 +223,7 @@ internal class VerminAI : BiodiverseAI
         {
             wanderTimer += Time.deltaTime;
         }
-        
+
         damageTimer -= Time.deltaTime;
         damageTimerBelowZero.Value = damageTimer <= 0;
     }
@@ -236,7 +237,7 @@ internal class VerminAI : BiodiverseAI
     public override void OnCollideWithPlayer(Collider other)
     {
         if (isEnemyDead || stunNormalizedTimer > 0) return;
-        
+
         if (damageTimerBelowZero.Value)
         {
             other.gameObject.GetComponent<PlayerControllerB>().DamagePlayer(5, false, true, CauseOfDeath.Mauling, 0, false, default);
@@ -269,7 +270,7 @@ internal class VerminAI : BiodiverseAI
     {
         transform.Translate(Vector3.up * (riseSpeed * Time.deltaTime));
     }
-    
+
     public override void DoAIInterval()
     {
         base.DoAIInterval();
@@ -286,7 +287,7 @@ internal class VerminAI : BiodiverseAI
         {
             creatureAnimator.SetBool(Stun, false);
         }
-        
+
         if (!IsServer) return;
 
         switch (currentBehaviourStateIndex)

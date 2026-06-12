@@ -60,7 +60,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeS
         EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(
             nameof(AloeClient.AudioClipTypes.snatchAndDragSfx), nameof(AloeClient.AudioSourceTypes.aloeVoiceSource), false, true, false, true);
 
-        if (BiodiverseAI.IsPathValid(
+        if (BiodiverseAI.IsAgentPathValid(
                 agent: EnemyAIInstance.agent,
                 targetPosition: EnemyAIInstance.FavouriteSpot) != BiodiverseAI.PathStatus.Valid)
         {
@@ -75,7 +75,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeS
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        
+
         _dragPlayerTimer -= Time.deltaTime;
         if (_dragPlayerTimer <= 0 && !EnemyAIInstance.HasTransitionedToRunningForwardsAndCarryingPlayer)
         {
@@ -89,7 +89,7 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeS
     internal override void AIIntervalBehaviour()
     {
         base.AIIntervalBehaviour();
-        
+
         List<PlayerControllerB> playersLookingAtAloe =
             BiodiverseAI.GetAllPlayersLookingAtPositionPooled(EnemyAIInstance.eye.transform.position, playerViewWidth: 40f,
                 playerViewRange: 40);
@@ -97,9 +97,9 @@ internal class KidnappingPlayerState : BehaviourState<AloeServerAI.States, AloeS
         for (int i = 0; i < playersLookingAtAloe.Count; i++)
         {
             PlayerControllerB player = playersLookingAtAloe[i];
-            
+
             EnemyAIInstance.LogVerbose($"Increasing fear for player {player.playerUsername}");
-            
+
             EnemyAIInstance.netcodeController.IncreasePlayerFearLevelClientRpc(0.4f, PlayerUtil.GetClientIdFromPlayer(player));
         }
 

@@ -38,7 +38,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
         EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.AvoidingPlayerMaxAcceleration;
         EnemyAIInstance.openDoorSpeedMultiplier = AloeHandler.Instance.Config.OpenDoorSpeedMultiplier;
         EnemyAIInstance.agent.acceleration = 50f;
-        
+
         _avoidPlayerIntervalTimer = 0f;
         _avoidPlayerTimerTotal = 0f;
 
@@ -60,7 +60,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
     internal override void UpdateBehaviour()
     {
         base.UpdateBehaviour();
-        
+
         // Make the Aloe stay still until the spotted animation is finished
         if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
         {
@@ -80,7 +80,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
     internal override void AIIntervalBehaviour()
     {
         base.AIIntervalBehaviour();
-        
+
         if (!EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.Value)
             return;
 
@@ -99,13 +99,14 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
         Transform farAwayNode = EnemyAIInstance.AvoidingPlayer.HasValue
             ? BiodiverseAI.GetFarthestValidNodeFromPosition(
                 pathStatus: out pathStatus,
-                agent: EnemyAIInstance.agent,
-                position: EnemyAIInstance.AvoidingPlayer.Value.transform.position,
+                startPosition: EnemyAIInstance.agent.transform.position,
+                referencePosition: EnemyAIInstance.AvoidingPlayer.Value.transform.position,
                 givenAiNodes: EnemyAIInstance.allAINodes,
                 ignoredAINodes: null,
                 checkLineOfSight: true,
                 allowFallbackIfBlocked: true,
-                bufferDistance: 5f)
+                bufferDistance: 5f,
+                areaMask: EnemyAIInstance.agentMask)
             : null;
 
         if (farAwayNode && pathStatus != BiodiverseAI.PathStatus.Unknown &&
@@ -131,7 +132,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
     internal override void OnStateExit(StateTransition<AloeServerAI.States, AloeServerAI> transition)
     {
         base.OnStateExit(transition);
-        
+
         EnemyAIInstance.AvoidingPlayer.Reset();
         EnemyAIInstance.netcodeController.HasFinishedSpottedAnimation.SafeSet(false);
     }
@@ -152,7 +153,7 @@ internal class AvoidingPlayerState : BehaviourState<AloeServerAI.States, AloeSer
 
             float distanceToClosestPlayer =
                 Vector3.Distance(EnemyAIInstance.transform.position, closestPlayerPosition);
-            
+
             return distanceToClosestPlayer > 35f &&
                    avoidingPlayerState._avoidPlayerTimerTotal >= 5f &&
                    !avoidingPlayerState._playerLookingAtAloe.HasValue;
