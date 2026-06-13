@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Animation;
 using GameNetcodeStuff;
 using UnityEngine.Scripting;
 
@@ -53,5 +54,24 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);
         return true; // Makes nothing happen
+    }
+
+    internal override void OnCustomEvent(string eventName, StateData eventData)
+    {
+        base.OnCustomEvent(eventName, eventData);
+
+        switch (eventName)
+        {
+            case nameof(WaxSoldierAnimationEventHandler.OnMeltJitterAnimationFinish):
+            {
+                EnemyAIInstance.Context.Blackboard.NetcodeController.CompleteMoltenTransitionClientRpc();
+
+                EnemyAIInstance.Context.Adapter.Animator =
+                    EnemyAIInstance.GetComponent<WaxSoldierClient>().moltenAnimator;
+
+                // EnemyAIInstance.UpdateBehaviourStateFromPerception();
+                break;
+            }
+        }
     }
 }

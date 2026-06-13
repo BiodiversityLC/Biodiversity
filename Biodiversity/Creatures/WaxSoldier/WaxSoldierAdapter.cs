@@ -10,9 +10,14 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
 {
     #region Unity Components
     public NavMeshAgent Agent => instance.agent;
-    public Animator Animator => instance.creatureAnimator;
     public Transform Transform => instance.transform;
     public Transform EyeTransform => instance.eye;
+
+    public Animator Animator
+    {
+        get => instance.creatureAnimator;
+        set => instance.creatureAnimator = value;
+    }
     #endregion
 
     public GameObject[] AssignedAINodes

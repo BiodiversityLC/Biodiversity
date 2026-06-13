@@ -20,6 +20,7 @@ public class WaxSoldierClient : MonoBehaviour
     public static readonly int ForceWalk = Animator.StringToHash("ForceWalk");
     public static readonly int Melt = Animator.StringToHash("Melt");
     public static readonly int Dead = Animator.StringToHash("Dead");
+    private static readonly int FinishedMelting = Animator.StringToHash("FinishedMelting");
 
     public static readonly int VelocityX = Animator.StringToHash("VelocityX");
     public static readonly int VelocityZ = Animator.StringToHash("VelocityZ");
@@ -35,7 +36,7 @@ public class WaxSoldierClient : MonoBehaviour
 
     [Header("Animation")] [Space(5f)]
     [SerializeField] private Animator unmoltenAnimator;
-    [SerializeField] private Animator moltenAnimator;
+    [SerializeField] public Animator moltenAnimator;
     [SerializeField] private Transform musketContainer;
 
     [Header("Audio")] [Space(5f)]
@@ -120,6 +121,17 @@ public class WaxSoldierClient : MonoBehaviour
     #endregion
 
     #region Network Events
+    private void HandleCompleteMoltenTransition()
+    {
+        // todo: switch the musket object over to the molten gameobject
+
+        unmoltenGameObject.SetActive(false);
+        moltenGameObject.SetActive(true);
+
+        _currentAnimator = moltenAnimator;
+        _currentAnimator.SetTrigger(FinishedMelting);
+    }
+
     private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)
     {
         if (!objectReference.TryGet(out NetworkObject networkObject))
@@ -223,6 +235,7 @@ public class WaxSoldierClient : MonoBehaviour
         netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
         netcodeController.OnSetAnimationControllerToFrozen += HandleSetAnimationControllerToFrozen;
         netcodeController.OnSlamIntoGround += HandleSlamIntoGround;
+        netcodeController.OnCompleteMoltenTransition += HandleCompleteMoltenTransition;
 
         //netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
 
@@ -238,6 +251,7 @@ public class WaxSoldierClient : MonoBehaviour
         netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
         netcodeController.OnSetAnimationControllerToFrozen -= HandleSetAnimationControllerToFrozen;
         netcodeController.OnSlamIntoGround -= HandleSlamIntoGround;
+        netcodeController.OnCompleteMoltenTransition -= HandleCompleteMoltenTransition;
 
         //netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
 

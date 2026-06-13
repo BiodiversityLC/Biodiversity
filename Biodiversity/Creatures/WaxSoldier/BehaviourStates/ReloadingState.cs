@@ -59,7 +59,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
 
         switch (eventName)
         {
-            case nameof(UnmoltenAnimationHandler.OnReloadAnimationFinish):
+            case nameof(WaxSoldierAnimationEventHandler.OnReloadAnimationFinish):
             {
                 EnemyAIInstance.Context.Blackboard.HeldMusket.Reload();
                 EnemyAIInstance.UpdateBehaviourStateFromPerception();

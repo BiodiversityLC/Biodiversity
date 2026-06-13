@@ -13,6 +13,7 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
     internal event Action<NetworkObjectReference, int> OnSpawnMusket;
     internal event Action OnDropMusket;
     internal event Action OnSlamIntoGround;
+    internal event Action OnCompleteMoltenTransition;
     internal event Action<int> OnSetAnimationTrigger;
     internal event Action<bool> OnSetAnimationControllerToFrozen;
 
@@ -28,6 +29,13 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
         OnSlamIntoGround?.Invoke();
     }
 
+    [ClientRpc]
+    public void CompleteMoltenTransitionClientRpc()
+    {
+        OnCompleteMoltenTransition?.Invoke();
+    }
+
+    #region Musket
     [ClientRpc]
     public void DropMusketClientRpc()
     {
@@ -67,6 +75,7 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
     {
         OnSpawnMusket?.Invoke(objectReference, scrapValue);
     }
+    #endregion
 
     /// <summary>
     /// Invokes the set animator trigger event

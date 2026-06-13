@@ -44,7 +44,7 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         switch (eventName)
         {
-            case nameof(UnmoltenAnimationHandler.OnAnimationEventSlamIntoGround):
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventSlamIntoGround):
             {
                 EnemyAIInstance.Context.Blackboard.NetcodeController.SlamIntoGroundClientRpc();
                 EnemyAIInstance.KillEnemyServerRpc(false);

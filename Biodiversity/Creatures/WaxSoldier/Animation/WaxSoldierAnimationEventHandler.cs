@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.Animation;
 
-public class UnmoltenAnimationHandler : NetworkBehaviour
+public class WaxSoldierAnimationEventHandler : NetworkBehaviour
 {
     [SerializeField] private WaxSoldierAI ai;
 
@@ -116,5 +116,12 @@ public class UnmoltenAnimationHandler : NetworkBehaviour
         ai.LogVerbose("Reload animation complete.");
         if (!IsServer) return;
         ai.TriggerCustomEvent(nameof(OnReloadAnimationFinish));
+    }
+
+    public void OnMeltJitterAnimationFinish()
+    {
+        ai.LogVerbose("Melt jitter animation complete.");
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnMeltJitterAnimationFinish));
     }
 }
