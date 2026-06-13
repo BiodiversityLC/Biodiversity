@@ -179,7 +179,16 @@ public class LeafyBoiAI : BiodiverseAI
             State = AIState.SCARED;
         }
     }
-    
+
+    public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+    {
+        if (hitID == 331 || force == 12) return; // Ignore hits from vehicles
+        if (!isEnemyDead)
+        {
+            KillEnemyOnOwnerClient();
+        }
+    }
+
     /// <summary>
     /// Determines whether there is a player within the specified distance to the given position.
     /// It will return true regardless of whether there are 1 or more players.
