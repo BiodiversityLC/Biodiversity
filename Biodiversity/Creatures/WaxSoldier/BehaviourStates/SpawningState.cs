@@ -41,7 +41,7 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         switch (eventName)
         {
-            case nameof(UnmoltenAnimationHandler.OnSpawnAnimationFinish):
+            case nameof(WaxSoldierAnimationEventHandler.OnSpawnAnimationFinish):
                 EnemyAIInstance.StartCoroutine(SpawnMusketWhenNetworkIsReady());
                 break;
         }

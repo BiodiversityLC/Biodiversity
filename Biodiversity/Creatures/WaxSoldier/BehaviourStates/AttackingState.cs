@@ -80,14 +80,14 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
 
         switch (eventName)
         {
-            case nameof(UnmoltenAnimationHandler.OnAttackAnimationFinish):
+            case nameof(WaxSoldierAnimationEventHandler.OnAttackAnimationFinish):
             {
                 EnemyAIInstance.UpdateBehaviourStateFromPerception();
                 break;
             }
 
             // For the shoot attack
-            case nameof(UnmoltenAnimationHandler.OnAnimationEventStartTargetLook):
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventStartTargetLook):
             {
                 if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)
                 {
@@ -98,7 +98,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             }
 
             // For the shoot attack
-            case nameof(UnmoltenAnimationHandler.OnAnimationEventMusketShoot):
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventMusketShoot):
             {
                 if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)
                 {
@@ -109,7 +109,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
                 break;
             }
 
-            case nameof(UnmoltenAnimationHandler.OnAnimationEventStartStabAttackLunge):
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventStartStabAttackLunge):
             {
                 EnemyAIInstance.Context.Adapter.StopAllPathing();
 
@@ -122,7 +122,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
                 break;
             }
 
-            case nameof(UnmoltenAnimationHandler.OnAnimationEventEndStabAttackLunge):
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventEndStabAttackLunge):
             {
                 EnemyAIInstance.Context.Adapter.Agent.velocity = Vector3.zero;
                 EnemyAIInstance.Context.Adapter.MoveToPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer);

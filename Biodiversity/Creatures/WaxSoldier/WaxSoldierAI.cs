@@ -41,6 +41,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Unmolten,
         Molten
     }
+
     /* Molten state ideas:
      *
      * Maybe he can break doors off its hinges like the fiend
