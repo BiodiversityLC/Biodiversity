@@ -1,4 +1,5 @@
-﻿using Biodiversity.Util;
+﻿using Biodiversity.Creatures.WaxSoldier;
+using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
 using Unity.Netcode;
@@ -13,32 +14,32 @@ using Random = UnityEngine.Random;
 public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
 {
     [Header("Attack Properties")]
-    [SerializeField] private int spinDamage = 40;
-    [SerializeField] private float spinKnockback = 16f;
-    [SerializeField] private int stabDamage = 50;
+    [SerializeField] private int stabDamage = 25;
     [SerializeField] private float stabKnockback = 8f;
-    
+    [SerializeField] private int spinDamage = 30;
+    [SerializeField] private float spinKnockback = 16f;
+
     [Tooltip("How long (in seconds) a player is immune after being hit.")]
     [SerializeField] private float hitCooldown = 0.5f;
-    
+
     [Header("References")]
     [SerializeField] private Transform bayonetTip;
     [SerializeField] public BoxCollider bayonetCollider;
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip stabIntoFleshSfx;
-    
+
     public enum BayonentMode { None, Spin, Stab }
     public BayonentMode currentBayonetMode = BayonentMode.None;
-    
+
     private Collider[] bayonetHitBuffer;
-    
+
     private readonly PlayerCooldownTracker _playerCooldownTracker = new();
-    
+
     private CachedValue<Vector3> _bayonetColliderHalfExtents;
     private Vector3 previousTipPosition;
-    
+
     private int _bayonetHitMask;
-    
+
     private void Awake()
     {
         bayonetHitBuffer = new Collider[15];
@@ -50,7 +51,7 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
             rb.isKinematic = true;
         }
     }
-    
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -67,19 +68,22 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
     private void Start()
     {
         _bayonetColliderHalfExtents = new CachedValue<Vector3>(() => bayonetCollider.size * 0.75f);
+
+        stabDamage = WaxSoldierHandler.Instance.Config.StabDamage;
+        spinDamage = WaxSoldierHandler.Instance.Config.SpinDamage;
     }
 
     private void FixedUpdate()
     {
         if (currentBayonetMode == BayonentMode.None) return;
-        
+
         Vector3 currentTipPosition = bayonetTip.position;
         Vector3 direction = currentTipPosition - previousTipPosition;
 
         // Only do the cast if the tip has moved
         if (direction.magnitude > 0.01f)
         {
-            int hits = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, _bayonetColliderHalfExtents.Value, 
+            int hits = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, _bayonetColliderHalfExtents.Value,
                 bayonetHitBuffer, bayonetCollider.transform.rotation, _bayonetHitMask, QueryTriggerInteraction.Collide);
 
             for (int i = 0; i < hits; i++)
@@ -94,35 +98,36 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
 
     private bool TryToDamageEntity(Collider entity)
     {
-        if (entity.CompareTag("Player") && entity.TryGetComponent(out PlayerControllerB player) && !PlayerUtil.IsPlayerDead(player))
-        {
-            ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
-            if (_playerCooldownTracker.IsOnCooldown(playerClientId))
-                return false;
-            
-            int damage = 0;
-            float knockback = 0f;
-            
-            switch (currentBayonetMode)
-            {
-                case BayonentMode.Spin:
-                    damage = spinDamage;
-                    knockback = spinKnockback;
-                    break;
-                case BayonentMode.Stab:
-                    damage = stabDamage;
-                    knockback = stabKnockback;
-                    break;
-            }
+        if (!entity.CompareTag("Player")
+            || !entity.TryGetComponent(out PlayerControllerB player)
+            || PlayerUtil.IsPlayerDead(player))
+            return false;
 
-            Vector3 forceDirection = (player.transform.position - transform.position).normalized;
-            DamagePlayerClientRpc(playerClientId, damage, forceDirection * knockback, CauseOfDeath.Stabbing);
-            _playerCooldownTracker.Start(playerClientId, hitCooldown);
-            
-            return true;
+        ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
+        if (_playerCooldownTracker.IsOnCooldown(playerClientId))
+            return false;
+
+        int damage = 0;
+        float knockback = 0f;
+
+        switch (currentBayonetMode)
+        {
+            case BayonentMode.Spin:
+                damage = spinDamage;
+                knockback = spinKnockback;
+                break;
+            case BayonentMode.Stab:
+                damage = stabDamage;
+                knockback = stabKnockback;
+                break;
         }
 
-        return false;
+        Vector3 forceDirection = (player.transform.position - transform.position).normalized;
+        DamagePlayerClientRpc(playerClientId, damage, forceDirection * knockback, CauseOfDeath.Stabbing);
+        _playerCooldownTracker.Start(playerClientId, hitCooldown);
+
+        return true;
+
     }
 
     public void BeginAttack(BayonentMode mode)
@@ -137,7 +142,7 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
         currentBayonetMode = BayonentMode.None;
         enabled = false; // Disables FixedUpdate
     }
-    
+
     #region RPCs
     [ClientRpc]
     private void DamagePlayerClientRpc(ulong playerId, int damage, Vector3 force = default, CauseOfDeath causeOfDeath = CauseOfDeath.Unknown)
@@ -146,7 +151,7 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
         if (!player) return;
         if (player == GameNetworkManager.Instance.localPlayerController)
             player.DamagePlayer(damage, true, true, causeOfDeath, 0, true, force);
-        
+
         float oldPitch = audioSource.pitch;
         if (audioSource.isPlaying) audioSource.Stop();
         audioSource.pitch = Random.Range(oldPitch - 0.1f, oldPitch + 0.1f);

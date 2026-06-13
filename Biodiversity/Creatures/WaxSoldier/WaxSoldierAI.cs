@@ -1,5 +1,4 @@
 ﻿using Biodiversity.Behaviours.Heat;
-using Biodiversity.Core.Integration;
 using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
@@ -105,7 +104,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     #endregion
 
     #region Wax Soldier Specific AI Logic
-
     private void TryRegisterImperiumInsights()
     {
         // if (ImperiumIntegration.IsLoaded && !_hasRegisteredImperiumInsights)
@@ -424,6 +422,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     }
     #endregion
 
+    #region Audio
     /// <summary>
     /// Requests the server to play a specific category of audio clip on a designated <see cref="UnityEngine.AudioSource"/>.
     /// It will randomly select an audio clip from the array of clips assigned to that particular audio.
@@ -561,4 +560,5 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
         if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
     }
+    #endregion
 }

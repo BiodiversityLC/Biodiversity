@@ -1,6 +1,5 @@
 ﻿using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.WaxSoldier.Misc;
-using Biodiversity.Util.DataStructures;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier;

@@ -20,55 +20,55 @@ public class WaxSoldierClient : MonoBehaviour
     public static readonly int ForceWalk = Animator.StringToHash("ForceWalk");
     public static readonly int Melt = Animator.StringToHash("Melt");
     public static readonly int Dead = Animator.StringToHash("Dead");
-    
+
     public static readonly int VelocityX = Animator.StringToHash("VelocityX");
     public static readonly int VelocityZ = Animator.StringToHash("VelocityZ");
     #endregion
-    
+
     #region Unity Inspector Variables
 #pragma warning disable 0649
 #pragma warning disable CS0169
     [SerializeField] private NavMeshAgent agent;
-    
+
     [SerializeField] private GameObject unmoltenGameObject;
     [SerializeField] private GameObject moltenGameObject;
-    
-    [Header("Animation")] [Space(5f)] 
+
+    [Header("Animation")] [Space(5f)]
     [SerializeField] private Animator unmoltenAnimator;
     [SerializeField] private Animator moltenAnimator;
     [SerializeField] private Transform musketContainer;
-    
+
     [Header("Audio")] [Space(5f)]
     [SerializeField] private AudioSource creatureVoice;
     [SerializeField] private AudioSource footstepsSource;
-    
+
     [Space(2f)]
-    
+
     [SerializeField] private AudioClip[] activateSfx;
     [SerializeField] private AudioClip[] aimSfx;
     [SerializeField] private AudioClip[] reloadSfx;
     [SerializeField] private AudioClip[] spinSfx;
     [SerializeField] private AudioClip[] lightFootstepSfx;
     [SerializeField] private AudioClip[] heavyFootstepSfx;
-    
-    [Header("Controllers")] [Space(5f)] 
+
+    [Header("Controllers")] [Space(5f)]
     [SerializeField] private WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
 #pragma warning restore CS0169
     #endregion
 
     private Animator _currentAnimator;
-    
+
     private CachedUnityObject<PlayerControllerB> _targetPlayer;
     private CachedValue<EnemyAI> _enemyAIReference;
     private Musket _musket;
-    
+
     private Vector3 _smoothedVelocity;
 
     private float _previousAnimatorSpeedBeforeFreeze = 1f;
 
     private bool _networkEventsSubscribed;
-    
+
     private void Awake()
     {
         if (!netcodeController) netcodeController = GetComponent<WaxSoldierNetcodeController>();
@@ -87,6 +87,7 @@ public class WaxSoldierClient : MonoBehaviour
 
     private void Start()
     {
+        moltenGameObject.SetActive(false);
         unmoltenAnimator.SetBool(Spawning, true);
         _currentAnimator = unmoltenAnimator;
     }
@@ -132,7 +133,7 @@ public class WaxSoldierClient : MonoBehaviour
             BiodiversityPlugin.Logger.LogError("[WaxSoldierClient] The musket component on the musket network object is null.");
             return;
         }
-        
+
         _musket = receivedMusket;
         _musket.SetScrapValue(scrapValue);
         _musket.parentObject = musketContainer;
@@ -143,7 +144,7 @@ public class WaxSoldierClient : MonoBehaviour
     {
         if (!_musket) return;
         BiodiversityPlugin.LogVerbose("[WaxSoldierClient] Dropping musket...");
-        
+
         _musket.OnDroppedByWaxSoldier();
         _musket.parentObject = null;
         _musket.transform.SetParent(StartOfRound.Instance.propsContainer, true);
@@ -156,7 +157,7 @@ public class WaxSoldierClient : MonoBehaviour
         _musket.targetFloorPosition = parent.InverseTransformPoint(transform.position);
         _musket = null;
     }
-    
+
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
         // todo: make similar logging setup like in BiodiverseAI for the client classes
@@ -165,7 +166,7 @@ public class WaxSoldierClient : MonoBehaviour
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
             : "Changed target player to null.");
     }
-    
+
     /// <summary>
     /// Sets a trigger in the <see cref="_currentAnimator"/>.
     /// </summary>
@@ -183,7 +184,7 @@ public class WaxSoldierClient : MonoBehaviour
             {
                 _previousAnimatorSpeedBeforeFreeze = _currentAnimator.speed;
             }
-            
+
             _currentAnimator.speed = 0;
         }
         else
@@ -202,8 +203,8 @@ public class WaxSoldierClient : MonoBehaviour
     private void HandleSlamIntoGround()
     {
         float localPlayerDistanceToBody = Vector3.Distance(transform.position, HUDManager.Instance.localPlayer.transform.position);
-        
-        if (localPlayerDistanceToBody <= 10f) 
+
+        if (localPlayerDistanceToBody <= 10f)
         {
             HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
         }
@@ -216,7 +217,7 @@ public class WaxSoldierClient : MonoBehaviour
     private void SubscribeToNetworkEvents()
     {
         if (_networkEventsSubscribed) return;
-        
+
         netcodeController.OnSpawnMusket += HandleSpawnMusket;
         netcodeController.OnDropMusket += HandleDropMusket;
         netcodeController.OnSetAnimationTrigger += HandleSetAnimationTrigger;
@@ -224,14 +225,14 @@ public class WaxSoldierClient : MonoBehaviour
         netcodeController.OnSlamIntoGround += HandleSlamIntoGround;
 
         //netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
-        
+
         _networkEventsSubscribed = true;
     }
 
     private void UnsubscribeFromNetworkEvents()
     {
         if (!_networkEventsSubscribed) return;
-        
+
         netcodeController.OnSpawnMusket -= HandleSpawnMusket;
         netcodeController.OnDropMusket -= HandleDropMusket;
         netcodeController.OnSetAnimationTrigger -= HandleSetAnimationTrigger;
@@ -239,7 +240,7 @@ public class WaxSoldierClient : MonoBehaviour
         netcodeController.OnSlamIntoGround -= HandleSlamIntoGround;
 
         //netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
-        
+
         _networkEventsSubscribed = false;
     }
     #endregion

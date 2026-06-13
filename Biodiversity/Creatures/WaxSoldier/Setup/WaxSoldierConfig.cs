@@ -84,13 +84,21 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     // public bool LandminesBlowUpWaxSoldier { get; private set; } = f;
     #endregion
 
-    // #region Combat Settings
-    // [field: Header("Combat Settings")]
-    //
-    // [field: Tooltip("")]
-    // [field: Range(1f, 30f)]
-    // public float StabAreaLength { get; private set; } = 14f;
-    // #endregion
+    #region Combat Settings
+    [field: Header("Combat Settings")]
+
+    [field: Tooltip("")]
+    [field: Range(1f, 30f)]
+    public float StabAreaLength { get; private set; } = 14f;
+
+    [field: Tooltip("")]
+    [field: Range(0, 5000)]
+    public int StabDamage { get; private set; } = 25;
+
+    [field: Tooltip("")]
+    [field: Range(0, 5000)]
+    public int SpinDamage { get; private set; } = 30;
+    #endregion
 
     #region Musket Settings
     [field: Header("Musket Settings")]
