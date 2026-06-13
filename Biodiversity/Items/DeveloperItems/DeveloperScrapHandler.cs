@@ -1,8 +1,8 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Core.Config;
-using JetBrains.Annotations;
 using Biodiversity.Items.DeveloperItems;
 using Biodiversity.Util;
+using JetBrains.Annotations;
 using System.Reflection;
 
 namespace Biodiversity.Items.Developeritems;
@@ -37,9 +37,9 @@ internal class DeveloperScrapHandler : BiodiverseItemHandler<DeveloperScrapHandl
                     if (!item) continue;
 
                     item.isScrap = true;
-                    item.weight = scrapItem.Weight;
-                    item.minValue = scrapItem.MinimumValue;
-                    item.maxValue = scrapItem.MaximumValue;
+                    item.weight = (scrapItem.Weight / 105f) + 1f;
+                    item.minValue = (int)(scrapItem.MinimumValue / 0.4f);
+                    item.maxValue = (int)(scrapItem.MaximumValue / 0.4f);
 
                     LethalLibUtils.RegisterScrapWithConfig(scrapItem.Rarity, item);
                 }

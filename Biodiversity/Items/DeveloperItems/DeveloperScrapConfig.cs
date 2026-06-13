@@ -10,19 +10,19 @@ public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<Devel
 {
     [field: Header("Developer Items Settings")]
 
-    public GenericScrapItem RubberDuck { get; private set; } =
+    public GenericScrapItem NethersomeDuck { get; private set; } =
         new(
-            "NethersomeDuckItemData", "Nethersomes duck",
+            "NethersomeDuckItemData", "Nethersome duck",
             rarity: "All:2",
-            weight: 1f,
-            minimumValue: 5,
+            weight: 0f,
+            minimumValue: 1,
             maximumValue: 100);
 
     /*
     public GenericScrapItem Megaphone { get; private set; } =
         new(
-            "MontyMegaphoneItemData", "Montys megaphone",
-            weight: 1.08f,
+            "MontyMegaphoneItemData", "Megaphone",
+            weight: 8f,
             rarity: "Experimentation:2,Embrion:22",
             minimumValue: 28,
             maximumValue: 68);
@@ -30,32 +30,34 @@ public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<Devel
 
     public GenericScrapItem IronDog { get; private set; } =
         new GenericScrapItem(
-                "AutumnisIronDogItemData", "Autumnis Iron Dog",
-                rarity: "Sierra:17,Offense:7,Assurance:10",
-                weight: 1.35f,
-                minimumValue: 35,
-                maximumValue: 57)
-            .WithCustomSetting("Big Shake Distance", 3f,
-                "The maximum distance from the Iron Dog at which you will experience a large screen shake when the Iron Dog is dropped on the floor. Set it to -1 to disable it.",
-                new AcceptableValueRange<float>(-1f, 1000f))
-            .WithCustomSetting("Small Shake Distance", 6f,
-                "The maximum distance from the Iron Dog at which you will experience a small screen shake when the Iron Dog is dropped on the floor. Set it to -1 to disable it.",
-                new AcceptableValueRange<float>(-1f, 1000f));
+            "AutumnisIronDogItemData", "Iron dog",
+            rarity: "Sierra:17,Offense:7,Assurance:10",
+            weight: 75f,
+            minimumValue: 35,
+            maximumValue: 57)
+        .WithCustomSetting("Big Shake Distance", 3f,
+            "The maximum distance from the Iron Dog at which you will experience a large screen shake when the Iron Dog is dropped on the floor. Set it to -1 to disable it.",
+            new AcceptableValueRange<float>(-1f, 1000f))
+        .WithCustomSetting("Small Shake Distance", 6f,
+            "The maximum distance from the Iron Dog at which you will experience a small screen shake when the Iron Dog is dropped on the floor. Set it to -1 to disable it.",
+            new AcceptableValueRange<float>(-1f, 1000f));
 
-    // Temp names, weights, values and rarities for these two below
-    public GenericScrapItem CDog { get; private set; } =
+    public GenericScrapItem AudunPlush { get; private set; } =
         new(
-            "CDogItemData", "Ccodes dog",
-            rarity: "All:20",
-            weight: 1.05f,
-            minimumValue: 50,
-            maximumValue: 100);
+            "CcodeDogItemData", "Audun plush",
+            rarity: "March:14,Rend:4,Gorgonzola:14",
+            weight: 4f,
+            minimumValue: 20,
+            maximumValue: 53);
 
-    public GenericScrapItem JacuPlushie { get; private set; } =
-        new(
-            "JacuPlushieItemData", "Dog",
-            rarity: "All:20",
-            weight: 1.1f,
-            minimumValue: 50,
-            maximumValue: 100);
+    public GenericScrapItem StrangeDog { get; private set; } =
+        new GenericScrapItem(
+            "JacuPlushieItemData", "Strange dog",
+            rarity: "Embrion:5,Trite:2",
+            weight: 8f,
+            minimumValue: 24,
+            maximumValue: 43)
+        .WithCustomSetting("Fly effect chance", 5,
+            "The chance in % at which the Strange dog will do a strange fly effect instead of a simple noise when used.",
+            new AcceptableValueRange<int>(0, 100));
 }
