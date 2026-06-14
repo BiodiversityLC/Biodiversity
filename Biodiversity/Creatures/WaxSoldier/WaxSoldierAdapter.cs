@@ -58,7 +58,7 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
     /// Applies the given damage parameter to the health variable.
     /// </summary>
     /// <param name="damage">The damage to apply.</param>
-    /// <returns>True if the applied damage results in death.</returns>
+    /// <returns><c>True</c> if the applied damage results in death.</returns>
     public bool ApplyDamage(int damage)
     {
         Health -= damage;
@@ -125,7 +125,7 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
     /// <summary>
     /// <see href="https://discussions.unity.com/t/how-can-i-tell-when-a-navmeshagent-has-reached-its-destination/52403/5"/>
     /// </summary>
-    /// <returns>Returns true if the <see cref="Agent"/> has reached its destination.</returns>
+    /// <returns>Returns <c>true</c> if the <see cref="Agent"/> has reached its destination; otherwise, <c>false</c>.</returns>
     public bool HasReachedDestination()
     {
         // If there is no destination, then just return true
@@ -162,7 +162,7 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
         NetworkPositionUpdateDistanceTheshold = profile.UpdateDistanceThreshold;
     }
 
-    [Tooltip("High-accuracy, high-bandwidth settings for when waxy is actively fighting a player.")]
+    [Tooltip("High-accuracy, high-bandwidth settings for when waxy is actively fighting or hunting a player.")]
     public NetworkPositionalSyncFidelity CombatFidelityProfile = new()
     {
         InterpolationAggressiveness = 0.08f, // Fast and responsive for dodging/aiming.

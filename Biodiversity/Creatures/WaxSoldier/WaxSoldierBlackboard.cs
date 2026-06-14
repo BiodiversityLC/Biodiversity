@@ -35,4 +35,6 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public Musket HeldMusket { get; set; }
     public AttackSelector AttackSelector {get; set;}
     public AttackAction currentAttackAction { get; set; }
+
+    public AISearchRoutine moltenRoamSearchRoutine { get; set; }
 }

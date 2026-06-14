@@ -6,8 +6,11 @@ namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
 
 public class ShootAttack : AttackAction
 {
-    public ShootAttack(int animationTriggerHash, float minRange = 0, float maxRange = 3, float cooldown = 2, bool requiresLineOfSight = true, int priority = 0) : base(animationTriggerHash, minRange, maxRange, cooldown, requiresLineOfSight, priority)
+    public ShootAttack(int animationTriggerHash, float minRange = 0, float maxRange = 3, float cooldown = 2, int priority = 0) : base(animationTriggerHash, minRange, maxRange, cooldown, priority)
     {
+        AddRequirement(ctx => IsUnMolten(ctx));
+        AddRequirement(ctx => ctx.Blackboard.HeldMusket.currentAmmo.Value <= 0);
+        AddRequirement(ctx => HasLineOfSightToTarget(ctx));
     }
 
     private Transform aimTransform;
@@ -38,7 +41,7 @@ public class ShootAttack : AttackAction
 
     public override IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolAcceleration);
+        // ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolAcceleration);
 
         ctx.Adapter.Agent.isStopped = false;
         ctx.Adapter.Agent.updateRotation = true;

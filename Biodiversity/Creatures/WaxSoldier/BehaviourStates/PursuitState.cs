@@ -41,7 +41,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         if (EnemyAIInstance.UpdatePlayerLastKnownPosition())
         {
             AttackAction selectedAttack =
-                EnemyAIInstance.Context.Blackboard.AttackSelector.SelectAttack(EnemyAIInstance, EnemyAIInstance.Context.Adapter.TargetPlayer);
+                EnemyAIInstance.Context.Blackboard.AttackSelector.SelectAttack(EnemyAIInstance);
 
             if (selectedAttack != null)
             {

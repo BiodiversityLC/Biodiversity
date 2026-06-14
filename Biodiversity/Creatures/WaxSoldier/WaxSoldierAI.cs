@@ -32,6 +32,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Attacking,
         Hunting,
         TransformingToMolten,
+        MoltenRoam,
         Stunned,
         Dead,
     }
@@ -126,8 +127,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     public void UpdateWaxDurability()
     {
-        float newDurability = _blackboard.WaxDurability;
+        if (_blackboard.MoltenState == MoltenState.Molten) return;
 
+        float newDurability = _blackboard.WaxDurability;
         if (heatSensor.TemperatureC > _blackboard.WaxSofteningTemperature)
         {
             float t = Mathf.InverseLerp(_blackboard.WaxSofteningTemperature, _blackboard.WaxMeltTemperature, heatSensor.TemperatureC);
@@ -144,9 +146,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
         _blackboard.WaxDurability = Mathf.Clamp01(Mathf.Min(_blackboard.WaxDurability, newDurability));
 
-        if (_blackboard.WaxDurability <= 0 &&
-            _blackboard.MoltenState != MoltenState.Molten &&
-            CurrentState.GetStateType() != States.Stunned)
+        if (_blackboard.WaxDurability <= 0
+            && CurrentState.GetStateType() != States.Stunned)
         {
             SwitchBehaviourState(States.TransformingToMolten);
         }
@@ -193,9 +194,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     }
 
     /// <summary>
-    /// Checks if a player is in line of sight, and updates the last known position and velocity.
+    /// Checks if a <see cref="PlayerControllerB"/> is in line of sight, and updates its last known position and velocity.
     /// </summary>
-    /// <returns>Whether a player is in line of sight in THIS frame.</returns>
+    /// <returns>Whether a player is in line of sight in the current frame.</returns>
     internal bool UpdatePlayerLastKnownPosition()
     {
         PlayerControllerB player = GetClosestVisiblePlayer(
@@ -284,14 +285,22 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         {
             nextState = States.Hunting;
         }
-        else if (_blackboard.HeldMusket.currentAmmo.Value <= 0)
+        else if (_blackboard.MoltenState == MoltenState.Unmolten)
         {
-            nextState = States.Reloading;
+            if (_blackboard.HeldMusket.currentAmmo.Value <= 0)
+            {
+                nextState = States.Reloading;
+            }
+            else
+            {
+                nextState = States.MovingToStation;
+            }
         }
         else
         {
-            nextState = States.MovingToStation;
+            nextState = States.MoltenRoam;
         }
+
 
         return nextState;
     }

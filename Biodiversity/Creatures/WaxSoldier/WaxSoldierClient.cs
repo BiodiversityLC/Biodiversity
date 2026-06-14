@@ -21,9 +21,12 @@ public class WaxSoldierClient : MonoBehaviour
     public static readonly int Melt = Animator.StringToHash("Melt");
     public static readonly int Dead = Animator.StringToHash("Dead");
     private static readonly int FinishedMelting = Animator.StringToHash("FinishedMelting");
+    public static readonly int LungeAttack = Animator.StringToHash("LungeAttack");
+    public static readonly int SwingAttack = Animator.StringToHash("SwingAttack");
+    public static readonly int FlailAttack = Animator.StringToHash("FlailAttack");
 
-    public static readonly int VelocityX = Animator.StringToHash("VelocityX");
-    public static readonly int VelocityZ = Animator.StringToHash("VelocityZ");
+    private static readonly int VelocityX = Animator.StringToHash("VelocityX");
+    private static readonly int VelocityZ = Animator.StringToHash("VelocityZ");
     #endregion
 
     #region Unity Inspector Variables

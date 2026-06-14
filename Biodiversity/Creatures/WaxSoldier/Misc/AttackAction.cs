@@ -1,5 +1,9 @@
 ﻿using Biodiversity.Creatures.Core;
+using Biodiversity.Util;
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.Misc;
 
@@ -35,20 +39,22 @@ public class AttackAction
     /// </summary>
     public int Priority { get; private set; }
 
+    private readonly List<Func<AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>, bool>> _requirements = [];
+
     public AttackAction(
         int animationTriggerHash,
-        float minRange = 0f, 
+        float minRange = 0f,
         float maxRange = 3f,
         float cooldown = 2f,
-        bool requiresLineOfSight = true,
         int priority = 0)
     {
         AnimationTriggerHash = animationTriggerHash;
         MinRange = minRange;
         MaxRange = maxRange;
         Cooldown = cooldown;
-        RequiresLineOfSight = requiresLineOfSight;
         Priority = priority;
+
+        AddRequirement(ctx => IsDistanceToTargetInRequiredRange(ctx));
     }
 
     public virtual void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
@@ -59,7 +65,7 @@ public class AttackAction
 
     public virtual void Update(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        
+
     }
 
     public virtual IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
@@ -67,4 +73,49 @@ public class AttackAction
         yield break;
         // BiodiversityPlugin.LogVerbose("In AttackAction.Finish().");
     }
+
+    public void AddRequirement(Func<AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>, bool> requirement)
+    {
+        _requirements.Add(requirement);
+    }
+
+    public bool AreRequirementsMet(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        for (int i = 0; i < _requirements.Count; i++)
+        {
+            Func<AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>, bool> requirement = _requirements[i];
+            if (!requirement(ctx)) return false;
+        }
+
+        return true;
+    }
+
+    #region Frequently Used Attack Requirements
+    private bool IsDistanceToTargetInRequiredRange(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        float distanceToTarget = Vector3.Distance(ctx.Adapter.TargetPlayer.transform.position, ctx.Adapter.TargetPlayer.transform.position);
+        return distanceToTarget > MinRange && distanceToTarget < MaxRange;
+    }
+
+    protected bool HasLineOfSightToTarget(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        // todo: implement isFoggy properly (just get the canSeeThroughFog flag onto the adapter)
+        // bool isFoggy = isOutside && !enemyType.canSeeThroughFog && TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Foggy;
+        bool isFoggy = false;
+
+        return LineOfSightUtil.HasLineOfSight(ctx.Adapter.TargetPlayer.gameplayCamera.transform.position,
+            ctx.Adapter.EyeTransform, ctx.Blackboard.ViewWidth, ctx.Blackboard.ViewRange, 0.2f, isFoggy);
+    }
+
+    protected bool IsUnMolten(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        return ctx.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten;
+    }
+
+    protected bool IsMolten(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        return ctx.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Molten;
+    }
+    #endregion
+
 }

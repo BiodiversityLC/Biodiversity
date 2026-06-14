@@ -69,7 +69,7 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
                 EnemyAIInstance.Context.Adapter.Animator =
                     EnemyAIInstance.GetComponent<WaxSoldierClient>().moltenAnimator;
 
-                // EnemyAIInstance.UpdateBehaviourStateFromPerception();
+                EnemyAIInstance.UpdateBehaviourStateFromPerception();
                 break;
             }
         }

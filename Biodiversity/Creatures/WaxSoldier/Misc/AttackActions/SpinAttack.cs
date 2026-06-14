@@ -6,8 +6,9 @@ namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
 
 public class SpinAttack : AttackAction
 {
-    public SpinAttack(int animationTriggerHash, float minRange = 0, float maxRange = 3, float cooldown = 2, bool requiresLineOfSight = true, int priority = 0) : base(animationTriggerHash, minRange, maxRange, cooldown, requiresLineOfSight, priority)
+    public SpinAttack(int animationTriggerHash, float minRange = 0, float maxRange = 3, float cooldown = 2, int priority = 0) : base(animationTriggerHash, minRange, maxRange, cooldown, priority)
     {
+        AddRequirement(ctx => IsUnMolten(ctx));
     }
 
     public override void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
@@ -19,7 +20,7 @@ public class SpinAttack : AttackAction
         initialDirection.y = 0;
         ctx.Adapter.Transform.rotation = Quaternion.LookRotation(initialDirection);
 
-        // todo: make the whole attack action thing not poopoo. We calling base here because it triggeres the animation and we wanna set the speed and rotation before doing the anim
+        // We calling base here because it triggeres the animation and we wanna set the speed and rotation before doing the anim
         base.Start(ctx);
 
         ctx.Adapter.MoveToPlayer(ctx.Adapter.TargetPlayer);
