@@ -2,8 +2,10 @@
 using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
+using Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
 using Biodiversity.Util;
 using GameNetcodeStuff;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -16,7 +18,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     [SerializeField] private Transform ImperiumInsightsPanelAnchor;
 
     [Header("Controllers")] [Space(5f)]
-    [SerializeField] private AttackSelector attackSelector;
     [SerializeField] public HeatSensor heatSensor;
     [SerializeField] public WaxSoldierNetcodeController netcodeController;
 #pragma warning restore 0649
@@ -71,6 +72,27 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         PlayerTargetableConditions.AddCondition(player => !PlayerUtil.IsPlayerDead(player));
 
         Context = new AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>(blackboard, adapter);
+
+        SpinAttack spinAttack = new(
+            WaxSoldierClient.SpinAttack, 0f, 2f, 2f, 5);
+
+        StabAttack stabAttack = new(
+            WaxSoldierClient.StabAttack, 0f, 5f, 1.5f, 2);
+
+        ShootAttack shootAttack = new(
+            WaxSoldierClient.AimMusket, 2f, 200f, 4f, 1);
+
+        LungeAttack lungeAttack = new(
+            WaxSoldierClient.LungeAttack, 2f, 6f, 3f, 0);
+
+        SwingAttack swingAttack = new(
+            WaxSoldierClient.SwingAttack, 2f, 2f, 1.5f, 0);
+
+        FlailAttack flailAttack = new(
+            WaxSoldierClient.FlailAttack, 0f, 2f, 1.5f, 0);
+
+        _blackboard.AvailableAttacks.AddRange([spinAttack, stabAttack, shootAttack, lungeAttack, swingAttack, flailAttack]);
+        _blackboard.AvailableAttacks = _blackboard.AvailableAttacks.OrderByDescending(a => a.Priority).ToList();
     }
 
     private void OnEnable()
@@ -146,11 +168,35 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
         _blackboard.WaxDurability = Mathf.Clamp01(Mathf.Min(_blackboard.WaxDurability, newDurability));
 
-        if (_blackboard.WaxDurability <= 0
-            && CurrentState.GetStateType() != States.Stunned)
+        if (_blackboard.WaxDurability <= 0)
         {
             SwitchBehaviourState(States.TransformingToMolten);
         }
+    }
+
+    public AttackAction SelectAttack()
+    {
+        for (int i = 0; i < _blackboard.AvailableAttacks.Count; i++)
+        {
+            AttackAction attack = _blackboard.AvailableAttacks[i];
+            // BiodiversityPlugin.LogVerbose($"Checking attack[{i}] = priority={attack.Priority} (MinRange={attack.MinRange}, MaxRange={attack.MaxRange}.");
+
+            if (_blackboard.AttackCooldownEndTimes.TryGetValue(attack, out float endTime) && Time.time < endTime)
+            {
+                // BiodiversityPlugin.LogVerbose($"Attack is on cooldown ({cooldowns[attack]} seconds left). Skipping.");
+                continue;
+            }
+
+            if (attack.AreRequirementsMet(Context)) return attack;
+        }
+
+        return null;
+    }
+
+    public void StartAttackCooldown(AttackAction attack)
+    {
+        if (attack == null) return;
+        _blackboard.AttackCooldownEndTimes[attack] = Time.time + attack.Cooldown;
     }
 
     public void DetermineGuardPostPosition()
@@ -190,7 +236,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     {
         LogVerbose("Dropping musket...");
         _blackboard.HeldMusket = null;
-        netcodeController.DropMusketClientRpc();
+        _blackboard.NetcodeController.DropMusketClientRpc();
     }
 
     /// <summary>
@@ -393,7 +439,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
         WaxSoldierConfig cfg = WaxSoldierHandler.Instance.Config;
 
-        _blackboard.AttackSelector = attackSelector;
         _blackboard.NetcodeController = netcodeController;
 
         _blackboard.ViewWidth = cfg.ViewWidth;

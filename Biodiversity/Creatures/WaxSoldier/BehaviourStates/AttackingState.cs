@@ -1,7 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
-using Biodiversity.Creatures.WaxSoldier.Misc;
 using Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
 using GameNetcodeStuff;
 using UnityEngine;
@@ -22,18 +21,10 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.Context.Blackboard.currentAttackAction = initData.Get<AttackAction>("attackAction");
-        if (EnemyAIInstance.Context.Blackboard.currentAttackAction == null)
-        {
-            EnemyAIInstance.LogError($"Transitioned to attack state but no 'attackAction' was given in initData.");
-            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
-            return;
-        }
-
         EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.CombatFidelityProfile);
         EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PursuitMaxSpeed, WaxSoldierHandler.Instance.Config.PursuitAcceleration);
 
-        EnemyAIInstance.Context.Blackboard.currentAttackAction.Start(EnemyAIInstance.Context);
+        EnemyAIInstance.Context.Blackboard.CurrentAttackAction.Start(EnemyAIInstance.Context);
     }
 
     internal override void UpdateBehaviour()
@@ -43,7 +34,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         EnemyAIInstance.UpdateWaxDurability();
         EnemyAIInstance.Context.Adapter.MoveAgent();
 
-        EnemyAIInstance.Context.Blackboard.currentAttackAction.Update(EnemyAIInstance.Context);
+        EnemyAIInstance.Context.Blackboard.CurrentAttackAction.Update(EnemyAIInstance.Context);
     }
 
     internal override void AIIntervalBehaviour()
@@ -57,10 +48,9 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     {
         base.OnStateExit(transition);
 
-        EnemyAIInstance.StartCoroutine(
-            EnemyAIInstance.Context.Blackboard.currentAttackAction.Finish(EnemyAIInstance.Context));
+        EnemyAIInstance.StartCoroutine(EnemyAIInstance.Context.Blackboard.CurrentAttackAction.Finish(EnemyAIInstance.Context));
         EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetAttackPhysics.EndAttack();
-        EnemyAIInstance.Context.Blackboard.AttackSelector.StartCooldown(EnemyAIInstance.Context.Blackboard.currentAttackAction);
+        EnemyAIInstance.StartAttackCooldown(EnemyAIInstance.Context.Blackboard.CurrentAttackAction);
     }
 
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
@@ -89,7 +79,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             // For the shoot attack
             case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventStartTargetLook):
             {
-                if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)
+                if (EnemyAIInstance.Context.Blackboard.CurrentAttackAction is ShootAttack shootAttackAction)
                 {
                     shootAttackAction.StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
                 }
@@ -100,7 +90,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
             // For the shoot attack
             case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventMusketShoot):
             {
-                if (EnemyAIInstance.Context.Blackboard.currentAttackAction is ShootAttack shootAttackAction)
+                if (EnemyAIInstance.Context.Blackboard.CurrentAttackAction is ShootAttack shootAttackAction)
                 {
                     shootAttackAction.StopLookAtTarget();
                     EnemyAIInstance.Context.Blackboard.HeldMusket.SetupShotAndFire();

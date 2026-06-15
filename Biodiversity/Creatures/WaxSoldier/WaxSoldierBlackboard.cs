@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.WaxSoldier.Misc;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier;
@@ -31,10 +32,15 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
 
     public WaxSoldierAI.MoltenState MoltenState { get; set; }
 
+    #region AttackAction Stuff
+    public List<AttackAction> AvailableAttacks { get; set; } = [];
+    public Dictionary<AttackAction, float> AttackCooldownEndTimes { get; } = new();
+    public AttackAction CurrentAttackAction { get; set; }
+    #endregion
+
+
     public WaxSoldierNetcodeController NetcodeController { get; set; }
     public Musket HeldMusket { get; set; }
-    public AttackSelector AttackSelector {get; set;}
-    public AttackAction currentAttackAction { get; set; }
 
     public AISearchRoutine moltenRoamSearchRoutine { get; set; }
 }

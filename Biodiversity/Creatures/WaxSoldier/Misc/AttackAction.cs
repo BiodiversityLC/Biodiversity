@@ -30,11 +30,6 @@ public class AttackAction
     public float Cooldown { get; private set; }
 
     /// <summary>
-    /// Whether this attack requires a direct line of sight.
-    /// </summary>
-    public bool RequiresLineOfSight { get; private set; }
-
-    /// <summary>
     /// Priority of this attack. Higher values are chosen first.
     /// </summary>
     public int Priority { get; private set; }
@@ -93,7 +88,8 @@ public class AttackAction
     #region Frequently Used Attack Requirements
     private bool IsDistanceToTargetInRequiredRange(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        float distanceToTarget = Vector3.Distance(ctx.Adapter.TargetPlayer.transform.position, ctx.Adapter.TargetPlayer.transform.position);
+        float distanceToTarget = Vector3.Distance(ctx.Adapter.Transform.position, ctx.Adapter.TargetPlayer.transform.position);
+        // BiodiversityPlugin.LogVerbose($"In {nameof(IsDistanceToTargetInRequiredRange)}, distanceToTarget =  {distanceToTarget}");
         return distanceToTarget > MinRange && distanceToTarget < MaxRange;
     }
 

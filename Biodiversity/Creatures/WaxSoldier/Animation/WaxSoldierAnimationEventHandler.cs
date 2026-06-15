@@ -60,7 +60,7 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
         {
             ai.LogVerbose($"Toggling bayonet on.");
 
-            int hash = ai.Context.Blackboard.currentAttackAction.AnimationTriggerHash;
+            int hash = ai.Context.Blackboard.CurrentAttackAction.AnimationTriggerHash;
             if (hash == WaxSoldierClient.SpinAttack)
             {
                 bayonetAttackPhysics.BeginAttack(WaxSoldierBayonetAttackPhysics.BayonentMode.Spin);
