@@ -1,14 +1,29 @@
 ﻿using Biodiversity.Util;
 using HarmonyLib;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Biodiversity.Items.JunkRadar.Patches
 {
     [HarmonyPatch]
     internal class CustomItemSpawnPatch
     {
+        /// <summary>
+        /// NavMesh areas to avoid while position sampling when spawning the radar item or buried items.
+        /// Excluded areas: NotWalkable, PlayerShip, Climb and Water
+        /// </summary>
+        public static readonly int navMeshMask = NavMesh.AllAreas & ~((1 << 1) | (1 << 4) | (1 << 7) | (1 << 12));
+
+        /// <summary>
+        /// A subset of vanilla outsideAIDryNodes with excluded positions for the radar item and buried items to spawn from,
+        /// will be calculated at runtime
+        /// </summary>
+        public static GameObject[] radarNodes;
+
+
         /// <summary>
         /// Try to spawn the Junk Radar item every time SpawnScrapInLevel is called (when a moon is loading)
         /// </summary>
@@ -62,8 +77,9 @@ namespace Biodiversity.Items.JunkRadar.Patches
         {
             if (Random.Range(0, 100) < JunkRadarHandler.Instance.Config.SpawnChance)
             {
+                radarNodes = null;
                 RoundManager.Instance.GetOutsideAINodes();
-                Vector3 spawnPosition = PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 10);
+                Vector3 spawnPosition = PositionUtils.GetRandomMoonPosition(radarNodes, randomRadius: 10, navMeshMask);
                 GameObject junkRadar = Object.Instantiate(JunkRadarHandler.Instance.Assets.JunkRadarItem.spawnPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
                 JunkRadarItem radarComponent = junkRadar.GetComponent<JunkRadarItem>();
                 radarComponent.fallTime = 1f;
@@ -84,6 +100,40 @@ namespace Biodiversity.Items.JunkRadar.Patches
             {
                 JunkRadarItem.Instance.InitializeBuriedScraps();
             }
+        }
+
+
+        /// <summary>
+        /// Calculate radarNodes based of outsideAIDryNodes whenever GetOutsideAINodes() is run.
+        /// radarNodes is an array of outsideAIDryNodes with some excluded tags
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(RoundManager), "GetOutsideAINodes")]
+        public static void CalculateRadarNodes(RoundManager __instance)
+        {
+            if (__instance.outsideAIDryNodes == null || __instance.outsideAIDryNodes.Length == 0 || (radarNodes != null && radarNodes.Length != 0))
+            {
+                return;
+            }
+
+            List<GameObject> radarNodesList = [];
+            int groundMask = (1 << LayerMask.NameToLayer("Room")) | (1 << LayerMask.NameToLayer("Colliders"));
+
+            foreach (GameObject node in __instance.outsideAIDryNodes)
+            {
+                Vector3 originPos = node.transform.position + Vector3.up * 10f;
+
+                if (Physics.Raycast(originPos, Vector3.down, out RaycastHit hit, 50f, groundMask))
+                {
+                    string tag = hit.collider.tag;
+                    // only includes nodes that are not listed here
+                    if (tag != "Wood" && tag != "Catwalk" && tag != "Concrete")
+                    {
+                        radarNodesList.Add(node);
+                    }
+                }
+            }
+            radarNodes = radarNodesList.ToArray();
         }
 
 

@@ -6,38 +6,57 @@ namespace Biodiversity.Util
 {
     public static class PositionUtils
     {
-        public static Vector3 GetSeededMoonPosition(System.Random rand, bool insidePosition = false, float radius = 20f)
+        /// <summary>
+        /// Gets a random position selected from the given nodes, seeded on rand
+        /// </summary>
+        /// <param name="rand">Created Random seed</param>
+        /// <param name="nodes">The given nodes to calculate the position from</param>
+        /// <param name="randomRadius">If greater than 0, will also sample the final calculated position on a NavMesh circle of the given radius</param>
+        /// <param name="areaMask">Exclude specified NavMesh areas if not -1</param>
+        /// <returns>Random position based on parameters</returns>
+        public static Vector3 GetSeededMoonPosition(System.Random rand, GameObject[] nodes, float randomRadius = 20, int areaMask = -1)
         {
-            GameObject[] nodes = insidePosition ? RoundManager.Instance.insideAINodes : RoundManager.Instance.outsideAINodes;
             Vector3 pos = nodes[rand.Next(0, nodes.Length)].transform.position;
             float y = pos.y;
             Quaternion quat = Quaternion.Euler((float)(360f * rand.NextDouble()), (float)(360f * rand.NextDouble()), (float)(360f * rand.NextDouble()));
             Vector3 forward = quat * Vector3.forward;
-            pos = (forward * (float)(radius * rand.NextDouble())) + pos;
+            pos = (forward * (float)(randomRadius * rand.NextDouble())) + pos;
             pos.y = y;
-            if (NavMesh.SamplePosition(pos, out NavMeshHit navHit, radius, -1))
+            if (NavMesh.SamplePosition(pos, out NavMeshHit navHit, randomRadius, areaMask))
             {
                 return navHit.position;
             }
             return pos;
         }
 
-        public static Vector3 GetRandomMoonPosition(bool insidePosition = false, bool ignoreUnderwater = true, int randomizePositionRadius = 20)
+        /// <summary>
+        /// Gets a random position selected from the given nodes
+        /// </summary>
+        /// <param name="nodes">The given nodes to calculate the position from</param>
+        /// <param name="randomRadius">If greater than 0, will also sample the final calculated position on a NavMesh circle of the given radius</param>
+        /// <param name="areaMask">Exclude specified NavMesh areas if not -1</param>
+        /// <returns>Random position based on parameters</returns>
+        public static Vector3 GetRandomMoonPosition(GameObject[] nodes, float randomRadius = 20, int areaMask = -1)
         {
-            GameObject[] nodes = insidePosition ? RoundManager.Instance.insideAINodes : (ignoreUnderwater ? RoundManager.Instance.outsideAIDryNodes : RoundManager.Instance.outsideAINodes);
             Vector3 randomPoint = nodes[Random.Range(0, nodes.Length - 1)].transform.position;
-            return GetRandomPositionNearPosition(randomPoint, ignoreUnderwater, randomizePositionRadius);
+            return GetRandomPositionNearPosition(randomPoint, randomRadius, areaMask);
         }
 
-        public static Vector3 GetRandomPositionNearPosition(Vector3 position, bool ignoreUnderwater = true, int randomizePositionRadius = 20)
+        /// <summary>
+        /// Gets a random position neer the given position parameter
+        /// </summary>
+        /// <param name="position">The original position</param>
+        /// <param name="randomRadius">If greater than 0, will also sample the final calculated position on a NavMesh circle of the given radius</param>
+        /// <param name="areaMask">Exclude specified NavMesh areas if not -1</param>
+        /// <returns>Random position based on parameters</returns>
+        public static Vector3 GetRandomPositionNearPosition(Vector3 position, float randomRadius = 20, int areaMask = -1)
         {
-            if (randomizePositionRadius > 0)
+            if (randomRadius > 0)
             {
-                int areaMask = ignoreUnderwater ? NavMesh.AllAreas & ~(1 << 12) : -1;
                 float positionY = position.y;
-                Vector3 randomPosition = Random.insideUnitSphere * randomizePositionRadius + position;
+                Vector3 randomPosition = Random.insideUnitSphere * randomRadius + position;
                 randomPosition.y = positionY;
-                if (NavMesh.SamplePosition(randomPosition, out NavMeshHit navHit, randomizePositionRadius, areaMask))
+                if (NavMesh.SamplePosition(randomPosition, out NavMeshHit navHit, randomRadius, areaMask))
                 {
                     return navHit.position;
                 }
@@ -45,6 +64,12 @@ namespace Biodiversity.Util
             return position;
         }
 
+        /// <summary>
+        /// Gets a position from the given nodes that is the closest to the given position
+        /// </summary>
+        /// <param name="nodes">The given nodes to calculate the position from</param>
+        /// <param name="position">The original position</param>
+        /// <returns>Closest node position to original position</returns>
         public static Vector3 GetClosestAINodePosition(GameObject[] nodes, Vector3 position)
         {
             return nodes.OrderBy((GameObject x) => Vector3.Distance(position, x.transform.position)).ToArray()[0].transform.position;

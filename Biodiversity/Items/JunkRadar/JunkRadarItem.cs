@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Items.JunkRadar.BuriedScrap;
+using Biodiversity.Items.JunkRadar.Patches;
 using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
@@ -182,10 +183,13 @@ namespace Biodiversity.Items.JunkRadar
             {
                 for (int i = 0; i < Random.Range(minBuriedScrapsAmount, maxBuriedScrapsAmount + 1); i++)
                 {
-                    var spawnPosition = !hasBeenHeld && i == 0 ? PositionUtils.GetRandomPositionNearPosition(transform.position, randomizePositionRadius: 15) : PositionUtils.GetRandomMoonPosition(randomizePositionRadius: 10);
-                    var gameObject = Instantiate(JunkRadarHandler.Instance.Assets.BuriedScrapPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
+                    // One buried item will be closed to the radar and others are at random position, unless the radar was collected from a previous day
+                    Vector3 spawnPosition = !hasBeenHeld && i == 0 ?
+                        PositionUtils.GetRandomPositionNearPosition(transform.position, randomRadius: 15, CustomItemSpawnPatch.navMeshMask)
+                        : PositionUtils.GetRandomMoonPosition(CustomItemSpawnPatch.radarNodes, randomRadius: 10, CustomItemSpawnPatch.navMeshMask);
+                    GameObject gameObject = Instantiate(JunkRadarHandler.Instance.Assets.BuriedScrapPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
                     gameObject.GetComponent<NetworkObject>().Spawn();
-                    var buriedScrapObject = gameObject.GetComponent<BuriedScrapObject>();
+                    BuriedScrapObject buriedScrapObject = gameObject.GetComponent<BuriedScrapObject>();
                     buriedScrapObject.SyncMasterServerRpc(buriedScrapObject.NetworkObject, base.NetworkObject, Random.Range(0, 360));
                 }
             }
