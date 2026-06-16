@@ -54,7 +54,7 @@ public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<Devel
         new GenericScrapItem(
             "JacuPlushieItemData", "Strange dog",
             rarity: "Adamance:2,Embrion:5,Trite:2",
-            weight: 8f,
+            weight: 4f,
             minimumValue: 24,
             maximumValue: 43)
         .WithCustomSetting("Fly effect chance", 5,
