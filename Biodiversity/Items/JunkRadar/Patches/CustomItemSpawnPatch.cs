@@ -57,6 +57,9 @@ namespace Biodiversity.Items.JunkRadar.Patches
             {
                 return;
             }
+            // Trigger radarNodes calculation
+            radarNodes = null;
+            RoundManager.Instance.GetOutsideAINodes();
             // Reload buried scraps
             if (JunkRadarItem.Instance != null)
             {
@@ -77,8 +80,6 @@ namespace Biodiversity.Items.JunkRadar.Patches
         {
             if (Random.Range(0, 100) < JunkRadarHandler.Instance.Config.SpawnChance)
             {
-                radarNodes = null;
-                RoundManager.Instance.GetOutsideAINodes();
                 Vector3 spawnPosition = PositionUtils.GetRandomMoonPosition(radarNodes, randomRadius: 10, navMeshMask);
                 GameObject junkRadar = Object.Instantiate(JunkRadarHandler.Instance.Assets.JunkRadarItem.spawnPrefab, spawnPosition, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
                 JunkRadarItem radarComponent = junkRadar.GetComponent<JunkRadarItem>();

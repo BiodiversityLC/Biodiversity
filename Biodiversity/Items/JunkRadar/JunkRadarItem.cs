@@ -142,7 +142,8 @@ namespace Biodiversity.Items.JunkRadar
             {
                 yield break;
             }
-            yield return new WaitForSeconds(1f);
+            if (IsServer) yield return new WaitForSeconds(1f);
+            else yield return new WaitForEndOfFrame();
             if (!isHeld && !isHeldByEnemy)
             {
                 LogInfo("Setting Junk Radar to buried state");
@@ -155,6 +156,7 @@ namespace Biodiversity.Items.JunkRadar
                         InitializeBuriedScraps();
                     }
                 }
+                if (!IsServer) yield return new WaitForSeconds(1f);
                 diggingState = DiggingState.IsBuried;
                 diggingTrigger.enabled = true;
                 diggingCollider.enabled = true;
@@ -549,6 +551,10 @@ namespace Biodiversity.Items.JunkRadar
             for (int i = 0; i < screenArrowsImagesR.Length; i++)
             {
                 screenArrowsImagesR[i].color = screenItemImage.color;
+            }
+            for (int i = 0; i < screenStateTexts.Length; i++)
+            {
+                screenStateTexts[i].color = ColorWithAlpha(screenStateTexts[i].color, 0f);
             }
             previousClosestDetectedPosition = null;
             beepingInterval = null;
