@@ -31,7 +31,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(RoundManager), "SpawnScrapInLevel")]
         public static void TrySpawnJunkRadar(RoundManager __instance)
         {
-            if (!JunkRadarHandler.Instance.Config.Enabled)
+            if (!JunkRadarHandler.Instance.Assets.Loaded || !JunkRadarHandler.Instance.Config.Enabled)
             {
                 return;
             }
@@ -112,6 +112,10 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(RoundManager), "GetOutsideAINodes")]
         public static void CalculateRadarNodes(RoundManager __instance)
         {
+            if (!JunkRadarHandler.Instance.Assets.Loaded || !JunkRadarHandler.Instance.Config.Enabled)
+            {
+                return;
+            }
             if (__instance.outsideAIDryNodes == null || __instance.outsideAIDryNodes.Length == 0 || (radarNodes != null && radarNodes.Length != 0))
             {
                 return;

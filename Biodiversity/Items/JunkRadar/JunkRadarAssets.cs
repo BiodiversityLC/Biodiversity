@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Biodiversity.Items.JunkRadar
 {
-    internal class JunkRadarAssets(string bundle) : BiodiverseAssetBundle<JunkRadarAssets>(bundle)
+    internal class JunkRadarAssets(string bundle, bool isOptional) : BiodiverseAssetBundle<JunkRadarAssets>(bundle, isOptional)
     {
         [LoadFromBundle("Assets/Biodiversity/JunkRadar/JunkRadarItem.asset")]
         public Item JunkRadarItem;

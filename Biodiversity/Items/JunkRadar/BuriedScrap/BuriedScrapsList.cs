@@ -97,6 +97,11 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         /// </summary>
         private static Dictionary<string, BuriedScrapProperties> InitializeAllItems()
         {
+            if (!JunkRadarHandler.Instance.Assets.Loaded)
+            {
+                return [];
+            }
+
             Dictionary<string, BuriedScrapProperties> dict = new()
             {
                 { "V-type engine",

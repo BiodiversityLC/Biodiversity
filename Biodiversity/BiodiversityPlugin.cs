@@ -3,7 +3,10 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using Biodiversity.Core.Attributes;
 using Biodiversity.Core.Lang;
+using Biodiversity.Creatures;
+using Biodiversity.Items;
 using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -11,9 +14,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Biodiversity.Creatures;
-using Biodiversity.Items;
-using Biodiversity.Util.DataStructures;
 using UnityEngine;
 using HarmonyPatchType = HarmonyLib.HarmonyPatchType;
 
@@ -427,15 +427,25 @@ public class BiodiversityPlugin : BaseUnityPlugin
             saveOnInit: false, MetadataHelper.GetMetadata(this));
     }
 
-    internal static AssetBundle LoadBundle(string assetBundleName)
+    internal static AssetBundle LoadBundle(string assetBundleName, bool optionalAssets = false)
     {
         AssetBundle bundle;
         try
         {
-            bundle = AssetBundle.LoadFromFile(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
-                throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "AssetBundles",
-                assetBundleName));
+            if (!optionalAssets)
+            {
+                bundle = AssetBundle.LoadFromFile(Path.Combine(
+                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
+                    throw new InvalidOperationException($"Could not find assetbundle: {assetBundleName}"), "AssetBundles",
+                    assetBundleName));
+            }
+            else
+            {
+                string[] possibleFiles = Directory.GetFiles(Path.Combine(
+                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), ".."),
+                    assetBundleName, SearchOption.AllDirectories);
+                bundle = possibleFiles.Length > 0 ? AssetBundle.LoadFromFile(possibleFiles[0]) : null;
+            }
         }
         catch (Exception e)
         {
@@ -443,7 +453,10 @@ public class BiodiversityPlugin : BaseUnityPlugin
             return null;
         }
 
-        LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
+        if (bundle == null && !optionalAssets)
+        {
+            LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
+        }
         return bundle;
     }
 

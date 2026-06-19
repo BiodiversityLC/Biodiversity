@@ -13,7 +13,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(StartOfRound), "SetShipReadyToLand")]
         public static void SetShipReadyToLandPatch(StartOfRound __instance)
         {
-            if (JunkRadarHandler.Instance.Config.Enabled)
+            if (JunkRadarHandler.Instance.Assets.Loaded && JunkRadarHandler.Instance.Config.Enabled)
             {
                 RestoreJunkRadarOriginalInstance(shouldBeHeld: true);
             }
@@ -40,7 +40,7 @@ namespace Biodiversity.Items.JunkRadar.Patches
         [HarmonyPatch(typeof(StartOfRound), "EndOfGame")]
         public static void EndOfGamePatch()
         {
-            if (JunkRadarHandler.Instance.Config.Enabled && JunkRadarItem.Instance != null && JunkRadarItem.Instance.IsServer)
+            if (JunkRadarHandler.Instance.Assets.Loaded && JunkRadarHandler.Instance.Config.Enabled && JunkRadarItem.Instance != null && JunkRadarItem.Instance.IsServer)
             {
                 DespawnBuriedScraps(JunkRadarItem.Instance.detectedBuriedScraps);
             }

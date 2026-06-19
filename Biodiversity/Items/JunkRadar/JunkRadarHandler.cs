@@ -7,7 +7,13 @@
 
         public JunkRadarHandler()
         {
-            Assets = new JunkRadarAssets("biodiversity_junkradar");
+            Assets = new JunkRadarAssets("biodiversity_junkradar", isOptional: true);
+
+            if (!Assets.Loaded)
+            {
+                return;
+            }
+
             Config = new JunkRadarConfig(BiodiversityPlugin.Instance.CreateConfig("junk_radar"));
 
             LethalLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(Assets.JunkRadarItem.spawnPrefab);
