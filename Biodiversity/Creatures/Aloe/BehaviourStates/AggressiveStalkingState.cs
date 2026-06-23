@@ -46,6 +46,8 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
         base.AIIntervalBehaviour();
 
         _isPlayerReachable = true;
+        float distanceToGrabbingPlayer = Vector3.Distance(EnemyAIInstance.transform.position,
+            EnemyAIInstance.ActualTargetPlayer.Value.transform.position);
 
         if (_inGrabAnimation)
         {
@@ -53,8 +55,7 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
             EnemyAIInstance.AgentMaxAcceleration = GrabAnimationAgentMaxAcceleration;
             EnemyAIInstance.agent.acceleration = GrabAnimationAgentMaxAcceleration;
 
-            float distanceToGrabbingPlayer = Vector3.Distance(EnemyAIInstance.transform.position,
-                EnemyAIInstance.ActualTargetPlayer.Value.transform.position);
+
             EnemyAIInstance.movingTowardsTargetPlayer = distanceToGrabbingPlayer > 3f;
         }
         else
@@ -62,12 +63,10 @@ internal class AggressiveStalkingState : BehaviourState<AloeServerAI.States, Alo
             EnemyAIInstance.AgentMaxSpeed = AloeHandler.Instance.Config.StalkingMaxSpeed;
             EnemyAIInstance.AgentMaxAcceleration = AloeHandler.Instance.Config.StalkingMaxAcceleration;
 
-            if (Vector3.Distance(EnemyAIInstance.transform.position,
-                    EnemyAIInstance.ActualTargetPlayer.Value.transform.position) <= 3f &&
-                !_inGrabAnimation)
+            if (distanceToGrabbingPlayer <= 3f && !_inGrabAnimation)
             {
                 // See if the aloe can kidnap the player
-                EnemyAIInstance.LogVerbose("Player is close to aloe! Kidnapping him now");
+                EnemyAIInstance.LogVerbose("Player is close to aloe! Attempting kidnap...");
                 EnemyAIInstance.agent.speed = 0f;
                 EnemyAIInstance.agent.acceleration = 0f;
                 EnemyAIInstance.netcodeController.SetAnimationTriggerClientRpc(AloeClient.Grab);

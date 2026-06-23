@@ -590,7 +590,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
 
     /// <summary>
     /// Switches to the kidnapping state.
-    /// This function is called by an animation event.
+    /// This function is also called by an animation event in the AloeGrabFromStanding animation.
     /// </summary>
     public void GrabTargetPlayer()
     {
@@ -662,7 +662,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     #endregion
 
     /// <summary>
-    /// Calculates the agents speed depending on whether the Aloe is stunned/dead/not dead
+    /// Calculates the <see cref="UnityEngine.AI.NavMeshAgent"/> speed depending on whether the Aloe is stunned/dead/not dead.
     /// </summary>
     private void CalculateSpeed()
     {
@@ -684,7 +684,7 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     }
 
     /// <summary>
-    /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth
+    /// Makes the agent move by using <see cref="Mathf.Lerp"/> to make the movement smooth.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void MoveWithAcceleration()

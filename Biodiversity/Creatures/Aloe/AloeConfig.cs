@@ -130,7 +130,7 @@ public class AloeConfig(ConfigFile cfg) : BiodiverseConfigLoader<AloeConfig>(cfg
 
     [field: Tooltip("The maximum distance that the Aloe can grab a player from.")]
     [field: Range(0.1f, 200f)]
-    public float GrabRange { get; private set; } = 5f;
+    public float GrabRange { get; private set; } = 4f;
 
     [field: Tooltip("The time it takes for the Aloe to fully heal the player (from 1 to 100 health).")]
     [field: Range(1f, 120f)]
