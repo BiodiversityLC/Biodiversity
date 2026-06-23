@@ -277,6 +277,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /// <seealso cref="StateManagedAI{TState,TEnemyAI}.SwitchBehaviourState"/>
     internal void UpdateBehaviourStateFromPerception()
     {
+        LogVerbose("Updating behaviour state from perception...");
         SwitchBehaviourState(GetNextBehaviourStateFromPerception());
     }
 

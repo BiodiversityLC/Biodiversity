@@ -37,7 +37,7 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
         if (!hasTriggeredAnimation && EnemyAIInstance.Context.Adapter.Agent.velocity.sqrMagnitude <= 0.5f)
         {
             EnemyAIInstance.LogVerbose("Starting melt animation...");
-            EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.Melt);
+            EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamIsMelting.Value = true;
 
             hasTriggeredAnimation = true;
             EnemyAIInstance.Context.Adapter.KillAllSpeed();

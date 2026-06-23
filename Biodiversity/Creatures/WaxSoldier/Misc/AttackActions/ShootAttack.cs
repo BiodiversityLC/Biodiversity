@@ -9,7 +9,7 @@ public class ShootAttack : AttackAction
     public ShootAttack(int animationTriggerHash, float minRange = 0, float maxRange = 3, float cooldown = 2, int priority = 0) : base(animationTriggerHash, minRange, maxRange, cooldown, priority)
     {
         AddRequirement(ctx => IsUnMolten(ctx));
-        AddRequirement(ctx => ctx.Blackboard.HeldMusket.currentAmmo.Value <= 0);
+        AddRequirement(ctx => ctx.Blackboard.HeldMusket.currentAmmo.Value > 0);
         AddRequirement(ctx => HasLineOfSightToTarget(ctx));
     }
 

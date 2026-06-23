@@ -18,7 +18,7 @@ public class WaxSoldierClient : MonoBehaviour
     public static readonly int ShootMusket = Animator.StringToHash("ShootMusket");
     public static readonly int ReloadMusket = Animator.StringToHash("ReloadMusket");
     public static readonly int ForceWalk = Animator.StringToHash("ForceWalk");
-    public static readonly int Melt = Animator.StringToHash("Melt");
+    public static readonly int Melting = Animator.StringToHash("Melting");
     public static readonly int Dead = Animator.StringToHash("Dead");
     private static readonly int FinishedMelting = Animator.StringToHash("FinishedMelting");
     public static readonly int LungeAttack = Animator.StringToHash("LungeAttack");
@@ -40,7 +40,8 @@ public class WaxSoldierClient : MonoBehaviour
     [Header("Animation")] [Space(5f)]
     [SerializeField] private Animator unmoltenAnimator;
     [SerializeField] public Animator moltenAnimator;
-    [SerializeField] private Transform musketContainer;
+    [SerializeField] private Transform unmoltenMusketContainer;
+    [SerializeField] private Transform moltenMusketContainer;
 
     [Header("Audio")] [Space(5f)]
     [SerializeField] private AudioSource creatureVoice;
@@ -67,7 +68,7 @@ public class WaxSoldierClient : MonoBehaviour
     private CachedValue<EnemyAI> _enemyAIReference;
     private Musket _musket;
 
-    private Vector3 _smoothedVelocity;
+    private WaxSoldierAI.MoltenState _moltenState;
 
     private float _previousAnimatorSpeedBeforeFreeze = 1f;
 
@@ -77,6 +78,8 @@ public class WaxSoldierClient : MonoBehaviour
     {
         if (!netcodeController) netcodeController = GetComponent<WaxSoldierNetcodeController>();
         _enemyAIReference = new CachedValue<EnemyAI>(GetComponent<EnemyAI>);
+
+        _moltenState = WaxSoldierAI.MoltenState.Unmolten;
     }
 
     private void OnEnable()
@@ -100,13 +103,25 @@ public class WaxSoldierClient : MonoBehaviour
     {
         _currentAnimator.SetBool(InSalute, netcodeController.AnimationParamInSalute.Value);
         _currentAnimator.SetBool(Dead, netcodeController.AnimationParamIsDead.Value);
+        _currentAnimator.SetBool(Melting, netcodeController.AnimationParamIsMelting.Value);
     }
 
     #region Animation
+    // todo: make this section not shit
+
+    private Vector3 _smoothedVelocity;
+    private float _smoothedSpeed;
+
     public void SetWalkLocomotionAnimationParams()
     {
-        Vector3 worldVelocity = agent.velocity;
-        Vector3 localVelocity = transform.InverseTransformDirection(worldVelocity);
+        if (_moltenState == WaxSoldierAI.MoltenState.Unmolten) Set2DWalkLocomotionAnimationParams();
+        else Set1DWalkLocomotionAnimationParams();
+    }
+
+    private void Set2DWalkLocomotionAnimationParams()
+    {
+        // Vector3 worldVelocity = agent.velocity;
+        Vector3 localVelocity = transform.InverseTransformDirection(agent.velocity);
 
         float maxSpeed = agent.speed;
         if (maxSpeed > 0.01f)
@@ -121,16 +136,28 @@ public class WaxSoldierClient : MonoBehaviour
         animator.SetFloat(VelocityX, _smoothedVelocity.x);
         animator.SetFloat(VelocityZ, _smoothedVelocity.z);
     }
+
+    private void Set1DWalkLocomotionAnimationParams()
+    {
+        float speed = agent.velocity.magnitude;
+        float maxSpeed = agent.speed;
+        float normalized = maxSpeed > 0.01f ? speed / maxSpeed : 0f;
+
+        _smoothedSpeed = Mathf.Lerp(_smoothedSpeed, normalized, Time.deltaTime / 0.1f);
+        _currentAnimator.SetFloat(VelocityX, _smoothedSpeed);
+    }
     #endregion
 
     #region Network Events
     private void HandleCompleteMoltenTransition()
     {
-        // todo: switch the musket object over to the molten gameobject
+        // Enable the molten gameobject and switch the musket over to it
+        moltenGameObject.SetActive(true);
+        _musket.parentObject = moltenMusketContainer;
 
         unmoltenGameObject.SetActive(false);
-        moltenGameObject.SetActive(true);
 
+        _moltenState = WaxSoldierAI.MoltenState.Molten;
         _currentAnimator = moltenAnimator;
         _currentAnimator.SetTrigger(FinishedMelting);
     }
@@ -151,7 +178,7 @@ public class WaxSoldierClient : MonoBehaviour
 
         _musket = receivedMusket;
         _musket.SetScrapValue(scrapValue);
-        _musket.parentObject = musketContainer;
+        _musket.parentObject = unmoltenMusketContainer;
         _musket.OnGrabbedByWaxSoldier(_enemyAIReference.Value);
     }
 

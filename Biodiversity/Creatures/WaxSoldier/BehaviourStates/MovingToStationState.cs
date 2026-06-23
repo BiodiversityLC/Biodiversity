@@ -9,6 +9,8 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 [State(WaxSoldierAI.States.MovingToStation)]
 internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
+    // todo: Make it so this state is only pathable when waxy is in the unmolten state
+
     public MovingToStationState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
         Transitions =
@@ -22,7 +24,8 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
     {
         base.OnStateEnter(ref initData);
 
-        if (EnemyAIInstance.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0)
+        if (EnemyAIInstance.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0
+            && EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten)
         {
             EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Reloading);
             return;
