@@ -16,8 +16,10 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
     [Header("Attack Properties")]
     [SerializeField] private int stabDamage = 25;
     [SerializeField] private float stabKnockback = 8f;
-    [SerializeField] private int spinDamage = 30;
+    [SerializeField] private int spinDamage = 15;
     [SerializeField] private float spinKnockback = 16f;
+    [SerializeField] private int swingDamage = 25;
+    [SerializeField] private int flailDamage = 25;
 
     [Tooltip("How long (in seconds) a player is immune after being hit.")]
     [SerializeField] private float hitCooldown = 0.5f;
@@ -28,7 +30,15 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip stabIntoFleshSfx;
 
-    public enum BayonentMode { None, Spin, Stab }
+    public enum BayonentMode
+    {
+        None,
+        Spin,
+        Stab,
+        Swing,
+        Flail
+    }
+
     public BayonentMode currentBayonetMode = BayonentMode.None;
 
     private Collider[] bayonetHitBuffer;
@@ -71,6 +81,8 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
 
         stabDamage = WaxSoldierHandler.Instance.Config.StabDamage;
         spinDamage = WaxSoldierHandler.Instance.Config.SpinDamage;
+        swingDamage = WaxSoldierHandler.Instance.Config.SwingDamage;
+        flailDamage = WaxSoldierHandler.Instance.Config.FlailDamage;
     }
 
     private void FixedUpdate()
@@ -110,15 +122,25 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
         int damage = 0;
         float knockback = 0f;
 
+        // todo: Fix this monstrosity
         switch (currentBayonetMode)
         {
             case BayonentMode.Spin:
                 damage = spinDamage;
                 knockback = spinKnockback;
                 break;
+
             case BayonentMode.Stab:
                 damage = stabDamage;
                 knockback = stabKnockback;
+                break;
+
+            case BayonentMode.Swing:
+                damage = swingDamage;
+                break;
+
+            case BayonentMode.Flail:
+                damage = flailDamage;
                 break;
         }
 

@@ -83,13 +83,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             WaxSoldierClient.AimMusket, 2f, 200f, 4f, 1);
 
         LungeAttack lungeAttack = new(
-            WaxSoldierClient.LungeAttack, 2f, 6f, 3f, 0);
+            WaxSoldierClient.LungeAttack, 4f, 8f, 8f, 0);
 
         SwingAttack swingAttack = new(
-            WaxSoldierClient.SwingAttack, 2f, 2f, 1.5f, 0);
+            WaxSoldierClient.SwingAttack, 2f, 2f, 1.5f, 1);
 
         FlailAttack flailAttack = new(
-            WaxSoldierClient.FlailAttack, 0f, 2f, 1.5f, 0);
+            WaxSoldierClient.FlailAttack, 0f, 2f, 1.5f, 1);
 
         _blackboard.AvailableAttacks.AddRange([spinAttack, stabAttack, shootAttack, lungeAttack, swingAttack, flailAttack]);
         _blackboard.AvailableAttacks = _blackboard.AvailableAttacks.OrderByDescending(a => a.Priority).ToList();
@@ -318,6 +318,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /// </remarks>
     internal States GetNextBehaviourStateFromPerception()
     {
+        // todo: Find a solution to fix this if chain monstrosity
+
         States nextState;
 
         bool isPlayerVisible = UpdatePlayerLastKnownPosition();

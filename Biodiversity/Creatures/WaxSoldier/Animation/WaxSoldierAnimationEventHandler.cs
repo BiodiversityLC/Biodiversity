@@ -61,18 +61,36 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
             ai.LogVerbose($"Toggling bayonet on.");
 
             int hash = ai.Context.Blackboard.CurrentAttackAction.AnimationTriggerHash;
+            WaxSoldierBayonetAttackPhysics.BayonentMode nextBayonetMode =
+                WaxSoldierBayonetAttackPhysics.BayonentMode.None;
+
+            // todo: fix this monstrosity
             if (hash == WaxSoldierClient.SpinAttack)
             {
-                bayonetAttackPhysics.BeginAttack(WaxSoldierBayonetAttackPhysics.BayonentMode.Spin);
+                nextBayonetMode = WaxSoldierBayonetAttackPhysics.BayonentMode.Spin;
             }
-            if (hash == WaxSoldierClient.StabAttack)
+            else if (hash == WaxSoldierClient.StabAttack)
             {
-                bayonetAttackPhysics.BeginAttack(WaxSoldierBayonetAttackPhysics.BayonentMode.Stab);
+                nextBayonetMode = WaxSoldierBayonetAttackPhysics.BayonentMode.Stab;
             }
+            else if (hash == WaxSoldierClient.SwingAttack)
+            {
+                nextBayonetMode = WaxSoldierBayonetAttackPhysics.BayonentMode.Swing;
+            }
+            else if (hash == WaxSoldierClient.FlailAttack)
+            {
+                nextBayonetMode = WaxSoldierBayonetAttackPhysics.BayonentMode.Flail;
+            }
+            else
+            {
+                ai.LogError($"Unknown bayonet attack mode with hash: {hash}.");
+            }
+
+            bayonetAttackPhysics.BeginAttack(nextBayonetMode);
         }
         else
         {
-            ai.LogVerbose($"Toggling bayonet mode off.");
+            ai.LogVerbose($"Toggling bayonet off.");
             bayonetAttackPhysics.EndAttack();
         }
     }

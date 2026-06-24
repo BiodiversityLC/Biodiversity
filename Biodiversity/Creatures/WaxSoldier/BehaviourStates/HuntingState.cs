@@ -57,7 +57,9 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         if (!searchStrategy.TryGetNextSearchPosition(out Vector3 searchPosition))
         {
             EnemyAIInstance.LogVerbose("No search position found; moving back guard post.");
-            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
+            EnemyAIInstance.SwitchBehaviourState(
+                EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten ? WaxSoldierAI.States.MovingToStation : WaxSoldierAI.States.MoltenRoam);
+
             return;
         }
 
@@ -75,8 +77,10 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         searchTimeLeft -= Time.deltaTime;
         if (searchTimeLeft <= 0)
         {
-            EnemyAIInstance.LogVerbose("Spent too much time searching; going back to guard post.");
-            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
+            EnemyAIInstance.LogVerbose("Search timer has finished, concluding search.");
+            EnemyAIInstance.SwitchBehaviourState(
+                EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten ? WaxSoldierAI.States.MovingToStation : WaxSoldierAI.States.MoltenRoam);
+
             return;
         }
     }
@@ -89,8 +93,10 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         {
             if (!searchStrategy.TryGetNextSearchPosition(out Vector3 searchPosition))
             {
-                EnemyAIInstance.LogVerbose("No more places to search; going back to the guard post.");
-                EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
+                EnemyAIInstance.LogVerbose("Search timer has finished, concluding search.");
+                EnemyAIInstance.SwitchBehaviourState(
+                    EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten ? WaxSoldierAI.States.MovingToStation : WaxSoldierAI.States.MoltenRoam);
+
                 return;
             }
 
