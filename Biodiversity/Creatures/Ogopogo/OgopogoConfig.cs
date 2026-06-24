@@ -26,7 +26,7 @@ public class OgopogoConfig(ConfigFile configFile) : BiodiverseConfigLoader<Ogopo
 	public string OgopogoRarity { get; private set; } = "Vow:10,March:65,Adamance:35,Artifice:65,Submersion:12,Seichi:10,Gorgonzola:5,Phaedra:22,Aquatis:0,Cesspool:0,Gloom:0,Bozoros:15,Monarch:5,Oldred:69,Atlantica:52,Polarus:33,Acidir:16,Alcatras:57,Cubatres:8,Filitrios:21,Brutality:25,Phuket:5,Valiance:4,Timbrance:28,Natit:10,Sorrow:10,Kanie:40,Terra:75,Consolidation:30,Dreg:10,Court:3";
 
 	[field: Tooltip("Moons where Ogopogo's wander is disabled.")]
-	public string OgopogoWanderDisable { get; private set; } = "VowLevel,Submersion,Gorgonzola,Natit,Bozoros,Phaedra";
+	public string OgopogoWanderDisable { get; private set; } = "VowLevel,MarchLevel,Submersion,Gorgonzola,Natit,Bozoros,Phaedra";
 
 	[field: Tooltip("Static spawn positions for certain moons. Format: LevelName:(x,y,z)/(x2,y2,z2);LevelName2:(x,y,z)/(x2,y2,z2)")]
 	public string OgopogoStaticSpawns { get; private set; } = "VowLevel:(-104.800003, -22.0610008, 110.330002)/(27, -22.0610008, -61.2000008);AdamanceLevel:(58.1199989, -11.04, -1.85000002)/(52.0800018, -11.04, -12.5900002);MarchLevel:(-74, -6, -83)/(8, -3, -115)/(48, -5, 58)";
