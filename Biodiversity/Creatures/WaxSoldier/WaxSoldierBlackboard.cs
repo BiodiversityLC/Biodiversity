@@ -18,7 +18,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float WaxMeltTemperature { get; } = 60f;
 
     public float TimeWhenTargetPlayerLastSeen { get; set; }
-    public float PursuitLingerTime { get; set; } = 2f;
+    public float PursuitLingerTime { get; set; } = 0.3f;
     public float HuntingLingerTime { get; set; } = 20f;
     public float TimeSincePlayerLastSeen => Time.time - TimeWhenTargetPlayerLastSeen;
 

@@ -15,11 +15,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     private readonly SearchStrategy<WaxSoldierBlackboard, WaxSoldierAdapter> searchStrategy;
 
-    private float searchRadius = 25f;
-    private float directionWeight = 1.5f;
-    private float distanceWeight = 1.0f;
-    private float searchTime = 30f;
-
+    private float searchTime = 60f;
     private float searchTimeLeft;
 
     public HuntingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
@@ -29,13 +25,24 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             new TransitionToPursuitState(EnemyAIInstance)
         ];
 
-        List<UtilityDrivenSearch.ScorerWeight> scorers =
-        [
-            new() { Scorer = new DirectionAlignmentScorer(EnemyAIInstance.Context), Weight = directionWeight },
-            new() { Scorer = new DistanceScorer(EnemyAIInstance.Context, searchRadius), Weight = distanceWeight }
-        ];
+        // List<UtilityDrivenSearch.ScorerWeight> scorers =
+        // [
+        //     new() { Scorer = new DirectionAlignmentScorer(EnemyAIInstance.Context), Weight = 1.5f },
+        //     new() { Scorer = new DistanceScorer(EnemyAIInstance.Context, searchRadius: 25f), Weight = 1f }
+        // ];
+        //
+        // searchStrategy = new UtilityDrivenSearch(EnemyAIInstance.Context, scorers, searchRadius);
 
-        searchStrategy = new UtilityDrivenSearch(EnemyAIInstance.Context, scorers, searchRadius);
+        searchStrategy = new OccupancyMapSearch(
+            EnemyAIInstance.Context,
+            // adjacencyRadius: 12f,
+            // diffusionRate: 0.4f,
+            // velocityBias: 2f,
+            // terminationMass: 0.05f,
+            // graphBuildBudgetMs: 1f,
+            drawDebugField: true,
+            drawDebugEdges: false
+            );
     }
 
     internal override void OnStateEnter(ref StateData initData)
