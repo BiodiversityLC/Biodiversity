@@ -8,14 +8,14 @@ internal class TransitionToStationaryState(WaxSoldierAI enemyAIInstance, Arrivin
     : StateTransition<WaxSoldierAI.States, WaxSoldierAI>(enemyAIInstance)
 {
     internal override bool ShouldTransitionBeTaken() =>
-        Quaternion.Angle(EnemyAIInstance.transform.rotation, arrivingState.DesiredRotation) <= 0.1f;
+        Quaternion.Angle(EnemyAIInstance.Context.Adapter.Transform.rotation, arrivingState.DesiredRotation) <= 0.5f;
 
     internal override WaxSoldierAI.States NextState() => WaxSoldierAI.States.Stationary;
 
     internal override void OnTransition()
     {
         base.OnTransition();
-        
-        EnemyAIInstance.transform.rotation = arrivingState.DesiredRotation;
+
+        EnemyAIInstance.Context.Adapter.Transform.rotation = arrivingState.DesiredRotation;
     }
 }

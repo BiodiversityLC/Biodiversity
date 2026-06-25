@@ -33,7 +33,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         //
         // searchStrategy = new UtilityDrivenSearch(EnemyAIInstance.Context, scorers, searchRadius);
 
-        searchStrategy = new OccupancyMapSearch(
+        searchStrategy = new PlayerBeliefFilterSearch(
             EnemyAIInstance.Context,
             // adjacencyRadius: 12f,
             // diffusionRate: 0.4f,

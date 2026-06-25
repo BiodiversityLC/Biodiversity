@@ -28,7 +28,15 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
         EnemyAIInstance.Context.Adapter.SetMovementProfile(1.5f, 100f);
         EnemyAIInstance.Context.Adapter.Agent.updateRotation = false;
 
-        DesiredRotation = Quaternion.LookRotation(EnemyAIInstance.Context.Blackboard.GuardPost.forward);
+        // We project the forward direction of the guard post node onto the XZ plane
+        Vector3 planarForward = Vector3.ProjectOnPlane(EnemyAIInstance.Context.Blackboard.GuardPost.forward, Vector3.up);
+
+        // We check the magnitude because if the guard post forward is equal to Vector3.up,
+        // then when it gets projected onto the XZ plane we get Vector3.zero,
+        // which is not gonna work with Quaternion.LookRotation
+        DesiredRotation = planarForward.sqrMagnitude > 0.0001f
+            ? Quaternion.LookRotation(EnemyAIInstance.Context.Blackboard.GuardPost.forward)
+            : EnemyAIInstance.Context.Adapter.Transform.rotation;
     }
 
     internal override void UpdateBehaviour()

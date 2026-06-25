@@ -24,8 +24,8 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
     {
         base.OnStateEnter(ref initData);
 
-        EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationControllerToFrozenClientRpc(true);
         EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.ForceWalk);
+        EnemyAIInstance.Context.Blackboard.NetcodeController.SetAnimationControllerToFrozenClientRpc(true);
 
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.KillAllSpeed();

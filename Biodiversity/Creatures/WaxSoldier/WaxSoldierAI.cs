@@ -88,10 +88,17 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         SwingAttack swingAttack = new(
             WaxSoldierClient.SwingAttack, 2f, 2f, 1.5f, 1);
 
-        FlailAttack flailAttack = new(
-            WaxSoldierClient.FlailAttack, 0f, 2f, 1.5f, 1);
+        // FlailAttack flailAttack = new(
+        //     WaxSoldierClient.FlailAttack, 0f, 2f, 1.5f, 1);
 
-        _blackboard.AvailableAttacks.AddRange([spinAttack, stabAttack, shootAttack, lungeAttack, swingAttack, flailAttack]);
+        _blackboard.AvailableAttacks.AddRange([
+                spinAttack,
+                stabAttack,
+                shootAttack,
+                lungeAttack,
+                swingAttack,
+                // flailAttack
+        ]);
         _blackboard.AvailableAttacks = _blackboard.AvailableAttacks.OrderByDescending(a => a.Priority).ToList();
     }
 
@@ -204,10 +211,10 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         //todo: create tool that lets people easily select good guard spots for the wax soldier (nearly identical to the vending machine placement tool idea)
 
         // for now lets just use this
-        Vector3 tempGuardPostPosition = GetFarthestValidNodeFromPosition(out PathStatus _, agent.transform.position, transform.position, allAINodes, areaMask: agentMask).position;
+        Vector3 tempGuardPostPosition = GetFarthestValidNodeFromPosition(out PathStatus _, _adapter.Transform.position, _adapter.Transform.position, allAINodes, areaMask: agentMask).position;
 
         Vector3 calculatedPos = tempGuardPostPosition;
-        Quaternion calculatedRot = transform.rotation;
+        Quaternion calculatedRot = _adapter.Transform.rotation;
 
         _blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
     }

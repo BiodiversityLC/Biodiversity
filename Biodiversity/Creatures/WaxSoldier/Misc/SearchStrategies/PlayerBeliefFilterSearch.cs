@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace Biodiversity.Creatures.WaxSoldier.SearchStrategies;
 
-public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldierAdapter>
+public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldierAdapter>
 {
     private sealed class Cell
     {
@@ -42,7 +42,7 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
     private float _diffuseAccumulator;
     private const float DIFFUSE_INTERVAL = 0.25f;
 
-    public OccupancyMapSearch(
+    public PlayerBeliefFilterSearch(
         AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx,
         float adjacencyRadius = 30f,
         float diffusionRate = 0.4f,
@@ -66,7 +66,7 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
         // Build the graph once and cache it
         if (_graphState == GraphState.None)
         {
-            BiodiversityPlugin.LogVerbose("[OccupancyMapSearch] Start: graph not yet built, launching build coroutine.");
+            BiodiversityPlugin.LogVerbose("[PlayerBeliefFilterSearch] Start: graph not yet built, launching build coroutine.");
             _graphState = GraphState.Building;
             _buildGraphCoroutine = context.Blackboard.NetcodeController.StartCoroutine(BuildGraphCoroutine());
         }
@@ -74,12 +74,12 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
         // If the graph is already build, then seed it
         if (_graphState == GraphState.Ready)
         {
-            BiodiversityPlugin.LogVerbose("[OccupancyMapSearch] Start: graph ready, seeding distribution.");
+            BiodiversityPlugin.LogVerbose("[PlayerBeliefFilterSearch] Start: graph ready, seeding distribution.");
             SeedDistribution();
         }
         else
         {
-            BiodiversityPlugin.LogVerbose($"[OccupancyMapSearch] Start: graph state is {_graphState}; using LKP fallback until build completes.");
+            BiodiversityPlugin.LogVerbose($"[PlayerBeliefFilterSearch] Start: graph state is {_graphState}; using LKP fallback until build completes.");
         }
 
         _diffuseAccumulator = 0f;
@@ -108,35 +108,43 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
         if (_graphState != GraphState.Ready)
         {
             nextPosition = context.Blackboard.LastKnownPlayerPosition;
-            BiodiversityPlugin.LogVerbose($"[OccupancyMapSearch] NextPosition: graph not ready ({_graphState}); returning LKP fallback {nextPosition}.");
+            BiodiversityPlugin.LogVerbose($"[PlayerBeliefFilterSearch] NextPosition: graph not ready ({_graphState}); returning LKP fallback {nextPosition}.");
             return true;
         }
 
         if (_cells == null || _cells.Length == 0)
         {
-            BiodiversityPlugin.LogVerbose("[OccupancyMapSearch] NextPosition: no cells; cannot search.");
+            BiodiversityPlugin.LogVerbose("[PlayerBeliefFilterSearch] NextPosition: no cells; cannot search.");
             return false;
         }
 
-        ClearCellsInLos();
+        // ClearCellsInLos();
 
         // Total remaining probability mass is the termination signal: once we've observed away enough
         // of the field that little mass is left anywhere, the player is effectively not in any
         // unsearched cell and continuing would be kinda useless.
         // todo: Make the molten state actually carry on this search, because he has no guard post to attend to
-        float totalMass = 0f;
-        for (int cellIdx = 0; cellIdx < _cells.Length; cellIdx++)
-            totalMass += _cells[cellIdx].Probability;
 
-        if (totalMass < _terminationMass)
-        {
-            BiodiversityPlugin.LogVerbose($"[OccupancyMapSearch] NextPosition: remaining mass {totalMass:F3} < termination {_terminationMass}; search exhausted.");
-            return false;
-        }
+        // float totalMass = 0f;
+        // for (int cellIdx = 0; cellIdx < _cells.Length; cellIdx++)
+        //     totalMass += _cells[cellIdx].Probability;
+        //
+        // if (totalMass < _terminationMass)
+        // {
+        //     BiodiversityPlugin.LogVerbose($"[PlayerBeliefFilterSearch] NextPosition: remaining mass {totalMass:F3} < termination {_terminationMass}; search exhausted.");
+        //     return false;
+        // }
 
         Vector3 origin = context.Adapter.Transform.position;
 
-        const float MIN_SEARCH_DISTANCE = 1.5f;
+        const float MIN_SEARCH_DISTANCE = 1.5f; // todo: make this a configurable parameter maybe (as in, not hardcoded)
+        float minimumTravelCost = Mathf.Max(0, MIN_SEARCH_DISTANCE);
+
+        // We partition the remaining mass into the two types below, and simultaneously pick the best occluded destination:
+        // - observableMass: The mass in cells which we can currently see
+        // - occludedMass: The mass in cells which are hidden from us
+        float occludedMass = 0f;
+        float observableMass = 0f;
 
         int bestIdx = -1;
         float bestScore = float.MinValue;
@@ -146,8 +154,21 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
             Cell cell = _cells[cellIdx];
             if (cell.Probability <= 0f) continue;
 
+            bool isCellVisible = LineOfSightUtil.HasLineOfSight(
+                cell.Position, context.Adapter.EyeTransform,
+                context.Blackboard.ViewWidth, context.Blackboard.ViewRange, 1.5f);
+
+            if (isCellVisible)
+            {
+                observableMass += cell.Probability;
+                continue;
+            }
+
+            occludedMass += cell.Probability;
+
+            // This cell is a potential candidate to go to, so we score it
             float travelCost = TravelCost(origin, cell.Position);
-            if (travelCost < Mathf.Max(0, MIN_SEARCH_DISTANCE)) continue;
+            if (travelCost < minimumTravelCost) continue;
 
             float score = cell.Probability / (travelCost + 1f);
             if (score > bestScore)
@@ -157,23 +178,36 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
             }
         }
 
+        // Terminate the search based on occluded mass. Once little hidden probability remains, there's
+        // nowhere worth walking to - anything left is either visible (draining on its own) or negligible
+        if (occludedMass < _terminationMass)
+        {
+            BiodiversityPlugin.LogVerbose(
+                $"[PlayerBeliefFilterSearch] NextPosition: occludedMass {occludedMass:F3} < termination {_terminationMass} " +
+                $"(observableMass {observableMass:F3}); search exhausted.");
+            return false;
+        }
+
         if (bestIdx < 0)
         {
-            BiodiversityPlugin.LogVerbose($"[OccupancyMapSearch] NextPosition: {totalMass:F3} mass remains but no reachable cell; giving up.");
+            // Occluded mass remains but every occluded cell is less than the minimumTravelCost; hence, we stop searching
+            BiodiversityPlugin.LogVerbose(
+                $"[PlayerBeliefFilterSearch] NextPosition: occludedMass {occludedMass:F3} remains but no reachable " +
+                $"occluded cell beyond {MIN_SEARCH_DISTANCE}m; giving up.");
             return false;
         }
 
         nextPosition = _cells[bestIdx].Position;
         BiodiversityPlugin.LogVerbose(
-            $"[OccupancyMapSearch] NextPosition: chose cell {bestIdx} at {nextPosition}, " +
-            $"P={_cells[bestIdx].Probability:F3}, score={bestScore:F4}, totalMass={totalMass:F3}.");
+            $"[PlayerBeliefFilterSearch] NextPosition: chose cell {bestIdx} at {nextPosition}, " +
+            $"P={_cells[bestIdx].Probability:F3}, score={bestScore:F4}, occludedMass={occludedMass:F3}, observableMass={observableMass:F3}.");
 
         return true;
     }
 
     public override void Conclude()
     {
-        BiodiversityPlugin.LogVerbose("[OccupancyMapSearch] Conclude: clearing field and debug visuals.");
+        BiodiversityPlugin.LogVerbose("[PlayerBeliefFilterSearch] Conclude: clearing field and debug visuals.");
 
         if (_drawDebugField)
             DebugShapeVisualizer.Clear(this);
@@ -189,7 +223,7 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
         GameObject[] nodes = context.Adapter.AssignedAINodes;
         int numNodes = nodes.Length;
 
-        BiodiversityPlugin.LogVerbose($"[OccupancyMapSearch] BuildGraph: starting over {numNodes} nodes, adjacencyRadius={_adjacencyRadius}, budget={_graphBuildBudgetMs}ms/frame.");
+        BiodiversityPlugin.LogVerbose($"[PlayerBeliefFilterSearch] BuildGraph: starting over {numNodes} nodes, adjacencyRadius={_adjacencyRadius}, budget={_graphBuildBudgetMs}ms/frame.");
 
         // Allocate every cell and cache its position
         _cells = new Cell[numNodes];
@@ -205,8 +239,7 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
 
         _nextProb = new float[numNodes];
 
-        // Euclidean pre-filter: a cheap squared-distance test discards far pairs before we pay
-        // for the expensive NavMesh.CalculatePath call below
+        // A cheap squared-distance test discards far away pairs before we pay for the expensive NavMesh.CalculatePath call below
         float adjacencyRadiusSqr = _adjacencyRadius * _adjacencyRadius;
         int areaMask = context.Adapter.Agent.areaMask;
 
@@ -280,12 +313,12 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
         // the graph is fragmenting into islands that mass can't flow between.
         float avgDegree = numNodes > 0 ? (float)totalEdges / numNodes : 0f;
         BiodiversityPlugin.LogVerbose(
-            $"[OccupancyMapSearch] BuildGraph: complete. {totalEdges} directed edges, " +
+            $"[PlayerBeliefFilterSearch] BuildGraph: complete. {totalEdges} directed edges, " +
             $"avgDegree={avgDegree:F1}, isolatedCells={isolatedCells}, spread over {yieldCount} yields.");
 
         if (isolatedCells > 0)
             BiodiversityPlugin.Logger.LogWarning(
-                $"[OccupancyMapSearch] BuildGraph: WARNING {isolatedCells} cell(s) have no neighbours; " +
+                $"[PlayerBeliefFilterSearch] BuildGraph: WARNING {isolatedCells} cell(s) have no neighbours; " +
                 $"consider raising _adjacencyRadius (currently {_adjacencyRadius}).");
 
         SeedDistribution();
@@ -304,7 +337,7 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
     {
         if (_cells == null)
         {
-            BiodiversityPlugin.LogVerbose("[OccupancyMapSearch] SeedDistribution: cells is null (graph not built yet).");
+            BiodiversityPlugin.LogVerbose("[PlayerBeliefFilterSearch] SeedDistribution: cells is null (graph not built yet).");
             return;
         }
 
@@ -334,12 +367,12 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
         {
             _cells[seedIdx].Probability = 1f;
             BiodiversityPlugin.LogVerbose(
-                $"[OccupancyMapSearch] SeedDistribution: seeded cell {seedIdx} at {_cells[seedIdx].Position} " +
+                $"[PlayerBeliefFilterSearch] SeedDistribution: seeded cell {seedIdx} at {_cells[seedIdx].Position} " +
                 $"({Mathf.Sqrt(nearestDistanceSqr):F1}m from LKP {lastKnownPlayerPosition}).");
         }
         else
         {
-            BiodiversityPlugin.LogVerbose("[OccupancyMapSearch] SeedDistribution: no cell found to seed (empty graph?).");
+            BiodiversityPlugin.LogVerbose("[PlayerBeliefFilterSearch] SeedDistribution: no cell found to seed (empty graph?).");
         }
 
     }
@@ -366,11 +399,12 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
 
         // Seed the next-state buffer with the current state. Cells that don't diffuse (zero mass
         // or no neighbours) then simply carry over unchanged
-        for (int cellIdx = 0; cellIdx < _cells.Length; cellIdx++)
+        int numCells = _cells.Length;
+        for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
             _nextProb[cellIdx] = _cells[cellIdx].Probability;
 
         int activeCells = 0; // Cells holding meaningful mass, for the summary
-        for (int cellIdx = 0; cellIdx < _cells.Length; cellIdx++)
+        for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
         {
             Cell cell = _cells[cellIdx];
             float probability = cell.Probability;
@@ -418,13 +452,17 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
         }
 
         // Commit the next state back into the cells
-        for (int cellIdx = 0; cellIdx < _cells.Length; cellIdx++)
+        for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
             _cells[cellIdx].Probability = _nextProb[cellIdx];
+
+        const float BELIEF_DECAY = 0.98f;
+        for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
+            _cells[cellIdx].Probability *= BELIEF_DECAY;
 
         DrawDebugField();
 
         BiodiversityPlugin.LogVerbose(
-            $"[OccupancyMapSearch] DiffuseStep: {activeCells} active cell(s), " +
+            $"[PlayerBeliefFilterSearch] DiffuseStep: {activeCells} active cell(s), " +
             $"hasVelocity={hasVelocity}, rate={_diffusionRate}.");
     }
 
@@ -496,7 +534,7 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
 
         if (clearedCount > 0)
             BiodiversityPlugin.LogVerbose(
-                $"[OccupancyMapSearch] ClearVisibleCells: observed and cleared {clearedCount} cell(s), removed {clearedMass:F3} mass.");
+                $"[PlayerBeliefFilterSearch] ClearVisibleCells: observed and cleared {clearedCount} cell(s), removed {clearedMass:F3} mass.");
     }
 
     /// <summary>
@@ -575,8 +613,8 @@ public class OccupancyMapSearch : SearchStrategy<WaxSoldierBlackboard, WaxSoldie
             // Blue (cold, unlikely) -> red (hot, likely)
             Color colour = new(normalized, 0f, 1f - normalized, 0.6f);
 
-            float radius = DEBUG_SPHERE_BASE_RADIUS + normalized * DEBUG_SPHERE_PROB_SCALE;
-            DebugShapeVisualizer.DrawSphere(this, cell.Position, radius, colour);
+            // float radius = DEBUG_SPHERE_BASE_RADIUS + normalized * DEBUG_SPHERE_PROB_SCALE;
+            DebugShapeVisualizer.DrawSphere(this, position: cell.Position, radius: DEBUG_SPHERE_BASE_RADIUS, colour);
 
             if (_drawDebugEdges && cell.Neighbours != null)
             {
