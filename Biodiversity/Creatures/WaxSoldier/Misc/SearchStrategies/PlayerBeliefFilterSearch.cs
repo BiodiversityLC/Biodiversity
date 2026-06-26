@@ -18,6 +18,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         public float Probability;
         public int[] Neighbours;
         public float[] NeighbourCost;
+        public float ObservationCooldown;
     }
 
     private readonly NavMeshPath _navMeshPath = new();
@@ -41,6 +42,9 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
 
     private float _diffuseAccumulator;
     private const float DIFFUSE_INTERVAL = 0.25f;
+    private const float OBSERVATION_COOLDOWN_SECONDS = 4f;
+    private const float BELIEF_DECAY = 0.98f;
+    private const float MIN_SEARCH_DISTANCE = 1.5f;
 
     public PlayerBeliefFilterSearch(
         AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx,
@@ -118,26 +122,8 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             return false;
         }
 
-        // ClearCellsInLos();
-
-        // Total remaining probability mass is the termination signal: once we've observed away enough
-        // of the field that little mass is left anywhere, the player is effectively not in any
-        // unsearched cell and continuing would be kinda useless.
-        // todo: Make the molten state actually carry on this search, because he has no guard post to attend to
-
-        // float totalMass = 0f;
-        // for (int cellIdx = 0; cellIdx < _cells.Length; cellIdx++)
-        //     totalMass += _cells[cellIdx].Probability;
-        //
-        // if (totalMass < _terminationMass)
-        // {
-        //     BiodiversityPlugin.LogVerbose($"[PlayerBeliefFilterSearch] NextPosition: remaining mass {totalMass:F3} < termination {_terminationMass}; search exhausted.");
-        //     return false;
-        // }
-
         Vector3 origin = context.Adapter.Transform.position;
 
-        const float MIN_SEARCH_DISTANCE = 1.5f; // todo: make this a configurable parameter maybe (as in, not hardcoded)
         float minimumTravelCost = Mathf.Max(0, MIN_SEARCH_DISTANCE);
 
         // We partition the remaining mass into the two types below, and simultaneously pick the best occluded destination:
@@ -178,23 +164,24 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             }
         }
 
-        // Terminate the search based on occluded mass. Once little hidden probability remains, there's
-        // nowhere worth walking to - anything left is either visible (draining on its own) or negligible
-        if (occludedMass < _terminationMass)
+        float totalRemainingMass = occludedMass + observableMass;
+
+        // Once we've observed away enough of the field that little mass is left anywhere,
+        // the player is effectively not in anyunsearched cell and continuing would be kinda useless.
+        // todo: Make the molten state actually carry on this search, because he has no guard post to attend to
+        if (totalRemainingMass < _terminationMass)
         {
-            BiodiversityPlugin.LogVerbose(
-                $"[PlayerBeliefFilterSearch] NextPosition: occludedMass {occludedMass:F3} < termination {_terminationMass} " +
-                $"(observableMass {observableMass:F3}); search exhausted.");
+            BiodiversityPlugin.LogVerbose($"[PlayerBeliefFilterSearch] NextPosition: total belief {totalRemainingMass:F3} < termination {_terminationMass}; search exhausted.");
             return false;
         }
 
         if (bestIdx < 0)
         {
-            // Occluded mass remains but every occluded cell is less than the minimumTravelCost; hence, we stop searching
-            BiodiversityPlugin.LogVerbose(
-                $"[PlayerBeliefFilterSearch] NextPosition: occludedMass {occludedMass:F3} remains but no reachable " +
-                $"occluded cell beyond {MIN_SEARCH_DISTANCE}m; giving up.");
-            return false;
+            // No occluded destination right now (everything's either visible or unreachable),
+            // but belief remains. Hold the current position and let diffusion/observation do its thang
+            BiodiversityPlugin.LogVerbose($"[PlayerBeliefFilterSearch] NextPosition: no occluded destination (occluded {occludedMass:F3}, observable {observableMass:F3}); holding.");
+            nextPosition = context.Adapter.Transform.position;
+            return true;
         }
 
         nextPosition = _cells[bestIdx].Position;
@@ -341,10 +328,13 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             return;
         }
 
-        // Wipe any leftover mass from a previous hunt before re-seeding
+        // Wipe any leftover mass and cooldowns from a previous hunt before re-seeding
         int numCells  = _cells.Length;
         for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
+        {
             _cells[cellIdx].Probability = 0f;
+            _cells[cellIdx].ObservationCooldown = 0f;
+        }
 
         Vector3 lastKnownPlayerPosition = context.Blackboard.LastKnownPlayerPosition;
 
@@ -391,15 +381,21 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     /// </remarks>
     private void DiffuseStep()
     {
+        int numCells = _cells.Length;
         Vector3 lastKnownPlayerVelocity = context.Blackboard.LastKnownPlayerVelocity;
 
         // Treat a near-zero velocity as "no information about heading" and fall back to uniform spreading
         bool hasVelocity = lastKnownPlayerVelocity.sqrMagnitude > 0.1f;
         Vector3 velocityDirection = hasVelocity ? lastKnownPlayerVelocity.normalized : Vector3.zero;
 
+        // Do the cooldowns first before any deposits this step are evaluated, so a cell whose
+        // cooldown expires this step becomes eligible to receive mass in the same step
+        for (int cellIndex = 0; cellIndex < _cells.Length; cellIndex++)
+            if (_cells[cellIndex].ObservationCooldown > 0f)
+                _cells[cellIndex].ObservationCooldown -= DIFFUSE_INTERVAL;
+
         // Seed the next-state buffer with the current state. Cells that don't diffuse (zero mass
         // or no neighbours) then simply carry over unchanged
-        int numCells = _cells.Length;
         for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
             _nextProb[cellIdx] = _cells[cellIdx].Probability;
 
@@ -440,6 +436,10 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             // counts are tiny so the duplicated dot product is negligible
             for (int neighbourSlot = 0; neighbourSlot < cell.Neighbours.Length; neighbourSlot++)
             {
+                int neighbourIdx = cell.Neighbours[neighbourSlot];
+                if (_cells[neighbourIdx].ObservationCooldown > 0f)
+                    continue;
+
                 float weight = NeighbourWeight(
                     cell,
                     cell.Neighbours[neighbourSlot],
@@ -455,7 +455,6 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
             _cells[cellIdx].Probability = _nextProb[cellIdx];
 
-        const float BELIEF_DECAY = 0.98f;
         for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
             _cells[cellIdx].Probability *= BELIEF_DECAY;
 
@@ -527,8 +526,10 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
                     2f))
             {
                 clearedMass += cell.Probability;
-                cell.Probability = 0f;
                 clearedCount++;
+
+                cell.Probability = 0f;
+                cell.ObservationCooldown = OBSERVATION_COOLDOWN_SECONDS;
             }
         }
 
