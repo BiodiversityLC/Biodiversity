@@ -18,7 +18,9 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         public float Probability;
         public int[] Neighbours;
         public float[] NeighbourCost;
+        public Vector3[] NeighbourPathDirection;
         public float ObservationCooldown;
+        public bool IsVisible;
     }
 
     private readonly NavMeshPath _navMeshPath = new();
@@ -28,9 +30,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     private readonly float _diffusionRate;
     private readonly float _velocityBias;
     private readonly float _terminationMass;
-
-    // How many milliseconds of graph-building work we permit per frame.
-    private readonly float _graphBuildBudgetMs;
+    private readonly float _graphBuildBudgetMs; // How many milliseconds of graph-building work we permit per frame.
 
     private Cell[] _cells;
     private float[] _nextProb;
@@ -41,10 +41,17 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     private Coroutine _buildGraphCoroutine; // todo: call ctx.Blackboard.NetcodeController.StopCoroutine(_buildGraphCoroutine) when the enemy gameobject is destroyed
 
     private float _diffuseAccumulator;
+    private float _seedProtectionTimer;
+
+    private Vector3 _projectedVelocityDirection; // Player's LKV projected onto their floor polygon, normalized
+    private bool _hasProjectedVelocity;
+
     private const float DIFFUSE_INTERVAL = 0.25f;
     private const float OBSERVATION_COOLDOWN_SECONDS = 4f;
     private const float BELIEF_DECAY = 0.98f;
     private const float MIN_SEARCH_DISTANCE = 1.5f;
+    private const float SEED_PROTECTION_SECONDS = 1.5f;
+    private const float PROXIMITY_AWARENESS = 2f;
 
     public PlayerBeliefFilterSearch(
         AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx,
@@ -94,6 +101,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         if (_graphState != GraphState.Ready) return;
         if (_cells == null || _cells.Length == 0) return;
 
+        RefreshVisibility();
         ClearCellsInLos();
 
         _diffuseAccumulator += Time.deltaTime;
@@ -140,11 +148,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             Cell cell = _cells[cellIdx];
             if (cell.Probability <= 0f) continue;
 
-            bool isCellVisible = LineOfSightUtil.HasLineOfSight(
-                cell.Position, context.Adapter.EyeTransform,
-                context.Blackboard.ViewWidth, context.Blackboard.ViewRange, 1.5f);
-
-            if (isCellVisible)
+            if (cell.IsVisible)
             {
                 observableMass += cell.Probability;
                 continue;
@@ -233,6 +237,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         // Temporary adjacency lists per node
         List<int> neighbourIndices = [];
         List<float> neighbourCosts = [];
+        List<Vector3> neighbourPathDirections = [];
 
         Stopwatch stopwatch = Stopwatch.StartNew();
 
@@ -245,6 +250,8 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         {
             neighbourIndices.Clear();
             neighbourCosts.Clear();
+            neighbourPathDirections.Clear();
+
             Vector3 sourcePosition = _cells[sourceIdx].Position;
 
             for (int candidateIdx = 0; candidateIdx < numNodes; candidateIdx++)
@@ -268,6 +275,28 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
                 neighbourIndices.Add(candidateIdx);
                 neighbourCosts.Add(pathDistance);
 
+                Vector3 pathDirection;
+                Vector3[] corners = _navMeshPath.corners;
+                int cornersCount = corners.Length;
+                if (cornersCount >= 2)
+                {
+                    Vector3 firstSegment = corners[1] - corners[0];
+
+                    const float MIN_SEGMENT_SQR = 0.01f;
+                    if (firstSegment.sqrMagnitude >= MIN_SEGMENT_SQR)
+                        pathDirection = firstSegment.normalized;
+                    else if (cornersCount >= 3)
+                        pathDirection = (corners[2] - corners[0]).normalized;
+                    else
+                        pathDirection = (candidatePosition - sourcePosition).normalized;
+                }
+                else
+                {
+                    pathDirection = (candidatePosition - sourcePosition).normalized;
+                }
+
+                neighbourPathDirections.Add(pathDirection);
+
                 // A single densely-connected node can blast the whole budget by itself, so we
                 // also check the timer inside the inner loop, not just once per source cell
                 if (stopwatch.Elapsed.TotalMilliseconds >= _graphBuildBudgetMs)
@@ -280,6 +309,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
 
             _cells[sourceIdx].Neighbours = neighbourIndices.ToArray();
             _cells[sourceIdx].NeighbourCost = neighbourCosts.ToArray();
+            _cells[sourceIdx].NeighbourPathDirection = neighbourPathDirections.ToArray();
 
             // Check our graph building budget
             totalEdges += neighbourIndices.Count;
@@ -337,6 +367,36 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         }
 
         Vector3 lastKnownPlayerPosition = context.Blackboard.LastKnownPlayerPosition;
+        Vector3 lastKnownPlayerVelocity = context.Blackboard.LastKnownPlayerVelocity;
+
+        // Project the last-known velocity onto the plane of the polygon the player was standing on,
+        // so vertical motion (falling, ramps) doesn't pollute the horizontal heading we diffuse along.
+        if (lastKnownPlayerVelocity.sqrMagnitude < 0.1f)
+        {
+            _hasProjectedVelocity = false;
+            _projectedVelocityDirection = Vector3.zero;
+        }
+        else
+        {
+            Vector3 floorNormal = Vector3.up;
+            if (NavMesh.SamplePosition(lastKnownPlayerPosition, out NavMeshHit hit, 2f, context.Adapter.Agent.areaMask))
+                floorNormal = hit.normal;
+
+            // v_parallel = v - (v . n) n
+            Vector3 vParallel = lastKnownPlayerVelocity - Vector3.Dot(lastKnownPlayerVelocity, floorNormal) * floorNormal;
+
+            if (vParallel.sqrMagnitude < 0.1f)
+            {
+                // Velocity was entirely vertical, so theres no usable heading
+                _hasProjectedVelocity = false;
+                _projectedVelocityDirection = Vector3.zero;
+            }
+            else
+            {
+                _hasProjectedVelocity = true;
+                _projectedVelocityDirection = vParallel.normalized;
+            }
+        }
 
         // Find the closest cell to the LKP by squared distance (no sqrt needed for a comparison).
         // All mass goes here; everywhere else starts at zero and only gains probability through
@@ -365,6 +425,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             BiodiversityPlugin.LogVerbose("[PlayerBeliefFilterSearch] SeedDistribution: no cell found to seed (empty graph?).");
         }
 
+        _seedProtectionTimer = SEED_PROTECTION_SECONDS;
     }
 
     /// <summary>
@@ -377,16 +438,10 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     /// <remarks>
     /// Double-buffered through <see cref="_nextProb"/> so every cell diffuses from the same
     /// pre-step snapshot; computing in place would let mass cascade several hops in one step.
-    /// Mass is conserved here, it only leaves the field via <see cref="ClearCellsInLos"/>.
     /// </remarks>
     private void DiffuseStep()
     {
         int numCells = _cells.Length;
-        Vector3 lastKnownPlayerVelocity = context.Blackboard.LastKnownPlayerVelocity;
-
-        // Treat a near-zero velocity as "no information about heading" and fall back to uniform spreading
-        bool hasVelocity = lastKnownPlayerVelocity.sqrMagnitude > 0.1f;
-        Vector3 velocityDirection = hasVelocity ? lastKnownPlayerVelocity.normalized : Vector3.zero;
 
         // Do the cooldowns first before any deposits this step are evaluated, so a cell whose
         // cooldown expires this step becomes eligible to receive mass in the same step
@@ -420,14 +475,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             // the heading still receive the baseline share rather than a negative one
             float weightSum = 0f;
             for (int neighbourSlot = 0; neighbourSlot < cell.Neighbours.Length; neighbourSlot++)
-            {
-                weightSum += NeighbourWeight(
-                    cell,
-                    cell.Neighbours[neighbourSlot],
-                    cell.NeighbourCost[neighbourSlot],
-                    velocityDirection,
-                    hasVelocity);
-            }
+                weightSum += NeighbourWeight(cell.NeighbourPathDirection[neighbourSlot], cell.NeighbourCost[neighbourSlot]);
 
             if (weightSum <= 0f) continue;
 
@@ -440,12 +488,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
                 if (_cells[neighbourIdx].ObservationCooldown > 0f)
                     continue;
 
-                float weight = NeighbourWeight(
-                    cell,
-                    cell.Neighbours[neighbourSlot],
-                    cell.NeighbourCost[neighbourSlot],
-                    velocityDirection,
-                    hasVelocity);
+                float weight = NeighbourWeight(cell.NeighbourPathDirection[neighbourSlot], cell.NeighbourCost[neighbourSlot]);
 
                 _nextProb[cell.Neighbours[neighbourSlot]] += spreadingMass * (weight / weightSum);
             }
@@ -458,40 +501,34 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
             _cells[cellIdx].Probability *= BELIEF_DECAY;
 
+        if (_seedProtectionTimer > 0f)
+            _seedProtectionTimer -= DIFFUSE_INTERVAL;
+
         DrawDebugField();
 
         BiodiversityPlugin.LogVerbose(
             $"[PlayerBeliefFilterSearch] DiffuseStep: {activeCells} active cell(s), " +
-            $"hasVelocity={hasVelocity}, rate={_diffusionRate}.");
+            $"rate={_diffusionRate}.");
     }
 
     /// <summary>
-    /// Computes the diffusion weight for spreading probability mass from one cell to a neighbour.
-    /// The weight combines two factors: alignment with the player's last known heading (neighbours
-    /// in the direction the player was moving are favoured) and proximity (nearer neighbours are
-    /// favoured, since the player is less likely to have reached a distant cell in the same time).
+    /// Computes the diffusion weight for spreading mass from one cell to a neighbour. Combines alignment of the player's
+    /// projected heading (neighbours in the direction the player was moving in are favoured) with the cached geodesic
+    /// exit direction toward that neighbour, and a proximity falloff (nearer neighbours are favoured, since the player
+    /// is less likely to have reached a distant cell in the same time).
     /// </summary>
-    /// <param name="from">The cell shedding mass.</param>
-    /// <param name="neighbourIndex">Index into <see cref="_cells"/> of the receiving neighbour.</param>
+    /// <param name="cachedPathDirection">Normalised last-known-velocity direction, or zero if unknown.</param>
     /// <param name="edgeCost">Navmesh travel distance between the two cells.</param>
-    /// <param name="velocityDirection">Normalised last-known-velocity direction, or zero if unknown.</param>
-    /// <param name="hasVelocity">False when the player was effectively stationary; disables the alignment term.</param>
     /// <returns>A strictly positive weight; callers normalise these across a cell's neighbours.</returns>
-    private float NeighbourWeight(
-        Cell from,
-        int neighbourIndex,
-        float edgeCost,
-        Vector3 velocityDirection,
-        bool hasVelocity)
+    private float NeighbourWeight(Vector3 cachedPathDirection, float edgeCost)
     {
-        // Directional term: 1 for a neutral/backward neighbour, rising toward (1 + _velocityBias)
-        // for one lying directly along the heading. Alignment is clamped at 0 so cells behind the
-        // heading keep the baseline share rather than dropping below it
+        // Directional term: 1 for a neutral/backward neighbour, rising toward (1 + _velocityBias) for one whose
+        // geodesic exit aligns with the player's projected heading. Alignment is clamped at 0 so cells behind the
+        // heading keep the baseline rather than going negative
         float directionalWeight = 1f;
-        if (hasVelocity)
+        if (_hasProjectedVelocity)
         {
-            Vector3 directionToNeighbour = (_cells[neighbourIndex].Position - from.Position).normalized;
-            float alignment = Vector3.Dot(directionToNeighbour, velocityDirection);
+            float alignment = Vector3.Dot(cachedPathDirection, _projectedVelocityDirection);
             directionalWeight = 1f + _velocityBias * Mathf.Max(0f, alignment);
         }
 
@@ -503,6 +540,28 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     }
 
     /// <summary>
+    /// Computes per-cell visibility.
+    /// </summary>
+    private void RefreshVisibility()
+    {
+        for (int cellIdx = 0; cellIdx < _cells.Length; cellIdx++)
+        {
+            Cell cell = _cells[cellIdx];
+
+            // Skip the raycast for cells with no mass because they can't be selected or cleared anyway
+            if (cell.Probability <= 0f)
+            {
+                cell.IsVisible = false;
+                continue;
+            }
+
+            cell.IsVisible = LineOfSightUtil.HasLineOfSight(
+                cell.Position, context.Adapter.EyeTransform,
+                context.Blackboard.ViewWidth, context.Blackboard.ViewRange, PROXIMITY_AWARENESS);
+        }
+    }
+
+    /// <summary>
     /// Zeroes the probability of every cell currently within the enemy's line of sight. This is
     /// the observation step: somewhere the enemy can presently see is somewhere the player
     /// demonstrably is not, so that mass is removed from the field. Driving total mass below
@@ -510,6 +569,8 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     /// </summary>
     private void ClearCellsInLos()
     {
+        if (_seedProtectionTimer > 0f) return;
+
         int clearedCount = 0;
         float clearedMass = 0f;
 
@@ -518,12 +579,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             Cell cell = _cells[i];
             if (cell.Probability <= 0f) continue;
 
-            if (LineOfSightUtil.HasLineOfSight(
-                    cell.Position,
-                    context.Adapter.EyeTransform,
-                    context.Blackboard.ViewWidth,
-                    context.Blackboard.ViewRange,
-                    2f))
+            if (cell.IsVisible)
             {
                 clearedMass += cell.Probability;
                 clearedCount++;
@@ -578,7 +634,6 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     private readonly bool _drawDebugEdges; // also draw adjacency edges (noisy on big graphs)
     private const float DEBUG_MIN_PROBABILITY = 0.001f; // don't draw effectively-empty cells
     private const float DEBUG_SPHERE_BASE_RADIUS = 0.15f;
-    private const float DEBUG_SPHERE_PROB_SCALE = 0.6f; // extra radius at probability 1.0
 
     /// <summary>
     /// Renders the current occupancy field for debugging: one sphere per cell, sized and coloured

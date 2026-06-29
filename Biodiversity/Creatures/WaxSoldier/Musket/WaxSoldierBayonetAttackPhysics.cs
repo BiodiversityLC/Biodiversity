@@ -17,7 +17,7 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
     [SerializeField] private int stabDamage = 25;
     [SerializeField] private float stabKnockback = 8f;
     [SerializeField] private int spinDamage = 15;
-    [SerializeField] private float spinKnockback = 16f;
+    [SerializeField] private float spinKnockback = 50f;
     [SerializeField] private int swingDamage = 25;
     [SerializeField] private int flailDamage = 25;
 
@@ -120,19 +120,19 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
             return false;
 
         int damage = 0;
-        float knockback = 0f;
+        float knockbackScalar = 0f;
 
         // todo: Fix this monstrosity
         switch (currentBayonetMode)
         {
             case BayonentMode.Spin:
                 damage = spinDamage;
-                knockback = spinKnockback;
+                knockbackScalar = spinKnockback;
                 break;
 
             case BayonentMode.Stab:
                 damage = stabDamage;
-                knockback = stabKnockback;
+                knockbackScalar = stabKnockback;
                 break;
 
             case BayonentMode.Swing:
@@ -144,8 +144,10 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
                 break;
         }
 
-        Vector3 forceDirection = (player.transform.position - transform.position).normalized;
-        DamagePlayerClientRpc(playerClientId, damage, forceDirection * knockback, CauseOfDeath.Stabbing);
+        Vector3 knockback = (player.transform.position - transform.position).normalized * knockbackScalar;
+        DamagePlayerClientRpc(playerClientId, damage, knockback, CauseOfDeath.Stabbing);
+        KnockbackPlayerClientRpc(playerClientId, knockback);
+
         _playerCooldownTracker.Start(playerClientId, hitCooldown);
 
         return true;
@@ -180,6 +182,15 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
         audioSource.PlayOneShot(stabIntoFleshSfx);
         WalkieTalkie.TransmitOneShotAudio(audioSource, stabIntoFleshSfx, audioSource.volume);
         audioSource.pitch = oldPitch;
+    }
+
+    [ClientRpc]
+    private void KnockbackPlayerClientRpc(ulong playerId, Vector3 force)
+    {
+        PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerId);
+        if (!player) return;
+        if (player == GameNetworkManager.Instance.localPlayerController)
+            player.externalForceAutoFade += force;
     }
     #endregion
 }
