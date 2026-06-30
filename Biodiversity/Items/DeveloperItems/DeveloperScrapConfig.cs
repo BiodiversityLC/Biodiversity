@@ -59,5 +59,8 @@ public class DeveloperScrapConfig(ConfigFile cfg) : BiodiverseConfigLoader<Devel
             maximumValue: 43)
         .WithCustomSetting("Fly effect chance", 5,
             "The chance in % at which the Strange dog will do a strange fly effect instead of a simple noise when used.",
+            new AcceptableValueRange<int>(0, 100))
+        .WithCustomSetting("Rare squeeze sfx chance", 10,
+            "The chance in % at which the Strange dog will do random special rare noise when used instead of the normal squeeze sound.",
             new AcceptableValueRange<int>(0, 100));
 }

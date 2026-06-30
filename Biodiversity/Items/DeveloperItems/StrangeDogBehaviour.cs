@@ -10,11 +10,15 @@ namespace Biodiversity.Items.DeveloperItems
         public Animator mainAnimator;
         public AudioSource mainObjectAudio;
         public AudioClip squeezeSound;
+        public AudioClip[] squeezeSoundsRare;
         public AudioSource flyAudio;
         public ParticleSystem flyParticles;
 
         private int flyEffectChance;
+        private int rareSqueezeChance;
         private bool flying = false;
+        private Vector3 lastPosition;
+        private float positionTimer;
         private RaycastHit itemHit;
         private Ray itemThrowRay;
 
@@ -22,6 +26,32 @@ namespace Biodiversity.Items.DeveloperItems
         {
             base.Start();
             flyEffectChance = DeveloperScrapHandler.Instance.Config.StrangeDog?.Get<int>("Fly effect chance") ?? 5;
+            rareSqueezeChance = DeveloperScrapHandler.Instance.Config.StrangeDog?.Get<int>("Rare squeeze sfx chance") ?? 10;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (!flying)
+            {
+                return;
+            }
+
+            if ((transform.localPosition - lastPosition).magnitude < 0.01f)
+            {
+                positionTimer += Time.deltaTime;
+
+                if (positionTimer >= 0.1f)
+                {
+                    Explosion();
+                }
+            }
+            else
+            {
+                positionTimer = 0f;
+            }
+
+            lastPosition = transform.localPosition;
         }
 
         public override void FallWithCurve()
@@ -37,6 +67,16 @@ namespace Biodiversity.Items.DeveloperItems
             fallTime += Mathf.Abs(Time.deltaTime * 12f / magnitude);
         }
 
+        public override void ActivatePhysicsTrigger(Collider other)
+        {
+            base.ActivatePhysicsTrigger(other);
+            if (!flying)
+            {
+                return;
+            }
+            Explosion();
+        }
+
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
@@ -50,19 +90,25 @@ namespace Biodiversity.Items.DeveloperItems
         [ServerRpc(RequireOwnership = false)]
         private void UseItemServerRpc(bool flyEffectActivate)
         {
-            UseItemClientRpc(flyEffectActivate);
+            int squeezeId = -1;
+            if (!flyEffectActivate && Random.Range(0, 100) <= rareSqueezeChance - 1)
+            {
+                squeezeId = Random.Range(0, squeezeSoundsRare.Length);
+            }
+            UseItemClientRpc(flyEffectActivate, squeezeId);
         }
 
         [ClientRpc]
-        private void UseItemClientRpc(bool flyEffectActivate)
+        private void UseItemClientRpc(bool flyEffectActivate, int squeezeId)
         {
             if (!flyEffectActivate)
             {
                 // squeeze sfx
                 float volume = 1f;
-                mainObjectAudio.PlayOneShot(squeezeSound, volume);
+                AudioClip clip = squeezeId == -1 ? squeezeSound : squeezeSoundsRare[squeezeId];
+                mainObjectAudio.PlayOneShot(clip, volume);
                 mainAnimator.SetTrigger("Squeeze");
-                WalkieTalkie.TransmitOneShotAudio(mainObjectAudio, squeezeSound, volume);
+                WalkieTalkie.TransmitOneShotAudio(mainObjectAudio, clip, volume);
                 RoundManager.Instance.PlayAudibleNoise(transform.position, mainObjectAudio.maxDistance, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                 playerHeldBy?.timeSinceMakingLoudNoise = 0f;
             }
@@ -79,6 +125,7 @@ namespace Biodiversity.Items.DeveloperItems
             flyAudio.Play();
             mainAnimator.SetTrigger("Fly");
             flyParticles.Play();
+            lastPosition = transform.localPosition;
             flying = true;
             if (playerHeldBy != null && isHeld)
             {
@@ -92,6 +139,14 @@ namespace Biodiversity.Items.DeveloperItems
             grabbableToEnemies = false;
             gameObject.GetComponent<BoxCollider>().enabled = false;
             yield return new WaitForSeconds(5f);
+            if (flying)
+            {
+                Explosion();
+            }
+        }
+
+        private void Explosion()
+        {
             flyParticles.Stop();
             flying = false;
             if (!StartOfRound.Instance.inShipPhase)
