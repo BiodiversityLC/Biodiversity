@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Core;
-using System.Collections;
+using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Animation;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
@@ -30,6 +31,7 @@ public class ShootAttack : AttackAction
     public override void Update(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
         base.Update(ctx);
+
         if (shouldLookAtTarget && aimTransform)
         {
             Vector3 direction = (ctx.Adapter.TargetPlayer.transform.position - aimTransform.position).normalized;
@@ -39,23 +41,39 @@ public class ShootAttack : AttackAction
         }
     }
 
-    public override IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        // ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolAcceleration);
+        base.Finish(ctx);
 
         ctx.Adapter.Agent.isStopped = false;
         ctx.Adapter.Agent.updateRotation = true;
-
-        yield break;
     }
 
-    public void StartLookAtTarget(Transform t)
+    public override void HandleAnimationEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        base.HandleAnimationEvent(eventName, eventData, ctx);
+
+        switch (eventName)
+        {
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventStartTargetLook):
+                StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
+                break;
+
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventMusketShoot):
+                StopLookAtTarget();
+                ctx.Blackboard.HeldMusket.SetupShotAndFire();
+                break;
+        }
+
+    }
+
+    private void StartLookAtTarget(Transform t)
     {
         aimTransform = t;
         shouldLookAtTarget = true;
     }
 
-    public void StopLookAtTarget()
+    private void StopLookAtTarget()
     {
         shouldLookAtTarget = false;
         aimTransform = null;

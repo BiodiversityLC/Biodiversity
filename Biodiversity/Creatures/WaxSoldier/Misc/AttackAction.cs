@@ -1,9 +1,8 @@
 ﻿using Biodiversity.Creatures.Core;
+using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Util;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.Misc;
 
@@ -36,7 +35,10 @@ public class AttackAction
 
     private readonly List<Func<AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>, bool>> _requirements = [];
 
-    public AttackAction(
+    private readonly float _minRangeSqr;
+    private readonly float _maxRangeSqr;
+
+    protected AttackAction(
         int animationTriggerHash,
         float minRange = 0f,
         float maxRange = 3f,
@@ -49,25 +51,24 @@ public class AttackAction
         Cooldown = cooldown;
         Priority = priority;
 
+        _minRangeSqr = minRange * minRange;
+        _maxRangeSqr = maxRange * maxRange;
+
         AddRequirement(ctx => IsDistanceToTargetInRequiredRange(ctx));
     }
 
+    #region Virtual Methods
     public virtual void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        // BiodiversityPlugin.LogVerbose("In AttackAction.Setup().");
         ctx.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(AnimationTriggerHash);
     }
 
-    public virtual void Update(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
-    {
+    public virtual void Update(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
 
-    }
+    public virtual void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
 
-    public virtual IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
-    {
-        yield break;
-        // BiodiversityPlugin.LogVerbose("In AttackAction.Finish().");
-    }
+    public virtual void HandleAnimationEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
+    #endregion
 
     public void AddRequirement(Func<AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>, bool> requirement)
     {
@@ -88,9 +89,8 @@ public class AttackAction
     #region Frequently Used Attack Requirements
     private bool IsDistanceToTargetInRequiredRange(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        float distanceToTarget = Vector3.Distance(ctx.Adapter.Transform.position, ctx.Adapter.TargetPlayer.transform.position);
-        // BiodiversityPlugin.LogVerbose($"In {nameof(IsDistanceToTargetInRequiredRange)}, distanceToTarget =  {distanceToTarget}");
-        return distanceToTarget > MinRange && distanceToTarget < MaxRange;
+        float sqrDistance = (ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position).sqrMagnitude;
+        return sqrDistance > _minRangeSqr && sqrDistance < _maxRangeSqr;
     }
 
     protected bool HasLineOfSightToTarget(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
@@ -103,12 +103,12 @@ public class AttackAction
             ctx.Adapter.EyeTransform, ctx.Blackboard.ViewWidth, ctx.Blackboard.ViewRange, 0.2f, isFoggy);
     }
 
-    protected bool IsUnMolten(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    protected static bool IsUnMolten(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
         return ctx.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten;
     }
 
-    protected bool IsMolten(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    protected static bool IsMolten(in AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
         return ctx.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Molten;
     }

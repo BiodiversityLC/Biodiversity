@@ -30,6 +30,12 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
         ai.TriggerCustomEvent(nameof(OnAnimationEventEndStabAttackLunge));
     }
 
+    // public void OnAnimationEventEndMoltenLunge()
+    // {
+    //     if (!IsServer) return;
+    //     ai.TriggerCustomEvent(nameof(OnAnimationEventEndMoltenLunge));
+    // }
+
     public void OnAnimationEventStartTargetLook(string aimTransformName)
     {
         ai.LogVerbose("Starting to aim with musket.");
@@ -56,6 +62,7 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
         if (!IsServer) return;
 
         WaxSoldierBayonetAttackPhysics bayonetAttackPhysics = ai.Context.Blackboard.HeldMusket.bayonetAttackPhysics;
+
         if (bayonetAttackPhysics.currentBayonetMode == WaxSoldierBayonetAttackPhysics.BayonentMode.None)
         {
             ai.LogVerbose($"Toggling bayonet on.");

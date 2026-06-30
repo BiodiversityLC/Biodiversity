@@ -1,5 +1,4 @@
 ﻿using Biodiversity.Creatures.Core;
-using System.Collections;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
@@ -26,15 +25,14 @@ public class SpinAttack : AttackAction
         ctx.Adapter.MoveToPlayer(ctx.Adapter.TargetPlayer);
     }
 
-    public override IEnumerator Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
         base.Finish(ctx);
 
         Vector3 finalDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
         finalDirection.y = 0;
-        ctx.Adapter.Transform.rotation = Quaternion.LookRotation(finalDirection);
 
-        yield return null;
+        ctx.Adapter.Transform.rotation = Quaternion.LookRotation(finalDirection);
         ctx.Adapter.Animator.gameObject.transform.localRotation = Quaternion.identity;
 
         ctx.Adapter.Agent.updateRotation = true;

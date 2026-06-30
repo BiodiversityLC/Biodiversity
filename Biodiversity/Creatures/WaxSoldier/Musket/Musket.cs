@@ -16,6 +16,7 @@ public class Musket : BiodiverseItem
     private static readonly int ShovelHitAnimatorHash = Animator.StringToHash("shovelHit");
 
     #region Unity Inspector Variables
+#pragma warning disable 0649
     [Header("Audio")]
     [SerializeField] private AudioSource shootAudioSource;
     [SerializeField] private AudioSource otherAudioSource;
@@ -41,6 +42,7 @@ public class Musket : BiodiverseItem
 
     [Header("Debug")]
     public bool enableDebugVisuals = false;
+#pragma warning restore 0649
     #endregion
 
     private enum DamageType

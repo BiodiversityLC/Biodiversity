@@ -1,9 +1,7 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
-using Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
 using GameNetcodeStuff;
-using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -48,9 +46,11 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     {
         base.OnStateExit(transition);
 
-        EnemyAIInstance.StartCoroutine(EnemyAIInstance.Context.Blackboard.CurrentAttackAction.Finish(EnemyAIInstance.Context));
+        EnemyAIInstance.Context.Blackboard.CurrentAttackAction.Finish(EnemyAIInstance.Context);
         EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetAttackPhysics.EndAttack();
         EnemyAIInstance.StartAttackCooldown(EnemyAIInstance.Context.Blackboard.CurrentAttackAction);
+
+        // EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
     }
 
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
@@ -68,55 +68,13 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     {
         base.OnCustomEvent(eventName, eventData);
 
+        EnemyAIInstance.Context.Blackboard.CurrentAttackAction.HandleAnimationEvent(eventName, eventData, EnemyAIInstance.Context);
+
         switch (eventName)
         {
             case nameof(WaxSoldierAnimationEventHandler.OnAttackAnimationFinish):
             {
                 EnemyAIInstance.UpdateBehaviourStateFromPerception();
-                break;
-            }
-
-            // For the shoot attack
-            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventStartTargetLook):
-            {
-                if (EnemyAIInstance.Context.Blackboard.CurrentAttackAction is ShootAttack shootAttackAction)
-                {
-                    shootAttackAction.StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
-                }
-
-                break;
-            }
-
-            // For the shoot attack
-            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventMusketShoot):
-            {
-                if (EnemyAIInstance.Context.Blackboard.CurrentAttackAction is ShootAttack shootAttackAction)
-                {
-                    shootAttackAction.StopLookAtTarget();
-                    EnemyAIInstance.Context.Blackboard.HeldMusket.SetupShotAndFire();
-                }
-
-                break;
-            }
-
-            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventStartStabAttackLunge):
-            {
-                EnemyAIInstance.Context.Adapter.StopAllPathing();
-
-                Vector3 directionToTarget = EnemyAIInstance.Context.Adapter.TargetPlayer.transform.position - EnemyAIInstance.Context.Adapter.Transform.position;
-                directionToTarget.y = 0;
-                directionToTarget.Normalize();
-
-                EnemyAIInstance.Context.Adapter.Agent.velocity = directionToTarget * 15f;
-
-                break;
-            }
-
-            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventEndStabAttackLunge):
-            {
-                EnemyAIInstance.Context.Adapter.Agent.velocity = Vector3.zero;
-                EnemyAIInstance.Context.Adapter.MoveToPlayer(EnemyAIInstance.Context.Adapter.TargetPlayer);
-
                 break;
             }
         }

@@ -83,13 +83,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             WaxSoldierClient.AimMusket, 2f, 200f, 4f, 1);
 
         LungeAttack lungeAttack = new(
-            WaxSoldierClient.LungeAttack, 4f, 8f, 8f, 0);
+            WaxSoldierClient.LungeAttack, 3f, 8f, 8f, 0);
 
         SwingAttack swingAttack = new(
-            WaxSoldierClient.SwingAttack, 2f, 2f, 1.5f, 1);
+            WaxSoldierClient.SwingAttack, 0f, 3f, 2f, 1);
 
-        // FlailAttack flailAttack = new(
-        //     WaxSoldierClient.FlailAttack, 0f, 2f, 1.5f, 1);
+        FlailAttack flailAttack = new(
+            WaxSoldierClient.FlailAttack, 0f, 5f, 2f, 1);
 
         _blackboard.AvailableAttacks.AddRange([
                 spinAttack,
@@ -97,7 +97,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
                 shootAttack,
                 lungeAttack,
                 swingAttack,
-                // flailAttack
+                flailAttack
         ]);
         _blackboard.AvailableAttacks = _blackboard.AvailableAttacks.OrderByDescending(a => a.Priority).ToList();
     }
@@ -186,13 +186,9 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         for (int i = 0; i < _blackboard.AvailableAttacks.Count; i++)
         {
             AttackAction attack = _blackboard.AvailableAttacks[i];
-            // BiodiversityPlugin.LogVerbose($"Checking attack[{i}] = priority={attack.Priority} (MinRange={attack.MinRange}, MaxRange={attack.MaxRange}.");
 
             if (_blackboard.AttackCooldownEndTimes.TryGetValue(attack, out float endTime) && Time.time < endTime)
-            {
-                // BiodiversityPlugin.LogVerbose($"Attack is on cooldown ({cooldowns[attack]} seconds left). Skipping.");
                 continue;
-            }
 
             if (attack.AreRequirementsMet(Context)) return attack;
         }
@@ -604,7 +600,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             return;
         }
 
-        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource selectedAudioSource) || selectedAudioSource == null)
+        if (!AudioSources.TryGetValue(audioSourceType, out AudioSource selectedAudioSource) || !selectedAudioSource)
         {
             LogWarning($"Client: Audio Source Type '{audioSourceType}' not found or is null.");
             return;
@@ -626,4 +622,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
     }
     #endregion
+
+    // todo: Add event function for when a player collides with the wax soldier collider
 }

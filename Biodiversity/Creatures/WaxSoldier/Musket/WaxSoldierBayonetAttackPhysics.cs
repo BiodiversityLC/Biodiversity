@@ -17,12 +17,16 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
     [SerializeField] private int stabDamage = 25;
     [SerializeField] private float stabKnockback = 8f;
     [SerializeField] private int spinDamage = 15;
-    [SerializeField] private float spinKnockback = 50f;
+    [SerializeField] private float spinKnockback = 40f;
     [SerializeField] private int swingDamage = 25;
     [SerializeField] private int flailDamage = 25;
 
     [Tooltip("How long (in seconds) a player is immune after being hit.")]
     [SerializeField] private float hitCooldown = 0.5f;
+
+    [Tooltip("Upward launch added to knockback. 0 = flat shove.")]
+    [SerializeField] private float stabUpward = 0f;
+    [SerializeField] private float spinUpward = 8f;
 
     [Header("References")]
     [SerializeField] private Transform bayonetTip;
@@ -93,7 +97,7 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
         Vector3 direction = currentTipPosition - previousTipPosition;
 
         // Only do the cast if the tip has moved
-        if (direction.magnitude > 0.01f)
+        if (direction.sqrMagnitude > 0.0001f)
         {
             int hits = Physics.OverlapBoxNonAlloc(bayonetCollider.transform.position, _bayonetColliderHalfExtents.Value,
                 bayonetHitBuffer, bayonetCollider.transform.rotation, _bayonetHitMask, QueryTriggerInteraction.Collide);
@@ -121,6 +125,7 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
 
         int damage = 0;
         float knockbackScalar = 0f;
+        float upwardScalar = 0f;
 
         // todo: Fix this monstrosity
         switch (currentBayonetMode)
@@ -128,11 +133,13 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
             case BayonentMode.Spin:
                 damage = spinDamage;
                 knockbackScalar = spinKnockback;
+                upwardScalar = spinUpward;
                 break;
 
             case BayonentMode.Stab:
                 damage = stabDamage;
                 knockbackScalar = stabKnockback;
+                upwardScalar = stabUpward;
                 break;
 
             case BayonentMode.Swing:
@@ -144,7 +151,13 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
                 break;
         }
 
-        Vector3 knockback = (player.transform.position - transform.position).normalized * knockbackScalar;
+        // Horizontal component of the knockback
+        Vector3 horizontalComp = player.transform.position - bayonetTip.position;
+        horizontalComp.y = 0f;
+        horizontalComp = horizontalComp.sqrMagnitude > 0.0001f ? horizontalComp.normalized : bayonetTip.forward;
+
+        Vector3 knockback = horizontalComp * knockbackScalar + Vector3.up * upwardScalar;
+
         DamagePlayerClientRpc(playerClientId, damage, knockback, CauseOfDeath.Stabbing);
         KnockbackPlayerClientRpc(playerClientId, knockback);
 
