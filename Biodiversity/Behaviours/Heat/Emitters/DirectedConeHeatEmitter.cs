@@ -15,11 +15,11 @@ public class DirectedConeHeatEmitter : HeatEmitter
 
     [Header("Mesh Settings")]
     [Range(8, 64)] public int segments = 24;
-    
+
     [Header("Debug Settings")]
     [Tooltip("If true, a semi-transparent mesh will be rendered to show the cone's shape.")]
     public bool showDebugVisualizer;
-    
+
     private Mesh _coneMesh;
     private MeshCollider _meshCollider;
     private MeshFilter _meshFilter;
@@ -28,7 +28,7 @@ public class DirectedConeHeatEmitter : HeatEmitter
 
     private float _tanOuterAngle;
     private float _tanInnerAngle;
-    
+
     private void OnValidate()
     {
         // Clamp inner angle to be less than outer angle to prevent invalid configurations
@@ -38,40 +38,31 @@ public class DirectedConeHeatEmitter : HeatEmitter
     private void Awake()
     {
         showDebugVisualizer = true;
-        
         emitterCentre ??= transform;
+
         PrecomputeAngles();
-        EnsureCollider(); 
+        EnsureCollider();
         RebuildMesh();
         SetupDebugVisualizer(showDebugVisualizer);
     }
 
     private void OnEnable()
     {
-        if (_meshCollider)
-        {
-            _meshCollider.enabled = true;
-        }
-
-        if (_meshRenderer)
-        {
-            _meshRenderer.enabled = showDebugVisualizer;
-        }
+        if (_meshCollider) _meshCollider.enabled = true;
+        if (_meshRenderer) _meshRenderer.enabled = showDebugVisualizer;
     }
 
     protected override void OnDisable()
     {
         base.OnDisable();
-        
-        if (_meshCollider)
-        {
-            _meshCollider.enabled = false;
-        }
-        
-        if (_meshRenderer)
-        {
-            _meshRenderer.enabled = false;
-        }
+
+        if (_meshCollider) _meshCollider.enabled = false;
+        if (_meshRenderer) _meshRenderer.enabled = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (_coneMesh) Destroy(_coneMesh);
     }
 
     public override float GetHeatRateAt(Vector3 targetPos)
@@ -88,7 +79,7 @@ public class DirectedConeHeatEmitter : HeatEmitter
         // Angular weighting (innerAngle gets full power)
         float radial = Mathf.Sqrt(radialSqr);
         float tanOfCurrentAngle = radial / Mathf.Max(1e-4f, local.z);
-        
+
         // Lerp between the precomputed tangents
         float angT = Mathf.InverseLerp(_tanOuterAngle, _tanInnerAngle, tanOfCurrentAngle);
         float angular = Mathf.Clamp01(angT);
@@ -99,7 +90,7 @@ public class DirectedConeHeatEmitter : HeatEmitter
 
         return centreRateCPerSec * angular * axial;
     }
-    
+
     private void PrecomputeAngles()
     {
         _tanOuterAngle = Mathf.Tan(0.5f * Mathf.Deg2Rad * outerAngle);
@@ -140,7 +131,7 @@ public class DirectedConeHeatEmitter : HeatEmitter
             float ang = i * Mathf.PI * 2f / segments;
             v[1 + i] = new Vector3(Mathf.Cos(ang) * radius, Mathf.Sin(ang) * radius, range);
         }
-        
+
         // Base centre
         v[1 + segments] = new Vector3(0f, 0f, range);
 
@@ -158,7 +149,7 @@ public class DirectedConeHeatEmitter : HeatEmitter
             int i2 = 1 + (i + 1) % segments;
             t[ti++] = i0; t[ti++] = i1; t[ti++] = i2;
         }
-        
+
         // Base cap (clockwise to face outward in +Z)
         int c = 1 + segments; // Base centre
         for (int i = 0; i < segments; i++)
@@ -191,7 +182,7 @@ public class DirectedConeHeatEmitter : HeatEmitter
         }
 
         _meshFilter.sharedMesh = _coneMesh;
-        
+
         _meshRenderer.sharedMaterial = _meshMaterial;
         _meshRenderer.enabled = enable;
     }

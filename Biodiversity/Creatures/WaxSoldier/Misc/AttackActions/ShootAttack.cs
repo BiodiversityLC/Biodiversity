@@ -49,9 +49,9 @@ public class ShootAttack : AttackAction
         ctx.Adapter.Agent.updateRotation = true;
     }
 
-    public override void HandleAnimationEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override void HandleCustomEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        base.HandleAnimationEvent(eventName, eventData, ctx);
+        base.HandleCustomEvent(eventName, eventData, ctx);
 
         switch (eventName)
         {

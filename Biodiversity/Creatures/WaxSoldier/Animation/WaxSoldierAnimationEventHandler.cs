@@ -30,11 +30,11 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
         ai.TriggerCustomEvent(nameof(OnAnimationEventEndStabAttackLunge));
     }
 
-    // public void OnAnimationEventEndMoltenLunge()
-    // {
-    //     if (!IsServer) return;
-    //     ai.TriggerCustomEvent(nameof(OnAnimationEventEndMoltenLunge));
-    // }
+    public void OnAnimationEventEndMoltenLunge()
+    {
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnAnimationEventEndMoltenLunge));
+    }
 
     public void OnAnimationEventStartTargetLook(string aimTransformName)
     {

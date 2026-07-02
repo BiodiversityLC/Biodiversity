@@ -10,12 +10,12 @@ public static class DebugShapeVisualizer
     private static readonly int DstBlend = Shader.PropertyToID("_DstBlend");
     private static readonly int ZWrite = Shader.PropertyToID("_ZWrite");
     private static readonly int Cull = Shader.PropertyToID("_Cull");
-    
+
     private static Material _debugMaterial;
-    
+
     private static readonly List<LineRenderer> _linePool = [];
     private static readonly List<Transform> _spherePool = [];
-    
+
     // Dictionary to track which visual objects are owned by which client
     // Key: The client's instance ID (from GetHashCode())
     // Value: A list of the GameObjects (lines/spheres) that client is currently using
@@ -34,14 +34,14 @@ public static class DebugShapeVisualizer
                 {
                     parentObject = new GameObject("BiodiverseDebugShapeVisualizer");
                 }
-                
+
                 _parent.Set(parentObject.transform);
             }
-            
+
             return _parent.Value;
         }
     }
-    
+
     /// <summary>
     /// Clears all visuals created by a specific owner.
     /// </summary>
@@ -52,12 +52,10 @@ public static class DebugShapeVisualizer
         if (_activeVisuals.TryGetValue(ownerId, out List<GameObject> visuals))
         {
             for (int i = 0; i < visuals.Count; i++)
-            {
-                GameObject visual = visuals[i];
-                visual.SetActive(false);
-            }
+                visuals[i].SetActive(false);
 
             visuals.Clear();
+            _activeVisuals.Remove(ownerId);
         }
     }
 
@@ -65,13 +63,13 @@ public static class DebugShapeVisualizer
     {
         LineRenderer line = GetNextLine();
         line.gameObject.SetActive(true);
-        
+
         line.startColor = colour;
         line.endColor = colour;
-        
+
         line.SetPosition(0, start);
         line.SetPosition(1, end);
-        
+
         RegisterVisual(owner, line.gameObject);
     }
 
@@ -79,13 +77,13 @@ public static class DebugShapeVisualizer
     {
         Transform sphere = GetNextSphere();
         sphere.gameObject.SetActive(true);
-        
+
         sphere.position = position;
         sphere.localScale = Vector3.one * (radius * 2);
-        
+
         // The GetNextSphere function ensures that this gameobject has a MeshRenderer
         sphere.GetComponent<MeshRenderer>().material.color = colour;
-        
+
         RegisterVisual(owner, sphere.gameObject);
     }
 
@@ -97,7 +95,7 @@ public static class DebugShapeVisualizer
             visuals = [];
             _activeVisuals[ownerId] = visuals;
         }
-        
+
         visuals.Add(visualObject);
     }
 
@@ -114,15 +112,15 @@ public static class DebugShapeVisualizer
 
         GameObject newLineObj = new("DebugLine") { hideFlags = HideFlags.HideAndDontSave };
         newLineObj.transform.SetParent(Parent);
-        
+
         LineRenderer newLine = newLineObj.AddComponent<LineRenderer>();
         newLine.material = _debugMaterial;
         newLine.positionCount = 2;
         newLine.startWidth = 0.02f;
         newLine.endWidth = 0.02f;
-        
+
         _linePool.Add(newLine);
-        
+
         return newLine;
     }
 
@@ -136,7 +134,7 @@ public static class DebugShapeVisualizer
 
         // No inactive spheres found, create a new sphere
         CreateMaterial();
-        
+
         GameObject newSphereObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         newSphereObj.name = "DebugSphere";
         newSphereObj.hideFlags = HideFlags.HideAndDontSave;
@@ -151,22 +149,22 @@ public static class DebugShapeVisualizer
         {
             meshRenderer = newSphereObj.AddComponent<MeshRenderer>();
         }
-        
+
         meshRenderer.material = _debugMaterial;
 
         Transform newSphere = newSphereObj.transform;
         _spherePool.Add(newSphere);
-        
+
         return newSphere;
     }
-    
+
     private static void CreateMaterial()
     {
         if (_debugMaterial) return;
-        
+
         Shader shader = Shader.Find("Hidden/Internal-Colored");
         _debugMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
-        
+
         // Set properties for transparency
         _debugMaterial.SetInt(SrcBlend, (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
         _debugMaterial.SetInt(DstBlend, (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);

@@ -25,21 +25,21 @@ public static class LineOfSightUtil
         // LogVerbose($"In {nameof(HasLineOfSight)}");
 
         if (!eyeTransform) return false;
-        
+
         Vector3 eyePosition = eyeTransform.position;
         Vector3 directionToTarget = targetPosition - eyePosition;
         float sqrDistance = directionToTarget.sqrMagnitude;
-        
+
         // If the target is directly on top of you, then treat them as visible
         if (sqrDistance <= 0.0001f) return true;
-        
+
         // 1). Get effective range by taking fog into account
         float effectiveRange = viewRange;
         if (isFoggy)
         {
             effectiveRange = Mathf.Clamp(viewRange, 0f, 30f);
         }
-        
+
         // 2). Range check
         float effectiveRangeSqr = effectiveRange * effectiveRange;
         if (sqrDistance > effectiveRangeSqr)
@@ -47,7 +47,7 @@ public static class LineOfSightUtil
             // LogVerbose($"Distance check failed: {Mathf.Sqrt(sqrDistance)} (distance) > {effectiveRange} (effectiveRange)");
             return false;
         }
-        
+
         // 3). FOV check. The proximity can bypass the FOV check, but not the physics obstruction check.
         float distance = Mathf.Sqrt(sqrDistance);
         if (!(proximityAwareness >= 0f && distance <= proximityAwareness))
@@ -61,7 +61,7 @@ public static class LineOfSightUtil
                 return false;
             }
         }
-        
+
         // 4). Obstruction check
         if (Physics.Linecast(eyePosition, targetPosition, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
         {

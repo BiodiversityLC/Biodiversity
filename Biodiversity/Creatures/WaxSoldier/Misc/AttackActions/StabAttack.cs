@@ -13,9 +13,9 @@ public class StabAttack : AttackAction
         AddRequirement(ctx => HasLineOfSightToTarget(ctx));
     }
 
-    public override void HandleAnimationEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override void HandleCustomEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        base.HandleAnimationEvent(eventName, eventData, ctx);
+        base.HandleCustomEvent(eventName, eventData, ctx);
 
         switch (eventName)
         {

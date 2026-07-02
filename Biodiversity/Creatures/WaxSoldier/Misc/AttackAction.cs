@@ -67,7 +67,7 @@ public class AttackAction
 
     public virtual void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
 
-    public virtual void HandleAnimationEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
+    public virtual void HandleCustomEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
     #endregion
 
     public void AddRequirement(Func<AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>, bool> requirement)
@@ -113,5 +113,4 @@ public class AttackAction
         return ctx.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Molten;
     }
     #endregion
-
 }

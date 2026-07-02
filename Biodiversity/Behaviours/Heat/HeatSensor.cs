@@ -105,10 +105,10 @@ public class HeatSensor : NetworkBehaviour
         timeSinceLastUpdate += Time.deltaTime;
         float step = 1f / Mathf.Max(1f, updateHz);
 
-        while (timeSinceLastUpdate >= step)
+        if (timeSinceLastUpdate >= step)
         {
-            Integrate(step);
-            timeSinceLastUpdate -= step;
+            Integrate(timeSinceLastUpdate);
+            timeSinceLastUpdate = 0f;
         }
     }
 
@@ -124,15 +124,20 @@ public class HeatSensor : NetworkBehaviour
 
     private void Integrate(float dt)
     {
+        _emittersToRemoveCache.Clear();
+
         float rateSum = 0f;
         foreach (HeatEmitter emitter in overlaps)
         {
-            if (emitter && emitter.isActiveAndEnabled)
+            if (!emitter)
+            {
+                _emittersToRemoveCache.Add(emitter);
+                continue;
+            }
+            if (emitter.isActiveAndEnabled)
             {
                 Vector3 samplePoint = sensorCollider.ClosestPoint(emitter.transform.position);
-
-                float additionalHeatRate = emitter.GetHeatRateAt(samplePoint);
-                rateSum += additionalHeatRate;
+                rateSum += emitter.GetHeatRateAt(samplePoint);
             }
         }
 
@@ -143,6 +148,9 @@ public class HeatSensor : NetworkBehaviour
                        + impulseBufferC;
 
         impulseBufferC = 0f;
+
+        foreach (HeatEmitter nullEmitter in overlaps)
+            overlaps.Remove(nullEmitter);
     }
 
     public void AddHeatImpulse(float deltaC) => impulseBufferC += deltaC;
@@ -160,15 +168,9 @@ public class HeatSensor : NetworkBehaviour
         // Every frame, reset the visualizer so old lines disappear
         DebugShapeVisualizer.Clear(this);
 
-        _emittersToRemoveCache.Clear();
-
         foreach (HeatEmitter emitter in overlaps)
         {
-            if (!emitter || !emitter.isActiveAndEnabled)
-            {
-                _emittersToRemoveCache.Add(emitter);
-                continue;
-            }
+            if (!emitter || !emitter.isActiveAndEnabled) continue;
 
             Vector3 samplePoint = sensorCollider.ClosestPoint(emitter.transform.position);
             float heatRate = emitter.GetHeatRateAt(samplePoint);
@@ -178,12 +180,6 @@ public class HeatSensor : NetworkBehaviour
             Color lineColor = _debugHeatGradient.Evaluate(colorT);
 
             DebugShapeVisualizer.DrawLine(this, samplePoint, emitter.transform.position, lineColor);
-        }
-
-        for (int i = 0; i < _emittersToRemoveCache.Count; i++)
-        {
-            HeatEmitter emitter = _emittersToRemoveCache[i];
-            overlaps.Remove(emitter);
         }
     }
     #endregion

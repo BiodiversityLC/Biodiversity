@@ -30,58 +30,52 @@ public class RadialHeatEmitter : HeatEmitter
 
     private LineRenderer _ringXY, _ringXZ, _ringYZ;
     private static Material _lineMaterial;
-    
+
     private void OnValidate()
     {
         if (radius <= 0)
         {
-            Debug.LogWarning("Radius must be greater than zero.");
+            Debug.LogWarning("[RadialHeatEmitter] Radius must be greater than zero.");
             radius = 0.01f;
         }
-        
+
         if (!_triggerCollider) _triggerCollider = GetComponent<SphereCollider>();
         if (_triggerCollider) _triggerCollider.radius = radius;
     }
-    
+
     private void Awake()
     {
         showDebugVisualizer = true;
-        
+
         if (!_triggerCollider) _triggerCollider = GetComponent<SphereCollider>();
         if (!_triggerCollider) _triggerCollider = gameObject.AddComponent<SphereCollider>();
         _triggerCollider.isTrigger = true;
         _triggerCollider.radius = radius;
 
         if (!_lineMaterial)
-        {
             _lineMaterial = new Material(Shader.Find("Sprites/Default"));
-        }
 
         if (losBlockers.value == 0)
-        {
             losBlockers = LayerMask.GetMask("Water", "Room", "Terrain", "Vehicle");
-        }
     }
 
     private void OnEnable()
     {
         if (_triggerCollider)
-        {
             _triggerCollider.enabled = true;
-        }
-        
+
         EnsureWire(showDebugVisualizer);
     }
 
     protected override void OnDisable()
     {
         base.OnDisable();
-        
+
         if (_triggerCollider)
         {
             _triggerCollider.enabled = true;
         }
-        
+
         EnsureWire(false);
     }
 
@@ -100,11 +94,13 @@ public class RadialHeatEmitter : HeatEmitter
         // It would make it so a raycast could only be done maybe once every half a second, instead of every single time the GetHeatRateAt function is called,
         // the same could be done for other heat emitter stuff maybe
         float los = 1f;
-        if (useLineOfSight && Physics.Raycast(
-                transform.position, (targetPos - transform.position).normalized,
-                distance, losBlockers, QueryTriggerInteraction.Ignore))
+        if (useLineOfSight)
         {
-            los = 0.15f;
+            bool obstructed = Physics.Raycast(
+                transform.position, (targetPos - transform.position).normalized,
+                distance, losBlockers, QueryTriggerInteraction.Ignore);
+
+            los = obstructed ? 0.15f : 1f;
         }
 
         float normalizedDistance = Mathf.Clamp01(distance / radius);
@@ -165,14 +161,14 @@ public class RadialHeatEmitter : HeatEmitter
             float a = i * step;
             _ringXY.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f));
         }
-        
+
         // XZ plane
         for (int i = 0; i < n; i++)
         {
             float a = i * step;
             _ringXZ.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, 0f, Mathf.Sin(a) * radius));
         }
-        
+
         // YZ plane
         for (int i = 0; i < n; i++)
         {

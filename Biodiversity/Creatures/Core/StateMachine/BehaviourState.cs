@@ -3,6 +3,7 @@ using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine;
 
 namespace Biodiversity.Creatures.Core.StateMachine;
 
@@ -21,7 +22,7 @@ public abstract class BehaviourState<TState, TEnemyAI>
     /// This is used to interact with the AI and update its behavior based on the current state.
     /// </summary>
     protected readonly TEnemyAI EnemyAIInstance;
-    
+
     /// <summary>
     /// The current state type, typically an enum value representing a specific state.
     /// </summary>
@@ -43,7 +44,7 @@ public abstract class BehaviourState<TState, TEnemyAI>
     /// <typeparamref name="TState"/> value specified in the <see cref="StateAttribute"/>.
     /// </remarks>
     private static readonly Dictionary<Type, TState> StateTypeCache = new();
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BehaviourState{TState, TEnemyAI}"/> class.
     /// </summary>
@@ -75,11 +76,11 @@ public abstract class BehaviourState<TState, TEnemyAI>
         Type derivedType = GetType();
         if (StateTypeCache.TryGetValue(derivedType, out TState cachedState))
             return cachedState;
-        
+
         StateAttribute attribute = derivedType.GetCustomAttribute<StateAttribute>();
         if (attribute is not { StateType: TState state })
             throw new InvalidOperationException($"Class {derivedType.Name} must have a valid StateAttribute.");
-        
+
         StateTypeCache[derivedType] = state;
         return state;
     }
@@ -94,7 +95,7 @@ public abstract class BehaviourState<TState, TEnemyAI>
         EnemyAIInstance.LogVerbose($"OnStateEnter called for {_stateType}.");
         initData ??= new StateData();
     }
-    
+
     /// <summary>
     /// Called when the AI exits this state.
     /// Override this method to define behavior that should happen when the AI transitions out of this state.
@@ -115,7 +116,7 @@ public abstract class BehaviourState<TState, TEnemyAI>
     internal virtual void UpdateBehaviour()
     {
     }
-    
+
     /// <summary>
     /// Performs behavior in the AI's DoAIInterval cycle while it is in this state.
     /// This method can be overridden to define logic that should be executed at regular intervals.
@@ -138,10 +139,29 @@ public abstract class BehaviourState<TState, TEnemyAI>
     internal virtual void FixedUpdateBehaviour()
     {
     }
-    
+
     /// <summary>
-    /// Called when <see cref="TEnemyAI"/> is stunned. This lets the current behaviour state react, and optionally supress
-    /// the <see cref="TEnemyAI"/>'s default stun reaction.
+    /// Called when the <see cref="TEnemyAI"/>'s <see cref="EnemyAICollisionDetect"/> component detects a collision with a <see cref="PlayerControllerB"/>.
+    /// This lets the current behaviour state react, and optionally supress the <see cref="TEnemyAI"/>'s default reaction.
+    /// </summary>
+    /// <param name="other">Collider of the colliding <see cref="PlayerControllerB"/>.</param>
+    /// <returns>
+    /// <c>true</c> if this state fully handled the event and the default reaction should NOT run;
+    /// otherwise <c>false</c> to allow the <see cref="TEnemyAI"/>'s default handling.
+    /// </returns>
+    /// <remarks>
+    /// Override in states that need custom behavior. Return <c>false</c> to run the shared default logic;
+    /// return <c>true</c> to suppress it.
+    /// </remarks>
+    internal virtual bool OnCollideWithPlayer(Collider other)
+    {
+        EnemyAIInstance.LogVerbose($"{nameof(OnCollideWithPlayer)} called for {_stateType}.");
+        return false;
+    }
+
+    /// <summary>
+    /// Called when <see cref="TEnemyAI"/> is stunned.
+    /// This lets the current behaviour state react, and optionally supress the <see cref="TEnemyAI"/>'s default stun reaction.
     /// </summary>
     /// <param name="setToStunned">If <c>true</c>, then make the AI stunned.</param>
     /// <param name="setToStunTime">How long the stun lasts for in seconds.</param>
@@ -155,11 +175,11 @@ public abstract class BehaviourState<TState, TEnemyAI>
     /// return <c>true</c> to suppress it.
     /// </remarks>
     internal virtual bool OnSetEnemyStunned(
-        bool setToStunned, 
+        bool setToStunned,
         float setToStunTime = 1f,
         PlayerControllerB setStunnedByPlayer = null)
     {
-        EnemyAIInstance.LogVerbose($"{nameof(OnSetEnemyStunned)} called for {_stateType}.");
+        EnemyAIInstance.LogVerbose($"{nameof(OnSetEnemyStunned)} called for {_stateType} with setToStunned={setToStunned} and setToStunTime={setToStunTime}.");
         return false;
     }
 
@@ -179,11 +199,11 @@ public abstract class BehaviourState<TState, TEnemyAI>
     /// return <c>true</c> to suppress it.
     /// </remarks>
     internal virtual bool OnHitEnemy(
-        int force = 1, 
-        PlayerControllerB playerWhoHit = null, 
+        int force = 1,
+        PlayerControllerB playerWhoHit = null,
         int hitId = -1)
     {
-        EnemyAIInstance.LogVerbose($"{nameof(OnHitEnemy)} called for {_stateType}.");
+        EnemyAIInstance.LogVerbose($"{nameof(OnHitEnemy)} called for {_stateType} with force={force} and hitId={hitId}.");
         return false;
     }
 

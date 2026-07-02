@@ -2,6 +2,7 @@
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
 using GameNetcodeStuff;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -53,6 +54,17 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         // EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
     }
 
+    internal override bool OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+
+        StateData data = new();
+        data.Add("playerCollider", other);
+        EnemyAIInstance.Context.Blackboard.CurrentAttackAction.HandleCustomEvent(nameof(OnCollideWithPlayer), data, EnemyAIInstance.Context);
+
+        return true;
+    }
+
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);
@@ -68,7 +80,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
     {
         base.OnCustomEvent(eventName, eventData);
 
-        EnemyAIInstance.Context.Blackboard.CurrentAttackAction.HandleAnimationEvent(eventName, eventData, EnemyAIInstance.Context);
+        EnemyAIInstance.Context.Blackboard.CurrentAttackAction.HandleCustomEvent(eventName, eventData, EnemyAIInstance.Context);
 
         switch (eventName)
         {

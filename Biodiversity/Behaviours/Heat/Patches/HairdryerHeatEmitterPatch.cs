@@ -5,13 +5,15 @@ namespace Biodiversity.Behaviours.Heat.Patches;
 
 [CreaturePatch("WaxSoldier")] // This may be removed in the future if something else needs to use heat stuff
 [HarmonyPatch(typeof(NoisemakerProp))]
-internal static class HairdrierHeatEmitterPatch
+internal static class HairdryerHeatEmitterPatch
 {
     [HarmonyPatch(nameof(NoisemakerProp.ItemActivate))]
     [HarmonyPostfix]
     private static void EmitHeatOnActivate(NoisemakerProp __instance, bool used, bool buttonDown = true)
     {
+        if (!buttonDown) return; // We only care about when the button is pressed, not held
         if (!HeatController.HasInstance) return;
+        if (__instance.itemProperties.name != "Hairdryer") return;
 
         // When an item is used, the UseItemOnClient() function is called, where it checks if the item has enough charge
         // in the batteries to use it. If it does, then ItemActivate() is called. Therefore, we don't need to check

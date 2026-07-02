@@ -106,6 +106,10 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
     [field: Tooltip("")]
     [field: Range(0, 5000)]
     public int FlailDamage { get; private set; } = 25;
+
+    [field: Tooltip("")]
+    [field: Range(0, 5000)]
+    public int LungeDamage { get; private set; } = 25;
     #endregion
 
     #region Musket Settings

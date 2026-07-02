@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Biodiversity.Util;
+using GameNetcodeStuff;
+using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -19,9 +21,13 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
     internal event Action<bool> OnSetAnimationControllerToFrozen;
 
     [ClientRpc]
-    public void SetAnimationControllerToFrozenClientRpc(bool setToFrozen)
+    public void DamagePlayerClientRpc(ulong playerId, int damage, Vector3 force = default,
+        CauseOfDeath causeOfDeath = CauseOfDeath.Unknown)
     {
-        OnSetAnimationControllerToFrozen?.Invoke(setToFrozen);
+        PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerId);
+        if (!player) return;
+        if (player == GameNetworkManager.Instance.localPlayerController)
+            player.DamagePlayer(damage, hasDamageSFX: true, callRPC: true, causeOfDeath: causeOfDeath, force: force, fallDamage: true);
     }
 
     [ClientRpc]
@@ -78,14 +84,23 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
     }
     #endregion
 
+    #region Animation
     /// <summary>
-    /// Invokes the set animator trigger event
-    /// This uses the trigger function on an animator object
+    /// Invokes the set animator trigger event.
+    /// This uses the trigger function on an <see cref="Animator"/>.
     /// </summary>
-    /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function</param>
+    /// <param name="animationId">The animation id which is obtained by using the Animator.StringToHash() function.</param>
     [ClientRpc]
     internal void SetAnimationTriggerClientRpc(int animationId)
     {
         OnSetAnimationTrigger?.Invoke(animationId);
     }
+
+    [ClientRpc]
+    public void SetAnimationControllerToFrozenClientRpc(bool setToFrozen)
+    {
+        OnSetAnimationControllerToFrozen?.Invoke(setToFrozen);
+    }
+    #endregion
+
 }

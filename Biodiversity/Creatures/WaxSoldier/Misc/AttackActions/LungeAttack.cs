@@ -1,5 +1,9 @@
 ﻿using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.BehaviourStates;
+using Biodiversity.Util;
+using Biodiversity.Util.DataStructures;
+using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -14,6 +18,8 @@ public class LungeAttack : AttackAction
     private Vector3 startPosition, targetPosition;
     private float elapsed;
     private bool lungeActive;
+
+    private readonly PlayerCooldownTracker _playerDamageCooldowns = new();
 
     public LungeAttack(int animationTriggerHash, float minRange, float maxRange, float cooldown, int priority) : base(animationTriggerHash, minRange, maxRange, cooldown, priority)
     {
@@ -68,16 +74,35 @@ public class LungeAttack : AttackAction
     {
         ctx.Adapter.Agent.enabled = true;
         ctx.Adapter.Agent.Warp(ctx.Adapter.Transform.position);
+
+        _playerDamageCooldowns.Clear();
     }
 
-    public override void HandleAnimationEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    public override void HandleCustomEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        base.HandleAnimationEvent(eventName, eventData, ctx);
+        base.HandleCustomEvent(eventName, eventData, ctx);
 
-        // switch (eventName)
-        // {
-        //     case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventEndMoltenLunge):
-        //         break;
-        // }
+        switch (eventName)
+        {
+            case nameof(AttackingState.OnCollideWithPlayer):
+                if (!lungeActive) return;
+
+                Collider playerCollider = eventData.Get<Collider>("playerCollider");
+                if (!playerCollider) break;
+                if (!playerCollider.TryGetComponent(out PlayerControllerB player) || !player) break;
+
+                ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
+                if (_playerDamageCooldowns.IsOnCooldown(playerClientId)) break;
+
+                _playerDamageCooldowns.Start(playerClientId, float.MaxValue);
+                ctx.Blackboard.NetcodeController.DamagePlayerClientRpc(
+                    PlayerUtil.GetClientIdFromPlayer(player), WaxSoldierHandler.Instance.Config.LungeDamage,
+                    causeOfDeath: CauseOfDeath.Crushing);
+
+                break;
+
+            // case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventEndMoltenLunge):
+            //     break;
+        }
     }
 }

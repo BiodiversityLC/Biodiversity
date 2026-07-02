@@ -359,6 +359,29 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     #endregion
 
     #region Lethal Company Vanilla Events
+    public override void OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        if (!IsServer || _adapter.IsDead) return;
+
+        // If the current state (fully) handles the collision event, then don't run the default reaction.
+        // The default reaction is to transition to pursuit mode, and set this player as the target player.
+        // In the spawning, pursuing, attacking, stunned, transforming and dead states, nothing happens.
+        if (CurrentState?.OnCollideWithPlayer(other) ?? false)
+            return;
+
+        // Default reaction
+        if (other.TryGetComponent(out PlayerControllerB player) && player)
+        {
+            _adapter.TargetPlayer = player;
+            _blackboard.LastKnownPlayerPosition = player.transform.position;
+            _blackboard.LastKnownPlayerVelocity = PlayerUtil.GetVelocityOfPlayer(player);
+            _blackboard.TimeWhenTargetPlayerLastSeen = Time.time;
+
+            SwitchBehaviourState(States.Pursuing);
+        }
+    }
+
     public override void SetEnemyStunned(
         bool setToStunned,
         float setToStunTime = 1f,
@@ -409,7 +432,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
             return;
 
         // Default reaction when hit is to start chasing the player that hit them:
-
         if (!_adapter.ApplyDamage(force))
         {
             if (!isPlayerWhoHitNull)
@@ -459,7 +481,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
     protected override string GetLogPrefix()
     {
-        return $"[WaxSoldierAI {BioId}|V3]";
+        return $"[WaxSoldierAI {BioId}|V4]";
     }
 
     private void SubscribeToNetworkEvents()
@@ -622,6 +644,4 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (slightlyVaryPitch) selectedAudioSource.pitch = oldPitch;
     }
     #endregion
-
-    // todo: Add event function for when a player collides with the wax soldier collider
 }
