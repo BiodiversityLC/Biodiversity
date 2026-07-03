@@ -12,7 +12,7 @@ public class SpinAttack : AttackAction
 
     public override void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
-        ctx.Adapter.SetMovementProfile(1f, 50f);
+        ctx.Adapter.SetMovementProfile(0.2f, 50f);
         ctx.Adapter.Agent.updateRotation = false;
 
         Vector3 initialDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;

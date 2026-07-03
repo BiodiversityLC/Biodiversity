@@ -2,6 +2,7 @@
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
 using GameNetcodeStuff;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -42,6 +43,12 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
             hasTriggeredAnimation = true;
             EnemyAIInstance.Context.Adapter.KillAllSpeed();
         }
+    }
+
+    internal override bool OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        return true; // Makes nothing happen
     }
 
     internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)

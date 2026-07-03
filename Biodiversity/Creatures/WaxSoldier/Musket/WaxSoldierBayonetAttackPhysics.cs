@@ -17,7 +17,7 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
     [SerializeField] private int stabDamage = 25;
     [SerializeField] private float stabKnockback = 8f;
     [SerializeField] private int spinDamage = 15;
-    [SerializeField] private float spinKnockback = 40f;
+    [SerializeField] private float spinKnockback = 30f;
     [SerializeField] private int swingDamage = 25;
     [SerializeField] private int flailDamage = 25;
 
@@ -26,7 +26,7 @@ public class WaxSoldierBayonetAttackPhysics : NetworkBehaviour
 
     [Tooltip("Upward launch added to knockback. 0 = flat shove.")]
     [SerializeField] private float stabUpward = 0f;
-    [SerializeField] private float spinUpward = 8f;
+    [SerializeField] private float spinUpward = 20f;
 
     [Header("References")]
     [SerializeField] private Transform bayonetTip;

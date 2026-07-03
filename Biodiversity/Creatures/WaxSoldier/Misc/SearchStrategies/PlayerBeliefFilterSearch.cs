@@ -632,7 +632,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     #region Debug
     private readonly bool _drawDebugField;
     private readonly bool _drawDebugEdges; // also draw adjacency edges (noisy on big graphs)
-    private const float DEBUG_MIN_PROBABILITY = 0.001f; // don't draw effectively-empty cells
+    private const float DEBUG_MIN_PROBABILITY = 0.0001f; // don't draw effectively-empty cells
     private const float DEBUG_SPHERE_BASE_RADIUS = 0.15f;
 
     /// <summary>

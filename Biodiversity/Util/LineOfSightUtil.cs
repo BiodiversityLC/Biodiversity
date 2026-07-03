@@ -36,9 +36,7 @@ public static class LineOfSightUtil
         // 1). Get effective range by taking fog into account
         float effectiveRange = viewRange;
         if (isFoggy)
-        {
             effectiveRange = Mathf.Clamp(viewRange, 0f, 30f);
-        }
 
         // 2). Range check
         float effectiveRangeSqr = effectiveRange * effectiveRange;

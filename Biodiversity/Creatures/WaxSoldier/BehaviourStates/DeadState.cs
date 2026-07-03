@@ -1,8 +1,8 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
-using Biodiversity.Util;
 using GameNetcodeStuff;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
@@ -24,6 +24,12 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
 
         EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamIsDead.Value = true;
+    }
+
+    internal override bool OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        return true; // Makes nothing happen
     }
 
     internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)

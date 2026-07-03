@@ -44,6 +44,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
             if (selectedAttack != null)
             {
+                EnemyAIInstance.LogVerbose($"Selected attack: {selectedAttack.GetType().Name}");
                 EnemyAIInstance.Context.Blackboard.CurrentAttackAction = selectedAttack;
                 EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Attacking);
             }
@@ -59,6 +60,12 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.OnStateExit(transition);
 
         EnemyAIInstance.Context.Adapter.StopAllPathing();
+    }
+
+    internal override bool OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        return true; // Makes nothing happen
     }
 
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)

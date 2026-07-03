@@ -3,7 +3,6 @@ using Biodiversity.Creatures.Core.Search;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.SearchStrategies;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 

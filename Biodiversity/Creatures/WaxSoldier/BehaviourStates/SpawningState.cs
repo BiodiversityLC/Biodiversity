@@ -35,6 +35,24 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.DetermineGuardPostPosition();
     }
 
+    internal override bool OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        return true; // Makes nothing happen
+    }
+
+    internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
+    {
+        base.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
+        return true; // Makes nothing happen
+    }
+
+    internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
+    {
+        base.OnHitEnemy(force, playerWhoHit, hitId);
+        return true; // Makes nothing happen
+    }
+
     internal override void OnCustomEvent(string eventName, StateData eventData)
     {
         base.OnCustomEvent(eventName, eventData);
@@ -55,17 +73,5 @@ internal class SpawningState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.PlayAudioClipTypeClientRpc("activateSfx", "creatureVoice", 0, true);
         yield return null;
         EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.MovingToStation);
-    }
-
-    internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
-    {
-        base.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);
-        return true; // Makes nothing happen
-    }
-
-    internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
-    {
-        base.OnHitEnemy(force, playerWhoHit, hitId);
-        return true; // Makes nothing happen
     }
 }

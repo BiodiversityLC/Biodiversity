@@ -61,9 +61,7 @@ public class RadialHeatEmitter : HeatEmitter
 
     private void OnEnable()
     {
-        if (_triggerCollider)
-            _triggerCollider.enabled = true;
-
+        if (_triggerCollider) _triggerCollider.enabled = true;
         EnsureWire(showDebugVisualizer);
     }
 
@@ -71,11 +69,7 @@ public class RadialHeatEmitter : HeatEmitter
     {
         base.OnDisable();
 
-        if (_triggerCollider)
-        {
-            _triggerCollider.enabled = true;
-        }
-
+        if (_triggerCollider) _triggerCollider.enabled = true;
         EnsureWire(false);
     }
 

@@ -68,6 +68,12 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         }
     }
 
+    internal override bool OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        return true; // Makes nothing happen
+    }
+
     internal override bool OnHitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, int hitId = -1)
     {
         base.OnHitEnemy(force, playerWhoHit, hitId);

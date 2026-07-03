@@ -447,6 +447,7 @@ public class Musket : BiodiverseItem
 
     private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
     {
+        // todo: this
         return 110;
     }
 

@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Biodiversity.Util;
 
-public class VanillaLayersUtil
+public static class VanillaLayersUtil
 {
-    public static readonly string[] layerNames =
+    private static readonly string[] layerNames =
     [
         "Default",                // 0
         "TransparentFX",          // 1
@@ -38,7 +39,7 @@ public class VanillaLayersUtil
         "DecalStickableSurface",  // 29
         "Vehicle",                // 30
     ];
-    
+
     /// <summary>
     /// Returns a list of "index: name" entries for every bit set in the mask.
     /// </summary>
@@ -60,21 +61,21 @@ public class VanillaLayersUtil
 
         return result;
     }
-    
+
     /* ### Mask variables in StartOfRound ###
      *
      * collidersAndRoomMask = 1107298560 -> Room, Colliders, Terrain and Vehicle
-     * 
+     *
      * collidersAndRoomMaskAndPlayers = 1107298568 -> Players and collidersAndRoomMask
      *
      * collidersAndRoomMaskAndDefault = 1107298561 -> Default and collidersAndRoomMask
-     * 
+     *
      * collidersRoomMaskDefaultAndPlayers = 1107298569 -> Default and collidersAndRoomMaskAndPlayers
-     * 
+     *
      * collidersRoomDefaultAndFoliage = 1107299585 -> Default, Foliage and  collidersAndRoomMask
-     * 
+     *
      * allPlayersCollideWithMask = -1111790665
-     * 
+     *
      * walkableSurfacesMask = 1375734025 -> Railing and collidersRoomMaskDefaultAndPlayers
      *
      *

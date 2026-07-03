@@ -55,6 +55,12 @@ internal class StunnedState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Adapter.Agent.isStopped = false;
     }
 
+    internal override bool OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        return true; // Makes nothing happen
+    }
+
     internal override bool OnSetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
     {
         base.OnSetEnemyStunned(setToStunned, setToStunTime, setStunnedByPlayer);

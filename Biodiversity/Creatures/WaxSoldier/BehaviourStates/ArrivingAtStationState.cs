@@ -1,7 +1,6 @@
 ﻿using Biodiversity.Core.Attributes;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Transitions;
-using Biodiversity.Util;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -38,11 +37,6 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
         DesiredRotation = planarForward.sqrMagnitude > 0.0001f
             ? Quaternion.LookRotation(planarForward.normalized)
             : EnemyAIInstance.Context.Adapter.Transform.rotation;
-
-        // DebugShapeVisualizer.DrawLine(this,
-        //     EnemyAIInstance.Context.Blackboard.GuardPost.position,
-        //     EnemyAIInstance.Context.Blackboard.GuardPost.position + planarForward.normalized * 3,
-        //     Color.yellow);
     }
 
     internal override void UpdateBehaviour()

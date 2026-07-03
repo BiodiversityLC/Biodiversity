@@ -149,7 +149,7 @@ public class HeatSensor : NetworkBehaviour
 
         impulseBufferC = 0f;
 
-        foreach (HeatEmitter nullEmitter in overlaps)
+        foreach (HeatEmitter nullEmitter in _emittersToRemoveCache)
             overlaps.Remove(nullEmitter);
     }
 
