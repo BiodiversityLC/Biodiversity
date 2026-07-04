@@ -115,6 +115,19 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
         ai.DropMusket();
     }
 
+    public void OnAnimationEventUntoggleStartMeltParam()
+    {
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnAnimationEventUntoggleStartMeltParam));
+    }
+
+    public void OnAnimationEventMeltJitterFinish()
+    {
+        ai.LogVerbose("Melt jitter animation complete.");
+        if (!IsServer) return;
+        ai.TriggerCustomEvent(nameof(OnAnimationEventMeltJitterFinish));
+    }
+
     public void OnAnimationEventSlamIntoGround()
     {
         if (!IsServer) return;
@@ -141,12 +154,5 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
         ai.LogVerbose("Reload animation complete.");
         if (!IsServer) return;
         ai.TriggerCustomEvent(nameof(OnReloadAnimationFinish));
-    }
-
-    public void OnMeltJitterAnimationFinish()
-    {
-        ai.LogVerbose("Melt jitter animation complete.");
-        if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnMeltJitterAnimationFinish));
     }
 }

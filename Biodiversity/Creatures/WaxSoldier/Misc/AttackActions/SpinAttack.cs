@@ -29,13 +29,13 @@ public class SpinAttack : AttackAction
     {
         base.Finish(ctx);
 
-        Vector3 finalDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
-        finalDirection.y = 0;
-
-        ctx.Adapter.Transform.rotation = Quaternion.LookRotation(finalDirection);
-        ctx.Adapter.Animator.gameObject.transform.localRotation = Quaternion.identity;
+        // Vector3 finalDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
+        // finalDirection.y = 0;
+        //
+        // ctx.Adapter.Transform.rotation = Quaternion.LookRotation(finalDirection);
+        // ctx.Adapter.Animator.gameObject.transform.localRotation = Quaternion.identity;
 
         ctx.Adapter.Agent.updateRotation = true;
-        ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolAcceleration);
+        ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PursuitMaxSpeed, WaxSoldierHandler.Instance.Config.PursuitAcceleration);
     }
 }

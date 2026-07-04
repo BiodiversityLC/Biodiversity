@@ -38,7 +38,7 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
         if (!hasTriggeredAnimation && EnemyAIInstance.Context.Adapter.Agent.velocity.sqrMagnitude <= 0.5f)
         {
             EnemyAIInstance.LogVerbose("Starting melt animation...");
-            EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamIsMelting.Value = true;
+            EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamStartMelting.Value = true;
 
             hasTriggeredAnimation = true;
             EnemyAIInstance.Context.Adapter.KillAllSpeed();
@@ -69,8 +69,11 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
 
         switch (eventName)
         {
-            case nameof(WaxSoldierAnimationEventHandler.OnMeltJitterAnimationFinish):
-            {
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventUntoggleStartMeltParam):
+                EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamStartMelting.Value = false;
+                break;
+
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventMeltJitterFinish):
                 EnemyAIInstance.Context.Blackboard.NetcodeController.CompleteMoltenTransitionClientRpc();
 
                 EnemyAIInstance.Context.Adapter.Animator =
@@ -78,7 +81,6 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
 
                 EnemyAIInstance.UpdateBehaviourStateFromPerception();
                 break;
-            }
         }
     }
 }

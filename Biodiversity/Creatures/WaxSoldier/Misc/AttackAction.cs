@@ -67,7 +67,10 @@ public class AttackAction
 
     public virtual void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
 
-    public virtual void HandleCustomEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
+    public virtual void HandleCustomEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        BiodiversityPlugin.LogVerbose($"Event {eventName} called for {GetType().Name}.");
+    }
     #endregion
 
     public void AddRequirement(Func<AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>, bool> requirement)

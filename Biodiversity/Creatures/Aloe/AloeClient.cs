@@ -101,6 +101,7 @@ public class AloeClient : MonoBehaviour
         // new Tuple<string, Type>("LineOfSight2", typeof(MeshRenderer)),
     ];
 
+    #region Unity Inspector Variables
 #pragma warning disable 0649
     [Header("Audio")]
     [Space(5f)]
@@ -153,6 +154,7 @@ public class AloeClient : MonoBehaviour
     [SerializeField] private float escapeChargePerPress = 15f;
     [SerializeField] private float escapeChargeDecayRate = 15f;
     [SerializeField] private float escapeChargeThreshold = 100f;
+    #endregion
 
     private CachedUnityObject<PlayerControllerB> _targetPlayer;
 

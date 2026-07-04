@@ -47,8 +47,8 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     private bool _hasProjectedVelocity;
 
     private const float DIFFUSE_INTERVAL = 0.25f;
-    private const float OBSERVATION_COOLDOWN_SECONDS = 4f;
-    private const float BELIEF_DECAY = 0.98f;
+    private const float OBSERVATION_COOLDOWN_SECONDS = 14f;
+    private const float BELIEF_DECAY = 1f;
     private const float MIN_SEARCH_DISTANCE = 1.5f;
     private const float SEED_PROTECTION_SECONDS = 1.5f;
     private const float PROXIMITY_AWARENESS = 2f;
@@ -101,14 +101,18 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         if (_graphState != GraphState.Ready) return;
         if (_cells == null || _cells.Length == 0) return;
 
-        RefreshVisibility();
-        ClearCellsInLos();
-
+        int iterations = 0;
         _diffuseAccumulator += Time.deltaTime;
         while (_diffuseAccumulator >= DIFFUSE_INTERVAL)
         {
+            if (iterations >= 3) break;
+
+            RefreshVisibility();
+            ClearCellsInLos();
             DiffuseStep();
+
             _diffuseAccumulator -= DIFFUSE_INTERVAL;
+            iterations++;
         }
     }
 
@@ -131,8 +135,6 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         }
 
         Vector3 origin = context.Adapter.Transform.position;
-
-        float minimumTravelCost = Mathf.Max(0, MIN_SEARCH_DISTANCE);
 
         // We partition the remaining mass into the two types below, and simultaneously pick the best occluded destination:
         // - observableMass: The mass in cells which we can currently see
@@ -158,7 +160,13 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
 
             // This cell is a potential candidate to go to, so we score it
             float travelCost = TravelCost(origin, cell.Position);
-            if (travelCost < minimumTravelCost) continue;
+            if (travelCost < 0f)
+            {
+                occludedMass -= cell.Probability; // Cell is unreachable, so no point including it in the mass pool
+                continue;
+            }
+
+            if (travelCost < MIN_SEARCH_DISTANCE) continue;
 
             float score = cell.Probability / (travelCost + 1f);
             if (score > bestScore)
@@ -311,10 +319,10 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             _cells[sourceIdx].NeighbourCost = neighbourCosts.ToArray();
             _cells[sourceIdx].NeighbourPathDirection = neighbourPathDirections.ToArray();
 
-            // Check our graph building budget
             totalEdges += neighbourIndices.Count;
             if (neighbourIndices.Count == 0) isolatedCells++;
 
+            // Check our graph building budget
             if (stopwatch.Elapsed.TotalMilliseconds >= _graphBuildBudgetMs)
             {
                 yield return null;
@@ -364,6 +372,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         {
             _cells[cellIdx].Probability = 0f;
             _cells[cellIdx].ObservationCooldown = 0f;
+            _cells[cellIdx].IsVisible = false;
         }
 
         Vector3 lastKnownPlayerPosition = context.Blackboard.LastKnownPlayerPosition;
@@ -426,6 +435,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         }
 
         _seedProtectionTimer = SEED_PROTECTION_SECONDS;
+        RefreshVisibility();
     }
 
     /// <summary>
@@ -485,12 +495,11 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
             for (int neighbourSlot = 0; neighbourSlot < cell.Neighbours.Length; neighbourSlot++)
             {
                 int neighbourIdx = cell.Neighbours[neighbourSlot];
-                if (_cells[neighbourIdx].ObservationCooldown > 0f)
-                    continue;
-
                 float weight = NeighbourWeight(cell.NeighbourPathDirection[neighbourSlot], cell.NeighbourCost[neighbourSlot]);
+                float share = spreadingMass * (weight / weightSum);
 
-                _nextProb[cell.Neighbours[neighbourSlot]] += spreadingMass * (weight / weightSum);
+                if (_cells[neighbourIdx].ObservationCooldown > 0f) _nextProb[cellIdx] += share;
+                else _nextProb[neighbourIdx] += share;
             }
         }
 
@@ -501,8 +510,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         for (int cellIdx = 0; cellIdx < numCells; cellIdx++)
             _cells[cellIdx].Probability *= BELIEF_DECAY;
 
-        if (_seedProtectionTimer > 0f)
-            _seedProtectionTimer -= DIFFUSE_INTERVAL;
+        if (_seedProtectionTimer > 0f) _seedProtectionTimer -= DIFFUSE_INTERVAL;
 
         DrawDebugField();
 
@@ -636,8 +644,8 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     private const float DEBUG_SPHERE_BASE_RADIUS = 0.15f;
 
     /// <summary>
-    /// Renders the current occupancy field for debugging: one sphere per cell, sized and coloured
-    /// by its probability (cold/small = unlikely, hot/large = likely), and optionally the adjacency
+    /// Renders the current occupancy field for debugging: one sphere per cell which is coloured
+    /// by its probability (cold = unlikely, hot = likely), and optionally the adjacency
     /// edges between cells. Only works unless <see cref="_drawDebugField"/> is set.
     /// </summary>
     private void DrawDebugField()
@@ -668,8 +676,6 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
 
             // Blue (cold, unlikely) -> red (hot, likely)
             Color colour = new(normalized, 0f, 1f - normalized, 0.6f);
-
-            // float radius = DEBUG_SPHERE_BASE_RADIUS + normalized * DEBUG_SPHERE_PROB_SCALE;
             DebugShapeVisualizer.DrawSphere(this, position: cell.Position, radius: DEBUG_SPHERE_BASE_RADIUS, colour);
 
             if (_drawDebugEdges && cell.Neighbours != null)

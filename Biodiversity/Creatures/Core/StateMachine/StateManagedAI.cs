@@ -55,14 +55,14 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         /// Populated during the first initialization for this specific <see cref="TState"/> and <see cref="TEnemyAI"/> combination.
         /// </summary>
         public static Dictionary<TState, Type> StateTypes { get; private set; }
-        
+
         /// <summary>
         /// Gets a dictionary mapping <see cref="Type"/> of the <see cref="BehaviourState{TState,TEnemyAI}"/> implementation
         /// to its <see cref="ConstructorInfo"/>. This constructor is expected to take a single parameter of type <see cref="TEnemyAI"/>.
         /// Populated during the first initialization for this specific <see cref="TState"/> and <see cref="TEnemyAI"/> combination.
         /// </summary>
         public static Dictionary<Type, ConstructorInfo> StateConstructors { get; private set; }
-        
+
         /// <summary>
         /// Gets a value indicating whether this specific <see cref="StateCache"/> (for this <see cref="TState"/>, <see cref="TEnemyAI"/> pair)
         /// has been initialized.
@@ -81,7 +81,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             lock (typeof(StateCache)) // Ensures thread safety during initialization
             {
                 if (IsInitialized) return; // Double check lock
-                
+
                 StateTypes = new Dictionary<TState, Type>();
                 StateConstructors = new Dictionary<Type, ConstructorInfo>();
 
@@ -152,20 +152,20 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                         BiodiversityPlugin.Logger.LogError($"[StateCache<{typeof(TEnemyAI).Name}>] Error processing assembly {assembly.FullName}: {e}");
                     }
                 }
-                
+
                 BiodiversityPlugin.LogVerbose($"[StateCache<{typeof(TEnemyAI).Name}>] Initialized with {StateTypes.Count} states.");
                 IsInitialized = true;
             }
         }
     }
-    
+
     /// <summary>
     /// Gets the current active behavior state instance of the AI.
     /// This state is an implementation of <see cref="BehaviourState{TState,TEnemyAI}"/>.
     /// This is <c>null</c> if no state is active or before initialization.
     /// </summary>
     protected BehaviourState<TState, TEnemyAI> CurrentState;
-    
+
     /// <summary>
     /// Network-synchronized variable holding the integer representation of the <see cref="CurrentState"/>.
     /// Marked as public for (and only for) vanilla compatibility or external systems needing to read the raw state index,
@@ -173,7 +173,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// </summary>
     // ReSharper disable once Unity.RedundantHideInInspectorAttribute
     [HideInInspector] public readonly NetworkVariable<int> NetworkCurrentBehaviourStateIndex = new();
-    
+
     /// <summary>
     /// Gets the behavior state instance (an implementation of <see cref="BehaviourState{TState,TEnemyAI}"/>)
     /// that was active before the <see cref="CurrentState"/>.
@@ -187,22 +187,22 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// This dictionary is populated by <see cref="InitializeStateDictionary"/> during this AI's <see cref="Start"/> method.
     /// </summary>
     private readonly Dictionary<TState, BehaviourState<TState, TEnemyAI>> _stateDictionary = new();
-    
+
     /// <summary>
     /// A list for transitions that should be checked from any state.
     /// </summary>
     protected readonly List<StateTransition<TState, TEnemyAI>> GlobalTransitions = [];
-    
+
     /// <summary>
     /// A dictionary containing arrays of <see cref="AudioClip"/>s, indexed by category name.
     /// </summary>
     protected Dictionary<string, AudioClip[]> AudioClips { get; set; } = new();
-    
+
     /// <summary>
     /// A dictionary containing <see cref="AudioSource"/> components, indexed by category name.
     /// </summary>
     protected Dictionary<string, AudioSource> AudioSources { get; set; } = new();
-    
+
     /// <summary>
     /// Initializes the base <see cref="BiodiverseAI"/> and, if on the server,
     /// initializes the state dictionary and transitions to the initial state determined by <see cref="DetermineInitialState"/>.
@@ -211,10 +211,10 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     {
         base.Start();
         if (!IsServer) return;
-        
+
         InitializeStateDictionary();
         InitializeGlobalTransitions();
-        
+
         if (_stateDictionary.Count > 0) SwitchBehaviourState(DetermineInitialState());
         else LogError("State dictionary is empty after initialization. The AI will not work at all.");
     }
@@ -227,7 +227,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     {
         base.Update();
         if (!ShouldRunUpdate()) return;
-        
+
         CurrentState?.UpdateBehaviour();
     }
 
@@ -239,9 +239,9 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     {
         base.DoAIInterval();
         if (!ShouldRunAiInterval()) return;
-        
+
         CurrentState?.AIIntervalBehaviour();
-        
+
        if (EvaluateTransitions(GlobalTransitions)) return;
        EvaluateTransitions(CurrentState?.Transitions);
     }
@@ -274,7 +274,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     private void InitializeStateDictionary()
     {
         if (!IsServer) return;
-        
+
         StateCache.InitializeIfNeeded(); // Ensure the static cache is initialized once per TState/TEnemyAI combo
         _stateDictionary.Clear();
 
@@ -302,9 +302,10 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
                 LogError($"Failed to instantiate state {stateType.Name} using cached constructor: {e}");
             }
         }
+
         LogVerbose($"Initialized state dictionary for this instance with {_stateDictionary.Count} states.");
     }
-    
+
     /// <summary>
     /// Checks and executes any valid state transitions given in the <paramref name="transitions"/> parameter.
     /// </summary>
@@ -316,12 +317,12 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         {
             return false;
         }
-        
+
         for (int i = 0; i < transitions.Count; i++)
         {
             StateTransition<TState, TEnemyAI> transition = transitions[i];
             if (!transition.ShouldTransitionBeTaken()) continue;
-            
+
             SwitchBehaviourState(transition.NextState(), transition);
             return true;
         }
@@ -336,7 +337,6 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// method is called if provided, then <see cref="BehaviourState{TState,TEnemyAI}.OnStateEnter"/> is called on the new state.
     /// The <see cref="NetworkCurrentBehaviourStateIndex"/> is updated to reflect the new state.
     /// </summary>
-    /// 
     /// <param name="newState">
     /// The enum value of the <see cref="TState"/> to transition to.
     /// </param>
@@ -354,7 +354,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         StateData initData = null)
     {
         if (!IsServer) return;
-        
+
         BehaviourState<TState, TEnemyAI> previousStateInstance = CurrentState;
         if (previousStateInstance != null)
         {
@@ -369,10 +369,10 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             {
                 LogError($"Exception during OnStateExit for {previousStateInstanceType}: {e}");
             }
-            
+
             PreviousState = previousStateInstance;
             previousBehaviourStateIndex = Convert.ToInt32(previousStateInstanceType);
-            
+
             stateTransition?.OnTransition();
         }
         else
@@ -387,7 +387,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             CurrentState = newStateInstance;
             currentBehaviourStateIndex = (int)(object)newState;
             NetworkCurrentBehaviourStateIndex.SafeSet(currentBehaviourStateIndex);
-            
+
             // LogVerbose($"Entering state {newState}.");
 
             try
@@ -398,7 +398,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             {
                 LogError($"Exception during OnStateEnter for {newState}: {e}");
             }
-            
+
             // LogVerbose($"Successfully switched to behaviour state {newState}.");
         }
         else
@@ -406,7 +406,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
             LogError($"State {newState} was not found in the StateDictionary. This should not happen.");
         }
     }
-    
+
     /// <summary>
     /// Triggers a custom, AI-specific event to be processed by the <see cref="CurrentState"/>.
     /// </summary>
@@ -433,7 +433,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     /// The initial state of type <typeparamref name="TState"/> that the AI should enter at the start.
     /// </returns>
     /// <remarks>
-    /// The implementation of this method can use various strategies to decide the initial state, 
+    /// The implementation of this method can use various strategies to decide the initial state,
     /// such as defaulting to a specific state, basing it on game context, or loading it from saved data.
     /// </remarks>
     /// <example>
@@ -490,19 +490,19 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
     {
         return IsServer;
     }
-    
+
     #region Audio
     /// <summary>
-    /// Collects all <see cref="AudioClip"/> and <see cref="AudioSource"/> fields defined on the object T.
-    /// Then it populates the <see cref="AudioClips"/> and <see cref="AudioSources"/> dictionaries based on field names and values.
+    /// Collects all <see cref="AudioClip"/> and <see cref="AudioSource"/> fields defined on the object <c>T</c>.
+    /// It then populates the <see cref="AudioClips"/> and <see cref="AudioSources"/> dictionaries based on field names and values.
     /// </summary>
     protected void CollectAudioClipsAndSources<T>() where T : Component
     {
         LogVerbose($"In {nameof(CollectAudioClipsAndSources)}<{typeof(T).Name}>");
-        
+
         AudioClips = new Dictionary<string, AudioClip[]>();
         AudioSources = new Dictionary<string, AudioSource>();
-        
+
         if (!TryGetComponent(out T component))
         {
             LogWarning($"No component of type {typeof(T).Name} found on {gameObject.name}. Cannot load audio clips & sources.");
@@ -518,31 +518,29 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         for (int i = 0; i < fields.Length; i++)
         {
             FieldInfo field = fields[i];
-            
+
             string key = field.Name;
             Type fieldType = field.FieldType;
             object rawValue = field.GetValue(component);
-            
+
             // LogVerbose($"Field name: {key}, field type: {fieldType}");
 
             // This code looks ugly because there are null checks inside each if statement.
-            // Its better this way though because we only null check if we find a type that we actually want first.
+            // It's better this way though because we only null check if we find a type that we actually want first.
             if (fieldType == typeof(AudioClip[]))
             {
-                if (rawValue is AudioClip[] { Length: > 0 } value) 
+                if (rawValue is AudioClip[] { Length: > 0 } value)
                     AudioClips[key] = value;
             }
             else if (fieldType == typeof(AudioClip))
             {
                 AudioClip value = rawValue as AudioClip;
-                if (value != null) 
-                    AudioClips[key] = [value];
+                if (value) AudioClips[key] = [value];
             }
             else if (fieldType == typeof(AudioSource))
             {
                 AudioSource value = rawValue as AudioSource;
-                if (value != null) 
-                    AudioSources[key] = value;
+                if (value) AudioSources[key] = value;
             }
         }
     }

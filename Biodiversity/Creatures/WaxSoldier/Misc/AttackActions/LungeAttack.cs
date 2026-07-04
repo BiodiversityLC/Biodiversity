@@ -12,7 +12,7 @@ namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
 public class LungeAttack : AttackAction
 {
     private const float LUNGE_DURATION = 0.21f; // This is from the lunge animation
-    private const float ARC_HEIGHT = 3f;
+    private const float ARC_HEIGHT = 6f;
     private const float MAX_LUNGE_DISTANCE = 12f;
 
     private Vector3 startPosition, targetPosition;
@@ -32,10 +32,10 @@ public class LungeAttack : AttackAction
 
         Vector3 lungeDir = ctx.Adapter.TargetPlayer.transform.position - startPosition;
         lungeDir.y = 0f;
-        float lungeDirSqrMagnitude = lungeDir.sqrMagnitude;
 
-        float lungeDistance = Mathf.Min(lungeDirSqrMagnitude * lungeDirSqrMagnitude, MAX_LUNGE_DISTANCE);
-        lungeDir = lungeDirSqrMagnitude > 0.0001f ? lungeDir.normalized : ctx.Adapter.Transform.forward;
+        float lungeDirMagnitude = lungeDir.magnitude;
+        float lungeDistance = Mathf.Min(lungeDirMagnitude, MAX_LUNGE_DISTANCE);
+        lungeDir = lungeDirMagnitude > 0.01f ? lungeDir.normalized : ctx.Adapter.Transform.forward;
 
         Vector3 desiredTargetPosition = startPosition + lungeDir * lungeDistance;
         targetPosition = NavMesh.SamplePosition(desiredTargetPosition, out NavMeshHit hit, 4f, ctx.Adapter.Agent.areaMask)
@@ -46,6 +46,8 @@ public class LungeAttack : AttackAction
         lungeActive = true;
 
         ctx.Adapter.Agent.enabled = false;
+
+        base.Start(ctx);
     }
 
     public override void Update(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
@@ -100,9 +102,6 @@ public class LungeAttack : AttackAction
                     causeOfDeath: CauseOfDeath.Crushing);
 
                 break;
-
-            // case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventEndMoltenLunge):
-            //     break;
         }
     }
 }

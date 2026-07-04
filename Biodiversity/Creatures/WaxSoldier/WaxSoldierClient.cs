@@ -18,7 +18,7 @@ public class WaxSoldierClient : MonoBehaviour
     public static readonly int ShootMusket = Animator.StringToHash("ShootMusket");
     public static readonly int ReloadMusket = Animator.StringToHash("ReloadMusket");
     public static readonly int ForceWalk = Animator.StringToHash("ForceWalk");
-    public static readonly int Melting = Animator.StringToHash("Melting");
+    public static readonly int StartMelting = Animator.StringToHash("StartMelting");
     public static readonly int Dead = Animator.StringToHash("Dead");
     private static readonly int FinishedMelting = Animator.StringToHash("FinishedMelting");
     public static readonly int LungeAttack = Animator.StringToHash("LungeAttack");
@@ -103,7 +103,7 @@ public class WaxSoldierClient : MonoBehaviour
     {
         _currentAnimator.SetBool(InSalute, netcodeController.AnimationParamInSalute.Value);
         _currentAnimator.SetBool(Dead, netcodeController.AnimationParamIsDead.Value);
-        _currentAnimator.SetBool(Melting, netcodeController.AnimationParamIsMelting.Value);
+        _currentAnimator.SetBool(StartMelting, netcodeController.AnimationParamStartMelting.Value);
     }
 
     #region Animation

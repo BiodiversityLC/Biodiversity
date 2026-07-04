@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.AnimatorStates;
 
-public class WaxSoldierMeltJitterAnimatorState : BaseAnimatorState
+public class WaxSoldierAttackAnimatorState : BaseAnimatorState
 {
     private WaxSoldierAnimationEventHandler behaviour;
 
@@ -25,6 +25,6 @@ public class WaxSoldierMeltJitterAnimatorState : BaseAnimatorState
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         base.OnStateExit(animator, stateInfo, layerIndex);
-        behaviour?.OnMeltJitterAnimationFinish();
+        behaviour?.OnAttackAnimationFinish();
     }
 }
