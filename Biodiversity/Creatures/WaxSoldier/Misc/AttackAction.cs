@@ -65,6 +65,8 @@ public class AttackAction
 
     public virtual void Update(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
 
+    public virtual void AIInterval(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
+
     public virtual void Finish(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx) { }
 
     public virtual void HandleCustomEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)

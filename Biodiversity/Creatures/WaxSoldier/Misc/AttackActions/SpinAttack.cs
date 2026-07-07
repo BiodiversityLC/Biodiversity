@@ -12,6 +12,9 @@ public class SpinAttack : AttackAction
 
     public override void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
+        BiodiversityPlugin.LogVerbose($"Parent before spin: {ctx.Adapter.Transform.localEulerAngles}");
+        BiodiversityPlugin.LogVerbose($"Child before spin: {ctx.Adapter.Animator.transform.localEulerAngles}");
+
         ctx.Adapter.SetMovementProfile(0.2f, 50f);
         ctx.Adapter.Agent.updateRotation = false;
 
@@ -29,13 +32,18 @@ public class SpinAttack : AttackAction
     {
         base.Finish(ctx);
 
-        // Vector3 finalDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
-        // finalDirection.y = 0;
-        //
-        // ctx.Adapter.Transform.rotation = Quaternion.LookRotation(finalDirection);
-        // ctx.Adapter.Animator.gameObject.transform.localRotation = Quaternion.identity;
+        Vector3 finalDirection = ctx.Adapter.TargetPlayer.transform.position - ctx.Adapter.Transform.position;
+        finalDirection.y = 0;
+        ctx.Adapter.Transform.rotation = Quaternion.LookRotation(finalDirection);
+
+        BiodiversityPlugin.LogVerbose($"Parent before reset: {ctx.Adapter.Transform.localEulerAngles}");
+        BiodiversityPlugin.LogVerbose($"Child before reset: {ctx.Adapter.Animator.transform.localEulerAngles}");
+        ctx.Adapter.Animator.transform.localRotation = Quaternion.identity;
+        BiodiversityPlugin.LogVerbose($"Parent after reset: {ctx.Adapter.Transform.localEulerAngles}");
+        BiodiversityPlugin.LogVerbose($"Child after reset: {ctx.Adapter.Animator.transform.localEulerAngles}");
 
         ctx.Adapter.Agent.updateRotation = true;
+        ctx.Adapter.StopAllPathing();
         ctx.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PursuitMaxSpeed, WaxSoldierHandler.Instance.Config.PursuitAcceleration);
     }
 }

@@ -36,32 +36,25 @@ internal static class HairdryerHeatEmitterPatch
 
         Vector3 playerCameraPos = __instance.playerHeldBy.gameplayCamera.transform.position;
         int collidersFound = Physics.OverlapSphereNonAlloc(playerCameraPos, RANGE, _buffer, EnemyLayerMask,
-            QueryTriggerInteraction.Ignore);
-
-        BiodiversityPlugin.LogVerbose($"[{nameof(HairdryerHeatEmitterPatch)}] found {collidersFound} colliders.");
+            QueryTriggerInteraction.Collide);
 
         for (int i = 0; i < collidersFound; i++)
         {
             Collider col = _buffer[i];
             if (!col.TryGetComponent(out HeatSensor heatSensor))
-            {
-                BiodiversityPlugin.LogVerbose($"[{nameof(HairdryerHeatEmitterPatch)}] Collider {i} has no heat sensor.");
                 continue;
-            }
 
             Vector3 directionToSensor = col.bounds.center - playerCameraPos;
             float distanceToSensor = directionToSensor.magnitude;
-            if (distanceToSensor > RANGE) continue;
+            if (distanceToSensor > RANGE)
+                continue;
 
             Vector3 directionToSensorNormal = directionToSensor / distanceToSensor;
 
             float cosHalfAngle = Mathf.Cos(Mathf.Clamp(WIDTH, 0f, 180f) * 0.5f * Mathf.Deg2Rad);
             if (Vector3.Dot(directionToSensorNormal,
                     __instance.playerHeldBy.gameplayCamera.transform.forward.normalized) < cosHalfAngle)
-            {
-                BiodiversityPlugin.LogVerbose($"[{nameof(HairdryerHeatEmitterPatch)}] Collider {i} is outside the view range.");
-                continue;
-            } // outside cone
+                continue; // Outside the view range
 
             // Don't heat through walls
             if (Physics.Linecast(col.bounds.center, playerCameraPos,

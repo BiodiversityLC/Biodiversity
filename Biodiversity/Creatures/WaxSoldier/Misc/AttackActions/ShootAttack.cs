@@ -34,7 +34,7 @@ public class ShootAttack : AttackAction
 
         if (shouldLookAtTarget && aimTransform)
         {
-            Vector3 direction = (ctx.Adapter.TargetPlayer.transform.position - aimTransform.position).normalized;
+            Vector3 direction = ctx.Adapter.TargetPlayer.transform.position - aimTransform.position;
             direction.y = 0;
             ctx.Adapter.Transform.rotation = Quaternion.Slerp(aimTransform.rotation,
                 Quaternion.LookRotation(direction), Time.deltaTime * ctx.Adapter.Agent.angularSpeed);

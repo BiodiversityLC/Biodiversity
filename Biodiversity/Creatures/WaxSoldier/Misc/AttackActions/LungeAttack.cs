@@ -13,7 +13,6 @@ public class LungeAttack : AttackAction
 {
     private const float LUNGE_DURATION = 0.21f; // This is from the lunge animation
     private const float ARC_HEIGHT = 6f;
-    private const float MAX_LUNGE_DISTANCE = 12f;
 
     private Vector3 startPosition, targetPosition;
     private float elapsed;
@@ -34,7 +33,7 @@ public class LungeAttack : AttackAction
         lungeDir.y = 0f;
 
         float lungeDirMagnitude = lungeDir.magnitude;
-        float lungeDistance = Mathf.Min(lungeDirMagnitude, MAX_LUNGE_DISTANCE);
+        float lungeDistance = Mathf.Min(lungeDirMagnitude, MaxRange);
         lungeDir = lungeDirMagnitude > 0.01f ? lungeDir.normalized : ctx.Adapter.Transform.forward;
 
         Vector3 desiredTargetPosition = startPosition + lungeDir * lungeDistance;

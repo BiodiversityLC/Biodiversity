@@ -41,6 +41,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         base.AIIntervalBehaviour();
 
         EnemyAIInstance.UpdatePlayerLastKnownPosition();
+        EnemyAIInstance.Context.Blackboard.CurrentAttackAction.AIInterval(EnemyAIInstance.Context);
     }
 
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)
