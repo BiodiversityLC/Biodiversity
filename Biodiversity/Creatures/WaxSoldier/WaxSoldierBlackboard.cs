@@ -19,7 +19,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
 
     public float TimeWhenTargetPlayerLastSeen { get; set; }
     public float PursuitLingerTime { get; set; } = 0.3f;
-    public float HuntingLingerTime { get; set; } = 20f;
+    public float HuntingLingerTime { get; set; } = 30f; // This is effectively the amount of time the soldier spends hunting a player before giving up
     public float TimeSincePlayerLastSeen => Time.time - TimeWhenTargetPlayerLastSeen;
 
     public bool IsNetworkEventsSubscribed { get; set; }

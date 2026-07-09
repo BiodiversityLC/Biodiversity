@@ -31,7 +31,7 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
 
     [field: Tooltip("The max spead of the Wax Soldier when he's on patrol.")]
     [field: Range(0.01f, 500f)]
-    public float PatrolMaxSpeed { get; private set; } = 5f;
+    public float PatrolMaxSpeed { get; private set; } = 4f;
 
     [field: Tooltip("The acceleration of the Wax Soldier when he's on patrol.")]
     [field: Range(0.01f, 500f)]
@@ -39,7 +39,7 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
 
     [field: Tooltip("The max spead of the Wax Soldier when he's pursuing a player.")]
     [field: Range(0.01f, 500f)]
-    public float PursuitMaxSpeed { get; private set; } = 5f;
+    public float PursuitMaxSpeed { get; private set; } = 4f;
 
     [field: Tooltip("The acceleration of the Wax Soldier when he's pursuing a player.")]
     [field: Range(0.01f, 500f)]
@@ -47,7 +47,7 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
 
     [field: Tooltip("The max spead of the Wax Soldier when he's hunting a player.")]
     [field: Range(0.01f, 500f)]
-    public float HuntingMaxSpeed { get; private set; } = 5f;
+    public float HuntingMaxSpeed { get; private set; } = 4f;
 
     [field: Tooltip("The acceleration of the Wax Soldier when he's hunting a player.")]
     [field: Range(0.01f, 500f)]
@@ -67,13 +67,13 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
 
     [field: Tooltip("The view width in degrees of the Wax Soldier.")]
     [field: Range(1f, 360f)]
-    public float ViewWidth { get; private set; } = 115f;
+    public float ViewWidth { get; private set; } = 130f;
 
     [field: Tooltip("The view range in meters of the Wax Soldier.")]
     [field: Range(0.1f, 500f)]
-    public float ViewRange { get; private set; } = 65f;
+    public float ViewRange { get; private set; } = 85f;
 
-    [field: Tooltip("Whether the Wax Soldier can be killed by something other than a player e.g. an eyeless dog. WARNING: May be incompatible with weapons from some mods (if friendly fire is off).")]
+    [field: Tooltip("Whether the Wax Soldier can be killed by something other than a player e.g., an eyeless dog. WARNING: May be incompatible with weapons from some mods (if friendly fire is off).")]
     public bool FriendlyFire { get; private set; } = true;
 
     [field: Tooltip("The speed multiplier for how quickly the Wax Soldier can open doors.")]
@@ -86,10 +86,6 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
 
     #region Combat Settings
     [field: Header("Combat Settings")]
-
-    [field: Tooltip("")]
-    [field: Range(1f, 30f)]
-    public float StabAreaLength { get; private set; } = 14f;
 
     [field: Tooltip("")]
     [field: Range(0, 5000)]

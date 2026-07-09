@@ -1,4 +1,5 @@
 ﻿using Biodiversity.Behaviours.Heat;
+using Biodiversity.Core.Integration;
 using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
@@ -35,7 +36,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         TransformingToMolten,
         MoltenRoam,
         Stunned,
-        Dead,
+        Dead
     }
 
     public enum MoltenState
@@ -154,31 +155,35 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         // }
     }
 
-    public void UpdateWaxDurability()
+    /// <summary>
+    /// Calculates the updated <see cref="WaxSoldierBlackboard.WaxDurability"/> given the current <see cref="HeatSensor.TemperatureC"/>.
+    /// </summary>
+    /// <returns><c>True</c> if the transition to the <see cref="WaxSoldierAI.States.TransformingToMolten"/> state got activated this frame; otherwise, <c>False</c>.</returns>
+    public bool UpdateWaxDurability()
     {
-        if (_blackboard.MoltenState == MoltenState.Molten) return;
+        if (_blackboard.MoltenState == MoltenState.Molten) return false;
 
-        float newDurability = _blackboard.WaxDurability;
         if (heatSensor.TemperatureC > _blackboard.WaxSofteningTemperature)
         {
             float t = Mathf.InverseLerp(_blackboard.WaxSofteningTemperature, _blackboard.WaxMeltTemperature, heatSensor.TemperatureC);
 
             // The Pow curve gives an accelerating melt feel
-            float bandDps = Mathf.Lerp(0f, 0.5f, Mathf.Pow(t, 2));
+            float bandDps = 0.5f * (t * t);
 
             // Add a flat damage bonus when fully melting
             float extraDps = heatSensor.TemperatureC >= _blackboard.WaxMeltTemperature ? 0.75f : 0f;
 
             float totalDps = bandDps + extraDps;
-            newDurability = _blackboard.WaxDurability - totalDps * Time.deltaTime;
+            _blackboard.WaxDurability = Mathf.Clamp01(_blackboard.WaxDurability - totalDps * Time.deltaTime);
         }
-
-        _blackboard.WaxDurability = Mathf.Clamp01(Mathf.Min(_blackboard.WaxDurability, newDurability));
 
         if (_blackboard.WaxDurability <= 0)
         {
             SwitchBehaviourState(States.TransformingToMolten);
+            return true;
         }
+
+        return false;
     }
 
     public AttackAction SelectAttack()
@@ -417,6 +422,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         if (!IsServer || _adapter.IsDead) return;
 
         // Hit cooldown
+        // todo: consider removing this; why is it actually needed?
         if (Time.time - _lastHitTime < 0.02f)
             return;
 
@@ -448,6 +454,15 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         {
             SwitchBehaviourState(States.Dead);
         }
+    }
+
+    public override void HitFromExplosion(float distance)
+    {
+        base.HitFromExplosion(distance);
+        if (!IsServer || _adapter.IsDead) return;
+
+        // Impulse = 100 - 4d
+        heatSensor.AddHeatImpulse(100 - 4 * distance);
     }
     #endregion
 

@@ -23,6 +23,7 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
         base.OnStateEnter(ref initData);
 
         EnemyAIInstance.Context.Blackboard.MoltenState = WaxSoldierAI.MoltenState.Molten;
+        EnemyAIInstance.Context.Blackboard.HuntingLingerTime = 800f;
 
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.BeginGracefulStop();

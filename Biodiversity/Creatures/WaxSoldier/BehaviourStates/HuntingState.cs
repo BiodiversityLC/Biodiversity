@@ -13,9 +13,14 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     private readonly SearchStrategy<WaxSoldierBlackboard, WaxSoldierAdapter> searchStrategy;
+    private const float RELOAD_AFTER_SECONDS = 10f;
 
-    private float searchTime = 60f;
-    private float searchTimeLeft;
+    private float concludeSearchTime;
+    private float reloadAtTime; // The time at which the soldier should pause hunting to reload if he needs to
+
+    private WaxSoldierAI.States nextState;
+    private bool isUnmolten;
+    private bool doesMusketNeedReloading;
 
     public HuntingState(WaxSoldierAI enemyAiInstance) : base(enemyAiInstance)
     {
@@ -23,14 +28,6 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         [
             new TransitionToPursuitState(EnemyAIInstance)
         ];
-
-        // List<UtilityDrivenSearch.ScorerWeight> scorers =
-        // [
-        //     new() { Scorer = new DirectionAlignmentScorer(EnemyAIInstance.Context), Weight = 1.5f },
-        //     new() { Scorer = new DistanceScorer(EnemyAIInstance.Context, searchRadius: 25f), Weight = 1f }
-        // ];
-        //
-        // searchStrategy = new UtilityDrivenSearch(EnemyAIInstance.Context, scorers, searchRadius);
 
         searchStrategy = new PlayerBeliefFilterSearch(
             EnemyAIInstance.Context,
@@ -57,17 +54,22 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             return;
         }
 
+        isUnmolten = EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten;
+        doesMusketNeedReloading = EnemyAIInstance.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0;
+        nextState = isUnmolten ? WaxSoldierAI.States.MovingToStation : WaxSoldierAI.States.MoltenRoam;
+
         // Start the search strategy and go to the prescribed position
-        searchTimeLeft = searchTime;
         searchStrategy.Start();
         if (!searchStrategy.TryGetNextSearchPosition(out Vector3 searchPosition))
         {
             EnemyAIInstance.LogVerbose("No search position found; moving back guard post.");
-            EnemyAIInstance.SwitchBehaviourState(
-                EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten ? WaxSoldierAI.States.MovingToStation : WaxSoldierAI.States.MoltenRoam);
-
+            EnemyAIInstance.SwitchBehaviourState(nextState);
             return;
         }
+
+        // Set the search timers
+        concludeSearchTime = Time.time + EnemyAIInstance.Context.Blackboard.HuntingLingerTime;
+        reloadAtTime = Time.time + RELOAD_AFTER_SECONDS;
 
         EnemyAIInstance.Context.Adapter.MoveToDestination(searchPosition);
     }
@@ -79,29 +81,31 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.UpdateWaxDurability();
         searchStrategy.Update();
         EnemyAIInstance.Context.Adapter.MoveAgent();
-
-        searchTimeLeft -= Time.deltaTime;
-        if (searchTimeLeft <= 0)
-        {
-            EnemyAIInstance.LogVerbose("Search timer has finished, concluding search.");
-            EnemyAIInstance.SwitchBehaviourState(
-                EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten ? WaxSoldierAI.States.MovingToStation : WaxSoldierAI.States.MoltenRoam);
-
-            return;
-        }
     }
 
     internal override void AIIntervalBehaviour()
     {
         base.AIIntervalBehaviour();
 
+        if (Time.time >= concludeSearchTime)
+        {
+            EnemyAIInstance.LogVerbose("Search timer has finished; concluding hunt.");
+            EnemyAIInstance.SwitchBehaviourState(nextState);
+            return;
+        }
+        if (isUnmolten && doesMusketNeedReloading && Time.time >= reloadAtTime)
+        {
+            EnemyAIInstance.LogVerbose("Temporarily pausing hunt to reload...");
+            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Reloading);
+            return;
+        }
+
         if (EnemyAIInstance.Context.Adapter.HasReachedDestination())
         {
             if (!searchStrategy.TryGetNextSearchPosition(out Vector3 searchPosition))
             {
-                EnemyAIInstance.LogVerbose("Search timer has finished, concluding search.");
-                EnemyAIInstance.SwitchBehaviourState(
-                    EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten ? WaxSoldierAI.States.MovingToStation : WaxSoldierAI.States.MoltenRoam);
+                EnemyAIInstance.LogVerbose("No more places to search; concluding hunt.");
+                EnemyAIInstance.SwitchBehaviourState(nextState);
 
                 return;
             }
