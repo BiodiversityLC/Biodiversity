@@ -37,6 +37,9 @@ public class Musket : BiodiverseItem
     [SerializeField] public Transform muzzleTip;
     [SerializeField] public Transform bulletRayOrigin;
 
+    [Header("Particles")]
+    [SerializeField] private ParticleSystem bulletParticles;
+
     [Header("Controllers")]
     [SerializeField] public WaxSoldierBayonetAttackPhysics bayonetAttackPhysics;
 
@@ -229,6 +232,8 @@ public class Musket : BiodiverseItem
 
         PlayRandomAudioClipTypeServerRpc(nameof(shootSfx), nameof(shootAudioSource), true, audibleByEnemies: true);
         yield return new WaitForSeconds(0.09f); // The actual gunshot happens 0.09 seconds into the shoot audio clip
+        bulletParticles.Play(true);
+
         PerformBulletLogic();
         _isPerformingAttackAction = false;
     }
@@ -274,6 +279,7 @@ public class Musket : BiodiverseItem
         int hitCount = Physics.SphereCastNonAlloc(bulletRay, _bulletRadius, _bulletHitBuffer, _bulletMaxDistance, _bulletHitMask,
             QueryTriggerInteraction.Collide);
 
+        // Nothing was hit by the bullet
         if (hitCount == 0)
         {
             if (enableDebugVisuals) DrawBulletDebug(bulletRay, null);
