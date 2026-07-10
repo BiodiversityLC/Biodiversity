@@ -330,6 +330,7 @@ public abstract class StateManagedAI<TState, TEnemyAI> : BiodiverseAI
         return false;
     }
 
+    // ReSharper disable Unity.PerformanceAnalysis
     /// <summary>
     /// Transitions the AI to a new behavior state.
     /// This involves calling <see cref="BehaviourState{TState,TEnemyAI}.OnStateExit(StateTransition{TState, TEnemyAI})"/>

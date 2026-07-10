@@ -109,6 +109,7 @@ public abstract class BehaviourState<TState, TEnemyAI>
         EnemyAIInstance.LogVerbose($"{nameof(OnStateExit)} called for {_stateType}.");
     }
 
+    // ReSharper disable Unity.PerformanceAnalysis
     /// <summary>
     /// Performs behavior in the AI's Update cycle while it is in this state.
     /// Override this method to define continuous behavior for the AI.
@@ -117,6 +118,7 @@ public abstract class BehaviourState<TState, TEnemyAI>
     {
     }
 
+    // ReSharper disable Unity.PerformanceAnalysis
     /// <summary>
     /// Performs behavior in the AI's DoAIInterval cycle while it is in this state.
     /// This method can be overridden to define logic that should be executed at regular intervals.
@@ -125,6 +127,7 @@ public abstract class BehaviourState<TState, TEnemyAI>
     {
     }
 
+    // ReSharper disable Unity.PerformanceAnalysis
     /// <summary>
     /// Performs behavior in the AI's LateUpdate cycle while it is in this state.
     /// Override this method to define behavior that should happen at the end of the frame.
@@ -133,6 +136,7 @@ public abstract class BehaviourState<TState, TEnemyAI>
     {
     }
 
+    // ReSharper disable Unity.PerformanceAnalysis
     /// <summary>
     /// Performs behavior in the AI's FixedUpate cycle while it is in this state.
     /// </summary>

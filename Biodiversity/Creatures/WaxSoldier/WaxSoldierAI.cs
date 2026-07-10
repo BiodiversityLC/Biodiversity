@@ -1,5 +1,5 @@
-﻿using Biodiversity.Behaviours.Heat;
-using Biodiversity.Core.Integration;
+﻿// using Biodiversity.Core.Integration;
+using Biodiversity.Behaviours.Heat;
 using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Misc;
@@ -48,7 +48,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /* Molten state ideas:
      *
      * Maybe he can break doors off its hinges like the fiend
-     * Sound triangulation
      * Ambush attacks (figure out ambush points by considering where scrap is, apparatus, etc), but don't do cheap annoying stuff like guarding the entrance to the dungeon
      */
 
@@ -220,6 +219,12 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         _blackboard.GuardPost = new Pose(calculatedPos, calculatedRot);
     }
 
+    public void MoveAgent()
+    {
+        _adapter.MoveAgent();
+        _blackboard.NetcodeController.AgentMaxSpeed.SafeSet(_adapter.Agent.speed);
+    }
+
     private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)
     {
         if (!IsServer) return;
@@ -344,14 +349,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         }
         else if (_blackboard.MoltenState == MoltenState.Unmolten)
         {
-            if (_blackboard.HeldMusket.currentAmmo.Value <= 0)
-            {
-                nextState = States.Reloading;
-            }
-            else
-            {
-                nextState = States.MovingToStation;
-            }
+            nextState = _blackboard.HeldMusket.currentAmmo.Value <= 0 ? States.Reloading : States.MovingToStation;
         }
         else
         {

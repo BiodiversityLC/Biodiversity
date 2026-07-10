@@ -13,7 +13,7 @@ namespace Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 {
     private readonly SearchStrategy<WaxSoldierBlackboard, WaxSoldierAdapter> searchStrategy;
-    private const float RELOAD_AFTER_SECONDS = 10f;
+    private const float RELOAD_AFTER_SECONDS = 8f;
 
     private float concludeSearchTime;
     private float reloadAtTime; // The time at which the soldier should pause hunting to reload if he needs to
@@ -54,9 +54,13 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             return;
         }
 
+        // Set dirty flags
         isUnmolten = EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten;
         doesMusketNeedReloading = EnemyAIInstance.Context.Blackboard.HeldMusket.currentAmmo.Value <= 0;
         nextState = isUnmolten ? WaxSoldierAI.States.MovingToStation : WaxSoldierAI.States.MoltenRoam;
+
+        reloadAtTime = EnemyAIInstance.Context.Blackboard.TimeWhenMusketLastFired + RELOAD_AFTER_SECONDS;
+        ReloadIfNecessary();
 
         // Start the search strategy and go to the prescribed position
         searchStrategy.Start();
@@ -67,10 +71,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             return;
         }
 
-        // Set the search timers
-        concludeSearchTime = Time.time + EnemyAIInstance.Context.Blackboard.HuntingLingerTime;
-        reloadAtTime = Time.time + RELOAD_AFTER_SECONDS;
-
+        concludeSearchTime = Time.time + EnemyAIInstance.Context.Blackboard.HuntingLingerTime; // Set the search timer
         EnemyAIInstance.Context.Adapter.MoveToDestination(searchPosition);
     }
 
@@ -80,7 +81,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         EnemyAIInstance.UpdateWaxDurability();
         searchStrategy.Update();
-        EnemyAIInstance.Context.Adapter.MoveAgent();
+        EnemyAIInstance.MoveAgent();
     }
 
     internal override void AIIntervalBehaviour()
@@ -93,12 +94,8 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             EnemyAIInstance.SwitchBehaviourState(nextState);
             return;
         }
-        if (isUnmolten && doesMusketNeedReloading && Time.time >= reloadAtTime)
-        {
-            EnemyAIInstance.LogVerbose("Temporarily pausing hunt to reload...");
-            EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Reloading);
-            return;
-        }
+
+        ReloadIfNecessary();
 
         if (EnemyAIInstance.Context.Adapter.HasReachedDestination())
         {
@@ -120,5 +117,19 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         searchStrategy.Conclude();
         EnemyAIInstance.Context.Adapter.StopAllPathing();
+    }
+
+
+    /// <summary>
+    /// Reloads the <see cref="Musket"/> if:
+    /// 1). The musket needs reloading;
+    /// 2). The soldier is unmolten;
+    /// 3). It's been more than <see cref="RELOAD_AFTER_SECONDS"/> seconds before the musket was fired.
+    /// </summary>
+    private void ReloadIfNecessary()
+    {
+        if (!isUnmolten || !doesMusketNeedReloading || !(Time.time >= reloadAtTime)) return;
+        EnemyAIInstance.LogVerbose("Temporarily pausing hunt to reload...");
+        EnemyAIInstance.SwitchBehaviourState(WaxSoldierAI.States.Reloading);
     }
 }

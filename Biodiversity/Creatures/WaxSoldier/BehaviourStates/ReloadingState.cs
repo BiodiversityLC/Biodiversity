@@ -35,7 +35,7 @@ internal class ReloadingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         base.UpdateBehaviour();
 
         EnemyAIInstance.UpdateWaxDurability();
-        EnemyAIInstance.Context.Adapter.MoveAgent();
+        EnemyAIInstance.MoveAgent();
 
         if (!hasTriggeredAnimation && EnemyAIInstance.Context.Adapter.Agent.velocity.sqrMagnitude <= 0.6f)
         {

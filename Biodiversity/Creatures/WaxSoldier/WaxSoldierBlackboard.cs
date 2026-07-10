@@ -18,7 +18,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float WaxMeltTemperature { get; } = 60f;
 
     public float TimeWhenTargetPlayerLastSeen { get; set; }
-    public float PursuitLingerTime { get; set; } = 0.3f;
+    public float PursuitLingerTime { get; set; } = 1f;
     public float HuntingLingerTime { get; set; } = 30f; // This is effectively the amount of time the soldier spends hunting a player before giving up
     public float TimeSincePlayerLastSeen => Time.time - TimeWhenTargetPlayerLastSeen;
 
@@ -32,15 +32,16 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
 
     public WaxSoldierAI.MoltenState MoltenState { get; set; }
 
-    #region AttackAction Stuff
+    #region Attack Stuff
     public List<AttackAction> AvailableAttacks { get; set; } = [];
     public Dictionary<AttackAction, float> AttackCooldownEndTimes { get; } = new();
     public AttackAction CurrentAttackAction { get; set; }
+
+    public Musket HeldMusket { get; set; }
+    public float TimeWhenMusketLastFired { get; set; }
     #endregion
 
-
     public WaxSoldierNetcodeController NetcodeController { get; set; }
-    public Musket HeldMusket { get; set; }
 
     public AISearchRoutine moltenRoamSearchRoutine { get; set; }
 }

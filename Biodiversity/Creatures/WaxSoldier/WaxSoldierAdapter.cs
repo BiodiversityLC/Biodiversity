@@ -1,6 +1,8 @@
 ﻿using Biodiversity.Creatures.Core;
+using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
 using GameNetcodeStuff;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -69,7 +71,6 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
 
     #region Agent Stuff
     public float AgentSpeedChangeRate { get; set; } = 10f;
-
     private float _targetSpeed;
 
     internal void MoveAgent()

@@ -1,4 +1,4 @@
-﻿using Biodiversity.Core.Integration;
+﻿// using Biodiversity.Core.Integration;
 using Biodiversity.Items;
 using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
@@ -103,12 +103,21 @@ public class Musket : BiodiverseItem
     [Range(0f, 1f)]
     public float verticalAimAssist = 0.95f;
 
-    public NetworkVariable<int> currentAmmo { get; private set; } = new(1);
+    public NetworkVariable<int> currentAmmo { get; private set; } = new(
+        1,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
     private int _bulletHitMask;
     private int _bayonetHitMask;
     private int _maxAmmo;
 
-    private readonly NetworkVariable<bool> _isSafetyOn = new();
+    private readonly NetworkVariable<bool> _isSafetyOn = new(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
     private static bool _hasRegisteredImperiumInsights;
     private bool _isPerformingAttackAction;
     private bool _isHoldingButton;
@@ -147,7 +156,6 @@ public class Musket : BiodiverseItem
 
         // todo: check the vanilla shotgun's bullet mask, cuz the musket bullet can go through doors rn which is bad
         _bulletHitMask = StartOfRound.Instance.collidersRoomMaskDefaultAndPlayers | (1 << LayerMask.NameToLayer("Enemies"));
-        _isSafetyOn.Value = false;
 
         TryRegisterImperiumInsights();
     }
@@ -225,14 +233,24 @@ public class Musket : BiodiverseItem
         }
     }
 
+    #region Bullet Logic
+    public void SetupShotAndFire()
+    {
+        if (_shootingCoroutine != null) StopCoroutine(_shootingCoroutine);
+        _shootingCoroutine = null;
+        _isPerformingAttackAction = true;
+        _shootingCoroutine = StartCoroutine(Shoot());
+    }
+
     private IEnumerator Shoot()
     {
         // LogVerbose($"In {nameof(Shoot)}.");
         _isPerformingAttackAction = true;
 
-        PlayRandomAudioClipTypeServerRpc(nameof(shootSfx), nameof(shootAudioSource), true, audibleByEnemies: true);
+        if (IsServer) PlayBulletParticleEffectAndAudioClientRpc();
+        else PlayBulletParticleEffectAndAudioServerRpc();
+
         yield return new WaitForSeconds(0.09f); // The actual gunshot happens 0.09 seconds into the shoot audio clip
-        bulletParticles.Play(true);
 
         PerformBulletLogic();
         _isPerformingAttackAction = false;
@@ -344,6 +362,43 @@ public class Musket : BiodiverseItem
         }
     }
 
+    private int FindClosestValidHit(int hitCount)
+    {
+        int closestIndex = -1;
+        float minDistance = float.MaxValue;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit hit = _bulletHitBuffer[i];
+
+            if (hit.distance <= 0.001f) continue;
+            if (hit.distance >= minDistance) continue;
+
+            // Check for self-collision
+            if (isHeldByPlayer && hit.transform.GetComponent<PlayerControllerB>() == playerHeldBy) continue;
+            if (isHeldByEnemy && hit.transform.GetComponentInParent<EnemyAI>() == enemyHeldBy) continue;
+
+            minDistance = hit.distance;
+            closestIndex = i;
+        }
+
+        return closestIndex;
+    }
+
+    private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
+    {
+        // todo: this
+        return 110;
+    }
+
+    public void Reload()
+    {
+        LogVerbose("Reloading...");
+        currentAmmo.Value = Mathf.Clamp(currentAmmo.Value + 1, 0, _maxAmmo);
+    }
+    #endregion
+
+    #region Bayonet Logic
     private IEnumerator ReelUpBayonet()
     {
         LogVerbose("Reeling up bayonet...");
@@ -421,41 +476,7 @@ public class Musket : BiodiverseItem
             }
         }
     }
-
-    private int FindClosestValidHit(int hitCount)
-    {
-        int closestIndex = -1;
-        float minDistance = float.MaxValue;
-
-        for (int i = 0; i < hitCount; i++)
-        {
-            RaycastHit hit = _bulletHitBuffer[i];
-
-            if (hit.distance <= 0.001f) continue;
-            if (hit.distance >= minDistance) continue;
-
-            // Check for self-collision
-            if (isHeldByPlayer && hit.transform.GetComponent<PlayerControllerB>() == playerHeldBy) continue;
-            if (isHeldByEnemy && hit.transform.GetComponentInParent<EnemyAI>() == enemyHeldBy) continue;
-
-            minDistance = hit.distance;
-            closestIndex = i;
-        }
-
-        return closestIndex;
-    }
-
-    public void Reload()
-    {
-        LogVerbose("Reloading...");
-        currentAmmo.Value = Mathf.Clamp(currentAmmo.Value + 1, 0, _maxAmmo);
-    }
-
-    private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
-    {
-        // todo: this
-        return 110;
-    }
+    #endregion
 
     internal void OnGrabbedByWaxSoldier(EnemyAI waxSoldier)
     {
@@ -486,15 +507,21 @@ public class Musket : BiodiverseItem
         PlayerControllerB player = PlayerUtil.GetPlayerFromClientId(playerId);
         player.DamagePlayer(damage, true, true, causeOfDeath, 0, false, force);
     }
-    #endregion
 
-    public void SetupShotAndFire()
+    [ServerRpc]
+    private void PlayBulletParticleEffectAndAudioServerRpc()
     {
-        if (_shootingCoroutine != null) StopCoroutine(_shootingCoroutine);
-        _shootingCoroutine = null;
-        _isPerformingAttackAction = true;
-        _shootingCoroutine = StartCoroutine(Shoot());
+        PlayBulletParticleEffectAndAudioClientRpc();
     }
+
+    [ClientRpc]
+    private void PlayBulletParticleEffectAndAudioClientRpc()
+    {
+        PlayAudioClipType(nameof(shootSfx), nameof(shootAudioSource), 0,
+            interrupt: true, audibleInWalkieTalkie: true, audibleByEnemies: !isHeldByEnemy);
+        bulletParticles.Play(withChildren: true);
+    }
+    #endregion
 
     private void DrawBulletDebug(Ray ray, List<int> successfulHitIndicies)
     {

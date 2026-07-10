@@ -30,7 +30,7 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
         }
 
         EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolAcceleration);
-        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
+        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.CombatFidelityProfile);
         EnemyAIInstance.Context.Adapter.MoveToDestination(EnemyAIInstance.Context.Blackboard.GuardPost.position);
     }
 
@@ -39,7 +39,7 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
         base.UpdateBehaviour();
 
         EnemyAIInstance.UpdateWaxDurability();
-        EnemyAIInstance.Context.Adapter.MoveAgent();
+        EnemyAIInstance.MoveAgent();
     }
 
     internal override void OnStateExit(StateTransition<WaxSoldierAI.States, WaxSoldierAI> transition)

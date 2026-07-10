@@ -31,7 +31,7 @@ internal class PursuitState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         base.UpdateBehaviour();
 
         EnemyAIInstance.UpdateWaxDurability();
-        EnemyAIInstance.Context.Adapter.MoveAgent();
+        EnemyAIInstance.MoveAgent();
     }
 
     internal override void AIIntervalBehaviour()

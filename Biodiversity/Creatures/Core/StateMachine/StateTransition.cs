@@ -17,7 +17,7 @@ public abstract class StateTransition<TState, TEnemyAI>
     /// This is used to evaluate the transition logic and move the AI to the next state.
     /// </summary>
     protected readonly TEnemyAI EnemyAIInstance;
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="StateTransition{TState, TEnemyAI}"/> class.
     /// </summary>
@@ -36,14 +36,15 @@ public abstract class StateTransition<TState, TEnemyAI>
     /// <c>true</c> if the transition should be taken; otherwise, <c>false</c>.
     /// </returns>
     internal abstract bool ShouldTransitionBeTaken();
-    
+
     /// <summary>
     /// Gets the next state that the AI should transition to.
     /// This method must be overridden in a subclass to specify the next state that should be activated after the transition.
     /// </summary>
     /// <returns>The next state of type <typeparamref name="TState"/>.</returns>
     internal abstract TState NextState();
-    
+
+    // ReSharper disable Unity.PerformanceAnalysis
     /// <summary>
     /// Called when the transition is performed.
     /// Override this method to define behavior that should occur when the transition is triggered.

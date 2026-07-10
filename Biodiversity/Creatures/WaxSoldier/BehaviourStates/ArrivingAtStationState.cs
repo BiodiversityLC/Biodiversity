@@ -44,7 +44,7 @@ internal class ArrivingAtStationState : BehaviourState<WaxSoldierAI.States, WaxS
         base.UpdateBehaviour();
 
         EnemyAIInstance.UpdateWaxDurability();
-        EnemyAIInstance.Context.Adapter.MoveAgent();
+        EnemyAIInstance.MoveAgent();
 
         EnemyAIInstance.Context.Adapter.Transform.rotation = Quaternion.RotateTowards(
             EnemyAIInstance.Context.Adapter.Transform.rotation,

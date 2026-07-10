@@ -104,47 +104,39 @@ public class WaxSoldierClient : MonoBehaviour
         _currentAnimator.SetBool(InSalute, netcodeController.AnimationParamInSalute.Value);
         _currentAnimator.SetBool(Dead, netcodeController.AnimationParamIsDead.Value);
         _currentAnimator.SetBool(StartMelting, netcodeController.AnimationParamStartMelting.Value);
+        SetWalkLocomotionAnimationParams();
     }
 
     #region Animation
-    // todo: make this section not shit
-
-    private Vector3 _smoothedVelocity;
-    private float _smoothedSpeed;
+    private Vector2 _smoothedVelocity;
+    private Vector3 _previousPosition;
 
     public void SetWalkLocomotionAnimationParams()
     {
-        if (_moltenState == WaxSoldierAI.MoltenState.Unmolten) Set2DWalkLocomotionAnimationParams();
-        else Set1DWalkLocomotionAnimationParams();
-    }
+        float maxSpeed = netcodeController.AgentMaxSpeed.Value;
+        Vector3 currentVelocity = (transform.position - _previousPosition) / Time.deltaTime;
+        _previousPosition = transform.position;
 
-    private void Set2DWalkLocomotionAnimationParams()
-    {
-        // Vector3 worldVelocity = agent.velocity;
-        Vector3 localVelocity = transform.InverseTransformDirection(agent.velocity);
+        bool is2D = _moltenState == WaxSoldierAI.MoltenState.Unmolten;
+        Vector2 targetVelocity = Vector2.zero;
 
-        float maxSpeed = agent.speed;
         if (maxSpeed > 0.01f)
         {
-            localVelocity.x /= maxSpeed;
-            localVelocity.z /= maxSpeed;
+            if (is2D)
+            {
+                Vector3 localVelocity = transform.InverseTransformDirection(currentVelocity);
+                targetVelocity = new Vector2(localVelocity.x, localVelocity.z) / maxSpeed;
+            }
+            else
+            {
+                targetVelocity.x = currentVelocity.magnitude / maxSpeed;
+            }
         }
 
-        _smoothedVelocity = Vector3.Lerp(_smoothedVelocity, localVelocity, Time.deltaTime / 0.1f);
+        _smoothedVelocity = Vector2.Lerp(_smoothedVelocity, targetVelocity, Time.deltaTime / 0.1f);
 
-        Animator animator = _currentAnimator;
-        animator.SetFloat(VelocityX, _smoothedVelocity.x);
-        animator.SetFloat(VelocityZ, _smoothedVelocity.z);
-    }
-
-    private void Set1DWalkLocomotionAnimationParams()
-    {
-        float speed = agent.velocity.magnitude;
-        float maxSpeed = agent.speed;
-        float normalized = maxSpeed > 0.01f ? speed / maxSpeed : 0f;
-
-        _smoothedSpeed = Mathf.Lerp(_smoothedSpeed, normalized, Time.deltaTime / 0.1f);
-        _currentAnimator.SetFloat(VelocityX, _smoothedSpeed);
+        _currentAnimator.SetFloat(VelocityX, _smoothedVelocity.x);
+        if (is2D) _currentAnimator.SetFloat(VelocityZ, _smoothedVelocity.y);
     }
     #endregion
 
@@ -223,22 +215,16 @@ public class WaxSoldierClient : MonoBehaviour
         if (setToFrozen)
         {
             if (_currentAnimator.speed != 0)
-            {
                 _previousAnimatorSpeedBeforeFreeze = _currentAnimator.speed;
-            }
 
             _currentAnimator.speed = 0;
         }
         else
         {
             if (_previousAnimatorSpeedBeforeFreeze != 0)
-            {
                 _currentAnimator.speed = _previousAnimatorSpeedBeforeFreeze;
-            }
             else
-            {
                 _currentAnimator.speed = 1;
-            }
         }
     }
 
@@ -246,14 +232,8 @@ public class WaxSoldierClient : MonoBehaviour
     {
         float localPlayerDistanceToBody = Vector3.Distance(transform.position, HUDManager.Instance.localPlayer.transform.position);
 
-        if (localPlayerDistanceToBody <= 10f)
-        {
-            HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
-        }
-        else if (localPlayerDistanceToBody <= 5f)
-        {
-            HUDManager.Instance.ShakeCamera(ScreenShakeType.Small);
-        }
+        if (localPlayerDistanceToBody <= 10f) HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
+        else if (localPlayerDistanceToBody <= 5f) HUDManager.Instance.ShakeCamera(ScreenShakeType.Small);
     }
 
     private void SubscribeToNetworkEvents()

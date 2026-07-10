@@ -31,7 +31,7 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         base.UpdateBehaviour();
 
         EnemyAIInstance.UpdateWaxDurability();
-        EnemyAIInstance.Context.Adapter.MoveAgent();
+        EnemyAIInstance.MoveAgent();
 
         EnemyAIInstance.Context.Blackboard.CurrentAttackAction.Update(EnemyAIInstance.Context);
     }
@@ -51,8 +51,6 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         EnemyAIInstance.Context.Blackboard.CurrentAttackAction.Finish(EnemyAIInstance.Context);
         EnemyAIInstance.Context.Blackboard.HeldMusket.bayonetAttackPhysics.EndAttack();
         EnemyAIInstance.StartAttackCooldown(EnemyAIInstance.Context.Blackboard.CurrentAttackAction);
-
-        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
     }
 
     internal override bool OnCollideWithPlayer(Collider other)

@@ -27,7 +27,7 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
 
         EnemyAIInstance.Context.Adapter.StopAllPathing();
         EnemyAIInstance.Context.Adapter.BeginGracefulStop();
-        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
+        EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.CombatFidelityProfile);
 
         hasTriggeredAnimation = false;
     }
