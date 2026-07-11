@@ -36,7 +36,7 @@ internal class HuntingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
             // velocityBias: 2f,
             // terminationMass: 0.05f,
             // graphBuildBudgetMs: 1f,
-            drawDebugField: true,
+            drawDebugField: false,
             drawDebugEdges: false
             );
     }
