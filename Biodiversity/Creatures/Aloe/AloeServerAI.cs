@@ -1,4 +1,4 @@
-﻿using Biodiversity.Core.Integration;
+﻿// using Biodiversity.Core.Integration;
 using System.Collections;
 using System.Collections.Generic;
 using Biodiversity.Creatures.Aloe.BehaviourStates;
@@ -89,13 +89,13 @@ public class AloeServerAI : StateManagedAI<AloeServerAI.States, AloeServerAI>
     public override void Start()
     {
         base.Start();
+
+        CollectAudioClipsAndSources<AloeClient>();
         if (!IsServer) return;
 
         SubscribeToNetworkEvents();
 
         agent.updateRotation = false;
-
-        CollectAudioClipsAndSources<AloeClient>();
 
         PlayerTargetableConditions.AddCondition(player => !PlayerUtil.IsPlayerDead(player));
         PlayerTargetableConditions.AddCondition(player => player.isInsideFactory);

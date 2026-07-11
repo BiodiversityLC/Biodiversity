@@ -24,6 +24,10 @@ internal class AttackingState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI
         EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PursuitMaxSpeed, WaxSoldierHandler.Instance.Config.PursuitAcceleration);
 
         EnemyAIInstance.Context.Blackboard.CurrentAttackAction.Start(EnemyAIInstance.Context);
+
+        string audioClipType = EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Unmolten
+            ? "meleeMusic" : "closeQuartersMoltenMusic";
+        EnemyAIInstance.PlayRandomAudioClipTypeServerRpc(audioClipType, "musicSource");
     }
 
     internal override void UpdateBehaviour()

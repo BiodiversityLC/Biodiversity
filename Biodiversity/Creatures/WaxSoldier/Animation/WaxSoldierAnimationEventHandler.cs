@@ -106,7 +106,10 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
     {
         ai.LogVerbose($"Playing audio {sfxName}.");
         if (!IsServer) return;
-        ai.PlayAudioClipTypeClientRpc(sfxName, "creatureVoice", 0, true);
+
+        string audioSourceType = "creatureVoice";
+        if (sfxName.EndsWith("Music", System.StringComparison.OrdinalIgnoreCase)) audioSourceType = "musicSource";
+        ai.PlayAudioClipTypeClientRpc(sfxName, audioSourceType, 0, true);
     }
 
     public void OnAnimationEventDropMusket()

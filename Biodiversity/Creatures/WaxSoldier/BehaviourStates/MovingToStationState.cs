@@ -32,6 +32,8 @@ internal class MovingToStationState : BehaviourState<WaxSoldierAI.States, WaxSol
         EnemyAIInstance.Context.Adapter.SetMovementProfile(WaxSoldierHandler.Instance.Config.PatrolMaxSpeed, WaxSoldierHandler.Instance.Config.PatrolAcceleration);
         EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.CombatFidelityProfile);
         EnemyAIInstance.Context.Adapter.MoveToDestination(EnemyAIInstance.Context.Blackboard.GuardPost.position);
+
+        EnemyAIInstance.PlayRandomAudioClipTypeServerRpc("passiveMusic", "musicSource", true);
     }
 
     internal override void UpdateBehaviour()

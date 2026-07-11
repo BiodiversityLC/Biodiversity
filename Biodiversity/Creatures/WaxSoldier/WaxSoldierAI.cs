@@ -123,9 +123,10 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     public override void Start()
     {
         base.Start();
-        if (!IsServer) return;
 
         CollectAudioClipsAndSources<WaxSoldierClient>();
+        if (!IsServer) return;
+
         SubscribeToNetworkEvents();
         InitializeConfigValues();
         TryRegisterImperiumInsights();
@@ -644,9 +645,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         LogVerbose(
             $"Client: Playing audio clip: {clipToPlay.name} for type '{audioClipType}' on AudioSource '{audioSourceType}'.");
 
-        float oldPitch = selectedAudioSource.pitch;
+        if (selectedAudioSource.isPlaying)
+        {
+            if (interrupt) selectedAudioSource.Stop();
+            else return;
+        }
 
-        if (interrupt && selectedAudioSource.isPlaying) selectedAudioSource.Stop();
+        float oldPitch = selectedAudioSource.pitch;
         if (slightlyVaryPitch) selectedAudioSource.pitch = Random.Range(oldPitch - 0.1f, oldPitch + 0.1f);
 
         selectedAudioSource.PlayOneShot(clipToPlay);

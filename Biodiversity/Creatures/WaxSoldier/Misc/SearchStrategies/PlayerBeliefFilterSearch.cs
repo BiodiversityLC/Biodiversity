@@ -25,7 +25,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
 
     private readonly NavMeshPath _navMeshPath = new();
 
-    // Tunable variables
+    // Tuneable variables
     private readonly float _adjacencyRadius;
     private readonly float _diffusionRate;
     private readonly float _velocityBias;
@@ -49,7 +49,6 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     private const float DIFFUSE_INTERVAL = 0.25f;
     private const float OBSERVATION_COOLDOWN_SECONDS = 14f;
     private const float BELIEF_DECAY = 1f;
-    private const float MIN_SEARCH_DISTANCE = 1.5f;
     private const float SEED_PROTECTION_SECONDS = 1.5f;
     private const float PROXIMITY_AWARENESS = 2f;
 
@@ -166,9 +165,8 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
                 continue;
             }
 
-            if (travelCost < MIN_SEARCH_DISTANCE) continue;
-
-            float score = cell.Probability / (travelCost + 1f);
+            // Square the probability to penalise low-mass nodes, hopefully preventing ping-ponging
+            float score = cell.Probability * cell.Probability / (travelCost + 1f);
             if (score > bestScore)
             {
                 bestScore = score;
@@ -179,7 +177,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         float totalRemainingMass = occludedMass + observableMass;
 
         // Once we've observed away enough of the field that little mass is left anywhere,
-        // the player is effectively not in anyunsearched cell and continuing would be kinda useless.
+        // the player is effectively not in any unsearched cell and continuing would be kinda useless.
         // todo: Make the molten state actually carry on this search, because he has no guard post to attend to
         if (totalRemainingMass < _terminationMass)
         {
@@ -556,8 +554,8 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         {
             Cell cell = _cells[cellIdx];
 
-            // Skip the raycast for cells with no mass because they can't be selected or cleared anyway
-            if (cell.Probability <= 0f)
+            float distanceSqr = (cell.Position - context.Adapter.EyeTransform.position).sqrMagnitude;
+            if (distanceSqr > context.Blackboard.ViewRange * context.Blackboard.ViewRange)
             {
                 cell.IsVisible = false;
                 continue;
@@ -585,14 +583,15 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
         for (int i = 0; i < _cells.Length; i++)
         {
             Cell cell = _cells[i];
-            if (cell.Probability <= 0f) continue;
-
             if (cell.IsVisible)
             {
-                clearedMass += cell.Probability;
-                clearedCount++;
+                if (cell.Probability > 0f)
+                {
+                    clearedMass += cell.Probability;
+                    clearedCount++;
+                    cell.Probability = 0f;
+                }
 
-                cell.Probability = 0f;
                 cell.ObservationCooldown = OBSERVATION_COOLDOWN_SECONDS;
             }
         }

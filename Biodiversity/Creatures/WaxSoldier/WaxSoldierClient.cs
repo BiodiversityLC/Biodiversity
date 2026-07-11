@@ -33,22 +33,28 @@ public class WaxSoldierClient : MonoBehaviour
 #pragma warning disable 0649
 #pragma warning disable CS0169
     [SerializeField] private NavMeshAgent agent;
+    [SerializeField] private WaxSoldierNetcodeController netcodeController;
 
+    [Space(5f, order = 0)]
+    [Header("GameObjects", order = 1)]
     [SerializeField] private GameObject unmoltenGameObject;
     [SerializeField] private GameObject moltenGameObject;
 
-    [Header("Animation")] [Space(5f)]
+    [Space(5f, order = 0)]
+    [Header("Animation", order = 1)]
     [SerializeField] private Animator unmoltenAnimator;
-    [SerializeField] public Animator moltenAnimator;
+    [SerializeField] public Animator moltenAnimator; // Needs to be public, see TransformingToMoltenState.OnCustomEvent.
     [SerializeField] private Transform unmoltenMusketContainer;
     [SerializeField] private Transform moltenMusketContainer;
 
-    [Header("Audio")] [Space(5f)]
+    [Space(5f, order = 0)]
+    [Header("Audio Sources", order = 1)]
     [SerializeField] private AudioSource creatureVoice;
+    [SerializeField] private AudioSource musicSource;
     [SerializeField] private AudioSource footstepsSource;
 
-    [Space(2f)]
-
+    [Space(2.5f, order = 0)]
+    [Header("Sound Effects", order = 1)]
     [SerializeField] private AudioClip[] activateSfx;
     [SerializeField] private AudioClip[] aimSfx;
     [SerializeField] private AudioClip[] reloadSfx;
@@ -56,8 +62,16 @@ public class WaxSoldierClient : MonoBehaviour
     [SerializeField] private AudioClip[] lightFootstepSfx;
     [SerializeField] private AudioClip[] heavyFootstepSfx;
 
-    [Header("Controllers")] [Space(5f)]
-    [SerializeField] private WaxSoldierNetcodeController netcodeController;
+    [Space(2.5f, order = 0)]
+    [Header("Music", order = 1)]
+    [SerializeField] private AudioClip[] passiveMusic;
+    [SerializeField] private AudioClip[] meleeMusic;
+    [SerializeField] private AudioClip[] spinMusic;
+    [SerializeField] private AudioClip[] aimEnterMusic;
+    [SerializeField] private AudioClip[] aimExitMusic;
+    [SerializeField] private AudioClip[] reloadMusic;
+    [SerializeField] private AudioClip[] meltingMusic;
+    [SerializeField] private AudioClip[] closeQuartersMoltenMusic;
 #pragma warning restore 0649
 #pragma warning restore CS0169
     #endregion
