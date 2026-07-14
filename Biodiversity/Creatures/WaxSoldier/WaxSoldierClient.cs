@@ -49,9 +49,9 @@ public class WaxSoldierClient : MonoBehaviour
 
     [Space(5f, order = 0)]
     [Header("Audio Sources", order = 1)]
-    [SerializeField] private AudioSource creatureVoice;
-    [SerializeField] private AudioSource musicSource;
-    [SerializeField] private AudioSource footstepsSource;
+    [SerializeField] public AudioSource creatureVoice;
+    [SerializeField] public AudioSource musicSource;
+    [SerializeField] public AudioSource footstepsSource;
 
     [Space(2.5f, order = 0)]
     [Header("Sound Effects", order = 1)]

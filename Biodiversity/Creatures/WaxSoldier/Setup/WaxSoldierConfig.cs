@@ -89,7 +89,7 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
 
     [field: Tooltip("")]
     [field: Range(0, 5000)]
-    public int StabDamage { get; private set; } = 25;
+    public int StabDamage { get; private set; } = 15;
 
     [field: Tooltip("")]
     [field: Range(0, 5000)]
@@ -113,11 +113,11 @@ public class WaxSoldierConfig(ConfigFile cfg) : BiodiverseConfigLoader<WaxSoldie
 
     [field: Tooltip("The minimum value that the musket can spawn with.")]
     [field: Range(1, 5000)]
-    public int MusketMinimumValue { get; private set; } = 100;
+    public int MusketMinimumValue { get; private set; } = 30;
 
     [field: Tooltip("The maximum value that the musket can spawn with.")]
     [field: Range(1, 5000)]
-    public int MusketMaximumValue { get; private set; } = 250;
+    public int MusketMaximumValue { get; private set; } = 100;
     #endregion
 
     #region Advanced Settings

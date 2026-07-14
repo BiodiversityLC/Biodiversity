@@ -1,6 +1,7 @@
 ﻿using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
 using Biodiversity.Creatures.WaxSoldier.Animation;
+using System.Collections;
 using UnityEngine;
 
 namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
@@ -15,6 +16,7 @@ public class ShootAttack : AttackAction
     }
 
     private Transform aimTransform;
+
     private bool shouldLookAtTarget;
 
     public override void Start(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
@@ -49,6 +51,18 @@ public class ShootAttack : AttackAction
         ctx.Adapter.Agent.updateRotation = true;
     }
 
+    private IEnumerator AimAndShoot(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    {
+        yield return new WaitForSeconds(ctx.Blackboard.MusketAimTime);
+
+        StopLookAtTarget();
+        ctx.Blackboard.HeldMusket.SetupShotAndFire();
+
+        yield return new WaitForSeconds(Musket.TIME_BETWEEN_FIRING_AND_BULLET_EXIT);
+
+        ctx.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.ShootMusket);
+    }
+
     public override void HandleCustomEvent(string eventName, StateData eventData, AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
     {
         base.HandleCustomEvent(eventName, eventData, ctx);
@@ -57,11 +71,7 @@ public class ShootAttack : AttackAction
         {
             case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventStartTargetLook):
                 StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
-                break;
-
-            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventMusketShoot):
-                StopLookAtTarget();
-                ctx.Blackboard.HeldMusket.SetupShotAndFire();
+                ctx.Blackboard.NetcodeController.StartCoroutine(AimAndShoot(ctx));
                 break;
         }
 
@@ -75,7 +85,7 @@ public class ShootAttack : AttackAction
 
     private void StopLookAtTarget()
     {
-        shouldLookAtTarget = false;
         aimTransform = null;
+        shouldLookAtTarget = false;
     }
 }

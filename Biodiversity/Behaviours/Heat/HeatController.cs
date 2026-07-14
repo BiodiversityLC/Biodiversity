@@ -28,7 +28,7 @@ public class HeatController : MonoBehaviour
                     {
                         GameObject singleton = new() { name = "BiodiverseHeatController" };
                         _instance = singleton.AddComponent<HeatController>();
-                        BiodiversityPlugin.LogVerbose("[HeatController] Created new HeatController.");
+                        LogVerbose("Created new HeatController.");
                     }
                 }
             }
@@ -95,7 +95,6 @@ public class HeatController : MonoBehaviour
         int id = go.GetInstanceID();
         if (_seenGameObjects.Contains(id)) return;
 
-        bool verboseEnabled = BiodiversityPlugin.Config.VerboseLoggingEnabled;
         for (int i = 0; i < _heatEmitterRules.Count; i++)
         {
             (Func<GameObject, Component> match, Func<GameObject, HeatEmitter> attach) = _heatEmitterRules[i];
@@ -111,11 +110,7 @@ public class HeatController : MonoBehaviour
                     _componentToEmitterMap[matchedComponent] = createdEmitter;
                     _emitterToComponentMap[createdEmitter] = matchedComponent;
 
-                    // Just to make sure we dont use GetType() if verbose logging is not enabled
-                    if (verboseEnabled)
-                    {
-                        BiodiversityPlugin.LogVerbose($"[HeatController] Mapped {matchedComponent.GetType().Name} to {createdEmitter.GetType().Name}.");
-                    }
+                    LogVerbose($"Mapped {matchedComponent.GetType().Name} to {createdEmitter.GetType().Name}.");
                 }
 
                 _seenGameObjects.Add(id);
@@ -123,7 +118,7 @@ public class HeatController : MonoBehaviour
             }
             catch (Exception e)
             {
-                BiodiversityPlugin.LogVerbose($"[HeatController] Failed to attach heat emitter to '{go.name}'. {e}");
+                LogVerbose($"Failed to attach heat emitter to '{go.name}'. {e}");
             }
         }
     }
@@ -135,7 +130,7 @@ public class HeatController : MonoBehaviour
         const float maxFrameTimeMilliseconds = 2f;
         Stopwatch stopwatch = new();
 
-        BiodiversityPlugin.LogVerbose($"[HeatController] Starting initial scene sweep.");
+        LogVerbose("Starting initial scene sweep.");
 
         // todo: dont do FindObjectsOfType<Transform>, use stuff like FindObjectsOfType<NoisemakerProp> inside the TryAttachEmitter funcs
         Transform[] trs = FindObjectsOfType<Transform>(true);
@@ -156,7 +151,7 @@ public class HeatController : MonoBehaviour
             }
         }
 
-        BiodiversityPlugin.LogVerbose($"[HeatController] Initial scene sweep complete.");
+        LogVerbose("Initial scene sweep complete.");
     }
 
     /// <summary>
@@ -194,20 +189,20 @@ public class HeatController : MonoBehaviour
     {
         if (!go.TryGetComponent(out FlashlightItem flashlightItem))
         {
-            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The given gameobject has no {nameof(FlashlightItem)} component.");
+            LogVerbose($"[{nameof(AttachFlashlight)}] The given gameobject has no {nameof(FlashlightItem)} component.");
             return null;
         }
 
         Light bulb = flashlightItem.flashlightBulb;
         if (!bulb)
         {
-            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The {nameof(FlashlightItem)}'s flashlightBulb is null.");
+            LogVerbose($"[{nameof(AttachFlashlight)}] The {nameof(FlashlightItem)}'s flashlightBulb is null.");
             return null;
         }
 
         if (bulb.type != LightType.Spot)
         {
-            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFlashlight)}] The flashlightBulb's light type is invalid ({bulb.type}), it must be a Spot.");
+            LogVerbose($"[{nameof(AttachFlashlight)}] The flashlightBulb's light type is invalid ({bulb.type}), it must be a Spot.");
             return null;
         }
 
@@ -226,11 +221,11 @@ public class HeatController : MonoBehaviour
         switch (flashlightItem.itemProperties.itemName)
         {
             case "Pro-flashlight":
-                cone.centreRateCPerSec = 1f;
+                cone.centreRateCPerSec = 5f;
                 cone.range *= 2f;
                 break;
             case "Flashlight":
-                cone.centreRateCPerSec = 0.5f;
+                cone.centreRateCPerSec = 1f;
                 cone.range *= 1.5f;
                 break;
         }
@@ -242,13 +237,13 @@ public class HeatController : MonoBehaviour
     {
         if (!go.TryGetComponent(out NoisemakerProp hairdryerItem))
         {
-            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachHairdryer)}] The given gameobject has no {nameof(NoisemakerProp)} component.");
+            LogVerbose($"[{nameof(AttachHairdryer)}] The given gameobject has no {nameof(NoisemakerProp)} component.");
             return null;
         }
 
         if (hairdryerItem.itemProperties.name != "Hairdryer")
         {
-            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachHairdryer)}] The given {nameof(NoisemakerProp)} doesn't have its item property name as 'Hairdryer'.");
+            LogVerbose($"[{nameof(AttachHairdryer)}] The given {nameof(NoisemakerProp)} doesn't have its item property name as 'Hairdryer'.");
             return null;
         }
 
@@ -272,7 +267,7 @@ public class HeatController : MonoBehaviour
         Light fireplaceLight = go.GetComponentInChildren<Light>();
         if (!fireplaceLight)
         {
-            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFireplace)}] 'FireplaceFire' has no child Light component.");
+            LogVerbose($"[{nameof(AttachFireplace)}] 'FireplaceFire' has no child Light component.");
             return null;
         }
 
@@ -283,7 +278,7 @@ public class HeatController : MonoBehaviour
 
         if (fireplaceLight.type == LightType.Directional)
         {
-            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachFireplace)}] 'Light' is Directional, hence the radius of the light can't be used as the heat emitter radius. The default radius will be used.");
+            LogVerbose($"[{nameof(AttachFireplace)}] 'Light' is Directional, hence the radius of the light can't be used as the heat emitter radius. The default radius will be used.");
         }
         else
         {
@@ -297,7 +292,7 @@ public class HeatController : MonoBehaviour
     {
         if (!go.TryGetComponent(out LungProp apparatus))
         {
-            BiodiversityPlugin.LogVerbose($"[HeatController|{nameof(AttachApparatus)}] The given gameobject has no {nameof(LungProp)} component.");
+            LogVerbose($"[{nameof(AttachApparatus)}] The given gameobject has no {nameof(LungProp)} component.");
             return null;
         }
 
@@ -310,5 +305,11 @@ public class HeatController : MonoBehaviour
         emitter.radius = 20f;
 
         return emitter;
+    }
+
+    private static void LogVerbose(object message)
+    {
+        if (BiodiversityPlugin.Config?.VerboseLoggingEnabled ?? false)
+            BiodiversityPlugin.Logger.LogDebug($"[HeatController] {message}");
     }
 }

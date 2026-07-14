@@ -16,6 +16,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
     public float WaxDurability { get; set; } = 1f;
     public float WaxSofteningTemperature { get; } = 40f;
     public float WaxMeltTemperature { get; } = 60f;
+    public float WaxMaxMeltSpeedPenalty { get; } = 0.4f;
 
     public float TimeWhenTargetPlayerLastSeen { get; set; }
     public float PursuitLingerTime { get; set; } = 1f;
@@ -39,6 +40,7 @@ public class WaxSoldierBlackboard : IEnemyBlackboard
 
     public Musket HeldMusket { get; set; }
     public float TimeWhenMusketLastFired { get; set; }
+    public float MusketAimTime { get; set; } = 0.225f;
     #endregion
 
     public WaxSoldierNetcodeController NetcodeController { get; set; }

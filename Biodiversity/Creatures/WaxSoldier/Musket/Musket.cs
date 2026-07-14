@@ -48,12 +48,6 @@ public class Musket : BiodiverseItem
 #pragma warning restore 0649
     #endregion
 
-    private enum DamageType
-    {
-        Player,
-        IHittable
-    }
-
     private enum HitResult
     {
         None,
@@ -96,6 +90,7 @@ public class Musket : BiodiverseItem
     private const int bulletHitBufferCapacity = 10;
     private const int bayonetHitBufferCapacity = 25;
 
+    public const float TIME_BETWEEN_FIRING_AND_BULLET_EXIT = 0.09f;
     private float _bulletRadius;
     private float _bulletMaxDistance;
 
@@ -234,6 +229,9 @@ public class Musket : BiodiverseItem
     }
 
     #region Bullet Logic
+    private const int PLAYER_BULLET_DAMAGE = 150;
+    private const int IHITTABLE_BULLET_DAMAGE = 10;
+
     public void SetupShotAndFire()
     {
         if (_shootingCoroutine != null) StopCoroutine(_shootingCoroutine);
@@ -250,7 +248,7 @@ public class Musket : BiodiverseItem
         if (IsServer) PlayBulletParticleEffectAndAudioClientRpc();
         else PlayBulletParticleEffectAndAudioServerRpc();
 
-        yield return new WaitForSeconds(0.09f); // The actual gunshot happens 0.09 seconds into the shoot audio clip
+        yield return new WaitForSeconds(TIME_BETWEEN_FIRING_AND_BULLET_EXIT); // The actual gunshot happens 0.09 seconds into the shoot audio clip
 
         PerformBulletLogic();
         _isPerformingAttackAction = false;
@@ -262,8 +260,7 @@ public class Musket : BiodiverseItem
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
 
         Ray bulletRay;
-
-        if (false && isHeldByPlayer)
+        if (isHeldByPlayer)
         {
             bulletRay = new Ray(
                 localPlayer.gameplayCamera.transform.position - localPlayer.gameplayCamera.transform.up * 0.45f,
@@ -325,19 +322,17 @@ public class Musket : BiodiverseItem
                 ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
                 if (!_playerDamageCooldowns.IsOnCooldown(playerClientId))
                 {
-                    int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.Player);
-                    DamagePlayerServerRpc(playerClientId, bulletDamage, CauseOfDeath.Gunshots);
+                    DamagePlayerServerRpc(playerClientId, PLAYER_BULLET_DAMAGE, CauseOfDeath.Gunshots);
                     _playerDamageCooldowns.Start(playerClientId, 0.2f);
 
-                    LogVerbose($"Musket bullet dealt {bulletDamage} damage to {player.playerUsername}.");
+                    LogVerbose($"Musket bullet dealt {PLAYER_BULLET_DAMAGE} damage to {player.playerUsername}.");
                     hitResult = HitResult.Target;
                 }
             }
             else if (hitTransform.TryGetComponent(out IHittable iHittable))
             {
-                int bulletDamage = CalculateNormalizedBulletDamage(hit.distance, DamageType.IHittable);
-                iHittable.Hit(bulletDamage, bulletRay.origin, playerHeldBy, true, bulletHitId);
-                LogVerbose($"Musket bullet dealt {bulletDamage} damage to {iHittable}.");
+                iHittable.Hit(IHITTABLE_BULLET_DAMAGE, bulletRay.origin, playerHeldBy, true, bulletHitId);
+                LogVerbose($"Musket bullet dealt {IHITTABLE_BULLET_DAMAGE} damage to {iHittable}.");
                 hitResult = HitResult.Target;
             }
             else
@@ -357,9 +352,7 @@ public class Musket : BiodiverseItem
         }
 
         if (enableDebugVisuals)
-        {
             DrawBulletDebug(bulletRay, successfulHitIndicies);
-        }
     }
 
     private int FindClosestValidHit(int hitCount)
@@ -385,12 +378,6 @@ public class Musket : BiodiverseItem
         return closestIndex;
     }
 
-    private int CalculateNormalizedBulletDamage(float bulletTravelDistance, DamageType damageType)
-    {
-        // todo: this
-        return 110;
-    }
-
     public void Reload()
     {
         LogVerbose("Reloading...");
@@ -398,7 +385,10 @@ public class Musket : BiodiverseItem
     }
     #endregion
 
-    #region Bayonet Logic
+    #region Player Held Bayonet Logic
+    private const int PLAYER_BAYONET_DAMAGE = 20;
+    private const int IHITTABLE_BAYONET_DAMAGE = 2;
+
     private IEnumerator ReelUpBayonet()
     {
         LogVerbose("Reeling up bayonet...");
@@ -464,7 +454,7 @@ public class Musket : BiodiverseItem
                 ulong playerClientId = PlayerUtil.GetClientIdFromPlayer(player);
                 if (_playerDamageCooldowns.IsOnCooldown(playerClientId)) continue;
 
-                DamagePlayerServerRpc(playerClientId, 100, CauseOfDeath.Stabbing);
+                DamagePlayerServerRpc(playerClientId, PLAYER_BAYONET_DAMAGE, CauseOfDeath.Stabbing);
                 _playerDamageCooldowns.Start(playerClientId, 0.2f);
 
                 continue;
@@ -472,7 +462,7 @@ public class Musket : BiodiverseItem
 
             if (collider.transform.TryGetComponent(out IHittable iHittable))
             {
-                iHittable.Hit(4, bayonetTip.forward, playerHeldBy, true, bayonetHitId);
+                iHittable.Hit(IHITTABLE_BAYONET_DAMAGE, bayonetTip.forward, playerHeldBy, true, bayonetHitId);
             }
         }
     }
@@ -520,6 +510,28 @@ public class Musket : BiodiverseItem
         PlayAudioClipType(nameof(shootSfx), nameof(shootAudioSource), 0,
             interrupt: true, audibleInWalkieTalkie: true, audibleByEnemies: !isHeldByEnemy);
         bulletParticles.Play(withChildren: true);
+    }
+
+    [ClientRpc]
+    internal void TransformIntoMeshClientRpc()
+    {
+        ScanNodeProperties scanNode = GetComponentInChildren<ScanNodeProperties>();
+        if (scanNode) Destroy(scanNode.gameObject);
+
+        AudioSource audioSource = GetComponent<AudioSource>();
+        if (audioSource) Destroy(audioSource); // PhysicsProps require an audio source on the same gameobject as this Musket component
+
+        BoxCollider boxCollider = GetComponent<BoxCollider>();
+        if (boxCollider) Destroy(boxCollider);
+
+        Destroy(muzzleTip.gameObject); // Destroys all of the bullet particle effects
+        Destroy(bulletRayOrigin.gameObject);
+        Destroy(bayonetAttackPhysics.gameObject);
+        Destroy(bayonetTip.gameObject);
+        Destroy(shootAudioSource.gameObject);
+        Destroy(otherAudioSource.gameObject);
+
+        Destroy(this);
     }
     #endregion
 

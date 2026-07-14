@@ -24,6 +24,9 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
         EnemyAIInstance.Context.Adapter.SetNetworkFidelityProfile(EnemyAIInstance.Context.Adapter.PatrolFidelityProfile);
 
         EnemyAIInstance.Context.Blackboard.NetcodeController.AnimationParamIsDead.Value = true;
+
+        if (EnemyAIInstance.Context.Blackboard.MoltenState == WaxSoldierAI.MoltenState.Molten)
+            EnemyAIInstance.Context.Blackboard.HeldMusket.TransformIntoMeshClientRpc();
     }
 
     internal override bool OnCollideWithPlayer(Collider other)
@@ -50,13 +53,15 @@ internal class DeadState : BehaviourState<WaxSoldierAI.States, WaxSoldierAI>
 
         switch (eventName)
         {
+            // This is called from the unmolten death animation.
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventDropMusket):
+                EnemyAIInstance.DropMusket();
+                break;
+
             case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventSlamIntoGround):
-            {
                 EnemyAIInstance.Context.Blackboard.NetcodeController.SlamIntoGroundClientRpc();
                 EnemyAIInstance.KillEnemyServerRpc(false);
-
                 break;
-            }
         }
     }
 }

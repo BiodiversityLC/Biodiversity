@@ -6,68 +6,68 @@ namespace Biodiversity.Creatures.WaxSoldier.Animation;
 
 public class WaxSoldierAnimationEventHandler : NetworkBehaviour
 {
-    [SerializeField] private WaxSoldierAI ai;
+    [SerializeField] private WaxSoldierAI _serverAI;
+    [SerializeField] private WaxSoldierClient _clientAI;
 
-    public override void OnNetworkSpawn()
-    {
-        base.OnNetworkSpawn();
-        if (!IsServer)
-        {
-            enabled = false;
-        }
-    }
+    // public override void OnNetworkSpawn()
+    // {
+    //     base.OnNetworkSpawn();
+    //     if (!IsServer)
+    //     {
+    //         enabled = false;
+    //     }
+    // }
 
     #region Animation Events
     public void OnAnimationEventStartStabAttackLunge()
     {
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventStartStabAttackLunge));
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventStartStabAttackLunge));
     }
 
     public void OnAnimationEventEndStabAttackLunge()
     {
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventEndStabAttackLunge));
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventEndStabAttackLunge));
     }
 
     public void OnAnimationEventEndMoltenLunge()
     {
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventEndMoltenLunge));
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventEndMoltenLunge));
     }
 
     public void OnAnimationEventStartTargetLook(string aimTransformName)
     {
-        ai.LogVerbose("Starting to aim with musket.");
         if (!IsServer) return;
+        _serverAI.LogVerbose("Starting to aim with musket.");
 
         StateData data = new();
         data.Add("aimTransform",
-            aimTransformName == "musketMuzzle" ? ai.Context.Blackboard.HeldMusket.muzzleTip : ai.Context.Adapter.Transform);
+            aimTransformName == "musketMuzzle" ? _serverAI.Context.Blackboard.HeldMusket.muzzleTip : _serverAI.Context.Adapter.Transform);
 
-        ai.TriggerCustomEvent(nameof(OnAnimationEventStartTargetLook), data);
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventStartTargetLook), data);
     }
 
     public void OnAnimationEventMusketShoot()
     {
         // Stops the teeth clacking
-        ai.creatureVoice.Stop();
+        _clientAI.creatureVoice.Stop(true);
 
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventMusketShoot));
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventMusketShoot));
     }
 
     public void OnAnimationEventToggleBayonet()
     {
         if (!IsServer) return;
 
-        WaxSoldierBayonetAttackPhysics bayonetAttackPhysics = ai.Context.Blackboard.HeldMusket.bayonetAttackPhysics;
-
+        WaxSoldierBayonetAttackPhysics bayonetAttackPhysics = _serverAI.Context.Blackboard.HeldMusket.bayonetAttackPhysics;
         if (bayonetAttackPhysics.currentBayonetMode == WaxSoldierBayonetAttackPhysics.BayonentMode.None)
         {
-            ai.LogVerbose($"Toggling bayonet on.");
+            _serverAI.LogVerbose($"Toggling bayonet on.");
 
-            int hash = ai.Context.Blackboard.CurrentAttackAction.AnimationTriggerHash;
+            int hash = _serverAI.Context.Blackboard.CurrentAttackAction.AnimationTriggerHash;
             WaxSoldierBayonetAttackPhysics.BayonentMode nextBayonetMode =
                 WaxSoldierBayonetAttackPhysics.BayonentMode.None;
 
@@ -90,72 +90,80 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
             }
             else
             {
-                ai.LogError($"Unknown bayonet attack mode with hash: {hash}.");
+                _serverAI.LogError($"Unknown bayonet attack mode with hash: {hash}.");
             }
 
             bayonetAttackPhysics.BeginAttack(nextBayonetMode);
         }
         else
         {
-            ai.LogVerbose($"Toggling bayonet off.");
+            _serverAI.LogVerbose($"Toggling bayonet off.");
             bayonetAttackPhysics.EndAttack();
         }
     }
 
     public void OnAnimationEventPlayAudio(string sfxName)
     {
-        ai.LogVerbose($"Playing audio {sfxName}.");
         if (!IsServer) return;
+        _serverAI.LogVerbose($"Playing audio {sfxName}.");
 
         string audioSourceType = "creatureVoice";
         if (sfxName.EndsWith("Music", System.StringComparison.OrdinalIgnoreCase)) audioSourceType = "musicSource";
-        ai.PlayAudioClipTypeClientRpc(sfxName, audioSourceType, 0, true);
+        _serverAI.PlayAudioClipTypeClientRpc(sfxName, audioSourceType, 0, true);
     }
 
     public void OnAnimationEventDropMusket()
     {
         if (!IsServer) return;
-        ai.DropMusket();
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventDropMusket));
     }
 
     public void OnAnimationEventUntoggleStartMeltParam()
     {
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventUntoggleStartMeltParam));
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventUntoggleStartMeltParam));
     }
 
     public void OnAnimationEventMeltJitterFinish()
     {
-        ai.LogVerbose("Melt jitter animation complete.");
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventMeltJitterFinish));
+        _serverAI.LogVerbose("Melt jitter animation complete.");
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventMeltJitterFinish));
     }
 
     public void OnAnimationEventSlamIntoGround()
     {
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAnimationEventSlamIntoGround));
+        _serverAI.TriggerCustomEvent(nameof(OnAnimationEventSlamIntoGround));
+    }
+
+    public void OnAnimationEventDeathComplete()
+    {
+        // todo: use events instead of adding code here
+        _clientAI.musicSource.Stop(true);
+
+        // todo: remove enemyai collider
     }
     #endregion
 
     public void OnSpawnAnimationFinish()
     {
-        ai.LogVerbose("Spawn animation complete.");
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnSpawnAnimationFinish));
+        _serverAI.LogVerbose("Spawn animation complete.");
+        _serverAI.TriggerCustomEvent(nameof(OnSpawnAnimationFinish));
     }
 
     public void OnAttackAnimationFinish()
     {
-        ai.LogVerbose("Attack animation complete.");
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnAttackAnimationFinish));
+        _serverAI.LogVerbose("Attack animation complete.");
+        _serverAI.TriggerCustomEvent(nameof(OnAttackAnimationFinish));
     }
 
     public void OnReloadAnimationFinish()
     {
-        ai.LogVerbose("Reload animation complete.");
         if (!IsServer) return;
-        ai.TriggerCustomEvent(nameof(OnReloadAnimationFinish));
+        _serverAI.LogVerbose("Reload animation complete.");
+        _serverAI.TriggerCustomEvent(nameof(OnReloadAnimationFinish));
     }
 }

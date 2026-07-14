@@ -71,11 +71,14 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
 
     #region Agent Stuff
     public float AgentSpeedChangeRate { get; set; } = 10f;
+    public float SpeedMultiplier { get; set; } = 1f;
+
     private float _targetSpeed;
 
     internal void MoveAgent()
     {
-        Agent.speed = Mathf.MoveTowards(Agent.speed, _targetSpeed, AgentSpeedChangeRate * Time.deltaTime);
+        float effectiveTargetSpeed = _targetSpeed * SpeedMultiplier;
+        Agent.speed = Mathf.MoveTowards(Agent.speed, effectiveTargetSpeed, AgentSpeedChangeRate * Time.deltaTime);
     }
 
     /// <summary>

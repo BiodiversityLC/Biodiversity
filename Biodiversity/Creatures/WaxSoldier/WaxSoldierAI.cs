@@ -74,13 +74,13 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context = new AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>(blackboard, adapter);
 
         SpinAttack spinAttack = new(
-            WaxSoldierClient.SpinAttack, 0f, 2f, 2f, 5);
+            WaxSoldierClient.SpinAttack, 0f, 5f, 2f, 0);
 
         StabAttack stabAttack = new(
-            WaxSoldierClient.StabAttack, 0f, 5f, 1.5f, 2);
+            WaxSoldierClient.StabAttack, 0f, 3f, 1.5f, 5);
 
         ShootAttack shootAttack = new(
-            WaxSoldierClient.AimMusket, 2f, 200f, 4f, 1);
+            WaxSoldierClient.AimMusket, 6f, 200f, 4f, 10);
 
         LungeAttack lungeAttack = new(
             WaxSoldierClient.LungeAttack, 3f, 8f, 8f, 0);
@@ -158,14 +158,17 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /// <summary>
     /// Calculates the updated <see cref="WaxSoldierBlackboard.WaxDurability"/> given the current <see cref="HeatSensor.TemperatureC"/>.
     /// </summary>
-    /// <returns><c>True</c> if the transition to the <see cref="WaxSoldierAI.States.TransformingToMolten"/> state got activated this frame; otherwise, <c>False</c>.</returns>
+    /// <returns><c>true</c> if the transition to the <see cref="WaxSoldierAI.States.TransformingToMolten"/> state got activated this frame; otherwise, <c>false</c>.</returns>
     public bool UpdateWaxDurability()
     {
-        if (_blackboard.MoltenState == MoltenState.Molten) return false;
+        if (_blackboard.MoltenState == MoltenState.Molten)
+            return false;
 
         if (heatSensor.TemperatureC > _blackboard.WaxSofteningTemperature)
         {
             float t = Mathf.InverseLerp(_blackboard.WaxSofteningTemperature, _blackboard.WaxMeltTemperature, heatSensor.TemperatureC);
+
+            _adapter.SpeedMultiplier = 1f - (_blackboard.WaxMaxMeltSpeedPenalty * t);
 
             // The Pow curve gives an accelerating melt feel
             float bandDps = 0.5f * (t * t);
@@ -175,6 +178,11 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
 
             float totalDps = bandDps + extraDps;
             _blackboard.WaxDurability = Mathf.Clamp01(_blackboard.WaxDurability - totalDps * Time.deltaTime);
+        }
+        else
+        {
+            // Reset the speed multiplier if the temperature drops below the softening point
+            _adapter.SpeedMultiplier = 1f;
         }
 
         if (_blackboard.WaxDurability <= 0)
