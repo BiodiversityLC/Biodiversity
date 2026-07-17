@@ -74,10 +74,10 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context = new AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>(blackboard, adapter);
 
         SpinAttack spinAttack = new(
-            WaxSoldierClient.SpinAttack, 0f, 5f, 2f, 0);
+            WaxSoldierClient.SpinAttack, 0f, 4f, 2f, 0);
 
         StabAttack stabAttack = new(
-            WaxSoldierClient.StabAttack, 0f, 3f, 1.5f, 5);
+            WaxSoldierClient.StabAttack, 0f, 2f, 1.5f, 5);
 
         ShootAttack shootAttack = new(
             WaxSoldierClient.AimMusket, 6f, 200f, 4f, 10);
@@ -161,6 +161,8 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
     /// <returns><c>true</c> if the transition to the <see cref="WaxSoldierAI.States.TransformingToMolten"/> state got activated this frame; otherwise, <c>false</c>.</returns>
     public bool UpdateWaxDurability()
     {
+        _blackboard.NetcodeController.WaxTemperature.SetWithThreshold(heatSensor.TemperatureC);
+
         if (_blackboard.MoltenState == MoltenState.Molten)
             return false;
 
@@ -168,7 +170,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         {
             float t = Mathf.InverseLerp(_blackboard.WaxSofteningTemperature, _blackboard.WaxMeltTemperature, heatSensor.TemperatureC);
 
-            _adapter.SpeedMultiplier = 1f - (_blackboard.WaxMaxMeltSpeedPenalty * t);
+            _adapter.SpeedMultiplier = 1f - _blackboard.WaxMaxMeltSpeedPenalty * t;
 
             // The Pow curve gives an accelerating melt feel
             float bandDps = 0.5f * (t * t);

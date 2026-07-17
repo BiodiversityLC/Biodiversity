@@ -9,11 +9,11 @@ public class PlayerCooldownTracker
     private readonly Dictionary<ulong, double> _cooldowns = new();
 
     /// <summary>
-    /// Checks if a specific player is currently on cooldown.
+    /// Checks if a specific <see cref="PlayerControllerB"/> is currently on cooldown.
     /// This method also automatically cleans up expired cooldowns.
     /// </summary>
     /// <param name="playerClientId">The client ID of the player.</param>
-    /// <returns>True if the player is on cooldown, otherwise false.</returns>
+    /// <returns><c>true</c> if the player is on cooldown, otherwise <c>false</c>.</returns>
     public bool IsOnCooldown(ulong playerClientId)
     {
         // Attempt to get the expiration time for the given player
@@ -24,28 +24,28 @@ public class PlayerCooldownTracker
             {
                 return true;
             }
-            
+
             // Otherwise, the cooldown has expired and we remove it from the dictionary for cleanup
             _cooldowns.Remove(playerClientId);
         }
-        
+
         // If the player was not found or their cooldown expired, they are not on cooldown
         return false;
     }
 
     /// <summary>
-    /// Checks if a specific player is currently on cooldown.
+    /// Checks if a specific <see cref="PlayerControllerB"/> is currently on cooldown.
     /// This method also automatically cleans up expired cooldowns.
     /// </summary>
     /// <param name="player">The player object.</param>
-    /// <returns>True if the player is on cooldown, otherwise false.</returns>
+    /// <returns><c>true</c> if the player is on cooldown, otherwise <c>false</c>.</returns>
     public bool IsOnCooldown(PlayerControllerB player)
     {
         return IsOnCooldown(PlayerUtil.GetClientIdFromPlayer(player));
     }
 
     /// <summary>
-    /// Starts or restarts a cooldown for a specific player.
+    /// Starts or restarts a cooldown for a specific <see cref="PlayerControllerB"/>.
     /// This should be called on the server. If you need to sync this to clients,
     /// the server should call this method and then send an RPC to clients to call it as well.
     /// </summary>
@@ -58,13 +58,13 @@ public class PlayerCooldownTracker
             _cooldowns.Remove(playerClientId);
             return;
         }
-        
+
         // Record the time when the cooldown will expire
         _cooldowns[playerClientId] = NetworkManager.Singleton.ServerTime.Time + duration;
     }
-    
+
     /// <summary>
-    /// Starts or restarts a cooldown for a specific player.
+    /// Starts or restarts a cooldown for a specific <see cref="PlayerControllerB"/>.
     /// This should be called on the server. If you need to sync this to clients,
     /// the server should call this method and then send an RPC to clients to call it as well.
     /// </summary>

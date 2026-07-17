@@ -12,6 +12,7 @@ public class WaxSoldierNetcodeController : NetworkBehaviour
     internal readonly NetworkVariable<bool> AnimationParamIsDead = new();
     internal readonly NetworkVariable<bool> AnimationParamStartMelting = new();
     internal readonly NetworkVariable<float> AgentMaxSpeed = new();
+    internal readonly FloatThresholdNetworkVariable WaxTemperature = new(20f, 1f);
 
     internal event Action<NetworkObjectReference, int> OnSpawnMusket;
     internal event Action OnDropMusket;

@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Biodiversity.Util;
 
 /// <summary>
-/// Provides extension methods for various types to enhance functionality.
+/// Provides extension methods for various types.
 /// </summary>
 internal static class ExtensionMethods
 {
@@ -88,10 +88,10 @@ internal static class ExtensionMethods
     /// <summary>
     /// Safely updates a <see cref="NetworkVariable{T}"/> value if different from the current value.
     /// </summary>
-    /// <typeparam name="T">The type implementing \<see cref="IEquatable{T}"/></typeparam>
+    /// <typeparam name="T">The type implementing <see cref="IEquatable{T}"/></typeparam>
     /// <param name="networkVariable">The <see cref="NetworkVariable{T}"/> to update.</param>
     /// <param name="newValue">The new value to potentially set.</param>
-    /// <remarks> Prevents unnecessary network updates by checking equality before setting.</remarks>
+    /// <remarks>Prevents unnecessary network updates by checking equality before setting.</remarks>
     public static void SafeSet<T>(this NetworkVariable<T> networkVariable, T newValue)
         where T : IEquatable<T>
     {

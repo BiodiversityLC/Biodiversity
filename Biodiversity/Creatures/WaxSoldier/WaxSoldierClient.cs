@@ -48,6 +48,10 @@ public class WaxSoldierClient : MonoBehaviour
     [SerializeField] private Transform moltenMusketContainer;
 
     [Space(5f, order = 0)]
+    [Header("VFX", order = 1)]
+    [SerializeField] private ParticleSystem waxDropletParticleSystem;
+
+    [Space(5f, order = 0)]
     [Header("Audio Sources", order = 1)]
     [SerializeField] public AudioSource creatureVoice;
     [SerializeField] public AudioSource musicSource;
@@ -85,6 +89,8 @@ public class WaxSoldierClient : MonoBehaviour
     private WaxSoldierAI.MoltenState _moltenState;
 
     private float _previousAnimatorSpeedBeforeFreeze = 1f;
+    private float _visualWaxTemperature = 20f;
+    private const float WAX_TEMPERATURE_LERP_SPEED = 15f; // Degrees per second
 
     private bool _networkEventsSubscribed;
 
@@ -119,6 +125,27 @@ public class WaxSoldierClient : MonoBehaviour
         _currentAnimator.SetBool(Dead, netcodeController.AnimationParamIsDead.Value);
         _currentAnimator.SetBool(StartMelting, netcodeController.AnimationParamStartMelting.Value);
         SetWalkLocomotionAnimationParams();
+
+        if (_moltenState == WaxSoldierAI.MoltenState.Unmolten)
+        {
+            _visualWaxTemperature = Mathf.MoveTowards(_visualWaxTemperature, netcodeController.WaxTemperature.Value,
+                WAX_TEMPERATURE_LERP_SPEED * Time.deltaTime);
+
+            ParticleSystem.EmissionModule emission = waxDropletParticleSystem.emission;
+            bool shouldEmit = _moltenState == WaxSoldierAI.MoltenState.Unmolten && _visualWaxTemperature > 40f;
+
+            // public float WaxSofteningTemperature { get; } = 40f;
+            // public float WaxMeltTemperature { get; } = 60f;
+
+            if (!shouldEmit)
+            {
+                emission.rateOverTime = 0f;
+                return;
+            }
+
+            float meltIntensity = Mathf.InverseLerp(40, 60, _visualWaxTemperature);
+            emission.rateOverTime = 3 * (meltIntensity * meltIntensity);
+        }
     }
 
     #region Animation
@@ -160,12 +187,14 @@ public class WaxSoldierClient : MonoBehaviour
         // Enable the molten gameobject and switch the musket over to it
         moltenGameObject.SetActive(true);
         _musket.parentObject = moltenMusketContainer;
-
         unmoltenGameObject.SetActive(false);
 
         _moltenState = WaxSoldierAI.MoltenState.Molten;
         _currentAnimator = moltenAnimator;
         _currentAnimator.SetTrigger(FinishedMelting);
+
+        ParticleSystem.EmissionModule emission = waxDropletParticleSystem.emission;
+        emission.rateOverTime = 0f;
     }
 
     private void HandleSpawnMusket(NetworkObjectReference objectReference, int scrapValue)

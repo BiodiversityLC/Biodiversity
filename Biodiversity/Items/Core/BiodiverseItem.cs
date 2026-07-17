@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GameNetcodeStuff;
+using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
@@ -20,6 +21,9 @@ public class BiodiverseItem : PhysicsProp
     public string BioId => _networkBioId.Value.ToString();
 
     protected EnemyAI enemyHeldBy;
+
+    protected PlayerControllerB previousPlayerHeldBy;
+
     protected bool isHeldByPlayer;
 
     public override void OnNetworkSpawn()
@@ -234,6 +238,7 @@ public class BiodiverseItem : PhysicsProp
     {
         base.EquipItem();
 
+        previousPlayerHeldBy = playerHeldBy;
         isHeld = true;
         isHeldByPlayer = true;
         isHeldByEnemy = false;

@@ -14,9 +14,14 @@ public class Musket : BiodiverseItem
 {
     private static readonly int ReelingUpAnimatorHash = Animator.StringToHash("reelingUp");
     private static readonly int ShovelHitAnimatorHash = Animator.StringToHash("shovelHit");
+    private static readonly int HoldLungAnimatorHash = Animator.StringToHash("HoldLung");
 
     #region Unity Inspector Variables
 #pragma warning disable 0649
+    [Tooltip("How much the AI's vertical aim is corrected. 0 = no help, 1 = perfect Y-axis aimbot.")]
+    [Range(0f, 1f)]
+    public float verticalAimAssist = 1f;
+
     [Header("Audio")]
     [SerializeField] private AudioSource shootAudioSource;
     [SerializeField] private AudioSource otherAudioSource;
@@ -80,10 +85,20 @@ public class Musket : BiodiverseItem
     private Coroutine _reelingUpCoroutine;
     private Coroutine _shootingCoroutine;
 
-    private AttackMode _currentAttackMode;
+    private readonly NetworkVariable<int> _currentAttackMode = new(
+        (int)AttackMode.Gun,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+    private AttackMode CurrentAttackMode => (AttackMode)_currentAttackMode.Value;
 
-    private Vector3 _itemPositionOffset;
-    private Vector3 _itemRotationOffset;
+    private static readonly Vector3 _gunModeItemPositionOffset = new(0.02f, 0.65f, -0.05f);
+    private static readonly Vector3 _gunModeItemRotationOffset = new(265f, 6f, 270f);
+    private static readonly Vector3 _bayonetModeItemPositionOffset = new(0f, -0.1f, 0f);
+    private static readonly Vector3 _bayonetModeItemRotationOffset = new(180f, 20f, 220f);
+
+    private Vector3 _currentItemPositionOffset;
+    private Vector3 _currentItemRotationOffset;
 
     private const int bulletHitId = 8832676;
     private const int bayonetHitId = 8832677;
@@ -94,12 +109,14 @@ public class Musket : BiodiverseItem
     private float _bulletRadius;
     private float _bulletMaxDistance;
 
-    [Tooltip("How much the AI's vertical aim is corrected. 0 = no help, 1 = perfect Y-axis aimbot.")]
-    [Range(0f, 1f)]
-    public float verticalAimAssist = 0.95f;
-
     public NetworkVariable<int> currentAmmo { get; private set; } = new(
         1,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    private readonly NetworkVariable<bool> _isSafetyOn = new(
+        false,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Owner
     );
@@ -108,11 +125,6 @@ public class Musket : BiodiverseItem
     private int _bayonetHitMask;
     private int _maxAmmo;
 
-    private readonly NetworkVariable<bool> _isSafetyOn = new(
-        false,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner
-    );
     private static bool _hasRegisteredImperiumInsights;
     private bool _isPerformingAttackAction;
     private bool _isHoldingButton;
@@ -127,14 +139,25 @@ public class Musket : BiodiverseItem
         _bayonetHitMask = 1084754248; // This is the mask used by the vanilla shovel, see Util.VanillaLayersUtil for more details
         Comparer<RaycastHit>.Create((a, b) => a.distance.CompareTo(b.distance));
 
-        _currentAttackMode = AttackMode.Gun;
         _piercingRoundsEnabled = true;
         _bulletRadius = 0.1f;
         _bulletMaxDistance = 200f;
         _maxAmmo = 1;
 
-        _itemPositionOffset = new Vector3(0.02f, 0.65f, -0.05f);
-        _itemRotationOffset = new Vector3(265f, 6f, 270f);
+        _currentItemPositionOffset = _gunModeItemPositionOffset;
+        _currentItemRotationOffset = _gunModeItemRotationOffset;
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        _currentAttackMode.OnValueChanged += OnAttackModeChanged;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        _currentAttackMode.OnValueChanged -= OnAttackModeChanged;
+        base.OnNetworkDespawn();
     }
 
     private void OnDisable()
@@ -176,8 +199,8 @@ public class Musket : BiodiverseItem
 
     public override void LateUpdate()
     {
-        itemProperties.positionOffset = _isHeldByWaxSoldier ? Vector3.zero : _itemPositionOffset;
-        itemProperties.rotationOffset = _isHeldByWaxSoldier ? Vector3.zero : _itemRotationOffset;
+        itemProperties.positionOffset = _isHeldByWaxSoldier ? Vector3.zero : _currentItemPositionOffset;
+        itemProperties.rotationOffset = _isHeldByWaxSoldier ? Vector3.zero : _currentItemRotationOffset;
 
         base.LateUpdate();
     }
@@ -198,7 +221,7 @@ public class Musket : BiodiverseItem
             return false;
         }
 
-        switch (_currentAttackMode)
+        switch (CurrentAttackMode)
         {
             case AttackMode.Bayonet:
                 return true;
@@ -442,6 +465,8 @@ public class Musket : BiodiverseItem
             _bayonetHitBuffer, Quaternion.identity, _bayonetHitMask, QueryTriggerInteraction.Collide);
 
         if (hitCount == 0) return;
+        bool hitSomething = false;
+
         for (int i = 0; i < hitCount; i++)
         {
             Collider collider = _bayonetHitBuffer[i];
@@ -456,15 +481,34 @@ public class Musket : BiodiverseItem
 
                 DamagePlayerServerRpc(playerClientId, PLAYER_BAYONET_DAMAGE, CauseOfDeath.Stabbing);
                 _playerDamageCooldowns.Start(playerClientId, 0.2f);
-
+                hitSomething = true;
                 continue;
             }
 
             if (collider.transform.TryGetComponent(out IHittable iHittable))
             {
                 iHittable.Hit(IHITTABLE_BAYONET_DAMAGE, bayonetTip.forward, playerHeldBy, true, bayonetHitId);
+                hitSomething = true;
             }
         }
+
+        if (hitSomething && playerHeldBy)
+            playerHeldBy.playerBodyAnimator.SetTrigger(ShovelHitAnimatorHash);
+    }
+
+    private void ApplyHoldPose(bool enable)
+    {
+        PlayerControllerB player = playerHeldBy ?? previousPlayerHeldBy;
+        if (!player) return;
+
+        Animator anim = player.playerBodyAnimator;
+
+        // Clear/restore the musket's own grab anim (whatever is set in itemProperties.grabAnim,
+        // e.g. "HoldShotgun"). Guard because grabAnim can be empty (i think)
+        if (!string.IsNullOrEmpty(itemProperties.grabAnim))
+            anim.SetBool(itemProperties.grabAnim, !enable);
+
+        anim.SetBool(HoldLungAnimatorHash, enable);
     }
     #endregion
 
@@ -484,7 +528,7 @@ public class Musket : BiodiverseItem
         DiscardItemFromEnemy();
     }
 
-    #region RPCs
+    #region RPCs and Networking Stuff
     [ServerRpc(RequireOwnership = false)]
     private void DamagePlayerServerRpc(ulong playerId, int damage, CauseOfDeath causeOfDeath = CauseOfDeath.Unknown, Vector3 force = default)
     {
@@ -532,6 +576,21 @@ public class Musket : BiodiverseItem
         Destroy(otherAudioSource.gameObject);
 
         Destroy(this);
+    }
+
+    private void OnAttackModeChanged(int previous, int current)
+    {
+        AttackMode newAttackMode = (AttackMode)current;
+
+        _currentItemPositionOffset = newAttackMode == AttackMode.Gun
+            ? _gunModeItemPositionOffset
+            : _bayonetModeItemPositionOffset;
+
+        _currentItemRotationOffset = newAttackMode == AttackMode.Gun
+            ? _gunModeItemRotationOffset
+            : _bayonetModeItemRotationOffset;
+
+        if (isHeldByPlayer) ApplyHoldPose(newAttackMode == AttackMode.Bayonet);
     }
     #endregion
 
@@ -593,7 +652,7 @@ public class Musket : BiodiverseItem
         if (!playerHeldBy) return;
 
         bool canAttack = CanAttack(out AttackFailureReason failureReason);
-        switch (_currentAttackMode)
+        switch (CurrentAttackMode)
         {
             case AttackMode.Gun:
             {
@@ -639,7 +698,7 @@ public class Musket : BiodiverseItem
         if (_isPerformingAttackAction) return;
         if (right)
         {
-            _currentAttackMode = _currentAttackMode == AttackMode.Gun ? AttackMode.Bayonet : AttackMode.Gun;
+            _currentAttackMode.Value = (int)(CurrentAttackMode == AttackMode.Gun ? AttackMode.Bayonet : AttackMode.Gun);
             LogVerbose($"Changed attack mode to {_currentAttackMode}.");
         }
         else
@@ -677,11 +736,19 @@ public class Musket : BiodiverseItem
     {
         base.EquipItem();
         playerHeldBy.equippedUsableItemQE = true;
+        ApplyHoldPose(CurrentAttackMode == AttackMode.Bayonet);
+    }
+
+    public override void PocketItem()
+    {
+        ApplyHoldPose(false);
+        base.PocketItem();
     }
 
     public override void DiscardItem()
     {
         playerHeldBy.equippedUsableItemQE = false;
+        ApplyHoldPose(false);
         base.DiscardItem();
     }
     #endregion
