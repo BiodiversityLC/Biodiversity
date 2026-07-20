@@ -559,6 +559,8 @@ public class Musket : BiodiverseItem
     [ClientRpc]
     internal void TransformIntoMeshClientRpc()
     {
+        LogVerbose("Transforming musket into an empty husk.");
+
         ScanNodeProperties scanNode = GetComponentInChildren<ScanNodeProperties>();
         if (scanNode) Destroy(scanNode.gameObject);
 

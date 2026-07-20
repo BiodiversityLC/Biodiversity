@@ -221,12 +221,12 @@ public class HeatController : MonoBehaviour
         switch (flashlightItem.itemProperties.itemName)
         {
             case "Pro-flashlight":
-                cone.centreRateCPerSec = 5f;
-                cone.range *= 2f;
+                cone.centreRateCPerSec = 8f;
+                cone.range = 15f;
                 break;
             case "Flashlight":
-                cone.centreRateCPerSec = 1f;
-                cone.range *= 1.5f;
+                cone.centreRateCPerSec = 2f;
+                cone.range = 8f;
                 break;
         }
 

@@ -1,6 +1,8 @@
 ﻿using Biodiversity.Creatures.Core.StateMachine;
+using System;
 using Unity.Netcode;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Biodiversity.Creatures.WaxSoldier.Animation;
 
@@ -9,16 +11,12 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
     [SerializeField] private WaxSoldierAI _serverAI;
     [SerializeField] private WaxSoldierClient _clientAI;
 
-    // public override void OnNetworkSpawn()
-    // {
-    //     base.OnNetworkSpawn();
-    //     if (!IsServer)
-    //     {
-    //         enabled = false;
-    //     }
-    // }
-
     #region Animation Events
+    public void OnAnimationEventPlayFootstepSfx()
+    {
+        _clientAI.PlayFoostepSfx();
+    }
+
     public void OnAnimationEventStartStabAttackLunge()
     {
         if (!IsServer) return;
@@ -139,6 +137,8 @@ public class WaxSoldierAnimationEventHandler : NetworkBehaviour
 
     public void OnAnimationEventDeathComplete()
     {
+        if (IsServer) _serverAI.LogVerbose($"{nameof(OnAnimationEventDeathComplete)}.");
+
         // todo: use events instead of adding code here
         _clientAI.musicSource.Stop(true);
 

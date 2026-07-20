@@ -18,7 +18,7 @@ public class DirectedConeHeatEmitter : HeatEmitter
 
     [Header("Debug Settings")]
     [Tooltip("If true, a semi-transparent mesh will be rendered to show the cone's shape.")]
-    public bool showDebugVisualizer;
+    public bool showDebugVisualizer = false;
 
     private Mesh _coneMesh;
     private MeshCollider _meshCollider;
@@ -37,7 +37,6 @@ public class DirectedConeHeatEmitter : HeatEmitter
 
     private void Awake()
     {
-        showDebugVisualizer = true;
         emitterCentre ??= transform;
 
         PrecomputeAngles();

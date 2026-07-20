@@ -63,8 +63,8 @@ public class WaxSoldierClient : MonoBehaviour
     [SerializeField] private AudioClip[] aimSfx;
     [SerializeField] private AudioClip[] reloadSfx;
     [SerializeField] private AudioClip[] spinSfx;
-    [SerializeField] private AudioClip[] lightFootstepSfx;
-    [SerializeField] private AudioClip[] heavyFootstepSfx;
+    [SerializeField] public AudioClip[] lightFootstepSfx;
+    [SerializeField] public AudioClip[] heavyFootstepSfx;
 
     [Space(2.5f, order = 0)]
     [Header("Music", order = 1)]
@@ -117,6 +117,8 @@ public class WaxSoldierClient : MonoBehaviour
         moltenGameObject.SetActive(false);
         unmoltenAnimator.SetBool(Spawning, true);
         _currentAnimator = unmoltenAnimator;
+
+        _defaultFoostepAudioSourcePitch = footstepsSource.pitch;
     }
 
     private void Update()
@@ -152,6 +154,8 @@ public class WaxSoldierClient : MonoBehaviour
     private Vector2 _smoothedVelocity;
     private Vector3 _previousPosition;
 
+    private float _defaultFoostepAudioSourcePitch;
+
     public void SetWalkLocomotionAnimationParams()
     {
         float maxSpeed = netcodeController.AgentMaxSpeed.Value;
@@ -178,6 +182,20 @@ public class WaxSoldierClient : MonoBehaviour
 
         _currentAnimator.SetFloat(VelocityX, _smoothedVelocity.x);
         if (is2D) _currentAnimator.SetFloat(VelocityZ, _smoothedVelocity.y);
+    }
+
+    /// <summary>
+    /// Plays a random footstep sound effect when the Wax Soldier's foot touches the ground in an animation.
+    /// </summary>
+    public void PlayFoostepSfx()
+    {
+        // if (_lastFootstepTime < 0.25f) return;
+        // _lastFootstepTime = 0;
+
+        AudioClip audioClipToPlay = lightFootstepSfx[Random.Range(0, lightFootstepSfx.Length)];
+        footstepsSource.pitch = Random.Range(_defaultFoostepAudioSourcePitch - 0.1f, _defaultFoostepAudioSourcePitch + 0.1f);
+        footstepsSource.PlayOneShot(audioClipToPlay);
+        // WalkieTalkie.TransmitOneShotAudio(footstepsSource, audioClipToPlay, footstepsSource.volume);
     }
     #endregion
 
