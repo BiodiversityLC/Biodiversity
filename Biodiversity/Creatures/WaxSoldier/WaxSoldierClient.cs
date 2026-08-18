@@ -238,7 +238,7 @@ public class WaxSoldierClient : MonoBehaviour
     private void HandleDropMusket()
     {
         if (!_musket) return;
-        BiodiversityPlugin.LogVerbose("[WaxSoldierClient] Dropping musket...");
+        LogVerbose("[WaxSoldierClient] Dropping musket...");
 
         _musket.OnDroppedByWaxSoldier();
         _musket.parentObject = null;
@@ -257,7 +257,7 @@ public class WaxSoldierClient : MonoBehaviour
     {
         // todo: make similar logging setup like in BiodiverseAI for the client classes
         _targetPlayer.Set(newValue == BiodiverseAI.NullPlayerId ? null : PlayerUtil.GetPlayerFromClientId(newValue));
-        BiodiversityPlugin.LogVerbose(_targetPlayer.HasValue
+        LogVerbose(_targetPlayer.HasValue
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
             : "Changed target player to null.");
     }
@@ -289,6 +289,12 @@ public class WaxSoldierClient : MonoBehaviour
         }
     }
 
+    private void HandleAnimationControllerSpeedChanged(float oldValue, float newValue)
+    {
+        LogVerbose($"Animation controller speed changed from {oldValue} to {newValue}.");
+        _currentAnimator.speed = newValue;
+    }
+
     private void HandleSlamIntoGround()
     {
         float localPlayerDistanceToBody = Vector3.Distance(transform.position, HUDManager.Instance.localPlayer.transform.position);
@@ -309,6 +315,7 @@ public class WaxSoldierClient : MonoBehaviour
         netcodeController.OnCompleteMoltenTransition += HandleCompleteMoltenTransition;
 
         //netcodeController.TargetPlayerClientId.OnValueChanged += HandleTargetPlayerChanged;
+        netcodeController.AnimationControllerSpeed.OnValueChanged += HandleAnimationControllerSpeedChanged;
 
         _networkEventsSubscribed = true;
     }
@@ -325,8 +332,14 @@ public class WaxSoldierClient : MonoBehaviour
         netcodeController.OnCompleteMoltenTransition -= HandleCompleteMoltenTransition;
 
         //netcodeController.TargetPlayerClientId.OnValueChanged -= HandleTargetPlayerChanged;
+        netcodeController.AnimationControllerSpeed.OnValueChanged -= HandleAnimationControllerSpeedChanged;
 
         _networkEventsSubscribed = false;
     }
     #endregion
+
+    private static void LogVerbose(object message)
+    {
+        LogVerbose($"[WaxSoldierClient] {message}");
+    }
 }

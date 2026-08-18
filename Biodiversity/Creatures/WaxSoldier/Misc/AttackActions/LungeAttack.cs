@@ -1,5 +1,6 @@
 ﻿using Biodiversity.Creatures.Core;
 using Biodiversity.Creatures.Core.StateMachine;
+using Biodiversity.Creatures.WaxSoldier.Animation;
 using Biodiversity.Creatures.WaxSoldier.BehaviourStates;
 using Biodiversity.Util;
 using Biodiversity.Util.DataStructures;
@@ -11,7 +12,9 @@ namespace Biodiversity.Creatures.WaxSoldier.Misc.AttackActions;
 
 public class LungeAttack : AttackAction
 {
-    private const float LUNGE_DURATION = 0.21f; // This is from the lunge animation
+    private const float LUNGE_ANIMATION_DURATION = 0.21f; // This is from the lunge animation
+    private const float LUNGE_ANIMATION_SPEED = 0.3f;
+    private const float LUNGE_DURATION = LUNGE_ANIMATION_DURATION / LUNGE_ANIMATION_SPEED;
     private const float ARC_HEIGHT = 6f;
 
     private Vector3 startPosition, targetPosition;
@@ -45,6 +48,7 @@ public class LungeAttack : AttackAction
         lungeActive = true;
 
         ctx.Adapter.Agent.enabled = false;
+        ctx.Blackboard.NetcodeController.AnimationControllerSpeed.Value = LUNGE_ANIMATION_SPEED;
 
         base.Start(ctx);
     }
@@ -65,6 +69,7 @@ public class LungeAttack : AttackAction
         if (t >= 1f)
         {
             lungeActive = false;
+            ctx.Blackboard.NetcodeController.AnimationControllerSpeed.Value = 1;
 
             if (NavMesh.SamplePosition(ctx.Adapter.Transform.position, out NavMeshHit hit, 5f, ctx.Adapter.Agent.areaMask))
                 ctx.Adapter.Transform.position = hit.position;
@@ -100,6 +105,10 @@ public class LungeAttack : AttackAction
                     PlayerUtil.GetClientIdFromPlayer(player), WaxSoldierHandler.Instance.Config.LungeDamage,
                     causeOfDeath: CauseOfDeath.Crushing);
 
+                break;
+
+            case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventSlamIntoGround):
+                ctx.Blackboard.NetcodeController.SlamIntoGroundClientRpc();
                 break;
         }
     }

@@ -294,6 +294,7 @@ public class Musket : BiodiverseItem
             Vector3 bulletOrigin = bulletRayOrigin.position;
             Vector3 finalDirection;
 
+            // If musket is held by enemy, and the enemy is targeting a player, then activate aim assist
             if (enemyHeldBy && enemyHeldBy.targetPlayer)
             {
                 Vector3 naturalAimDirection = bulletRayOrigin.forward;
@@ -560,6 +561,8 @@ public class Musket : BiodiverseItem
     internal void TransformIntoMeshClientRpc()
     {
         LogVerbose("Transforming musket into an empty husk.");
+
+        Destroy(gameObject);
 
         ScanNodeProperties scanNode = GetComponentInChildren<ScanNodeProperties>();
         if (scanNode) Destroy(scanNode.gameObject);
