@@ -23,8 +23,13 @@ namespace Biodiversity.Items.JunkRadar
         internal readonly List<string> SpawnMoonsList = [];
 
 
-        [field: Tooltip("The min,max amount of buried scraps that will spawn on moons (if the Junk Radar is spawned).")]
-        public string BuriedScrapsAmountMinMax { get; private set; } = "5,7";
+        [field: Tooltip("The percentage of the buried scraps amount that spawns on the moon compared to the amount of normal inside scraps. This balances out the number of buried scraps based on how many facility's scraps spawns ; the bigger this number is, the more buried scraps will spawn.")]
+        [field: Range(0, 200)]
+        public int BuriedScrapsAmountPercentage { get; private set; } = 15;
+
+        [field: Tooltip("The percentage of the buried scraps rarity that spawns on the moon based on the moon's routing price. The more the cost is, the more chance you will get to finding valuable buried items. This value allows to customize how the moon's price balances the scraps rarities ; reducing this value will make it less likely to find rare buried scraps.")]
+        [field: Range(0, 60)]
+        public int BuriedScrapsRarityPercentage { get; private set; } = 15;
 
 
         [field: Header("Radar Item")]

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Biodiversity.Util;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -87,10 +88,43 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
         public static Dictionary<string, BuriedScrapProperties> AllItems => _allItems.Value;
 
         /// <summary>
-        /// List all possible buried scraps (real scraps when spawned) names
+        /// List all possible sturdy buried scraps names
         /// </summary>
-        public static List<string> AllItemsNames => [.. AllItems.Keys];
+        public static List<string> AllSturdyItemsNames => [.. AllItems.Where(item => item.Value.Status == BuriedScrapStatus.Sturdy).Select(item => item.Key)];
 
+        /// <summary>
+        /// List all possible fragile buried scraps names
+        /// </summary>
+        public static List<string> AllFragileItemsNames => [.. AllItems.Where(item => item.Value.Status == BuriedScrapStatus.Fragile).Select(item => item.Key)];
+
+        /// <summary>
+        /// List all possible ultra fragile buried scraps names
+        /// </summary>
+        public static List<string> AllUltraFragileItemsNames => [.. AllItems.Where(item => item.Value.Status == BuriedScrapStatus.UltraFragile).Select(item => item.Key)];
+
+        /// <summary>
+        /// The default chance to get a spawn for a sturdy item (is adjusted at runtime based on the current moon)
+        /// Needs to sum up to 100 for these 3 chance values
+        /// </summary>
+        private static readonly int ChanceForSturdyItem = 60;
+
+        /// <summary>
+        /// The default chance to get a spawn for a fragile item (is adjusted at runtime based on the current moon)
+        /// Needs to sum up to 100 for these 3 chance values
+        /// </summary>
+        private static readonly int ChanceForFragileItem = 30;
+
+        /// <summary>
+        /// The default chance to get a spawn for an ultra fragile item (is adjusted at runtime based on the current moon)
+        /// Needs to sum up to 100 for these 3 chance values
+        /// </summary>
+        private static readonly int ChanceForUltraFragileItem = 10;
+
+        /// <summary>
+        /// The number at which all items rarities are adjusted based on the current moon
+        /// The value here is set by the config at runtime
+        /// </summary>
+        private static int? ItemRaritiesFactor = null;
 
         /// <summary>
         /// Initialize all buried scraps
@@ -215,13 +249,49 @@ namespace Biodiversity.Items.JunkRadar.BuriedScrap
 
 
         /// <summary>
-        /// Select a random item from the AllItems dictionary and returns its prefab
+        /// Calculate and select a random item from the AllItems dictionary and returns its prefab. The item is selected based on the current moon factory size multiplier
         /// </summary>
-        /// <returns>A randmly selected item prefab</returns>
+        /// <returns>A randomly selected item prefab</returns>
         public static GameObject GetRandomItem()
         {
-            var selectedItem = AllItemsNames[Random.Range(0, AllItemsNames.Count)];
-            var properties = AllItems[selectedItem];
+            SelectableLevel level = StartOfRound.Instance.currentLevel;
+
+            if (level == null)
+            {
+                return null;
+            }
+
+            int? price = MoonUtils.GetMoonRoutingPrice(level);
+
+            if (!price.HasValue)
+            {
+                return null;
+            }
+
+            if (!ItemRaritiesFactor.HasValue)
+            {
+                ItemRaritiesFactor = JunkRadarHandler.Instance.Config.BuriedScrapsRarityPercentage;
+            }
+
+            int chanceModifier = (price.Value >= 250 ? ItemRaritiesFactor.Value * (price.Value / 250) : 0);
+            int sturdyChance = ChanceForSturdyItem - chanceModifier;
+            int fragileChance = ChanceForFragileItem;
+            int ultraFragileChance = ChanceForUltraFragileItem + chanceModifier;
+
+            if (sturdyChance <= 0 || ultraFragileChance >= 100)
+            {
+                sturdyChance = 0;
+                ultraFragileChance = 70; // capped at 70 max
+            }
+
+            int selectedRandom = Random.Range(1, 101);
+            string selectedItem = selectedRandom >= 1 && selectedRandom <= sturdyChance ?
+                AllSturdyItemsNames[Random.Range(0, AllSturdyItemsNames.Count)] : (selectedRandom >= sturdyChance + 1 && selectedRandom <= sturdyChance + fragileChance ?
+                AllFragileItemsNames[Random.Range(0, AllFragileItemsNames.Count)] :
+                AllUltraFragileItemsNames[Random.Range(0, AllUltraFragileItemsNames.Count)]);
+
+            BuriedScrapProperties properties = AllItems[selectedItem];
+
             return properties.Origin switch
             {
                 BuriedScrapOrigin.VanillaItem => StartOfRound.Instance.allItemsList.itemsList.FirstOrDefault(i => i.itemName.ToLower().Equals(selectedItem.ToLower())).spawnPrefab,

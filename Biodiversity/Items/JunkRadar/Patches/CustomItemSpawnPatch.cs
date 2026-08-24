@@ -2,7 +2,6 @@
 using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -48,12 +47,12 @@ namespace Biodiversity.Items.JunkRadar.Patches
                 {
                     if (!string.IsNullOrEmpty(moonName))
                     {
-                        JunkRadarHandler.Instance.Config.SpawnMoonsList.Add(GetNormalizedMoonName(moonName));
+                        JunkRadarHandler.Instance.Config.SpawnMoonsList.Add(MoonUtils.GetNormalizedMoonName(moonName));
                     }
                 }
             }
             // Ignore moons not in the spawn list
-            if (!JunkRadarHandler.Instance.Config.SpawnMoonsList.Exists(moonName => moonName == GetNormalizedMoonName(StartOfRound.Instance.currentLevel.PlanetName) || moonName == "All"))
+            if (!JunkRadarHandler.Instance.Config.SpawnMoonsList.Exists(moonName => moonName == MoonUtils.GetNormalizedMoonName(StartOfRound.Instance.currentLevel.PlanetName) || moonName == "All"))
             {
                 return;
             }
@@ -140,18 +139,5 @@ namespace Biodiversity.Items.JunkRadar.Patches
             }
             radarNodes = radarNodesList.ToArray();
         }
-
-
-        #region MOON NAMES UTILITIES
-
-        static public string GetNormalizedMoonName(string planetName)
-        {
-            string moonName = Regex.Replace(planetName, "^[0-9]+", string.Empty);
-            if (moonName[0] == ' ' || moonName[0] == '-')
-                moonName = moonName[1..];
-            return moonName;
-        }
-
-        #endregion
     }
 }
