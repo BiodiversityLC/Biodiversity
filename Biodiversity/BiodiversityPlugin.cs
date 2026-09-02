@@ -442,7 +442,7 @@ public class BiodiversityPlugin : BaseUnityPlugin
             else
             {
                 string[] possibleFiles = Directory.GetFiles(Path.Combine(
-                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), ".."),
+                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", ".."),
                     assetBundleName, SearchOption.AllDirectories);
                 bundle = possibleFiles.Length > 0 ? AssetBundle.LoadFromFile(possibleFiles[0]) : null;
             }
@@ -451,11 +451,6 @@ public class BiodiversityPlugin : BaseUnityPlugin
         {
             Logger.LogWarning($"Could not load assetbundle: {e}");
             return null;
-        }
-
-        if (bundle == null && !optionalAssets)
-        {
-            LogVerbose($"[AssetBundle Loading] {assetBundleName} contains these objects: {string.Join(",", bundle.GetAllAssetNames())}");
         }
         return bundle;
     }
