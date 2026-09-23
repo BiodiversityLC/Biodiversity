@@ -45,12 +45,6 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Molten
     }
 
-    /* Molten state ideas:
-     *
-     * Maybe he can break doors off its hinges like the fiend
-     * Ambush attacks (figure out ambush points by considering where scrap is, apparatus, etc), but don't do cheap annoying stuff like guarding the entrance to the dungeon
-     */
-
     // Make reload time slower as wax durability goes down?
 
     public AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> Context { get; private set; }
@@ -74,7 +68,7 @@ public class WaxSoldierAI : StateManagedAI<WaxSoldierAI.States, WaxSoldierAI>
         Context = new AIContext<WaxSoldierBlackboard, WaxSoldierAdapter>(blackboard, adapter);
 
         SpinAttack spinAttack = new(
-            WaxSoldierClient.SpinAttack, 0f, 4f, 2f, 0);
+            WaxSoldierClient.SpinAttack, 0f, 2.5f, 2f, 0);
 
         StabAttack stabAttack = new(
             WaxSoldierClient.StabAttack, 0f, 2f, 1.5f, 5);

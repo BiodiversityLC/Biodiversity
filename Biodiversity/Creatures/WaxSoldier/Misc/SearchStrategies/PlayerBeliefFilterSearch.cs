@@ -50,7 +50,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     private const float OBSERVATION_COOLDOWN_SECONDS = 14f;
     private const float BELIEF_DECAY = 1f;
     private const float SEED_PROTECTION_SECONDS = 1.5f;
-    private const float PROXIMITY_AWARENESS = 2f;
+    private const float PROXIMITY_AWARENESS = 1f;
 
     public PlayerBeliefFilterSearch(
         AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx,
@@ -164,6 +164,8 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
                 occludedMass -= cell.Probability; // Cell is unreachable, so no point including it in the mass pool
                 continue;
             }
+
+            if (travelCost < PROXIMITY_AWARENESS) continue;
 
             // Square the probability to penalise low-mass nodes, hopefully preventing ping-ponging
             float score = cell.Probability * cell.Probability / (travelCost + 1f);
@@ -550,12 +552,20 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     /// </summary>
     private void RefreshVisibility()
     {
+        float viewRangeSqr = context.Blackboard.ViewRange * context.Blackboard.ViewRange;
+
         for (int cellIdx = 0; cellIdx < _cells.Length; cellIdx++)
         {
             Cell cell = _cells[cellIdx];
-
             float distanceSqr = (cell.Position - context.Adapter.EyeTransform.position).sqrMagnitude;
-            if (distanceSqr > context.Blackboard.ViewRange * context.Blackboard.ViewRange)
+
+            if (distanceSqr < PROXIMITY_AWARENESS)
+            {
+                cell.IsVisible = true;
+                continue;
+            }
+
+            if (distanceSqr > viewRangeSqr)
             {
                 cell.IsVisible = false;
                 continue;
