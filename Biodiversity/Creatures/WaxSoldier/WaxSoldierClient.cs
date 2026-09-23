@@ -238,7 +238,7 @@ public class WaxSoldierClient : MonoBehaviour
     private void HandleDropMusket()
     {
         if (!_musket) return;
-        LogVerbose("[WaxSoldierClient] Dropping musket...");
+        LogVerbose("Dropping musket...");
 
         _musket.OnDroppedByWaxSoldier();
         _musket.parentObject = null;
@@ -255,7 +255,6 @@ public class WaxSoldierClient : MonoBehaviour
 
     private void HandleTargetPlayerChanged(ulong oldValue, ulong newValue)
     {
-        // todo: make similar logging setup like in BiodiverseAI for the client classes
         _targetPlayer.Set(newValue == BiodiverseAI.NullPlayerId ? null : PlayerUtil.GetPlayerFromClientId(newValue));
         LogVerbose(_targetPlayer.HasValue
             ? $"Changed target player to {_targetPlayer.Value?.playerUsername}."
@@ -340,6 +339,6 @@ public class WaxSoldierClient : MonoBehaviour
 
     private static void LogVerbose(object message)
     {
-        LogVerbose($"[WaxSoldierClient] {message}");
+        BiodiversityPlugin.LogVerbose($"[WaxSoldierClient] {message}");
     }
 }

@@ -45,7 +45,7 @@ public class RadialHeatEmitter : HeatEmitter
 
     private void Awake()
     {
-        showDebugVisualizer = true;
+        showDebugVisualizer = false;
 
         if (!_triggerCollider) _triggerCollider = GetComponent<SphereCollider>();
         if (!_triggerCollider) _triggerCollider = gameObject.AddComponent<SphereCollider>();

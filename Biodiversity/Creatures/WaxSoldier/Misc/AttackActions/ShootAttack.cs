@@ -51,15 +51,13 @@ public class ShootAttack : AttackAction
         ctx.Adapter.Agent.updateRotation = true;
     }
 
-    private IEnumerator AimAndShoot(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx)
+    private IEnumerator AimAndShoot(AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx, Transform targetToAimAt)
     {
+        StartLookAtTarget(targetToAimAt);
         yield return new WaitForSeconds(ctx.Blackboard.MusketAimTime);
-
         StopLookAtTarget();
         ctx.Blackboard.HeldMusket.SetupShotAndFire();
-
         yield return new WaitForSeconds(Musket.TIME_BETWEEN_FIRING_AND_BULLET_EXIT);
-
         ctx.Blackboard.NetcodeController.SetAnimationTriggerClientRpc(WaxSoldierClient.ShootMusket);
     }
 
@@ -70,11 +68,9 @@ public class ShootAttack : AttackAction
         switch (eventName)
         {
             case nameof(WaxSoldierAnimationEventHandler.OnAnimationEventStartTargetLook):
-                StartLookAtTarget(eventData.Get<Transform>("aimTransform"));
-                ctx.Blackboard.NetcodeController.StartCoroutine(AimAndShoot(ctx));
+                ctx.Blackboard.NetcodeController.StartCoroutine(AimAndShoot(ctx, eventData.Get<Transform>("aimTransform")));
                 break;
         }
-
     }
 
     private void StartLookAtTarget(Transform t)

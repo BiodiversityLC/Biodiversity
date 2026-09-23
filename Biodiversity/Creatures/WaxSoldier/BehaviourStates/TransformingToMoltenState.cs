@@ -43,7 +43,6 @@ internal class TransformingToMoltenState : BehaviourState<WaxSoldierAI.States, W
 
             hasTriggeredAnimation = true;
             EnemyAIInstance.Context.Adapter.KillAllSpeed();
-            EnemyAIInstance.Context.Adapter.SpeedMultiplier = 1f;
         }
     }
 

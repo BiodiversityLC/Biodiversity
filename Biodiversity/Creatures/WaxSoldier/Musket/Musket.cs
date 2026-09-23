@@ -257,6 +257,7 @@ public class Musket : BiodiverseItem
 
     public void SetupShotAndFire()
     {
+        LogVerbose($"In {nameof(SetupShotAndFire)}, firing musket...");
         if (_shootingCoroutine != null) StopCoroutine(_shootingCoroutine);
         _shootingCoroutine = null;
         _isPerformingAttackAction = true;
@@ -504,11 +505,11 @@ public class Musket : BiodiverseItem
 
         Animator anim = player.playerBodyAnimator;
 
-        // Clear/restore the musket's own grab anim (whatever is set in itemProperties.grabAnim,
-        // e.g. "HoldShotgun"). Guard because grabAnim can be empty (i think)
         if (!string.IsNullOrEmpty(itemProperties.grabAnim))
-            anim.SetBool(itemProperties.grabAnim, !enable);
+            LogError("itemProperties.grabAnim should not be empty.");
 
+        // Clear/restore the musket's own grab anim (whatever is set in itemProperties.grabAnim, e.g. "HoldShotgun")
+        anim.SetBool(itemProperties.grabAnim, !enable);
         anim.SetBool(HoldLungAnimatorHash, enable);
     }
     #endregion
@@ -595,7 +596,11 @@ public class Musket : BiodiverseItem
             ? _gunModeItemRotationOffset
             : _bayonetModeItemRotationOffset;
 
-        if (isHeldByPlayer) ApplyHoldPose(newAttackMode == AttackMode.Bayonet);
+        if (isHeldByPlayer)
+        {
+            ApplyHoldPose(false);
+            ApplyHoldPose(newAttackMode == AttackMode.Bayonet);
+        }
     }
     #endregion
 
@@ -703,8 +708,9 @@ public class Musket : BiodiverseItem
         if (_isPerformingAttackAction) return;
         if (right)
         {
-            _currentAttackMode.Value = (int)(CurrentAttackMode == AttackMode.Gun ? AttackMode.Bayonet : AttackMode.Gun);
-            LogVerbose($"Changed attack mode to {_currentAttackMode}.");
+            AttackMode newAttackMode = CurrentAttackMode == AttackMode.Gun ? AttackMode.Bayonet : AttackMode.Gun;
+            _currentAttackMode.Value = (int)newAttackMode;
+            LogVerbose($"Changed attack mode to {newAttackMode}.");
         }
         else
         {

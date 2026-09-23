@@ -102,7 +102,6 @@ public class WaxSoldierAdapter(EnemyAI instance) : IEnemyAdapter
     {
         SetMovementProfile(0f, 250f);
         Agent.velocity = Vector3.zero;
-        _targetSpeed = 0f;
     }
 
     public void StopAllPathing()
