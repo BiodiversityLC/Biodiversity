@@ -50,7 +50,7 @@ public class PlayerBeliefFilterSearch : SearchStrategy<WaxSoldierBlackboard, Wax
     private const float OBSERVATION_COOLDOWN_SECONDS = 14f;
     private const float BELIEF_DECAY = 1f;
     private const float SEED_PROTECTION_SECONDS = 1.5f;
-    private const float PROXIMITY_AWARENESS = 1f;
+    private const float PROXIMITY_AWARENESS = 2f;
 
     public PlayerBeliefFilterSearch(
         AIContext<WaxSoldierBlackboard, WaxSoldierAdapter> ctx,

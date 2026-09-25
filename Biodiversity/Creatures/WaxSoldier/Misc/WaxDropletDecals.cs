@@ -48,7 +48,6 @@ public sealed class WaxDropletDecals : MonoBehaviour
 
     private void OnParticleCollision(GameObject other)
     {
-        BiodiversityPlugin.LogVerbose($"In {nameof(OnParticleCollision)}");
         if (!waxSplatterDecalPrefab)
             return;
 

@@ -89,8 +89,9 @@ public class WaxSoldierClient : MonoBehaviour
     private WaxSoldierAI.MoltenState _moltenState;
 
     private float _previousAnimatorSpeedBeforeFreeze = 1f;
-    private float _visualWaxTemperature = 20f;
-    private const float WAX_TEMPERATURE_LERP_SPEED = 15f; // Degrees per second
+
+    private const float INITIAL_DROPLET_EMISSION_RATE = 30f;
+    private const float MINIMUM_TEMP_FOR_DROPLETS = 30f;
 
     private bool _networkEventsSubscribed;
 
@@ -126,28 +127,9 @@ public class WaxSoldierClient : MonoBehaviour
         _currentAnimator.SetBool(InSalute, netcodeController.AnimationParamInSalute.Value);
         _currentAnimator.SetBool(Dead, netcodeController.AnimationParamIsDead.Value);
         _currentAnimator.SetBool(StartMelting, netcodeController.AnimationParamStartMelting.Value);
+
         SetWalkLocomotionAnimationParams();
-
-        if (_moltenState == WaxSoldierAI.MoltenState.Unmolten)
-        {
-            _visualWaxTemperature = Mathf.MoveTowards(_visualWaxTemperature, netcodeController.WaxTemperature.Value,
-                WAX_TEMPERATURE_LERP_SPEED * Time.deltaTime);
-
-            ParticleSystem.EmissionModule emission = waxDropletParticleSystem.emission;
-            bool shouldEmit = _moltenState == WaxSoldierAI.MoltenState.Unmolten && _visualWaxTemperature > 40f;
-
-            // public float WaxSofteningTemperature { get; } = 40f;
-            // public float WaxMeltTemperature { get; } = 60f;
-
-            if (!shouldEmit)
-            {
-                emission.rateOverTime = 0f;
-                return;
-            }
-
-            float meltIntensity = Mathf.InverseLerp(40, 60, _visualWaxTemperature);
-            emission.rateOverTime = 3 * (meltIntensity * meltIntensity);
-        }
+        SetWaxDropletEmissionRate();
     }
 
     #region Animation
@@ -156,7 +138,7 @@ public class WaxSoldierClient : MonoBehaviour
 
     private float _defaultFoostepAudioSourcePitch;
 
-    public void SetWalkLocomotionAnimationParams()
+    private void SetWalkLocomotionAnimationParams()
     {
         float maxSpeed = netcodeController.AgentMaxSpeed.Value;
         Vector3 currentVelocity = (transform.position - _previousPosition) / Time.deltaTime;
@@ -182,6 +164,23 @@ public class WaxSoldierClient : MonoBehaviour
 
         _currentAnimator.SetFloat(VelocityX, _smoothedVelocity.x);
         if (is2D) _currentAnimator.SetFloat(VelocityZ, _smoothedVelocity.y);
+    }
+
+    private void SetWaxDropletEmissionRate()
+    {
+        if (_moltenState != WaxSoldierAI.MoltenState.Unmolten) return;
+
+        float waxTemperature = netcodeController.WaxTemperature.Value;
+        ParticleSystem.EmissionModule emission = waxDropletParticleSystem.emission;
+
+        if (waxTemperature < MINIMUM_TEMP_FOR_DROPLETS)
+        {
+            emission.rateOverTime = 0f;
+            return;
+        }
+
+        float meltIntensity = Mathf.InverseLerp(MINIMUM_TEMP_FOR_DROPLETS, 60, waxTemperature);
+        emission.rateOverTime = INITIAL_DROPLET_EMISSION_RATE * (meltIntensity * meltIntensity);
     }
 
     /// <summary>
