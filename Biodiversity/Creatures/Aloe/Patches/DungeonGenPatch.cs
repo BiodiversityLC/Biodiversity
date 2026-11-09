@@ -19,7 +19,8 @@ internal static class DungeonGenPatch
     [HarmonyPostfix]
     public static void OnChangeStatus(DungeonGenerator __instance)
     {
-        //__instance.CurrentDungeon.AllTiles
+        // This code is not used anymore
+        return;
 
         if (!NetworkManager.Singleton.IsServer) return;
 
